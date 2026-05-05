@@ -1,0 +1,58 @@
+# Node / Next.js
+node_modules/
+.next/
+dist/
+build/
+out/
+*.tsbuildinfo
+.vercel/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+web/.env.local
+services/api/.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Obsidian workspace state (keep the vault, not the per-user UI state)
+brain/.obsidian/workspace*.json
+brain/.obsidian/cache
+brain/.trash/
+
+# Uploads / runtime data
+data/uploads/
+data/qdrant/
+data/postgres/
+
+# Incoming staging for attorney-provided constitution files
+.incoming/*
+!.incoming/.gitkeep
+
+# Plan file (lives in ~/.cursor/plans)
+*.plan.md.bak
+
+# Logs
+logs/
+*.log
