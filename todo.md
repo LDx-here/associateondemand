@@ -18,3 +18,6 @@
 - [x] Newsletter opt-in tagging in Airtable
 - [x] Vercel deployment configuration (vercel.json + env docs)
 - [x] Vitest tests for backend routes
+- [ ] Update Airtable Base ID to real value (appqwRBpXjg9xlnhZ)
+- [ ] Push project code to GitHub repository
+- [ ] Deploy to Vercel
