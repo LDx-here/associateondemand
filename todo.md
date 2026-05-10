@@ -31,3 +31,9 @@
 - [x] Audit and fix all missing images on Practice Areas pages
 - [x] Audit and fix all missing images on Blog page
 - [x] Audit and fix all missing images on Contact page
+- [ ] Merge aod-next dashboard into recovermyvalue project
+- [ ] Set up /dashboard routes with authentication
+- [ ] Integrate dashboard sidebar and navigation
+- [ ] Test public site and protected dashboard routes
+- [ ] Push merged code to GitHub main branch
+- [ ] Deploy unified project to Vercel
