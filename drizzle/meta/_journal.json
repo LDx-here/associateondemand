@@ -1,5 +1,20 @@
 {
   "version": "7",
   "dialect": "mysql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1778423283673,
+      "tag": "0000_high_jazinda",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1778424941529,
+      "tag": "0001_productive_sage",
+      "breakpoints": true
+    }
+  ]
 }

@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, leads, InsertLead, Lead } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,32 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Lead helpers
+export async function createLead(lead: InsertLead): Promise<Lead | null> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot create lead: database not available");
+    return null;
+  }
+  await db.insert(leads).values(lead);
+  const result = await db.select().from(leads).where(eq(leads.email, lead.email)).orderBy(desc(leads.id)).limit(1);
+  return result[0] || null;
+}
+
+export async function getAllLeads(): Promise<Lead[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(leads).orderBy(desc(leads.createdAt));
+}
+
+export async function updateLeadStatus(id: number, status: Lead["status"]): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(leads).set({ status }).where(eq(leads.id, id));
+}
+
+export async function updateLeadAirtableId(id: number, airtableRecordId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(leads).set({ airtableRecordId }).where(eq(leads.id, id));
+}

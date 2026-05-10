@@ -1,0 +1,20 @@
+# Project TODO
+
+- [x] Full site replication: Homepage with hero, attorney bio, practice areas, testimonials, process, blog preview, CTA
+- [x] Full site replication: About page
+- [x] Full site replication: Practice Areas pages (Property Damage, Personal Injury, Immigration)
+- [x] Full site replication: Blog page
+- [x] Full site replication: Contact page with full form
+- [x] Teal/dark professional styling matching recovermyvalue.com
+- [x] Remove "Made with Manus" badge entirely
+- [x] Database schema for leads with all required fields
+- [x] Contact form backend API route capturing all lead fields
+- [x] Gmail notification to support@recovermyvalue.com on every submission
+- [x] Airtable integration creating records tagged by practice area
+- [x] Lead status tracking (New, Contacted, Strategy Call Booked, Active Client, Closed)
+- [x] Inbound webhook POST /api/webhooks/inbound-lead for external sources
+- [x] Webhook secret verification middleware
+- [x] Attorney-only admin dashboard with lead filtering (practice area, status, date range)
+- [x] Newsletter opt-in tagging in Airtable
+- [x] Vercel deployment configuration (vercel.json + env docs)
+- [x] Vitest tests for backend routes

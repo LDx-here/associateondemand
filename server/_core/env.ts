@@ -7,4 +7,8 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  airtablePat: process.env.AIRTABLE_PAT ?? "",
+  airtableBaseId: process.env.AIRTABLE_BASE_ID ?? "",
+  webhookSecret: process.env.RMV_WEBHOOK_SECRET ?? "",
+  gmailNotificationEmail: process.env.GMAIL_NOTIFICATION_EMAIL ?? "support@recovermyvalue.com",
 };

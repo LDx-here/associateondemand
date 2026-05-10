@@ -1,17 +1,7 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
 
-/**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
- */
 export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
   id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
@@ -25,4 +15,23 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+export const leads = mysqlTable("leads", {
+  id: int("id").autoincrement().primaryKey(),
+  firstName: varchar("firstName", { length: 100 }).notNull(),
+  lastName: varchar("lastName", { length: 100 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  phone: varchar("phone", { length: 30 }),
+  state: varchar("state", { length: 50 }).notNull(),
+  practiceArea: mysqlEnum("practiceArea", ["Property Damage", "Personal Injury", "Immigration", "Not sure yet"]).default("Not sure yet").notNull(),
+  inquiryType: mysqlEnum("inquiryType", ["general", "understand", "strategy", "representation"]).default("general").notNull(),
+  description: text("description").notNull(),
+  newsletterOptIn: boolean("newsletterOptIn").default(false).notNull(),
+  status: mysqlEnum("status", ["New", "Contacted", "Strategy Call Booked", "Active Client", "Closed"]).default("New").notNull(),
+  source: varchar("source", { length: 50 }).default("website").notNull(),
+  airtableRecordId: varchar("airtableRecordId", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = typeof leads.$inferInsert;

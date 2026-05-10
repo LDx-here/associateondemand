@@ -36,6 +36,10 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+  // Webhook routes
+  const webhookRouter = (await import("../webhooks/inboundLead")).default;
+  app.use("/api/webhooks", webhookRouter);
+
   // tRPC API
   app.use(
     "/api/trpc",
