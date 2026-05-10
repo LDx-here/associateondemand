@@ -83,8 +83,8 @@ export default function Home() {
         <div className="container">
           <div className="flex items-center gap-2 mb-4"><div className="w-8 h-0.5 bg-teal" /><span className="text-teal text-xs font-semibold uppercase tracking-[0.2em]">Meet Your Attorney</span></div>
           <div className="grid lg:grid-cols-2 gap-12 items-start">
-            <div className="space-y-0">
-              <img src="/manus-storage/ladajia-headshot_e64ff72d.webp" alt="La'Dajia Ferguson, Esq." className="w-full max-w-md rounded-lg mb-8 shadow-lg" />
+            <div>
+              <img src="/manus-storage/ladajia-navy_0ee5c8ed.jpg" alt="La'Dajia Ferguson, Esq." className="w-full rounded-lg mb-8 shadow-lg" />
             </div>
             <div>
               <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-6">La'Dajia Ferguson, Esq.</h2>
@@ -97,10 +97,10 @@ export default function Home() {
               </ul>
               <div className="flex flex-wrap gap-6"><Link href="/about" className="text-sm font-semibold text-teal hover:text-teal-dark">Full Bio →</Link><Link href="/contact" className="text-sm font-semibold text-teal hover:text-teal-dark">Schedule a Consultation →</Link></div>
             </div>
-            <div className="space-y-6">
-              <img src="/manus-storage/paulozzi-team_f6335e5b.webp" alt="Paulozzi, Alkire, Condeni team" className="w-full rounded-lg" />
-              <p className="text-sm text-muted-foreground italic">Of Counsel — Paulozzi, Alkire, Condeni Personal Injury Lawyers</p>
-            </div>
+          </div>
+          <div className="mt-12">
+            <img src="/manus-storage/paulozzi-team_f6335e5b.webp" alt="Paulozzi, Alkire, Condeni team" className="w-full rounded-lg" />
+            <p className="text-sm text-muted-foreground italic mt-3">Of Counsel — Paulozzi, Alkire, Condeni Personal Injury Lawyers</p>
           </div>
         </div>
       </section>

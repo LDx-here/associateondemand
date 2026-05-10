@@ -26,3 +26,8 @@
 - [x] Restore YouTube video embeds in the video section
 - [x] Restore any other images/media from original site
 - [x] Restore teal-colored "Recover My Value" logo in the header/navbar
+- [x] Fix duplicate headshot — second image should be Paulozzi team photo, not headshot again
+- [x] Audit and fix all missing images on About page
+- [x] Audit and fix all missing images on Practice Areas pages
+- [x] Audit and fix all missing images on Blog page
+- [x] Audit and fix all missing images on Contact page
