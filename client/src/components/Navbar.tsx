@@ -20,13 +20,8 @@ export default function Navbar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border/50">
       <div className="container flex items-center justify-between h-16">
-        <Link href="/" className="flex items-center gap-1">
-          <span className="font-display text-xl font-bold text-foreground tracking-tight">
-            RECOVER
-          </span>
-          <span className="text-[10px] text-muted-foreground leading-tight">
-            MY VALUE
-          </span>
+        <Link href="/" className="flex items-center">
+          <img src="/manus-storage/rmv-logo_bc5c210d.webp" alt="Recover My Value" className="h-8" />
         </Link>
 
         <nav className="hidden lg:flex items-center gap-6">

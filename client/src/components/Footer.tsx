@@ -8,10 +8,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           <div>
             <div className="mb-4">
-              <span className="font-display text-xl font-bold tracking-tight">
-                RECOVER
-              </span>
-              <span className="text-[10px] text-white/60 ml-1">MY VALUE</span>
+              <img src="/manus-storage/rmv-logo_bc5c210d.webp" alt="Recover My Value" className="h-8 brightness-0 invert" />
             </div>
             <p className="text-sm text-white/70 leading-relaxed">
               Clarity, strategy, and advocacy for drivers navigating complex

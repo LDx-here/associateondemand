@@ -18,6 +18,11 @@
 - [x] Newsletter opt-in tagging in Airtable
 - [x] Vercel deployment configuration (vercel.json + env docs)
 - [x] Vitest tests for backend routes
-- [ ] Update Airtable Base ID to real value (appqwRBpXjg9xlnhZ)
-- [ ] Push project code to GitHub repository
+- [x] Update Airtable Base ID to real value (appqwRBpXjg9xlnhZ)
+- [x] Push project code to GitHub repository
 - [ ] Deploy to Vercel
+- [x] Restore hero background image from original site
+- [x] Restore attorney photo from original site
+- [x] Restore YouTube video embeds in the video section
+- [x] Restore any other images/media from original site
+- [x] Restore teal-colored "Recover My Value" logo in the header/navbar
