@@ -1,0 +1,21 @@
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    app_name: str = "AssociateOnDemand API"
+    database_url: str = "postgresql+psycopg://aod:aod@localhost:5432/aod"
+    redis_url: str = "redis://localhost:6379/0"
+    qdrant_url: str = "http://localhost:6333"
+    allowed_origins: str = "http://localhost:3000"
+    aod_pii_tier: str = "0"
+    upload_dir: str = "./data/uploads"
+    ocr_provider: str = "tesseract"
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    return Settings()
