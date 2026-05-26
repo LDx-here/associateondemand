@@ -1,3 +1,5 @@
+### [2026-05-26] CHECKPOINT: checkpoint: bootstrap 4 missing Airtable tables, live data online
+
 ### [2026-05-26] CHECKPOINT: bootstrap 4 missing Airtable tables, live data online — People (tbli83q37pINneS53), Events (tblXOky0GIsgM991L), Strategy Patterns (tbl6lhZXRb3G8MZOz), Corrections (tbl7TaDDuu9fawhfA); seeded La'Dajia Ferguson (recz8Twgpny19xDm5); 11/11 tables reachable; BUILD_SPEC §2 schema adaptations documented (autoNumber/createdTime Meta API limitations)
 
 ### [2026-05-26] CHECKPOINT: checkpoint: real CLAUDE + SKILL, BUILD_SPEC audit, Phase 4 unblock
