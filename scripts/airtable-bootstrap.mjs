@@ -7,12 +7,19 @@
  *
  * Reads AIRTABLE_PAT + AIRTABLE_BASE_ID from web/.env.local (gitignored).
  *
- * Requirements on the PAT:
- *   - schema.bases:read   (always required)
- *   - schema.bases:write  (required to create tables programmatically)
+ * Required PAT scopes:
+ *   - schema.bases:read   (list existing tables)
+ *   - schema.bases:write  (create new tables)
+ *   - data.records:write  (only for the post-create People seed)
  *
- * If schema.bases:write is missing the script captures the 403 and reminds
- * the operator to add the scope (or follow docs/runbooks/airtable-base-setup.md).
+ * BUILD_SPEC §2 deviation — `autoNumber` primary fields.
+ * The Airtable Meta API currently returns
+ * `UNSUPPORTED_FIELD_TYPE_FOR_CREATE — Creating autoNumber fields is not
+ * supported at this time` (verified 2026-05-26). Per the BUILD_SPEC gap
+ * audit "Schema Adaptations" section, we substitute a human-readable
+ * Single line text primary for each of the 4 new tables and rely on
+ * Airtable's built-in `recXXXXXXXXXXXXXX` record IDs for linked relations.
+ * See docs/constitution/BUILD_SPEC-GAP-AUDIT.md.
  */
 
 import { readFileSync, existsSync } from "node:fs";
@@ -45,6 +52,12 @@ function loadEnv(path) {
   return env;
 }
 
+function redact(value) {
+  if (!value) return "(missing)";
+  if (value.length <= 8) return "********";
+  return `${value.slice(0, 4)}…${value.slice(-2)}`;
+}
+
 const fileEnv = loadEnv(ENV_PATH);
 const PAT = process.env.AIRTABLE_PAT ?? fileEnv.AIRTABLE_PAT;
 const BASE_ID = process.env.AIRTABLE_BASE_ID ?? fileEnv.AIRTABLE_BASE_ID;
@@ -56,7 +69,10 @@ if (!PAT || !BASE_ID) {
   process.exit(1);
 }
 
+console.log(`PAT ${redact(PAT)}, base ${BASE_ID}`);
+
 const META = `https://api.airtable.com/v0/meta/bases/${BASE_ID}/tables`;
+const DATA = `https://api.airtable.com/v0/${BASE_ID}`;
 
 async function listTables() {
   const resp = await fetch(META, {
@@ -86,29 +102,64 @@ async function createTable(payload) {
   return resp.json();
 }
 
-// Field type definitions follow BUILD_SPEC §2.
-// Note: in the Airtable Meta API, primary fields cannot be Autonumber;
-// they must be singleLineText (or another text-like type). We model the
-// "_id" autonumber columns from BUILD_SPEC by promoting a human-readable
-// primary (`name`/`description`/`pattern_id`/`correction_id`) and letting
-// Airtable assign rowIds. Autonumber fields are added as secondary columns
-// where useful.
+async function listRecords(tableName, params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  const resp = await fetch(`${DATA}/${encodeURIComponent(tableName)}?${qs}`, {
+    headers: { Authorization: `Bearer ${PAT}` },
+  });
+  if (!resp.ok) {
+    const body = await resp.text();
+    throw new Error(`GET ${tableName} ${resp.status}: ${body}`);
+  }
+  return resp.json();
+}
 
+async function createRecord(tableName, fields) {
+  const resp = await fetch(`${DATA}/${encodeURIComponent(tableName)}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${PAT}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ fields }),
+  });
+  if (!resp.ok) {
+    const body = await resp.text();
+    throw new Error(`POST ${tableName} record ${resp.status}: ${body}`);
+  }
+  return resp.json();
+}
+
+/**
+ * BUILD_SPEC §2 calls for `created_at = Created time`. The Meta API rejects
+ * `createdTime` field creation (`UNSUPPORTED_FIELD_TYPE_FOR_CREATE — Creating
+ * createdTime fields is not supported at this time`, verified 2026-05-26).
+ * Substitute a plain `dateTime` field; the API layer / agents are responsible
+ * for setting `created_at` to `new Date().toISOString()` on insert. See
+ * docs/constitution/BUILD_SPEC-GAP-AUDIT.md "Schema Adaptations".
+ */
+const createdAtDateTime = {
+  type: "dateTime",
+  options: {
+    dateFormat: { name: "iso" },
+    timeFormat: { name: "24hour" },
+    timeZone: "America/New_York",
+  },
+};
+
+/**
+ * Table specifications.
+ *
+ * Primary fields cannot be `autoNumber` (Meta API restriction). We use a
+ * human-readable `singleLineText` primary; relations use Airtable's
+ * built-in `recXXXXXXXXXXXXXX` record IDs.
+ */
 const TABLES_TO_CREATE = [
   {
     name: "People",
     description: "BUILD_SPEC §2 Table 8 — firm staff and AI associates.",
     fields: [
-      {
-        name: "name",
-        type: "singleLineText",
-        description: "Display name (primary).",
-      },
-      {
-        name: "person_id",
-        type: "autoNumber",
-        description: "Unique ID.",
-      },
+      { name: "name", type: "singleLineText", description: "Display name (primary)." },
       {
         name: "role",
         type: "singleSelect",
@@ -123,7 +174,11 @@ const TABLES_TO_CREATE = [
         },
       },
       { name: "email", type: "email" },
-      { name: "is_active", type: "checkbox", options: { color: "greenBright", icon: "check" } },
+      {
+        name: "is_active",
+        type: "checkbox",
+        options: { color: "greenBright", icon: "check" },
+      },
     ],
   },
   {
@@ -131,16 +186,14 @@ const TABLES_TO_CREATE = [
     description: "BUILD_SPEC §2 Table 7 — hearings, filing deadlines, internal reminders.",
     fields: [
       {
-        name: "description",
+        name: "summary",
         type: "singleLineText",
-        description: "Short event description (primary).",
+        description: "Short event summary (primary). Long-form goes in `description`.",
       },
-      { name: "event_id", type: "autoNumber" },
       {
         name: "matter_id",
         type: "multipleRecordLinks",
-        options: { linkedTableId: null /* resolved at runtime */ },
-        // We patch linkedTableId after we know the Matters table id.
+        options: { linkedTableId: null },
       },
       {
         name: "type",
@@ -157,7 +210,7 @@ const TABLES_TO_CREATE = [
       },
       { name: "date", type: "date", options: { dateFormat: { name: "iso" } } },
       { name: "time", type: "singleLineText" },
-      { name: "long_description", type: "multilineText" },
+      { name: "description", type: "multilineText" },
       { name: "location", type: "singleLineText" },
       {
         name: "calendar_synced",
@@ -165,7 +218,7 @@ const TABLES_TO_CREATE = [
         options: { color: "greenBright", icon: "check" },
       },
       { name: "google_calendar_id", type: "singleLineText" },
-      { name: "created_at", type: "createdTime", options: { result: { type: "dateTime", options: { dateFormat: { name: "iso" }, timeFormat: { name: "24hour" }, timeZone: "America/New_York" } } } },
+      { name: "created_at", ...createdAtDateTime },
     ],
   },
   {
@@ -174,10 +227,10 @@ const TABLES_TO_CREATE = [
     fields: [
       {
         name: "fact_pattern",
-        type: "multilineText",
-        description: "Short description of the fact pattern (primary).",
+        type: "singleLineText",
+        description: "Short label for the fact pattern (primary). Long-form in `fact_pattern_detail`.",
       },
-      { name: "pattern_id", type: "autoNumber" },
+      { name: "fact_pattern_detail", type: "multilineText" },
       {
         name: "matching_matters",
         type: "multipleRecordLinks",
@@ -198,18 +251,14 @@ const TABLES_TO_CREATE = [
           ],
         },
       },
-      {
-        name: "confidence",
-        type: "number",
-        options: { precision: 0 },
-      },
+      { name: "confidence", type: "number", options: { precision: 0 } },
       { name: "correction_note", type: "multilineText" },
       {
         name: "created_by",
         type: "multipleRecordLinks",
         options: { linkedTableId: null /* People */ },
       },
-      { name: "created_at", type: "createdTime", options: { result: { type: "dateTime", options: { dateFormat: { name: "iso" }, timeFormat: { name: "24hour" }, timeZone: "America/New_York" } } } },
+      { name: "created_at", ...createdAtDateTime },
     ],
   },
   {
@@ -221,7 +270,6 @@ const TABLES_TO_CREATE = [
         type: "singleLineText",
         description: "Agent name that produced the original output (primary).",
       },
-      { name: "correction_id", type: "autoNumber" },
       {
         name: "matter_id",
         type: "multipleRecordLinks",
@@ -256,7 +304,7 @@ const TABLES_TO_CREATE = [
           ],
         },
       },
-      { name: "created_at", type: "createdTime", options: { result: { type: "dateTime", options: { dateFormat: { name: "iso" }, timeFormat: { name: "24hour" }, timeZone: "America/New_York" } } } },
+      { name: "created_at", ...createdAtDateTime },
     ],
   },
 ];
@@ -285,8 +333,32 @@ function resolveLinks(payload, tablesByName) {
   return payload;
 }
 
+async function seedFoundationalPerson(byName) {
+  const peopleTable = byName.get("People");
+  if (!peopleTable) {
+    console.log("SEED  People table not present — skipping seed.");
+    return;
+  }
+  const seedName = "La'Dajia Ferguson";
+  const existing = await listRecords("People", {
+    filterByFormula: `LOWER({name}) = '${seedName.toLowerCase().replace(/'/g, "\\'")}'`,
+    maxRecords: "1",
+  });
+  if (existing.records?.length) {
+    console.log(`SEED  People already has ${seedName} (id=${existing.records[0].id}) — skipping seed.`);
+    return;
+  }
+  const created = await createRecord("People", {
+    name: seedName,
+    role: "Attorney",
+    email: "ladajia@recovermyvalue.com",
+    is_active: true,
+  });
+  console.log(`SEED  People <- ${seedName} (id=${created.id})`);
+}
+
 async function main() {
-  console.log(`Bootstrapping schema in base ${BASE_ID}...`);
+  console.log(`Bootstrapping schema in base ${BASE_ID}…`);
   let existing;
   try {
     existing = await listTables();
@@ -325,7 +397,6 @@ async function main() {
             "and re-run, OR follow docs/runbooks/airtable-base-setup.md to create the table by hand."
         );
         results.push({ name: tableSpec.name, action: "forbidden", message: err.message });
-        // Stop further attempts — once 403 always 403.
         break;
       } else {
         results.push({ name: tableSpec.name, action: "failed", message: err.message });
@@ -333,9 +404,17 @@ async function main() {
     }
   }
 
+  try {
+    await seedFoundationalPerson(byName);
+  } catch (err) {
+    console.error(`SEED  failed: ${err.message}`);
+  }
+
   console.log("\nSummary:");
   for (const r of results) {
-    console.log(`  ${r.action.padEnd(10)} ${r.name}${r.id ? "  " + r.id : ""}${r.message ? "  " + r.message : ""}`);
+    console.log(
+      `  ${r.action.padEnd(10)} ${r.name}${r.id ? "  " + r.id : ""}${r.message ? "  " + r.message : ""}`
+    );
   }
 }
 

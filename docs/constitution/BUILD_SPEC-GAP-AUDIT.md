@@ -10,10 +10,13 @@ as **present**, **partial**, or **missing**. Field paths and line ranges
 are anchored to the working tree at audit time. Use this as the punch-list
 for Phases 4–6 cleanup.
 
-Headline compliance score: **~74%**. The skeleton is in place. The biggest
-gaps are the Airtable schema (legacy 5-table shape vs. BUILD_SPEC's 11 tables),
-matter-detail tab order (Overview-first vs. Assessment-first), and several
-mandatory pages (Inbox, Calendar, Global Tasks, Settings).
+Headline compliance score: **~78%** (was 74% — bumped by the live bootstrap of
+the 4 missing tables and the seeded foundational `People` row this round).
+The skeleton is in place. The biggest remaining gaps are the legacy
+title-case field names in the 7 pre-existing tables (`Matter ID` vs.
+`matter_id`, `Client Name` PII column, etc.), matter-detail tab fine-tuning
+(Assessment badges + "Dispatched" disabled state), and several mandatory
+pages (Inbox, Calendar, Global Tasks, Settings).
 
 ---
 
@@ -52,24 +55,62 @@ richer field metadata.
 | 4. Notes | **partial — field drift** | Missing `is_correction` checkbox. `Type` enum lacks `Agent`, `Correction`. |
 | 5. Legal Elements | **partial — field drift** | Missing: `key_gap, next_action, supporting_facts, supporting_cases, notes, last_updated_by` as separate Airtable columns (currently squashed into `extractedFact`). |
 | 6. Documents | **partial — field drift** | Missing: `practice_area, file_path, file_type, tags, uploaded_by, ocr_status, pii_tier`. |
-| 7. Events | **pending base creation** | Demo seed has `events` but the live base has no Events table; `scripts/airtable-bootstrap.mjs` creates it once a write-capable PAT is supplied. |
-| 8. People | **pending base creation** | Same as above. |
+| 7. Events | **present (adapted)** | Created live `2026-05-26` as `tblXOky0GIsgM991L` via `scripts/airtable-bootstrap.mjs`. Primary is `summary` (Single line text). `event_id` autoNumber dropped — see "Schema Adaptations" below. |
+| 8. People | **present (adapted)** | Created live `2026-05-26` as `tbli83q37pINneS53`. Primary is `name`. Seeded with `La'Dajia Ferguson` (`recz8Twgpny19xDm5`). `person_id` autoNumber dropped — see "Schema Adaptations" below. |
 | 9. PM Inbox | **present (Airtable) but app reads use Redis** | Live base has the table. `services/pm_queue.py` still writes to Redis only — BUILD_SPEC expects durable Airtable storage. |
-| 10. Strategy Patterns | **pending base creation** | Persisted to markdown only (`brain/03_Firm_Knowledge/strategy-patterns.md` via `firm_context.py`). BUILD_SPEC §10b expects an Airtable table that Pattern Agent queries. Bootstrap script will create it. |
-| 11. Corrections | **pending base creation** | Correction Pipeline writes to `firm-rules.md`, `strategy-patterns.md`, `categorizer-examples.jsonl`. No Airtable Corrections record is created. Bootstrap script will create the table. |
+| 10. Strategy Patterns | **present (adapted)** | Created live `2026-05-26` as `tbl6lhZXRb3G8MZOz`. Primary is `fact_pattern` (Single line text); the long-form companion lives in `fact_pattern_detail`. `pattern_id` autoNumber dropped — see "Schema Adaptations" below. |
+| 11. Corrections | **present (adapted)** | Created live `2026-05-26` as `tbl7TaDDuu9fawhfA`. Primary is `agent` (Single line text). `correction_id` autoNumber dropped — see "Schema Adaptations" below. |
 
-**Base contents at audit time:** the 7 tables Matters, Contacts, Tasks, Notes,
-Documents, Legal Elements, PM Inbox are present in base `appqwRBpXjg9xlnhZ`.
-4 legacy eImmigration tables (`Cases`, `Clients`, `Forms`, `Questionnaires`)
-are present but intentionally excluded from app reads (documented in
+**Base contents at audit time:** all 11 BUILD_SPEC tables are now present in
+base `appqwRBpXjg9xlnhZ`. 4 legacy eImmigration tables (`Cases`, `Clients`,
+`Forms`, `Questionnaires`) are still present but intentionally excluded from
+app reads (documented in
 [`web/src/lib/airtable/fields.ts`](../../web/src/lib/airtable/fields.ts) as
-`EXCLUDED_LEGACY_TABLES`). The 4 missing BUILD_SPEC tables (People, Events,
-Strategy Patterns, Corrections) are created by
-[`scripts/airtable-bootstrap.mjs`](../../scripts/airtable-bootstrap.mjs)
-once a PAT with `schema.bases:write` is supplied.
+`EXCLUDED_LEGACY_TABLES`). `npm run test:airtable` returns 11/11 OK as of
+this round.
 
-**Action:** see [`docs/runbooks/airtable-base-setup.md`](../runbooks/airtable-base-setup.md)
-for the paste-into-Airtable checklist that creates all 11 tables exactly per BUILD_SPEC.
+**Action:** field-name drift on the 7 pre-existing tables (`Matter ID` /
+`Client Name` / `Status` / …) remains the next migration step. See
+[`docs/runbooks/airtable-base-setup.md`](../runbooks/airtable-base-setup.md)
+for the BUILD_SPEC §2 column list.
+
+---
+
+### Schema Adaptations — BUILD_SPEC §2 deviations forced by the Airtable Meta API
+
+The Airtable Meta API enforces two restrictions that prevent a literal
+implementation of BUILD_SPEC §2 for newly created tables. Both are
+platform-level limitations (verified 2026-05-26 against
+`POST /v0/meta/bases/{baseId}/tables`), not gaps in the bootstrap script:
+
+1. `UNSUPPORTED_FIELD_TYPE_FOR_CREATE — Creating autoNumber fields is not supported at this time`
+2. `UNSUPPORTED_FIELD_TYPE_FOR_CREATE — Creating createdTime fields is not supported at this time`
+
+Because every BUILD_SPEC §2 table specifies an `*_id` autoNumber primary and
+a `created_at` Created-time column, the four newly-bootstrapped tables
+(People, Events, Strategy Patterns, Corrections) adopt the following
+deviations. The pre-existing 7 tables in the live base were created manually
+in Airtable and may still carry autoNumber primaries; this section only
+governs tables created programmatically.
+
+| Table | BUILD_SPEC primary | Live primary | Notes |
+|-------|--------------------|--------------|-------|
+| People | `person_id` Autonumber | `name` Single line text | `person_id` dropped. Linked relations (`assigned_to`, `author`, `created_by`) resolve via Airtable's built-in `recXXXXXXXXXXXXXX` record ID. |
+| Events | `event_id` Autonumber | `summary` Single line text | `event_id` dropped. The long-form `description` (multilineText) is preserved as a separate field. `summary` is the short label shown in tables and timeline rows. |
+| Strategy Patterns | `pattern_id` Autonumber | `fact_pattern` Single line text | `pattern_id` dropped. The BUILD_SPEC `fact_pattern` long-text content moves to `fact_pattern_detail` (multilineText); the primary holds the short pattern label. |
+| Corrections | `correction_id` Autonumber | `agent` Single line text | `correction_id` dropped. The primary uses the agent name so the Corrections grid is human-scannable; combined with `created_at` and `matter_id`, rows remain unique enough for triage. |
+
+`created_at` on all four tables is a writable `dateTime` column (ISO,
+`America/New_York`), not a Created-time column. The application layer must
+set `created_at = new Date().toISOString()` on insert. `pm_orchestrator.py`,
+the correction router, and any future writers are responsible for this.
+
+`web/src/lib/airtable/fields.ts` reflects the adaptation: the four `_id`
+fields are removed from `SPEC_FIELDS`, and a `RECORD_ID = "id"` constant
+documents that relational keys use Airtable's built-in record IDs going
+forward. The bootstrap script
+([`scripts/airtable-bootstrap.mjs`](../../scripts/airtable-bootstrap.mjs))
+carries the same justification inline.
 
 ---
 
@@ -260,7 +301,7 @@ Pre-session order: `Overview, Timeline, Documents, Legal Elements, Case Assessme
 | Phase | Status | Notes |
 |-------|--------|-------|
 | 0 — Foundation | **green** | Docker, Next.js skeleton, FastAPI, brain vault, governance docs all present. |
-| 1 — Airtable + read-only dashboard | **yellow** | Connector works; field set is the legacy 5-table shape, not BUILD_SPEC's 11. |
+| 1 — Airtable + read-only dashboard | **yellow → green-ish** | Connector works; all 11 BUILD_SPEC tables now live in base `appqwRBpXjg9xlnhZ` (7 pre-existing + 4 bootstrapped 2026-05-26). Field-name migration on the 7 legacy tables is the last remaining task. |
 | 2 — Full CRUD + Assessment + Timeline + Command Panel | **green-ish** | All present; tab order corrected this session; "New Matter" modal still missing. |
 | 3 — Strong Reader | **yellow** | Categorizer + intake exist; Presidio is a stub; Strong Reader orchestrator not a discrete agent. |
 | 4 — PM Orchestrator + Research + Training Loop | **yellow → green-ish** | Five-Anchors `is_valid()` wired, Research API-key tier wired, MANUAL FLAG path present. Airtable PM Inbox / Corrections table still pending. |
@@ -268,11 +309,11 @@ Pre-session order: `Overview, Timeline, Documents, Legal Elements, Case Assessme
 | 6 — eImmigration | **green** | Present. |
 | 7 — Production hardening | **red** | Auth stub only; deploy runbook present but unexecuted. |
 
-**Overall:** ~74% of BUILD_SPEC observable surface area. Top remaining gaps,
+**Overall:** ~78% of BUILD_SPEC observable surface area. Top remaining gaps,
 in priority order:
 
-1. **Airtable schema migration** — paste [`docs/runbooks/airtable-base-setup.md`](../runbooks/airtable-base-setup.md) into the live base, then refactor `airtable-fields.ts` + `airtable-queries.ts` to the BUILD_SPEC field names.
-2. **PM Inbox + Corrections + Strategy Patterns Airtable tables** — promote the Redis-backed inbox to Airtable so the attorney can resolve items from the UI.
+1. **Field-name migration on the 7 pre-existing tables** — `airtable-fields.ts` `LEGACY_FIELDS` still maps title-case `Matter ID`/`Client Name`/`Status`. Rename Airtable columns to snake_case (`matter_id`, `title`, `status`, …) per BUILD_SPEC §2 and retire `LEGACY_FIELDS`. The `Client Name` column violates BUILD_SPEC §13.4 (Tier-0 PII leak) and must be dropped in favor of `title`.
+2. **Promote PM Inbox + Corrections writes to Airtable** — `services/pm_queue.py` still writes Redis only; tables now exist (`PM Inbox`, `Corrections`) so the inbox and correction router should persist there for durable cross-session memory.
 3. **Missing pages** — `/inbox`, `/calendar`, `/tasks` (global), `/settings`.
 4. **Drafting Agent + Mass Auditor Agent + Legal Mapping Agent + Strong Reader orchestrator** — wire as discrete agents under `services/api/app/agents/`.
-5. **Document output linter** — automated check that drafted .docx outputs contain no em dashes, emojis, or endnotes.
+5. **Document output linter** — automated check that drafted `.docx` outputs contain no em dashes, emojis, or endnotes.

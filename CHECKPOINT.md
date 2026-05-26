@@ -15,34 +15,32 @@
 
 - **This session:**
   - Real CLAUDE constitution + Research Memo SKILL landed (delivered upstream this turn).
-  - **BUILD_SPEC v1 accepted.** Wrote [`docs/constitution/BUILD_SPEC-GAP-AUDIT.md`](docs/constitution/BUILD_SPEC-GAP-AUDIT.md) (~74% compliance score, gaps documented).
+  - **BUILD_SPEC v1 accepted.** Wrote [`docs/constitution/BUILD_SPEC-GAP-AUDIT.md`](docs/constitution/BUILD_SPEC-GAP-AUDIT.md) (~78% compliance after this round, gaps documented).
   - **Research agent unblocked.** Removed PENDING refuse guard; now follows BUILD_SPEC §9 multi-source protocol with MIDPAGE/FASTCASE key tier check + MANUAL FLAG inbox card when both keys absent.
   - **Five-Anchors AgentResult contract** wired (Pydantic v2). PM Orchestrator validates every result via `is_valid()` and routes failures to the inbox.
   - **Dashboard rebuilt** to BUILD_SPEC §7.1: time-aware greeting + today's date, 4 KPIs (Active matters / Overdue tasks / Upcoming filing deadlines 14d / PM inbox unread), Upcoming Deadlines table (30d, filing rows bold + red border), Overdue Tasks table, Recent Activity feed (last 7d).
   - **Matter Detail tabs reordered to BUILD_SPEC §7.3:** Assessment (default) · Timeline · Notes · Tasks · Documents · Legal Elements · Events. Notes/Tasks/Events now first-class tabs; Assessment renders the Element/Pathway × Assessment × Key Gap × Next Action table with Dispatch buttons.
-  - **Airtable lib migrated to BUILD_SPEC §3 layout:** `web/src/lib/airtable/{client,queries,fields,types}.ts`. Legacy `lib/airtable-*.ts` files kept as one-line shim re-exports. `fields.ts` exports `TABLES`, `SPEC_FIELDS` (BUILD_SPEC §2 snake_case), `LEGACY_FIELDS` (Phase 1 base shape), and `EXCLUDED_LEGACY_TABLES` documenting the four eImmigration tables intentionally not read.
-  - **Schema bootstrap script** [`scripts/airtable-bootstrap.mjs`](scripts/airtable-bootstrap.mjs) idempotently creates the 4 missing BUILD_SPEC tables (People, Events, Strategy Patterns, Corrections) via the Airtable Meta API. Requires PAT with `schema.bases:write`. **Could not be executed this session — the PAT in `web/.env.local` is incomplete (17 chars; real Airtable PATs are 50+ chars with a `.` separator). User must regenerate the token.**
-  - **Smoke script** rewritten as plain ESM (`web/scripts/smoke-airtable.mjs`); checks all 11 BUILD_SPEC tables and reports per-table record counts.
+  - **Airtable lib migrated to BUILD_SPEC §3 layout:** `web/src/lib/airtable/{client,queries,fields,types}.ts`. Legacy `lib/airtable-*.ts` files kept as one-line shim re-exports.
+  - **Live Airtable schema bootstrapped.** Ran [`scripts/airtable-bootstrap.mjs`](scripts/airtable-bootstrap.mjs) against base `appqwRBpXjg9xlnhZ` and created the 4 missing tables: People `tbli83q37pINneS53`, Events `tblXOky0GIsgM991L`, Strategy Patterns `tbl6lhZXRb3G8MZOz`, Corrections `tbl7TaDDuu9fawhfA`. Idempotent re-run confirms skip-all behavior. Seeded foundational People row `La'Dajia Ferguson` → `recz8Twgpny19xDm5`.
+  - **Schema adaptations vs. BUILD_SPEC §2.** Airtable Meta API rejects both `autoNumber` and `createdTime` field creation. Dropped `person_id` / `event_id` / `pattern_id` / `correction_id` from `SPEC_FIELDS`; primaries are now `name` / `summary` / `fact_pattern` / `agent` Single line text. Relations use Airtable's built-in `recXXX` IDs (exposed as `RECORD_ID` in `fields.ts`). `created_at` on the 4 new tables is a writable `dateTime` column; writers must set ISO timestamp on insert. Documented in BUILD_SPEC gap audit under "Schema Adaptations".
+  - **Smoke test green:** `cd web && npm run test:airtable` reports 11/11 OK (Matters 5, Contacts 0, Tasks 6, Notes 0, Documents 0, Legal Elements 6, PM Inbox 3, People 1, Events 0, Strategy Patterns 0, Corrections 0).
   - Build: `cd web && rm -rf .next && npm run build` ✅ passes (Next 16.2.4, Turbopack).
   - Removed staging dir `litigation-associate 3/`.
   - Runbook: [`docs/runbooks/airtable-base-setup.md`](docs/runbooks/airtable-base-setup.md) — 11-table copy-paste checklist + bootstrap instructions.
 
 ## Next step
 
-1. **Regenerate the Airtable PAT** at https://airtable.com/create/tokens with scopes `data.records:read`, `data.records:write`, `schema.bases:read`, `schema.bases:write`. Paste the full token (50+ characters) into `web/.env.local`. The current value `patRzDIwXuyXfUzBZ` is only the token ID, not the full secret.
-2. Run `node scripts/airtable-bootstrap.mjs` to create the 4 missing tables (People, Events, Strategy Patterns, Corrections).
-3. Run `cd web && npm run test:airtable` and confirm all 11 BUILD_SPEC tables reachable with non-zero record counts.
-4. Migrate `airtable-queries.ts` from `LEGACY_FIELDS` (Phase 1 base shape: `Matter ID`, `Client Name`, etc.) to `SPEC_FIELDS` (BUILD_SPEC §2 snake_case) once the live base is renamed.
-5. **Strong Reader:** flip `AOD_PII_TIER=1` after Presidio sidecars replace compose stub; verify `PRESIDIO_HEALTH_URL`.
-6. **Phase 7:** wire Clerk/Supabase and set `AOD_AUTH_ENABLED=true` before public deploy.
-7. Build missing BUILD_SPEC pages: `/inbox` (PM Inbox cards), `/calendar`, `/tasks` (global), `/settings`.
+1. **Field-name migration on the 7 pre-existing tables.** `airtable-queries.ts` still reads `LEGACY_FIELDS` (`Matter ID`, `Client Name`, `Status`, …). Rename Airtable columns to snake_case per BUILD_SPEC §2 and retire `LEGACY_FIELDS`. The `Client Name` column also violates BUILD_SPEC §13.4 (Tier-0 PII leak) — drop in favor of `title`.
+2. **Promote PM Inbox + Corrections writes from Redis to Airtable** now that the tables exist. `services/pm_queue.py` + `routers/correction_router.py` are the writers to update.
+3. **Strong Reader:** flip `AOD_PII_TIER=1` after Presidio sidecars replace compose stub; verify `PRESIDIO_HEALTH_URL`.
+4. **Phase 7:** wire Clerk/Supabase and set `AOD_AUTH_ENABLED=true` before public deploy.
+5. Build missing BUILD_SPEC pages: `/inbox` (PM Inbox cards), `/calendar`, `/tasks` (global), `/settings`.
 
 ## Blockers
 
 | Item | Notes |
 |------|--------|
-| Airtable PAT | Current `web/.env.local` PAT is incomplete (17 chars). Regenerate and re-run `scripts/airtable-bootstrap.mjs`. |
-| Live schema migration | App still reads against the Phase 1 base shape via `LEGACY_FIELDS`. BUILD_SPEC §2 snake_case migration deferred until base column rename. |
+| Live schema migration | App still reads against the Phase 1 base shape via `LEGACY_FIELDS`. BUILD_SPEC §2 snake_case migration deferred until column renames in Airtable UI. |
 | Presidio production | Compose uses health stub until real sidecars. |
 | Production auth | Middleware stub only until Clerk/Supabase wired. |
 | Docker | Not running locally this session — `/health` smoke skipped; confirm next session. |
@@ -60,7 +58,7 @@ cp .env.example .env          # if missing
 docker compose up -d --build
 cd web && cp .env.local.example .env.local && npm install && npm run dev
 
-# After PAT is fixed:
+# Airtable bootstrap (idempotent; all 11 BUILD_SPEC tables live as of 2026-05-26):
 node scripts/airtable-bootstrap.mjs
 cd web && npm run test:airtable
 

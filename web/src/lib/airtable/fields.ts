@@ -13,6 +13,16 @@
  * (`Matter ID`, `Client Name`, `Status`, …) — those legacy labels are
  * still surfaced via `LEGACY_FIELDS` so the existing data store keeps
  * working while we migrate writers and readers one table at a time.
+ *
+ * Schema adaptation note (see docs/constitution/BUILD_SPEC-GAP-AUDIT.md):
+ * The Airtable Meta API rejects `autoNumber` field creation and refuses
+ * to create `createdTime` fields. As a result, the four bootstrapped
+ * tables (People, Events, Strategy Patterns, Corrections) do NOT carry
+ * the BUILD_SPEC `_id` autonumber primaries (`person_id`, `event_id`,
+ * `pattern_id`, `correction_id`). Relations use Airtable's built-in
+ * `recXXXXXXXXXXXXXX` record IDs, exposed via the `RECORD_ID` constant
+ * below. `created_at` on these tables is a writable `dateTime` column;
+ * writers must set it to `new Date().toISOString()` on insert.
  */
 
 export const TABLES = {
@@ -127,7 +137,7 @@ export const SPEC_FIELDS = {
     created_at: "created_at",
   },
   events: {
-    event_id: "event_id",
+    summary: "summary",
     matter_id: "matter_id",
     type: "type",
     date: "date",
@@ -139,7 +149,6 @@ export const SPEC_FIELDS = {
     created_at: "created_at",
   },
   people: {
-    person_id: "person_id",
     name: "name",
     role: "role",
     email: "email",
@@ -158,8 +167,8 @@ export const SPEC_FIELDS = {
     resolved_at: "resolved_at",
   },
   strategyPatterns: {
-    pattern_id: "pattern_id",
     fact_pattern: "fact_pattern",
+    fact_pattern_detail: "fact_pattern_detail",
     matching_matters: "matching_matters",
     strategy_used: "strategy_used",
     outcome: "outcome",
@@ -169,9 +178,8 @@ export const SPEC_FIELDS = {
     created_at: "created_at",
   },
   corrections: {
-    correction_id: "correction_id",
-    matter_id: "matter_id",
     agent: "agent",
+    matter_id: "matter_id",
     original_output: "original_output",
     attorney_edit: "attorney_edit",
     correction_type: "correction_type",
@@ -180,6 +188,15 @@ export const SPEC_FIELDS = {
     created_at: "created_at",
   },
 } as const;
+
+/**
+ * Airtable's built-in record identifier (recXXXXXXXXXXXXXX) used as the
+ * relational key for People, Events, Strategy Patterns, and Corrections,
+ * which deviate from BUILD_SPEC §2 because the Meta API does not support
+ * creating `autoNumber` primaries. See "Schema Adaptations" in
+ * docs/constitution/BUILD_SPEC-GAP-AUDIT.md.
+ */
+export const RECORD_ID = "id" as const;
 
 /**
  * Legacy field map for the Phase 1 schema currently in the live base.
