@@ -1,3 +1,5 @@
+### [2026-05-26] CHECKPOINT: checkpoint: real CLAUDE + SKILL, BUILD_SPEC audit, Phase 4 unblock
+
 ### [2026-05-26] CHECKPOINT: real CLAUDE + SKILL landed, BUILD_SPEC audit complete, Research agent unblocked, Five-Anchors AgentResult wired with is_valid() inbox routing, dashboard + matter detail aligned to BUILD_SPEC §7, lib/airtable/ layout migrated, schema bootstrap script ready (PAT regeneration required)
 
 ### [2026-05-24] CHECKPOINT: Agent checkpoint & resume protocol (CHECKPOINT.md, runbook, scripts/checkpoint.sh)
