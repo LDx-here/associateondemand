@@ -14,7 +14,7 @@ from qdrant_client.http import models as qmodels
 
 from app.agents.firm_context import load_strategy_patterns
 from app.config import get_settings
-from app.models.agent_result import AgentResult
+from app.models.agent_result import AgentResult, Uncertainty
 
 COLLECTION = "aod_fact_patterns"
 VECTOR_SIZE = 64
@@ -135,6 +135,13 @@ def run_pattern(matter_id: str, facts: str | None = None) -> AgentResult:
         anchor_strategy=[f"Prior matter {m['matter_id']} used similar fact pattern." for m in matches[:3]],
         anchor_risk=["Small sample size until full Airtable + Obsidian index is wired."],
         anchor_next=["Attorney review pattern matches", "Select approach for Strategy Agent"],
+        uncertain=[
+            Uncertainty(
+                item="Pattern similarity ranking",
+                confidence=0.65 if matches else 0.35,
+                reason="Bag-of-words hash embedding; will improve once full Airtable + Obsidian index is wired.",
+            )
+        ],
         summary=f"Found {len(matches)} similar matters for {matter_id}.",
         citations=[m["matter_id"] for m in matches if m.get("matter_id")],
         confidence=0.65 if matches else 0.35,

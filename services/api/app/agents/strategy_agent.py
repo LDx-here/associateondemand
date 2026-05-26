@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from app.agents.firm_context import load_firm_rules, load_strategy_patterns
 from app.agents.pattern_agent import query_similar
-from app.models.agent_result import AgentResult
+from app.models.agent_result import AgentResult, Uncertainty
 from app.services.docs_formatter import format_strategy_memo
 
 
@@ -60,6 +60,13 @@ def run_strategy(
         anchor_strategy=[f"Develop {strategy_name}", "Cross-check prior pattern outcomes before filing."],
         anchor_risk=["Missed filing deadline if tasks not completed.", "Strategy unvalidated until attorney sign-off."],
         anchor_next=["Confirm calendar entries", "Update Case Assessment tab", "Accept or correct via pipeline"],
+        uncertain=[
+            Uncertainty(
+                item=f"Selected strategy: {strategy_name}",
+                confidence=0.6,
+                reason="Strategy is draft until attorney confirms posture and accepts via Correction Pipeline.",
+            )
+        ],
         summary=memo[:600],
         citations=[p["matter_id"] for p in patterns if p.get("matter_id")],
         confidence=0.6,

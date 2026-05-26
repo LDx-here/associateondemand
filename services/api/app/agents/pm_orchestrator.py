@@ -12,8 +12,9 @@ from app.agents.firm_context import load_firm_rules
 from app.agents.pattern_agent import run_pattern
 from app.agents.research_agent import run_research
 from app.agents.strategy_agent import run_strategy
-from app.models.agent_result import AgentResult
+from app.models.agent_result import AgentResult, Uncertainty
 from app.models.db_models import AgentJob, AuditLog
+from app.services.pm_queue import enqueue_inbox_review
 from app.services.redis_queue import enqueue_job, get_job
 
 _ROUTE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
@@ -92,6 +93,13 @@ def dispatch(
             anchor_strategy=[f"Route: {target} based on instruction keywords."],
             anchor_risk=["Async job — poll /agents/jobs/{id} for result."],
             anchor_next=[f"Poll job {job_id}", "Review inbox when complete"],
+            uncertain=[
+                Uncertainty(
+                    item=f"Async job {job_id} outcome",
+                    confidence=0.5,
+                    reason="Job is queued; final result not yet known.",
+                )
+            ],
             summary=f"Job {job_id} enqueued ({target}, {priority}).",
             citations=[f"job_id={job_id}"],
             confidence=0.6,
@@ -101,6 +109,7 @@ def dispatch(
 
     result = execute_agent(target, payload)
     result.job_id = job_id
+    _validate_and_route(db, result, payload, target)
     _update_job_record(db, job_id, result)
     return result
 
@@ -114,6 +123,62 @@ def execute_agent(agent: str, payload: dict[str, Any]) -> AgentResult:
     if agent == "strategy":
         return run_strategy(matter_id, posture=str(payload.get("posture") or ""), selected_strategy=payload.get("selected_strategy"))
     return run_research(matter_id, instruction, sources=payload.get("sources"))
+
+
+def _validate_and_route(
+    db: Session,
+    result: AgentResult,
+    payload: dict[str, Any],
+    target: str,
+) -> None:
+    """BUILD_SPEC §8: PM calls ``result.is_valid()``; on failure, file an inbox card.
+
+    Two failure modes are routed to the inbox:
+    1. ``is_valid()`` returns False → agent claimed full certainty with no
+       gaps and no uncertainties. Always suspicious — attorney must confirm.
+    2. ``result.complete`` is False AND blocking gaps were surfaced → the
+       agent paused work and needs guidance.
+    """
+
+    matter_id = result.matter_id or str(payload.get("matter_id") or "") or None
+    valid = result.is_valid()
+    if valid and result.complete:
+        return
+
+    if not valid:
+        what_tried = result.summary or f"{target} agent completed without disclosing any gaps or uncertainties."
+        what_needed = (
+            "Agent returned a result claiming full certainty. This is "
+            "unusual — confirm the output is sound before promoting it."
+        )
+        reason = "is_valid_false"
+    else:
+        gap_lines = [g for g in result.gaps[:3]] or [
+            q.question for q in result.gap_questions[:3]
+        ]
+        what_tried = result.summary or f"{target} agent paused with gaps."
+        what_needed = (
+            "Agent paused. Provide guidance on:\n- "
+            + "\n- ".join(gap_lines or ["(no gap text)"])
+        )
+        reason = "incomplete_with_gaps"
+
+    enqueue_inbox_review(
+        matter_id,
+        target,
+        what_tried=what_tried,
+        what_needed=what_needed,
+        options=["Approve", "Reject", "Modify", "Defer"],
+        reason=reason,
+    )
+    _log_audit(
+        db,
+        matter_id=matter_id,
+        agent=target,
+        action="inbox_review",
+        summary=f"PM created inbox card ({reason}) for {target}.",
+        meta={"job_id": result.job_id, "reason": reason},
+    )
 
 
 def _update_job_record(db: Session, job_id: str, result: AgentResult) -> None:
@@ -148,6 +213,7 @@ def process_next_job(db: Session) -> AgentResult | None:
     try:
         result = execute_agent(agent, payload)
         result.job_id = job_id
+        _validate_and_route(db, result, payload, agent)
         complete_job(job_id, result=result.model_dump())
         _update_job_record(db, job_id, result)
         _log_audit(

@@ -9,7 +9,9 @@ import {
   listLegalElements,
   listNotesForMatter,
   listTasksForMatter,
+  useDemoMode,
 } from "@/lib/data-store";
+import { getMutableSeed } from "@/lib/demo-store-mutable";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -27,6 +29,11 @@ export default async function MatterDetailPage({ params }: Props) {
     getCaseAssessment(matter.matterId),
   ]);
 
+  let events: Awaited<ReturnType<typeof loadEvents>> = [];
+  if (useDemoMode()) {
+    events = await loadEvents(matter.matterId);
+  }
+
   return (
     <MatterWorkbench
       matter={matter}
@@ -36,6 +43,12 @@ export default async function MatterDetailPage({ params }: Props) {
       initialTimeline={timeline}
       initialDocuments={documents}
       initialAssessment={assessment}
+      initialEvents={events}
     />
   );
+}
+
+async function loadEvents(matterId: string) {
+  const seed = await getMutableSeed();
+  return seed.events.filter((e) => e.matterId === matterId);
 }

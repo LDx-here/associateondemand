@@ -12,7 +12,7 @@ import {
   updateLegalElementInAirtable,
   updateMatterDeadlineInAirtable,
   useDemoMode,
-} from "./airtable-queries";
+} from "./airtable/queries";
 import { emptyCaseAssessment } from "./case-assessment";
 import { getMutableSeed } from "./demo-store-mutable";
 import type {

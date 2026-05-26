@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:airtable": "tsx scripts/smoke-airtable.ts"
+    "test:airtable": "node scripts/smoke-airtable.mjs"
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",

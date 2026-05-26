@@ -33,6 +33,41 @@ def enqueue_pm_job(matter_id: str, instruction: str, priority: str = "normal") -
     return job
 
 
+def enqueue_inbox_review(
+    matter_id: str | None,
+    agent: str,
+    *,
+    what_tried: str,
+    what_needed: str,
+    options: list[str] | None = None,
+    reason: str = "",
+) -> dict[str, Any]:
+    """Surface an item that needs attorney review (BUILD_SPEC §8 inbox card)."""
+
+    item = {
+        "id": f"inbox-{uuid.uuid4().hex[:8]}",
+        "matter_id": matter_id or "",
+        "agent": agent,
+        "what_tried": what_tried[:1000],
+        "what_needed": what_needed[:1000],
+        "options": options or ["Approve", "Reject", "Modify", "Defer"],
+        "status": "Unread",
+        "reason": reason[:500],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        _redis().lpush(QUEUE_KEY, json.dumps(item))
+    except Exception:
+        # Redis offline — log audit only so orchestrator never crashes.
+        pass
+    append_audit(
+        matter_id or "",
+        agent,
+        f"PM inbox review created: {what_needed[:120]}",
+    )
+    return item
+
+
 def list_pm_inbox(limit: int = 20) -> list[dict[str, Any]]:
     raw = _redis().lrange(QUEUE_KEY, 0, limit - 1)
     items: list[dict[str, Any]] = []

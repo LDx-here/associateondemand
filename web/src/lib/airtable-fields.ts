@@ -1,50 +1,7 @@
-/** Airtable field names — change here if your base uses different labels. */
-export const FIELDS = {
-  matters: {
-    table: "Matters",
-    matterId: "Matter ID",
-    clientName: "Client Name",
-    caseType: "Case Type",
-    status: "Status",
-    proceduralPosture: "Procedural Posture",
-    fidelityScore: "Fidelity Score",
-    nextDeadline: "Next Deadline",
-    vulnerabilityFlags: "Vulnerability Flags",
-    assignedAttorney: "Assigned Attorney",
-    summary: "Summary",
-    caseAssessment: "Case Assessment",
-  },
-  tasks: {
-    table: "Tasks",
-    matterLink: "Matter Link",
-    taskName: "Task Name",
-    status: "Status",
-    dueDate: "Due Date",
-    priority: "Priority",
-    assignedTo: "Assigned To",
-    aiTrigger: "AI Trigger",
-  },
-  notes: {
-    table: "Notes",
-    matterLink: "Matter Link",
-    content: "Content",
-    author: "Author",
-    date: "Date",
-    type: "Type",
-    requiresAction: "Requires Action",
-  },
-  legalElements: {
-    table: "Legal Elements",
-    matterLink: "Matter Link",
-    legalElement: "Legal Element",
-    extractedFact: "Extracted Fact",
-    status: "Status",
-  },
-  documents: {
-    table: "Documents",
-    matterLink: "Matter Link",
-    title: "Title",
-    category: "Category",
-    uploadedAt: "Uploaded At",
-  },
-} as const;
+/**
+ * @deprecated Re-exports from `./airtable/fields`. New code should import
+ * from `@/lib/airtable/fields` (TABLES + SPEC_FIELDS + LEGACY_FIELDS) per
+ * BUILD_SPEC §3 layout.
+ */
+
+export * from "./airtable/fields";

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 type Node = { id: string; group: string; label: string };
 type Link = { source: string; target: string; weight: number };
+type SimNode = d3.SimulationNodeDatum & Node;
 
 export function KnowledgeMapGraph() {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -34,11 +35,11 @@ export function KnowledgeMapGraph() {
 
     const color = d3.scaleOrdinal<string>().domain(["matter", "relief", "jurisdiction"]).range(["#0284c7", "#059669", "#7c3aed"]);
 
-    const simNodes = nodes.map((n) => ({ ...n }));
+    const simNodes: SimNode[] = nodes.map((n) => ({ ...n }));
     const simLinks = links.map((l) => ({ ...l }));
 
     const simulation = d3
-      .forceSimulation(simNodes as d3.SimulationNodeDatum & Node[])
+      .forceSimulation(simNodes)
       .force(
         "link",
         d3
@@ -59,36 +60,37 @@ export function KnowledgeMapGraph() {
 
     const node = svg
       .append("g")
-      .selectAll("circle")
+      .selectAll<SVGCircleElement, SimNode>("circle")
       .data(simNodes)
       .join("circle")
       .attr("r", 14)
-      .attr("fill", (d) => color((d as Node).group))
-      .call(
-        d3
-          .drag<SVGCircleElement, Node>()
-          .on("start", (event, d) => {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            (d as d3.SimulationNodeDatum & Node).fx = d.x;
-            (d as d3.SimulationNodeDatum & Node).fy = d.y;
-          })
-          .on("drag", (event, d) => {
-            (d as d3.SimulationNodeDatum & Node).fx = event.x;
-            (d as d3.SimulationNodeDatum & Node).fy = event.y;
-          })
-          .on("end", (event, d) => {
-            if (!event.active) simulation.alphaTarget(0);
-            (d as d3.SimulationNodeDatum & Node).fx = null;
-            (d as d3.SimulationNodeDatum & Node).fy = null;
-          }),
-      );
+      .attr("fill", (d) => color(d.group));
+
+    const drag = d3
+      .drag<SVGCircleElement, SimNode>()
+      .on("start", (event, d) => {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      })
+      .on("drag", (event, d) => {
+        d.fx = event.x;
+        d.fy = event.y;
+      })
+      .on("end", (event, d) => {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      });
+
+    node.call(drag);
 
     const label = svg
       .append("g")
       .selectAll("text")
       .data(simNodes)
       .join("text")
-      .text((d) => (d as Node).label)
+      .text((d) => d.label)
       .attr("font-size", 10)
       .attr("text-anchor", "middle")
       .attr("dy", 28)
@@ -100,8 +102,8 @@ export function KnowledgeMapGraph() {
         .attr("y1", (d) => (d.source as d3.SimulationNodeDatum).y ?? 0)
         .attr("x2", (d) => (d.target as d3.SimulationNodeDatum).x ?? 0)
         .attr("y2", (d) => (d.target as d3.SimulationNodeDatum).y ?? 0);
-      node.attr("cx", (d) => (d as d3.SimulationNodeDatum).x ?? 0).attr("cy", (d) => (d as d3.SimulationNodeDatum).y ?? 0);
-      label.attr("x", (d) => (d as d3.SimulationNodeDatum).x ?? 0).attr("y", (d) => (d as d3.SimulationNodeDatum).y ?? 0);
+      node.attr("cx", (d) => d.x ?? 0).attr("cy", (d) => d.y ?? 0);
+      label.attr("x", (d) => d.x ?? 0).attr("y", (d) => d.y ?? 0);
     });
 
     return () => {
