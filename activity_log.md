@@ -1,3 +1,5 @@
+### [2026-05-27] CHECKPOINT: full plan backlog - notes/task/inbox/docx
+
 ### [2026-05-27] CHECKPOINT: Assessment layout, KM drawer matters, full memo in panel
 
 ### [2026-05-27] CHECKPOINT: command panel AgentResult UI
