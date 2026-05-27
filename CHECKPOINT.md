@@ -6,18 +6,9 @@
 
 ## Last completed
 
-- **This session (post-`33a8a2d`, user ran provisioner + push):**
-  - **Matters provisioner verified on live base.** Meta API confirms all 9 BUILD_SPEC §2 columns present on `Matters` (`tbleev8qW88vmF1ty`, 21 fields total). All 5 rows have `created_at` + `updated_at` populated (`2026-05-05T23:48:31.000Z`, aligned to Airtable `createdTime`). 0 backfills required.
-  - **`npm run test:airtable`:** 11/11 OK — Matters=5, Contacts=0, Tasks=6, Notes=0, Documents=0, Legal Elements=6, PM Inbox=3, People=1, Events=0, Strategy Patterns=0, Corrections=0.
-  - **Live page smoke captured** in [`docs/runbooks/live-page-smoke-2026-05-26.md`](docs/runbooks/live-page-smoke-2026-05-26.md): 19/30 routes returned 200 with zero dev-server errors; 11/30 returned 404 (7 matter sub-tab URLs that are in-page tabs, 3 API paths that never existed under the assumed names, 1 duplicate dashboard path). 0/30 returned 5xx.
-  - **Clio-style polish (no redesign):**
-    - `StatusBadge.tsx` — centralized semantic palette (`-50/-700` + ring) for all BUILD_SPEC status labels.
-    - `SidebarNav.tsx` + `AppShell.tsx` — active route left-border accent via `usePathname`.
-    - `KpiCard.tsx` — right-aligned `tabular-nums` values.
-    - `lib/utils.ts#formatDate` — `Intl.DateTimeFormat('en-US', { dateStyle: 'medium' })` used on dashboard, matters table, global tasks, matter workbench documents.
-    - `GlobalTaskList.tsx` / `TaskList.tsx` — filing-deadline rows bold + rose left border; task complete confirmation modal retained.
-    - `CalendarBoard.tsx` / `InboxBoard.tsx` / `MatterWorkbench.tsx` — empty-state icons + copy; calendar month nav `aria-label`s.
-  - **Build green:** `cd web && rm -rf .next && npm run build` ✅ (14/14 routes).
+- **This session (post-`0c26e1b`):**
+  - **Matters metadata backfill script.** Added [`scripts/airtable-matters-metadata-backfill.mjs`](scripts/airtable-matters-metadata-backfill.mjs) — idempotent PATCH of empty `title`, `country`, `posture`, `court` (when inferable from `case_type`/`summary` only), bumps `updated_at` (America/New_York). Uses `data/backups/airtable-client-names-*.jsonl` for country hints only; never writes client PII (BUILD_SPEC §13.4).
+  - **Agent sandbox could not reach Airtable** this turn (`CONNECT tunnel failed, response 403` / `ENOTFOUND`). Run locally: `node scripts/airtable-matters-metadata-backfill.mjs` then `cd web && npm run test:airtable` and `curl -s http://localhost:3000/api/matters | jq '.matters[].title'`.
 
 ## Prior completed
 
@@ -64,16 +55,17 @@
 
 ## Next step
 
-1. **Backfill content for the new Matters fields** — populate `title`, `country`, `posture`, `court`, `judge`, `next_hearing` on the 5 existing rows so the UI shows the BUILD_SPEC §2 metadata (columns exist but are empty strings today).
-2. **Drafting / Mass Auditor / Legal Mapping / Strong Reader orchestrator** — wire as discrete agents under `services/api/app/agents/` per BUILD_SPEC §4 (items 4 + 5 explicitly deferred).
-3. **Strong Reader:** flip `AOD_PII_TIER=1` after Presidio sidecars replace compose stub; verify `PRESIDIO_HEALTH_URL`.
-4. **Phase 7:** wire Clerk/Supabase and set `AOD_AUTH_ENABLED=true` before public deploy.
+1. **Run Matters metadata backfill** (if not done): `node scripts/airtable-matters-metadata-backfill.mjs` — confirm all 5 rows have non-empty `title` in `/api/matters`.
+2. **Phase 3 Strong Reader** — flip `AOD_PII_TIER=1` after Presidio sidecars replace compose stub; verify `PRESIDIO_HEALTH_URL` and intake OCR path.
+3. **Daily-driver checklist** — attorney uses live base for one full matter cycle (dashboard → matter detail → task → inbox resolve) without demo mode.
+4. **Drafting / Mass Auditor / Legal Mapping / Strong Reader orchestrator** — wire as discrete agents under `services/api/app/agents/` per BUILD_SPEC §4 (items 4 + 5 deferred).
+5. **Phase 7:** wire Clerk/Supabase and set `AOD_AUTH_ENABLED=true` before public deploy.
 
 ## Blockers
 
 | Item | Notes |
 |------|--------|
-| Matters metadata empty | All 9 new columns exist on the live base but `title`/`country`/`posture`/`court`/`judge`/`next_hearing` are blank on the 5 rows — UI falls back to `matterId`. Populate via Airtable UI or a one-shot backfill script. |
+| Metadata backfill pending | Run `node scripts/airtable-matters-metadata-backfill.mjs` on a machine with Airtable API access (agent sandbox blocked `api.airtable.com` when the script was committed). |
 | Airtable field DELETE | Meta API rejects field deletion on this base/plan. `Matters.DEPRECATED_client_name` tombstone remains in the base; remove via Airtable UI when convenient. |
 | Presidio production | Compose uses health stub until real sidecars. |
 | Production auth | Middleware stub only until Clerk/Supabase wired. |

@@ -1,13 +1,8 @@
-### [2026-05-26] CHECKPOINT: checkpoint: live smoke + Clio-style polish + Matters columns verified
+### [2026-05-26] CHECKPOINT: Matters metadata backfill script (sandbox blocked live PATCH)
 
-### [2026-05-26] CHECKPOINT: checkpoint: Matters spec columns + live-data smoke + UI fixes
-
-### [2026-05-26] CHECKPOINT: live smoke + Clio-style polish + Matters columns verified
-
-- **Details:** Verified all 9 BUILD_SPEC §2 Matters columns on live base `appqwRBpXjg9xlnhZ` via Meta API (21 fields, 0 missing). All 5 Matters rows have `created_at`/`updated_at` backfilled to `2026-05-05T23:48:31.000Z`. `npm run test:airtable` 11/11 with unchanged counts. Live page smoke on port 3003: 19×200, 11×404 (expected tab/API naming mismatches), 0×5xx, 0 dev-server errors — captured in `docs/runbooks/live-page-smoke-2026-05-26.md`. Clio-style polish: centralized `StatusBadge` semantic palette, `SidebarNav` active left-border accent, `formatDate` medium-style helper, KPI `tabular-nums`, empty-state icons on calendar/inbox/documents, filing-deadline row styling on matter task list, calendar nav `aria-label`s. Build green (14/14 routes).
-- **Files Affected:** `docs/runbooks/live-page-smoke-2026-05-26.md`, `web/src/components/StatusBadge.tsx`, `web/src/components/SidebarNav.tsx`, `web/src/components/AppShell.tsx`, `web/src/components/KpiCard.tsx`, `web/src/lib/utils.ts`, `web/src/components/{GlobalTaskList,MattersTable,TaskList,MatterWorkbench,CalendarBoard,InboxBoard}.tsx`, `web/src/app/(app)/dashboard/page.tsx`, `docs/constitution/BUILD_SPEC-GAP-AUDIT.md`, `CHECKPOINT.md`, `activity_log.md`
-- **Command Executed:** Meta API GET + `npm run test:airtable` + live curl smoke + `cd web && rm -rf .next && npm run build`
-- **Reason/Context:** Continue from user-pushed `33a8a2d` after Matters provisioner landed on their machine.
+- **Details:** Added `scripts/airtable-matters-metadata-backfill.mjs` — idempotent PATCH for empty `title`, `country`, `posture`, `court` (when inferable), bumps `updated_at`. Never writes client PII; backup JSONL used for country hints only. Agent sandbox could not reach `api.airtable.com`; run locally: `node scripts/airtable-matters-metadata-backfill.mjs`.
+- **Files Affected:** `scripts/airtable-matters-metadata-backfill.mjs`, `CHECKPOINT.md`, `activity_log.md`
+- **Reason/Context:** Populate BUILD_SPEC §2 header fields on 5 live Matters rows after `0c26e1b`.
 
 ### [2026-05-26] CHECKPOINT: Matters spec columns + UI polish + sandbox-blocked Airtable smoke
 
