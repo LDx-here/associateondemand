@@ -36,7 +36,7 @@ curl -sf http://localhost:8000/intake/status | head -c 400
 echo ""
 
 echo "== intake upload (tier 0 + manual approval) =="
-PDF="${ROOT}/data/uploads/smoke-test.pdf"
+PDF="${ROOT}/scripts/fixtures/smoke-test.pdf"
 if [[ ! -f "$PDF" ]]; then
   echo "Missing $PDF"
   exit 1
