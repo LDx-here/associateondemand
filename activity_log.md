@@ -1,3 +1,5 @@
+### [2026-05-26] CHECKPOINT: checkpoint: overnight milestones 1-6 gap closure
+
 ### [2026-05-26] CHECKPOINT: checkpoint: professional firm UI polish
 
 ### [2026-05-26] CHECKPOINT: checkpoint: Matters metadata backfill
