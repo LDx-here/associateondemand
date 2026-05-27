@@ -27,12 +27,15 @@ export async function createSupabaseServerClient() {
   });
 }
 
-export async function getSupabaseSessionUser(): Promise<{ email: string } | null> {
+export async function getSupabaseSessionUser(): Promise<{ email: string; name: string | null } | null> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user?.email) return null;
-  return { email: user.email };
+  const meta = user.user_metadata as Record<string, unknown> | undefined;
+  const rawName = meta?.full_name ?? meta?.name;
+  const name = typeof rawName === "string" && rawName.trim() ? rawName.trim() : null;
+  return { email: user.email, name };
 }

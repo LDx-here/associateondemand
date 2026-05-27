@@ -138,6 +138,7 @@ fly deploy
 
 ## 8. Related runbooks
 
+- [phase-7-deploy-checklist.md](./phase-7-deploy-checklist.md) (step-by-step for La'Dajia)
 - [local-dev.md](./local-dev.md)
 - [strong-reader-setup.md](./strong-reader-setup.md)
 - [research-memo-export.md](./research-memo-export.md)
