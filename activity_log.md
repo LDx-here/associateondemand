@@ -1,3 +1,5 @@
+### [2026-05-26] CHECKPOINT: checkpoint: snake_case fields, PM→Airtable, /inbox /calendar /tasks /settings
+
 ### [2026-05-26] CHECKPOINT: checkpoint: bootstrap 4 missing Airtable tables, live data online
 
 ### [2026-05-26] CHECKPOINT: snake_case fields, PM→Airtable, /inbox /calendar /tasks /settings — 44 fields renamed across 7 pre-existing tables, 4 additive columns (Notes.type, PM Inbox.options/resolution/resolved_at), Matters.Client Name tombstoned (PII backup at data/backups/airtable-client-names-2026-05-26.jsonl, 5 rows); LEGACY_FIELDS retired; FastAPI PM Inbox + Corrections writers durable via services/api/app/services/airtable.py (typecast=true); four BUILD_SPEC pages live and 200 OK; build green; 11/11 smoke; ~87% compliance
