@@ -67,7 +67,7 @@ curl -s -X POST http://localhost:8000/intake/upload \
   -H "X-Manual-Review-Approved: true" \
   -F "matter_id=AOD-1001" \
   -F "manual_review_approved=true" \
-  -F "file=@data/uploads/smoke-test.pdf" | jq '.processing_status, .category, .ocr_method'
+  -F "file=@scripts/fixtures/smoke-test.pdf" | jq '.processing_status, .category, .ocr_method'
 
 # Web command proxy (Next.js on port 3003)
 curl -s -X POST http://localhost:3003/api/command \
