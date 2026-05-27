@@ -1,14 +1,9 @@
-### [2026-05-26] CHECKPOINT: checkpoint: snake_case fields, PM→Airtable, /inbox /calendar /tasks /settings
+### [2026-05-26] CHECKPOINT: Matters spec columns + UI polish + sandbox-blocked Airtable smoke
 
-### [2026-05-26] CHECKPOINT: checkpoint: bootstrap 4 missing Airtable tables, live data online
-
-### [2026-05-26] CHECKPOINT: snake_case fields, PM→Airtable, /inbox /calendar /tasks /settings — 44 fields renamed across 7 pre-existing tables, 4 additive columns (Notes.type, PM Inbox.options/resolution/resolved_at), Matters.Client Name tombstoned (PII backup at data/backups/airtable-client-names-2026-05-26.jsonl, 5 rows); LEGACY_FIELDS retired; FastAPI PM Inbox + Corrections writers durable via services/api/app/services/airtable.py (typecast=true); four BUILD_SPEC pages live and 200 OK; build green; 11/11 smoke; ~87% compliance
-
-### [2026-05-26] CHECKPOINT: bootstrap 4 missing Airtable tables, live data online — People (tbli83q37pINneS53), Events (tblXOky0GIsgM991L), Strategy Patterns (tbl6lhZXRb3G8MZOz), Corrections (tbl7TaDDuu9fawhfA); seeded La'Dajia Ferguson (recz8Twgpny19xDm5); 11/11 tables reachable; BUILD_SPEC §2 schema adaptations documented (autoNumber/createdTime Meta API limitations)
-
-### [2026-05-26] CHECKPOINT: checkpoint: real CLAUDE + SKILL, BUILD_SPEC audit, Phase 4 unblock
-
-### [2026-05-26] CHECKPOINT: real CLAUDE + SKILL landed, BUILD_SPEC audit complete, Research agent unblocked, Five-Anchors AgentResult wired with is_valid() inbox routing, dashboard + matter detail aligned to BUILD_SPEC §7, lib/airtable/ layout migrated, schema bootstrap script ready (PAT regeneration required)
+- **Details:** Wrote idempotent provisioner `scripts/airtable-matters-columns.mjs` for the 9 missing BUILD_SPEC §2 Matters columns (`title`, `country`, `posture`, `court`, `judge`, `next_hearing`, `assessment_data`, `created_at`, `updated_at`) and a `created_at`/`updated_at` backfill pass against the 5 existing rows. Code-side migration completed: `SPEC_FIELDS.matters` extended, `Matter` type expanded with the new fields, `mapMatter` reads them (mirrors `posture` → `proceduralPosture`), `MattersTable` exposes `Title`/`Country`/`Posture` columns + posture filter, and `saveCaseAssessmentInAirtable` / `updateMatterDeadlineInAirtable` bump `updated_at`. UI polish landed: Tasks "Complete" now opens a confirmation modal (Cancel does not PATCH); Calendar gains a friendly empty-state banner; Settings `maskPat` no longer leaks bytes beyond the constant `pat` prefix. Sandbox outbound proxy blocked `api.airtable.com` for every Node-launched call this session (workspace moved mid-turn), so the Meta API POSTs and the `npm run test:airtable` smoke are deferred to a normal dev machine; provisioner is ready-to-run and idempotent. Build green via `cd web && rm -rf .next && npm run build` (14/14 routes).
+- **Files Affected:** `scripts/airtable-matters-columns.mjs`, `web/src/lib/airtable/fields.ts`, `web/src/lib/airtable/queries.ts`, `web/src/lib/types.ts`, `web/src/components/MattersTable.tsx`, `web/src/components/GlobalTaskList.tsx`, `web/src/components/CalendarBoard.tsx`, `web/src/app/(app)/settings/page.tsx`, `docs/runbooks/known-page-errors.md`, `CHECKPOINT.md`, `activity_log.md`
+- **Command Executed:** `node scripts/airtable-matters-columns.mjs` (sandbox-blocked); `cd web && rm -rf .next && npm run build` (pass).
+- **Reason/Context:** Continue BUILD_SPEC §2 compliance from `68d0344` — get the Matters table to feature parity in code so the column migration is a single idempotent script away on any dev machine, and improve the BUILD_SPEC §7.4–7.5 page UX while we're touching the surface.
 
 ### [2026-05-24] CHECKPOINT: Agent checkpoint & resume protocol (CHECKPOINT.md, runbook, scripts/checkpoint.sh)
 

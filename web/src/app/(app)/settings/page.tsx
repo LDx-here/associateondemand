@@ -5,10 +5,14 @@ export const dynamic = "force-dynamic";
 
 const CURRENT_ATTORNEY_EMAIL = "ladajia@recovermyvalue.com";
 
+/**
+ * Show whether a PAT is configured without ever leaking enough characters
+ * to be useful to a copy/paste attacker. BUILD_SPEC §13 — no PII / secrets.
+ * The first 3 chars (`pat`) are constant for Airtable PATs and safe to show.
+ */
 function maskPat(value: string | undefined): string {
   if (!value) return "Not configured";
-  if (value.length <= 8) return "*****";
-  return `${value.slice(0, 4)}…${value.slice(-2)}`;
+  return `${value.slice(0, 3)}…${value.length} chars`;
 }
 
 export default async function SettingsPage() {

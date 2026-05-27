@@ -34,6 +34,9 @@ export function GlobalTaskList({
   const [search, setSearch] = useState("");
   const [composer, setComposer] = useState(false);
   const [composerError, setComposerError] = useState<string | null>(null);
+  const [completeTarget, setCompleteTarget] = useState<Task | null>(null);
+  const [completeError, setCompleteError] = useState<string | null>(null);
+  const [isCompleting, setIsCompleting] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const assignees = useMemo(() => {
@@ -92,15 +95,27 @@ export function GlobalTaskList({
     return copy;
   }, [filtered]);
 
-  async function toggleComplete(task: Task) {
-    if (task.status === "Done") return;
-    const optimisticStatus = "Done";
+  async function confirmComplete() {
+    if (!completeTarget) return;
+    const task = completeTarget;
+    setIsCompleting(true);
+    setCompleteError(null);
+    const previousStatus = task.status;
     setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, status: optimisticStatus } : t)),
+      prev.map((t) => (t.id === task.id ? { ...t, status: "Done" } : t)),
     );
-    const resp = await fetch(`/api/tasks/${task.id}/complete`, { method: "POST" });
-    if (!resp.ok) {
-      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: task.status } : t)));
+    try {
+      const resp = await fetch(`/api/tasks/${task.id}/complete`, { method: "POST" });
+      if (!resp.ok) {
+        setTasks((prev) =>
+          prev.map((t) => (t.id === task.id ? { ...t, status: previousStatus } : t)),
+        );
+        setCompleteError((await resp.text()) || `Failed to complete (${resp.status})`);
+        return;
+      }
+      setCompleteTarget(null);
+    } finally {
+      setIsCompleting(false);
     }
   }
 
@@ -263,8 +278,12 @@ export function GlobalTaskList({
                     {t.status !== "Done" ? (
                       <button
                         type="button"
+                        aria-label={`Complete task: ${t.description}`}
                         className="text-xs text-sky-700 underline"
-                        onClick={() => toggleComplete(t)}
+                        onClick={() => {
+                          setCompleteTarget(t);
+                          setCompleteError(null);
+                        }}
                       >
                         Complete
                       </button>
@@ -276,6 +295,53 @@ export function GlobalTaskList({
           </tbody>
         </table>
       </section>
+
+      {completeTarget ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-complete-title"
+        >
+          <div className="w-full max-w-md space-y-3 rounded-lg border border-slate-200 bg-white p-5 shadow-xl">
+            <h3 id="confirm-complete-title" className="text-lg font-semibold text-slate-900">
+              Mark task complete?
+            </h3>
+            <p className="text-sm text-slate-700">
+              <span className="font-medium">{completeTarget.matterId}</span> ·{" "}
+              {completeTarget.description}
+            </p>
+            <p className="text-xs text-slate-500">
+              This writes <code className="rounded bg-slate-100 px-1">status = Done</code> to
+              Airtable. There is no undo.
+            </p>
+            {completeError ? (
+              <p className="text-sm text-rose-700">{completeError}</p>
+            ) : null}
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                onClick={() => {
+                  setCompleteTarget(null);
+                  setCompleteError(null);
+                }}
+                disabled={isCompleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+                onClick={confirmComplete}
+                disabled={isCompleting}
+              >
+                {isCompleting ? "Completing…" : "Complete task"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {composer ? (
         <TaskComposer

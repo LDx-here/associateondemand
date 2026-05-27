@@ -30,15 +30,38 @@ export type CaseAssessment = {
 export type Matter = {
   id: string;
   matterId: string;
+  /**
+   * Display label for the matter. Prefers BUILD_SPEC §2 `title` (short
+   * non-PII description) and falls back to the matter id. The PII
+   * `Client Name` column was tombstoned to `DEPRECATED_client_name`; the
+   * field stays on the type for shim compatibility but never carries PII.
+   */
   clientName: string;
+  /** BUILD_SPEC §2 short matter description, no client names. */
+  title?: string;
   caseType: string;
+  /** BUILD_SPEC §2 country of origin. */
+  country?: string;
+  /** BUILD_SPEC §2 single-select posture. */
+  posture?: string;
+  /** BUILD_SPEC §2 court (Immigration / BIA / Sixth Circuit / USCIS). */
+  court?: string;
+  /** BUILD_SPEC §2 assigned IJ. */
+  judge?: string;
   status: string;
+  /** Legacy mirror of `posture` kept for UI components that still read it. */
   proceduralPosture: string;
   fidelityScore: number;
   nextDeadline: string | null;
+  /** BUILD_SPEC §2 next hearing date. */
+  nextHearing?: string | null;
   vulnerabilityFlags: string[];
   assignedAttorney: string;
   summary: string;
+  /** BUILD_SPEC §2 writable createdAt (Meta API can't create createdTime). */
+  createdAt?: string | null;
+  /** BUILD_SPEC §2 writable updatedAt — bumped on every PATCH. */
+  updatedAt?: string | null;
 };
 
 export type Task = {

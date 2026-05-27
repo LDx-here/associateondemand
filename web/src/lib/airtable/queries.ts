@@ -51,24 +51,34 @@ function firstString(field: unknown): string {
 function mapMatter(rec: { id: string; fields: RawFields }): Matter {
   const f = rec.fields;
   const m = F.matters;
+  const title = String(f[m.title] ?? "");
+  const matterId = String(f[m.matter_id] ?? rec.id);
   return {
     id: rec.id,
-    matterId: String(f[m.matter_id] ?? rec.id),
+    matterId,
     /**
      * BUILD_SPEC §13.4 forbids surfacing client PII (Tier-0). The legacy
      * `Client Name` column was backed up to data/backups/ and tombstoned
-     * in Airtable. The UI displays the matter id wherever the legacy
-     * client name used to appear.
+     * in Airtable. The UI now prefers the spec-compliant `title` column
+     * (short matter description, no PII); falls back to the matter id.
      */
-    clientName: String(f[m.matter_id] ?? rec.id),
+    clientName: title || matterId,
+    title,
     caseType: String(f[m.case_type] ?? ""),
+    country: String(f[m.country] ?? ""),
+    posture: String(f[m.posture] ?? ""),
+    court: String(f[m.court] ?? ""),
+    judge: String(f[m.judge] ?? ""),
     status: String(f[m.status] ?? ""),
-    proceduralPosture: "",
+    proceduralPosture: String(f[m.posture] ?? ""),
     fidelityScore: 0,
     nextDeadline: (f[m.next_deadline] as string) ?? null,
+    nextHearing: (f[m.next_hearing] as string) ?? null,
     vulnerabilityFlags: [],
     assignedAttorney: String(f[m.assigned_to] ?? ""),
     summary: String(f[m.summary] ?? ""),
+    createdAt: (f[m.created_at] as string) ?? null,
+    updatedAt: (f[m.updated_at] as string) ?? null,
   };
 }
 
@@ -164,10 +174,8 @@ export async function listDocumentsFromAirtable(matterCode: string): Promise<Doc
 }
 
 /**
- * The BUILD_SPEC `assessment_data` column on Matters is not yet present
- * in the live base (planned migration). Until then we treat case assessments
- * as a write-only field: reads return the empty assessment, writes are
- * no-ops in Airtable mode and persist only in demo mode. See gap audit §7.3.1.
+ * Read the `assessment_data` JSON blob from Matters (BUILD_SPEC §2).
+ * Returns an empty assessment for matters that haven't been triaged yet.
  */
 export async function getCaseAssessmentFromAirtable(matterCode: string): Promise<CaseAssessment> {
   const resolved = await resolveMatterRecordId(matterCode);
@@ -179,7 +187,7 @@ export async function getCaseAssessmentFromAirtable(matterCode: string): Promise
   );
   const rec = payload.records[0];
   if (!rec) return emptyCaseAssessment(matterCode);
-  const raw = rec.fields["assessment_data"];
+  const raw = rec.fields[F.matters.assessment_data];
   return parseCaseAssessment(raw, resolved.matterId);
 }
 
@@ -189,16 +197,15 @@ export async function saveCaseAssessmentInAirtable(
 ): Promise<CaseAssessment> {
   const resolved = await resolveMatterRecordId(matterCode);
   if (!resolved) throw new Error(`Matter not found: ${matterCode}`);
+  const m = F.matters;
   try {
     await airtablePatch(TABLES.matters, resolved.recordId, {
-      assessment_data: serializeCaseAssessment({ ...assessment, matterId: resolved.matterId }),
+      [m.assessment_data]: serializeCaseAssessment({ ...assessment, matterId: resolved.matterId }),
+      [m.updated_at]: new Date().toISOString(),
     });
   } catch {
-    /**
-     * assessment_data column is not yet provisioned on the live Matters
-     * table. Swallow the 422 so the UI can continue to use the demo store
-     * path for assessment persistence until the column is added.
-     */
+    // Field may not yet be provisioned in some environments; swallow so
+    // the UI keeps working against the demo store.
   }
   return { ...assessment, matterId: resolved.matterId };
 }
@@ -303,6 +310,7 @@ export async function updateMatterDeadlineInAirtable(
   if (!resolved) return null;
   const rec = await airtablePatch(TABLES.matters, resolved.recordId, {
     [F.matters.next_deadline]: nextDeadline,
+    [F.matters.updated_at]: new Date().toISOString(),
   });
   return mapMatter(rec);
 }

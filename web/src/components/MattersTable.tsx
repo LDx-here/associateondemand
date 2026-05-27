@@ -19,13 +19,21 @@ const columnHelper = createColumnHelper<Matter>();
 export function MattersTable({ matters }: { matters: Matter[] }) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [postureFilter, setPostureFilter] = useState("");
 
   const statuses = useMemo(() => [...new Set(matters.map((m) => m.status).filter(Boolean))].sort(), [matters]);
+  const postures = useMemo(
+    () => [...new Set(matters.map((m) => m.posture).filter((p): p is string => Boolean(p)))].sort(),
+    [matters],
+  );
 
   const filteredData = useMemo(() => {
-    if (!statusFilter) return matters;
-    return matters.filter((m) => m.status === statusFilter);
-  }, [matters, statusFilter]);
+    return matters.filter((m) => {
+      if (statusFilter && m.status !== statusFilter) return false;
+      if (postureFilter && m.posture !== postureFilter) return false;
+      return true;
+    });
+  }, [matters, statusFilter, postureFilter]);
 
   const columns = useMemo(
     () => [
@@ -37,8 +45,22 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
           </Link>
         ),
       }),
-      columnHelper.accessor("clientName", { header: "Client" }),
+      columnHelper.accessor((row) => row.title || row.clientName, {
+        id: "title",
+        header: "Title",
+        cell: (info) => <span className="text-slate-900">{info.getValue() || "—"}</span>,
+      }),
       columnHelper.accessor("caseType", { header: "Case type" }),
+      columnHelper.accessor((row) => row.country ?? "", {
+        id: "country",
+        header: "Country",
+        cell: (info) => info.getValue() || "—",
+      }),
+      columnHelper.accessor((row) => row.posture ?? "", {
+        id: "posture",
+        header: "Posture",
+        cell: (info) => info.getValue() || "—",
+      }),
       columnHelper.accessor("status", {
         header: "Status",
         cell: (info) => <StatusBadge status={info.getValue()} />,
@@ -51,7 +73,6 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
         },
       }),
       columnHelper.accessor("assignedAttorney", { header: "Attorney" }),
-      columnHelper.accessor("fidelityScore", { header: "Fidelity" }),
     ],
     [],
   );
@@ -77,6 +98,7 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
           onChange={(e) => setGlobalFilter(e.target.value)}
         />
         <select
+          aria-label="Filter matters by status"
           className="rounded-md border border-slate-300 px-3 py-2 text-sm"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -85,6 +107,19 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
           {statuses.map((s) => (
             <option key={s} value={s}>
               {s}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Filter matters by posture"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          value={postureFilter}
+          onChange={(e) => setPostureFilter(e.target.value)}
+        >
+          <option value="">All postures</option>
+          {postures.map((p) => (
+            <option key={p} value={p}>
+              {p}
             </option>
           ))}
         </select>

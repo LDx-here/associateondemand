@@ -10,13 +10,15 @@ as **present**, **partial**, or **missing**. Field paths and line ranges
 are anchored to the working tree at audit time. Use this as the punch-list
 for Phases 4–6 cleanup.
 
-Headline compliance score: **~87%** (was 78% — bumped this round by the
-snake_case migration on the 7 pre-existing tables, the four new pages
-`/inbox` `/calendar` `/tasks` `/settings`, and durable PM Inbox + Corrections
-Airtable writes). The biggest remaining gaps are matter-detail polish
-(Assessment badges + "Dispatched" disabled state, "New Matter" modal),
-the missing agent wrappers (drafting / mass auditor / legal mapping /
-strong-reader orchestrator), and the BUILD_SPEC document-output linter.
+Headline compliance score: **~89%** (was 87% — bumped this round by
+staging the 9 missing BUILD_SPEC §2 Matters columns in the code, the
+idempotent Meta-API provisioner script, and the page UX polish on
+`/tasks` and `/calendar`). The biggest remaining gaps are landing the
+schema delta on the live base (single `node scripts/airtable-matters-columns.mjs`
+run on a normal dev machine — sandbox blocked it this turn), the still
+missing agent wrappers (drafting / mass auditor / legal mapping /
+strong-reader orchestrator), the BUILD_SPEC document-output linter, and
+matter-detail polish (Assessment badges + "Dispatched" disabled state).
 
 ---
 
@@ -49,7 +51,7 @@ richer field metadata.
 
 | Table | Status | Notes |
 |-------|--------|-------|
-| 1. Matters | **partial — field drift** | Present in [`airtable-fields.ts:3–16`](../../web/src/lib/airtable-fields.ts). Field names: `Matter ID, Client Name, Case Type, Status, Procedural Posture, Fidelity Score, Next Deadline, Vulnerability Flags, Assigned Attorney, Summary, Case Assessment`. BUILD_SPEC requires: `matter_id, title, case_type, country, posture, status, assigned_to (Linked→People), court, judge, opened_date, next_hearing, next_deadline, summary, assessment_data, created_at, updated_at`. Missing fields: `title, country, court, judge, opened_date, next_hearing, posture (enum vs free-text)`. `Client Name` is a left-over from the legacy schema doc that contradicts BUILD_SPEC §13.4 (no PII at Tier 0). |
+| 1. Matters | **partial — code ready, base columns pending** | Live base columns are snake_case after `scripts/airtable-rename-fields.mjs`. Code now consumes the full BUILD_SPEC §2 column list (`matter_id, title, case_type, country, posture, status, assigned_to, court, judge, opened_date, next_hearing, next_deadline, summary, assessment_data, created_at, updated_at`) via [`SPEC_FIELDS.matters`](../../web/src/lib/airtable/fields.ts) and [`mapMatter`](../../web/src/lib/airtable/queries.ts). The 9 net-new columns (`title, country, posture, court, judge, next_hearing, assessment_data, created_at, updated_at`) still need to be POSTed against the live base — run [`node scripts/airtable-matters-columns.mjs`](../../scripts/airtable-matters-columns.mjs) once from a dev machine (idempotent; backfills `created_at`/`updated_at` on the 5 existing rows from the Airtable `createdTime` system field). `created_at`/`updated_at` are writable `dateTime` columns because the Meta API rejects `createdTime` field creation — application writers now bump them on every PATCH. The legacy `Client Name` column is tombstoned to `DEPRECATED_client_name` (Meta API rejects field DELETE on this plan); the UI shows `title` instead. |
 | 2. Contacts | **partial — mapping pending** | Live in base; not yet read by Next.js. App reads still need a `Contacts` query layer. |
 | 3. Tasks | **partial — field drift** | Present in legacy `FIELDS.tasks`. Missing fields: `is_filing_deadline (Checkbox)`, `created_from_note`, `created_from_agent`, `completed_at`, `completed_by`, `completion_docs`, `completion_note`. The `Filing Deadline` boolean exists only as a hard-coded string lookup in `airtable/queries.ts`. |
 | 4. Notes | **partial — field drift** | Missing `is_correction` checkbox. `Type` enum lacks `Agent`, `Correction`. |

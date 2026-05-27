@@ -61,9 +61,28 @@ export function CalendarBoard({
   const next = navigateMonth(monthStart, 1);
 
   const cells = buildMonthCells(monthStart, filtered);
+  const hasAnyEvents = events.length > 0;
+  const hasVisibleEvents = filtered.length > 0;
 
   return (
     <>
+      {!hasAnyEvents ? (
+        <div
+          role="status"
+          className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600"
+        >
+          No events on the calendar yet. Use{" "}
+          <span className="font-medium text-slate-800">+ Add event</span> to create the first
+          one, or wait for an agent to schedule one against a matter.
+        </div>
+      ) : !hasVisibleEvents ? (
+        <div
+          role="status"
+          className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600"
+        >
+          No events match the current filter.
+        </div>
+      ) : null}
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
           <div className="flex items-center gap-2">
