@@ -38,7 +38,7 @@
 
 ## Next step (user return)
 
-1. Start **Docker Desktop**, then `./scripts/smoke-docker-e2e.sh` from repo root.
+1. Start **Docker Desktop**, then from repo root: `bash scripts/smoke-docker-e2e.sh` (use Terminal.app if Cursor reports pseudo-tty or command not found).
 2. `cd web && npm run dev` (port **3003**): test Command Panel `pm:research …` and Assessment **Dispatch**.
 3. Matter **Events** tab: add a test event; confirm it appears on `/calendar`.
 4. Flip Strong Reader when ready: `docs/runbooks/strong-reader-setup.md`.
@@ -50,7 +50,7 @@
 | Presidio production | Compose stub until real sidecars |
 | Full LLM agents | Drafting / mass auditor / legal mapping are inbox-safe stubs |
 | Production auth/deploy | Documented only; user must execute |
-| Docker daemon | Must be running locally for `/health`, PM dispatch, and intake OCR (`./scripts/smoke-docker-e2e.sh`) |
+| Docker daemon | Must be running locally for `/health`, PM dispatch, and intake OCR (`bash scripts/smoke-docker-e2e.sh`) |
 
 ## Commands to resume
 
@@ -61,6 +61,7 @@ git pull origin cursor/phase0-foundation
 
 cd web && npm run dev   # port 3003 per user preference
 npm run test:airtable
+bash scripts/smoke-docker-e2e.sh   # Docker Desktop must be running; use bash not ./
 docker compose up -d --build
 curl -s http://localhost:8000/health | jq
 ```

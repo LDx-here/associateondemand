@@ -51,7 +51,11 @@ When tier is 0, the UI shows a manual approval banner. Attorneys must check the 
 
 ## Curl smoke (after `docker compose up -d`)
 
-Full script: `./scripts/smoke-docker-e2e.sh`
+Full script (use `bash`, not `./`, in Cursor or Terminal.app):
+
+```bash
+bash scripts/smoke-docker-e2e.sh
+```
 
 ```bash
 # Health
