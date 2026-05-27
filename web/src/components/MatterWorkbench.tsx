@@ -23,6 +23,7 @@ import type {
 } from "@/lib/types";
 import { btnPrimary, tabActive, tabInactive } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
+import type { AgentCommandResult } from "@/lib/agent-dispatch";
 import { dispatchAgentCommand } from "@/lib/agent-dispatch";
 import { prefillCommandPanel } from "@/lib/case-assessment";
 import { AddTaskForm } from "./AddTaskForm";
@@ -33,6 +34,7 @@ import { NoteComposer } from "./NoteComposer";
 import { StatusBadge } from "./StatusBadge";
 import { MatterDocumentUpload } from "./MatterDocumentUpload";
 import { TaskList } from "./TaskList";
+import { AgentResultPanel } from "./AgentResultPanel";
 
 // BUILD_SPEC §7.3 tab order. Assessment is the default first tab.
 const tabs = [
@@ -88,6 +90,7 @@ export function MatterWorkbench({
   const [deadline, setDeadline] = useState(matter.nextDeadline);
   const [refreshKey, setRefreshKey] = useState(0);
   const [dispatchedActions, setDispatchedActions] = useState<Record<string, boolean>>({});
+  const [lastAgentResult, setLastAgentResult] = useState<AgentCommandResult | null>(null);
 
   const refresh = useCallback(async () => {
     const [t, n, tl, el, m] = await Promise.all([
@@ -125,7 +128,10 @@ export function MatterWorkbench({
     setDispatchedActions((prev) => ({ ...prev, [rowId]: true }));
     prefillCommandPanel(`pm: ${actionText}`, true);
     try {
-      await dispatchAgentCommand(`pm: ${actionText}`, matter.matterId);
+      const result = await dispatchAgentCommand(`pm: ${actionText}`, matter.matterId);
+      if (result.type === "agent") {
+        setLastAgentResult(result);
+      }
     } catch {
       // Command panel shows offline stub from API route
     }
@@ -262,6 +268,25 @@ export function MatterWorkbench({
               </tbody>
             </table>
           </div>
+          {lastAgentResult ? (
+            <div className="fixed bottom-4 right-4 z-20 w-full max-w-sm sm:max-w-md">
+              <div className="rounded-lg border border-slate-300 bg-white/95 p-3 shadow-lg backdrop-blur">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Latest PM / research dispatch
+                  </p>
+                  <button
+                    type="button"
+                    className="text-[0.7rem] text-slate-500 hover:text-slate-700"
+                    onClick={() => setLastAgentResult(null)}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+                <AgentResultPanel result={lastAgentResult} variant="compact" />
+              </div>
+            </div>
+          ) : null}
           <CaseAssessmentEditor matterId={matter.matterId} initial={initialAssessment} />
           <MatterDeadlineForm matterId={matter.matterId} initialDeadline={deadline} onUpdated={refresh} />
         </div>

@@ -11,8 +11,14 @@ type AgentDispatchResult = {
   summary?: string;
   gaps?: string[];
   gap_questions?: Array<{ question?: string }>;
+  next_steps?: string[];
+  uncertain?: Array<{ item?: string; reason?: string }>;
+  sources?: Array<{ claim?: string; source?: string; url?: string | null }>;
   complete?: boolean;
   job_id?: string;
+  metadata?: {
+    manual_flags?: string[];
+  };
 };
 
 function extractMatterId(query: string): string | null {
@@ -53,12 +59,39 @@ async function dispatchToPm(matterId: string, instruction: string) {
       (data.gap_questions ?? [])
         .map((g) => g.question)
         .filter((x): x is string => Boolean(x));
+    const nextSteps = data.next_steps && data.next_steps.length ? data.next_steps : undefined;
+    const uncertainties =
+      data.uncertain
+        ?.map((u) => {
+          const item = u.item?.trim();
+          const reason = u.reason?.trim();
+          if (item && reason) return `${item} — ${reason}`;
+          return item || reason || null;
+        })
+        .filter((x): x is string => Boolean(x)) ?? [];
+    const sources =
+      data.sources
+        ?.map((s) => {
+          const parts = [s.claim, s.source].filter(Boolean);
+          const label = parts.join(" — ").trim();
+          if (!label) return null;
+          return { label, url: s.url ?? undefined };
+        })
+        .filter((x): x is { label: string; url: string | undefined } => Boolean(x)) ?? [];
+    const manualFlags =
+      data.metadata?.manual_flags && data.metadata.manual_flags.length
+        ? data.metadata.manual_flags
+        : gapStrings?.filter((g) => g.toUpperCase().includes("MANUAL FLAG")) ?? [];
     return NextResponse.json({
       type: "agent",
       matterId,
       agent: data.agent ?? data.agent_name ?? "pm",
       summary: data.summary ?? "Dispatch complete.",
       gaps: gapStrings,
+      nextSteps,
+      uncertainties: uncertainties.length ? uncertainties : undefined,
+      sources: sources.length ? sources : undefined,
+      manualFlags: manualFlags.length ? manualFlags : undefined,
       complete: data.complete ?? true,
       jobId: data.job_id,
     });

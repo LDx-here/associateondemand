@@ -6,6 +6,22 @@ export type AgentCommandResult = {
   agent?: string;
   summary?: string;
   gaps?: string[];
+  /**
+   * BUILD_SPEC next steps surfaced from AgentResult.next_steps / anchor_next.
+   */
+  nextSteps?: string[];
+  /**
+   * Flattened view of AgentResult.uncertain and gap_questions.
+   */
+  uncertainties?: string[];
+  /**
+   * Structured source list with optional URLs.
+   */
+  sources?: Array<{ label: string; url?: string | null }>;
+  /**
+   * Manual flags promoted from AgentResult metadata or gap text.
+   */
+  manualFlags?: string[];
   complete?: boolean;
   jobId?: string;
 };

@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { COMMAND_PREFILL_EVENT } from "@/lib/case-assessment";
 import type { CommandResult } from "@/lib/agent-dispatch";
 import { btnPrimary, linkMatter } from "@/lib/ui-classes";
+import { AgentResultPanel } from "./AgentResultPanel";
 
 export function CommandPanel() {
   const [query, setQuery] = useState("");
@@ -70,28 +70,7 @@ export function CommandPanel() {
           {loading ? "Working…" : "Run"}
         </button>
         {result?.type === "message" ? <p className="text-xs text-slate-600">{result.message}</p> : null}
-        {result?.type === "agent" ? (
-          <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs">
-            <p className="font-semibold text-slate-800">
-              {result.agent ?? "agent"} · {result.matterId}
-            </p>
-            <p className="text-slate-700">{result.summary}</p>
-            {result.gaps?.length ? (
-              <ul className="list-inside list-disc text-slate-600">
-                {result.gaps.slice(0, 5).map((g) => (
-                  <li key={g}>{g}</li>
-                ))}
-              </ul>
-            ) : null}
-            <p className="text-slate-500">
-              {result.complete ? "Complete" : "Needs review"}
-              {result.jobId ? ` · job ${result.jobId}` : ""}
-            </p>
-            <Link className={linkMatter} href={`/matters/${result.matterId}`}>
-              Open matter
-            </Link>
-          </div>
-        ) : null}
+        {result?.type === "agent" ? <AgentResultPanel result={result} /> : null}
         {result?.type === "matter" ? (
           <a className={`text-sm ${linkMatter}`} href={`/matters/${result.matter.matterId}`}>
             Open {result.matter.matterId}
