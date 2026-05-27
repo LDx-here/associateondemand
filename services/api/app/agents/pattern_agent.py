@@ -53,7 +53,9 @@ def _ensure_collection(client: QdrantClient) -> None:
 
 
 def _load_seed_matters() -> list[dict[str, Any]]:
-    seed_path = Path(__file__).resolve().parents[4] / "data" / "dev-seed.json"
+    seed_path = Path("/app/data/dev-seed.json")
+    if not seed_path.exists():
+        seed_path = Path(__file__).resolve().parents[4] / "data" / "dev-seed.json"
     if not seed_path.exists():
         return []
     data = json.loads(seed_path.read_text(encoding="utf-8"))

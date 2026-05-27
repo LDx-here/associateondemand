@@ -5,12 +5,37 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-_DEFAULT = Path(__file__).resolve().parents[4] / "docs" / "constitution"
-_CONSTITUTION_DIR = Path(os.getenv("AOD_CONSTITUTION_DIR", str(_DEFAULT)))
+_SKILL_MARKER = "04-Research-Memo-SKILL.md"
+_DOCKER_CONSTITUTION = Path("/app/docs/constitution")
+
+
+def _resolve_constitution_dir() -> Path:
+    env = os.environ.get("AOD_CONSTITUTION_DIR")
+    if env:
+        return Path(env).resolve()
+
+    if _DOCKER_CONSTITUTION.is_dir():
+        return _DOCKER_CONSTITUTION
+
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        candidate = parent / "docs" / "constitution"
+        if (candidate / _SKILL_MARKER).is_file():
+            return candidate
+
+    if len(here.parents) > 3:
+        local = here.parents[3] / "docs" / "constitution"
+        if local.is_dir():
+            return local
+
+    return _DOCKER_CONSTITUTION
+
+
+_CONSTITUTION_DIR = _resolve_constitution_dir()
 
 
 def load_constitution(max_chars_per_file: int = 12_000) -> str:
-    """Return concatenated constitution text (truncated per file for token safety)."""
+    """Return concatenated constitution markdown (truncated per file for token safety)."""
 
     chunks: list[str] = []
     if not _CONSTITUTION_DIR.exists():

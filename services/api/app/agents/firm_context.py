@@ -6,8 +6,13 @@ import json
 import os
 from pathlib import Path
 
-_DEFAULT_BRAIN = Path(__file__).resolve().parents[4] / "brain"
-_BRAIN_ROOT = Path(os.getenv("AOD_BRAIN_ROOT", str(_DEFAULT_BRAIN)))
+def _resolve_brain_root() -> Path:
+    if env := os.getenv("AOD_BRAIN_ROOT"):
+        return Path(env)
+    return Path(__file__).resolve().parents[4] / "brain"
+
+
+_BRAIN_ROOT = _resolve_brain_root()
 
 FIRM_RULES_PATH = _BRAIN_ROOT / "03_Firm_Knowledge" / "firm-rules.md"
 STRATEGY_PATTERNS_PATH = _BRAIN_ROOT / "03_Firm_Knowledge" / "strategy-patterns.md"

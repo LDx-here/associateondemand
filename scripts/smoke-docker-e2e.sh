@@ -30,12 +30,23 @@ if ! docker info >/dev/null 2>&1; then
 fi
 docker compose up -d --build
 
-echo "== health =="
-HEALTH="$(curl -sf http://localhost:8000/health 2>/dev/null || echo FAIL)"
+echo "== health (up to 60s) =="
+HEALTH="FAIL"
+for i in $(seq 1 30); do
+  HEALTH="$(curl -sf http://localhost:8000/health 2>/dev/null || true)"
+  if [[ -n "$HEALTH" && "$HEALTH" != FAIL ]]; then
+    echo "health ready after $((i * 2))s"
+    break
+  fi
+  sleep 2
+done
 echo "$HEALTH"
-if [[ "$HEALTH" == FAIL ]]; then
-  echo "API not healthy. Recent api logs:"
-  docker compose logs api --tail 40 || true
+if [[ -z "$HEALTH" || "$HEALTH" == FAIL ]]; then
+  echo "FAIL: API did not return /health within 60s."
+  echo "Container status:"
+  docker compose ps -a api || true
+  echo "Recent api logs:"
+  docker compose logs api --tail 120 || true
   exit 1
 fi
 

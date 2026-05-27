@@ -32,8 +32,16 @@ from app.agents.firm_context import load_firm_rules
 from app.models.agent_result import AgentResult, GapQuestion, SourceRef, Uncertainty
 from app.services.docs_formatter import format_research_memo
 
-_DEFAULT_SKILL = Path(__file__).resolve().parents[4] / "docs" / "constitution" / "04-Research-Memo-SKILL.md"
-_SKILL_PATH = Path(os.getenv("AOD_RESEARCH_SKILL_PATH", str(_DEFAULT_SKILL)))
+def _resolve_skill_path() -> Path:
+    if env := os.getenv("AOD_RESEARCH_SKILL_PATH"):
+        return Path(env)
+    docker = Path("/app/docs/constitution/04-Research-Memo-SKILL.md")
+    if docker.is_file():
+        return docker
+    return Path(__file__).resolve().parents[4] / "docs" / "constitution" / "04-Research-Memo-SKILL.md"
+
+
+_SKILL_PATH = _resolve_skill_path()
 
 
 def _load_skill_text() -> str:
