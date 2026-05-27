@@ -17,7 +17,7 @@
 | 6 | **Done** | eImmigration Tier A + mapping preview UI |
 | 7 | **Partial** | Settings attorney-safe + deploy link; auth stub only; no Vercel/Railway deploy |
 
-**BUILD_SPEC compliance:** ~95% ([gap audit](docs/constitution/BUILD_SPEC-GAP-AUDIT.md))
+**BUILD_SPEC compliance:** ~97% ([gap audit](docs/constitution/BUILD_SPEC-GAP-AUDIT.md))
 
 ## Last completed (E2E session)
 
@@ -25,6 +25,7 @@
 - **Gap fixes:** Matter Events tab loads live Airtable + Add Event form (`MatterEventsPanel`, `POST /api/events`); dashboard Recent Activity includes PM Inbox agent rows; `POST /api/corrections` writes Corrections table via Next.js; `data/uploads/smoke-test.pdf` for intake smoke (gitignored path).
 - **Verify:** `npm run build` pass; `test:airtable` 11/11.
 - **Audit UX fixes:** Matter **Assessment** tab: `CaseAssessmentEditor` + `MatterDeadlineForm` above legal element pathway matrix; clearer matrix heading/helper line. Knowledge map drawer: adjacent matter IDs from graph links for concept nodes (`...and N more` overflow); optional matter `snippet` from `listMatters` summaries in `/api/knowledge-graph`. Command Panel: `/api/command` forwards `fullMemo` (128k cap, `fullMemoTruncated`), `AgentResultPanel` summary + expandable full memo + clipboard copy only.
+- **BUILD_SPEC backlog pass:** §7.3.3 richer task detection + composer banner; inbox resolve **Suggested next steps** + optional tasks POST; DOCX memo export (`POST /agents/research/memo-export`, Next `/api/research/memo-export`); Correction `formatting_convention` YAML append when `firm-rules.md` exists; KM drawer snippets for linked matters list.
 
 ## Prior (overnight + continuation)
 

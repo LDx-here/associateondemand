@@ -36,8 +36,8 @@ See [FILE-MAP.md](FILE-MAP.md) and [brain/README.md](brain/README.md).
 | 1 | Done | Live Airtable 11/11 tables, dashboard KPIs, professional firm UI |
 | 2 | Done | Tasks/notes CRUD, assessment-first workbench, timeline, command + PM dispatch |
 | 3 | Partial | Strong Reader OCR path, tier-0 banner, intake progress table; flip tier 1 when Presidio is real |
-| 4 | Partial | PM orchestrator, Research SKILL + Anthropic, inbox on failure; drafting/audit/mapping stubs |
-| 5 | Partial | D3 knowledge map + live-matter graph drawer; pattern "insufficient data" path |
+| 4 | Partial | PM orchestrator, Research SKILL, inbox follow-up UI, DOCX memo export stub; drafting/audit/mapping stay inbox stubs |
+| 5 | Partial | D3 knowledge map, drawer snippets on linked matters, live-matter subgraph; pattern tier messaging |
 | 6 | Done | eImmigration import with field-mapping preview table |
 | 7 | Partial | Attorney-safe settings, auth stub, deploy runbook links (no production deploy yet) |
 
@@ -50,6 +50,6 @@ Constitution: [docs/constitution/README.md](docs/constitution/README.md)
 ## User action required
 
 - **Airtable:** PAT + base ID in `web/.env.local` — run `npm run test:airtable`
-- **Research agent:** Replace PENDING stub at `docs/constitution/04-Research-Memo-SKILL.md`
+- **Research tiers:** MIDPAGE/FASTCASE API keys optional in `.env`; Research memo SKILL is live at [`docs/constitution/04-Research-Memo-SKILL.md`](docs/constitution/04-Research-Memo-SKILL.md). Memo Word export runbook: [`docs/runbooks/research-memo-export.md`](docs/runbooks/research-memo-export.md)
 - **Strong Reader:** Flip `AOD_PII_TIER=1` after Presidio sidecars replace compose stub
 - **Production auth:** Wire Clerk/Supabase and set `AOD_AUTH_ENABLED=true`

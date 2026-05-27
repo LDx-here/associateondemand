@@ -18,6 +18,10 @@ const DEMO_INBOX: InboxItem[] = [
     whatNeeded:
       "Attorney to confirm whether the strategy memo should cite Niang v. Holder.",
     options: ["Approve", "Modify", "Defer"],
+    followUpSteps: [
+      "Confirm Niang v. Holder citation in the research memo.",
+      "Update Case Assessment Next Action if strategy changes.",
+    ],
     status: "Pending",
     resolution: "",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
@@ -31,8 +35,12 @@ const DEMO_INBOX: InboxItem[] = [
     whatTried:
       "Extracted 14 facts from intake declaration; 4 anchored to corroborating documents.",
     whatNeeded:
-      "Attorney to review uncertain facts before strategy memo is finalised.",
+      "Attorney to review uncertain facts before strategy memo is finalized.",
     options: ["Approve", "Reject"],
+    followUpSteps: [
+      "Spot-check the four uncertain facts against the declaration file.",
+      "Add a correction note if any fact line must change.",
+    ],
     status: "Pending",
     resolution: "",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(),

@@ -8,7 +8,8 @@ import { useState, useTransition } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { InboxItem } from "@/lib/airtable/queries";
-import { btnPrimary, linkMatter } from "@/lib/ui-classes";
+import { suggestedNextSteps } from "@/lib/inbox-followup";
+import { btnPrimary, btnSecondary, linkMatter } from "@/lib/ui-classes";
 
 type ResolveTarget = {
   item: InboxItem;
@@ -31,6 +32,12 @@ export function InboxBoard({
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [followUpBanner, setFollowUpBanner] = useState<{ matterId: string; steps: string[] } | null>(
+    null,
+  );
+  const [followUpChecks, setFollowUpChecks] = useState<boolean[]>([]);
+  const [tasksBusy, setTasksBusy] = useState(false);
+  const [taskPostError, setTaskPostError] = useState<string | null>(null);
 
   function open(item: InboxItem, option: string) {
     setTarget({ item, option });
@@ -42,6 +49,12 @@ export function InboxBoard({
     setTarget(null);
     setNote("");
     setError(null);
+  }
+
+  function clearFollowUp() {
+    setFollowUpBanner(null);
+    setFollowUpChecks([]);
+    setTaskPostError(null);
   }
 
   async function submit() {
@@ -56,14 +69,27 @@ export function InboxBoard({
       ? "Dismissed"
       : "Resolved";
 
+    const itemForFollowUp = { ...target.item, resolution: trimmed, status };
+    const nextStepsList = suggestedNextSteps(itemForFollowUp);
+
     if (demoMode) {
       const now = new Date().toISOString();
       setPending((prev) => prev.filter((p) => p.id !== target.item.id));
       setResolved((prev) => [
-        { ...target.item, status, resolution: trimmed, resolvedAt: now },
+        {
+          ...target.item,
+          status,
+          resolution: trimmed,
+          resolvedAt: now,
+        },
         ...prev,
       ]);
       close();
+      if (nextStepsList.length && target.item.matterId.trim()) {
+        setTaskPostError(null);
+        setFollowUpBanner({ matterId: target.item.matterId.trim(), steps: nextStepsList });
+        setFollowUpChecks(nextStepsList.map(() => true));
+      }
       return;
     }
 
@@ -83,11 +109,102 @@ export function InboxBoard({
       setResolved((prev) => [data.item, ...prev]);
       close();
       router.refresh();
+      const steps = suggestedNextSteps(data.item);
+      if (steps.length && data.item.matterId.trim()) {
+        setTaskPostError(null);
+        setFollowUpBanner({ matterId: data.item.matterId.trim(), steps });
+        setFollowUpChecks(steps.map(() => true));
+      }
     });
+  }
+
+  async function createCheckedTasks() {
+    if (!followUpBanner || demoMode || tasksBusy) return;
+    setTasksBusy(true);
+    setTaskPostError(null);
+    try {
+      for (let i = 0; i < followUpBanner.steps.length; i++) {
+        if (!followUpChecks[i]) continue;
+        const description = followUpBanner.steps[i].trim();
+        if (!description) continue;
+        const resp = await fetch(`/api/matters/${followUpBanner.matterId}/tasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            description,
+            priority: "Medium",
+            isFilingDeadline: false,
+          }),
+        });
+        if (!resp.ok) {
+          setTaskPostError(await resp.text());
+          return;
+        }
+      }
+      clearFollowUp();
+      router.refresh();
+    } finally {
+      setTasksBusy(false);
+    }
   }
 
   return (
     <>
+      {followUpBanner ? (
+        <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950 shadow-sm">
+          <p className="font-semibold text-sky-900">Suggested next steps</p>
+          <p className="mt-1 text-xs text-sky-900">
+            Matter{" "}
+            <Link href={`/matters/${followUpBanner.matterId}`} className={linkMatter}>
+              {followUpBanner.matterId}
+            </Link>
+            . Tasks are optional: select lines, then POST to Airtable on your click.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {followUpBanner.steps.map((step, idx) => (
+              <li key={`${step}-${idx}`} className="flex gap-2 text-sm">
+                <input
+                  id={`follow-step-${idx}`}
+                  type="checkbox"
+                  className="mt-1 shrink-0"
+                  checked={Boolean(followUpChecks[idx])}
+                  onChange={() =>
+                    setFollowUpChecks((prev) =>
+                      prev.map((v, i) => (i === idx ? !v : v)),
+                    )
+                  }
+                />
+                <label htmlFor={`follow-step-${idx}`} className="text-sky-950">
+                  {step}
+                </label>
+              </li>
+            ))}
+          </ul>
+          {taskPostError ? (
+            <p className="mt-2 text-sm text-rose-800">{taskPostError}</p>
+          ) : null}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {!demoMode ? (
+              <button
+                type="button"
+                className={btnPrimary}
+                disabled={tasksBusy || !followUpBanner.steps.some((_, idx) => followUpChecks[idx])}
+                onClick={() => void createCheckedTasks()}
+              >
+                {tasksBusy ? "Creating…" : "Create tasks"}
+              </button>
+            ) : (
+              <p className="text-xs font-medium text-sky-900">
+                Connect live Airtable to create tasks from this banner.
+              </p>
+            )}
+            <button type="button" className={btnSecondary} onClick={clearFollowUp}>
+              Dismiss banner
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <section className="space-y-3">
         <div className="flex items-baseline justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">

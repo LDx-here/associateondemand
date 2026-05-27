@@ -21,6 +21,7 @@ export function AgentResultPanel({
 }) {
   const [memoOpen, setMemoOpen] = useState(false);
   const [copyDone, setCopyDone] = useState(false);
+  const [downloadBusy, setDownloadBusy] = useState(false);
 
   const hasGaps = (result.gaps ?? []).length > 0;
   const hasUncertainties = (result.uncertainties ?? []).length > 0;
@@ -46,6 +47,39 @@ export function AgentResultPanel({
       window.setTimeout(() => setCopyDone(false), 2000);
     } catch {
       // Clipboard may be denied; no noisy logging.
+    }
+  }
+
+  async function downloadMemoFile() {
+    if (!fullMemo || !result.matterId) return;
+    setDownloadBusy(true);
+    try {
+      const r = await fetch("/api/research/memo-export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          matterId: result.matterId,
+          memo: fullMemo,
+          format: "docx",
+        }),
+      });
+      const blob = await r.blob();
+      const dispo = r.headers.get("Content-Disposition");
+      let filename = `${result.matterId}_research_memo.docx`;
+      if (dispo) {
+        const m = /filename="([^"]+)"/.exec(dispo);
+        if (m?.[1]) filename = m[1];
+      } else if (blob.type === "text/plain" || blob.type.startsWith("text/")) {
+        filename = `${result.matterId}_research_memo.txt`;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloadBusy(false);
     }
   }
 
@@ -87,6 +121,16 @@ export function AgentResultPanel({
             <button type="button" className={cn(btnSecondary, "py-0.5 px-2 text-[0.65rem]")} onClick={() => void copyFullMemo()}>
               {copyDone ? "Copied" : "Copy full memo"}
             </button>
+            {result.matterId ? (
+              <button
+                type="button"
+                className={cn(btnSecondary, "py-0.5 px-2 text-[0.65rem]")}
+                disabled={downloadBusy}
+                onClick={() => void downloadMemoFile()}
+              >
+                {downloadBusy ? "Downloading…" : "Download memo"}
+              </button>
+            ) : null}
           </div>
           {memoOpen ? (
             <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded border border-slate-200 bg-white p-2 font-mono text-[0.7rem] leading-relaxed text-slate-800">

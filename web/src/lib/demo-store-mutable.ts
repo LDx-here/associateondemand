@@ -61,13 +61,14 @@ export async function completeTask(taskId: string): Promise<Task | null> {
   const task = seed.tasks.find((t) => t.id === taskId);
   if (!task) return null;
   task.status = "Done";
+  const when = new Date().toISOString();
   seed.notes.push({
     id: `note-${Date.now()}`,
     matterId: task.matterId,
     author: "System",
-    content: `[Task completed] ${task.description}`,
-    createdAt: new Date().toISOString(),
-    type: "System Log",
+    content: `Task completed: ${task.description}. By: Attorney. Date: ${when}. Documents: (not specified).`,
+    createdAt: when,
+    type: "Manual",
   });
   await persistSeed();
   return task;

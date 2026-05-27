@@ -147,7 +147,13 @@ export async function completeTask(taskId: string): Promise<Task | null> {
   }
   const task = await completeTaskInAirtable(taskId);
   if (!task) return null;
-  await createNoteInAirtable(task.matterId, `[Task completed] ${task.description}`, "System");
+  const when = new Date().toISOString();
+  await createNoteInAirtable(
+    task.matterId,
+    `Task completed: ${task.description}. By: Attorney. Date: ${when}. Documents: (not specified).`,
+    "System",
+    "Manual",
+  );
   return task;
 }
 

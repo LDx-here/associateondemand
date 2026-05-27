@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { promises as fs } from "fs";
+import path from "path";
 
 import { createCorrectionInAirtable } from "@/lib/airtable/queries";
 import { useDemoMode } from "@/lib/data-store";
@@ -70,6 +72,21 @@ export async function POST(req: Request) {
       reason: reason || "Attorney correction via web API",
       appliedTo,
     });
+
+    if (category === "formatting_convention") {
+      const firmPath = path.resolve(process.cwd(), "..", "brain", "03_Firm_Knowledge", "firm-rules.md");
+      try {
+        await fs.access(firmPath);
+        const iso = new Date().toISOString();
+        const ruleLine = attorneyCorrection.replace(/\s+/g, " ").trim();
+        const block =
+          `\n- rule: ${JSON.stringify(ruleLine)}\n  source: correction_${record.id}\n  date: ${iso}\n`;
+        await fs.appendFile(firmPath, block, "utf8");
+      } catch {
+        /* Optional brain file: skip when missing in this environment. */
+      }
+    }
+
     return NextResponse.json({ ok: true, id: record.id });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Correction save failed";

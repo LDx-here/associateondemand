@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -81,6 +82,72 @@ def pattern_analyze(matter_id: str, facts: str = "") -> AgentResult:
 @router.post("/pattern/seed")
 def pattern_seed() -> dict[str, int]:
     return {"indexed": seed_from_dev_data()}
+
+
+class MemoExportBody(BaseModel):
+    matter_id: str = ""
+    memo_text: str = ""
+    format: Literal["docx", "txt"] = "docx"
+
+
+def _memo_docx_blob(text: str) -> bytes:
+    """Build a minimal .docx from plain memo lines (requires python-docx)."""
+
+    from io import BytesIO
+
+    try:
+        from docx import Document  # type: ignore[import-not-found]
+    except ImportError:
+        raise RuntimeError("python-docx unavailable") from None
+
+    doc = Document()
+    for line in text.replace("\r\n", "\n").split("\n"):
+        doc.add_paragraph(line)
+    buf = BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
+
+
+@router.post("/research/memo-export")
+def research_memo_export(body: MemoExportBody) -> Response:
+    """Optional Word export for BUILD_SPEC §11 (falls back caller may use TXT)."""
+
+    fname = (body.matter_id or "memo").replace("/", "_").replace(" ", "") + "_research_memo"
+
+    memo = body.memo_text.strip()
+    if not memo:
+        raise HTTPException(status_code=400, detail="memo_text is required")
+
+    if body.format == "txt":
+        return Response(
+            content=memo.encode("utf-8"),
+            media_type="text/plain; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{fname}.txt"'},
+        )
+
+    try:
+        blob = _memo_docx_blob(memo)
+    except RuntimeError:
+        return Response(
+            content=memo.encode("utf-8"),
+            media_type="text/plain; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{fname}.txt"'},
+        )
+
+    try:
+        return Response(
+            content=blob,
+            media_type=(
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ),
+            headers={"Content-Disposition": f'attachment; filename="{fname}.docx"'},
+        )
+    except Exception:
+        return Response(
+            content=memo.encode("utf-8"),
+            media_type="text/plain; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{fname}.txt"'},
+        )
 
 
 @router.post("/strategy/recommend", response_model=AgentResult)

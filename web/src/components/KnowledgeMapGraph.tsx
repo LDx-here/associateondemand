@@ -166,6 +166,16 @@ export function KnowledgeMapGraph() {
       ? adjacentMatters.length - ADJACENT_MATTER_LINK_LIMIT
       : 0;
 
+  const matterSnippetById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const n of nodes) {
+      if (n.group === "matter" && n.snippet?.trim()) {
+        map.set(n.matterId ?? n.id, n.snippet.trim());
+      }
+    }
+    return map;
+  }, [nodes]);
+
   return (
     <div className="relative flex gap-4">
       <div className="min-w-0 flex-1">
@@ -207,6 +217,9 @@ export function KnowledgeMapGraph() {
                     >
                       {id}
                     </Link>
+                    {matterSnippetById.get(id) ? (
+                      <p className="mt-0.5 text-xs leading-snug text-slate-500">{matterSnippetById.get(id)}</p>
+                    ) : null}
                   </li>
                 ))}
               </ul>

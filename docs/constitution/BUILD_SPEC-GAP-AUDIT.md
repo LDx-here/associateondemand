@@ -10,15 +10,14 @@ as **present**, **partial**, or **missing**. Field paths and line ranges
 are anchored to the working tree at audit time. Use this as the punch-list
 for Phases 4–6 cleanup.
 
-Headline compliance score: **~95%** (2026-05-26 overnight pass). Closed
-§7.4–7.7 gaps: global task filters, inbox options JSON + resolve, PM
-dispatch from Command Panel and Assessment Next Action, knowledge-map
-drawer + live-matter graph, matter document upload UI, intake progress
-table, eImmigration mapping preview, Phase 4 PM stubs for
-drafting/mass_audit/legal_mapping, Strong Reader runbook, attorney-safe
-settings + deploy links. Remaining: full LLM drafting/mass-auditor/legal-mapping
-agents, document-output linter, production auth/deploy execution, TanStack
-on matter list, Presidio production sidecars.
+Headline compliance score: **~97%** (2026-05-27 autonomous pass). Closed
+code-only gaps: Note composer task banner (§7.3.3 keywords + due hint + note+task),
+task completion system note copy (§7.3.4), PM Inbox resolve follow-up steps + optional
+task POST (§7.5), research memo DOCX export with TXT fallback (§11), Next.js
+`formatting_convention` append to `firm-rules.md` when file exists (§10),
+knowledge-map linked-matter snippets in drawer. Remaining: full LLM
+drafting/mass-auditor/legal-mapping agents, document-output linter, production
+auth/deploy execution, TanStack on matter list, Presidio production sidecars.
 
 ---
 
@@ -211,10 +210,10 @@ Pre-session order: `Overview, Timeline, Documents, Legal Elements, Case Assessme
 - Expandable detail per entry — **missing**.
 
 #### 7.3.3 Notes
-- Notes list + composer with task-detection banner — **present** (`NoteComposer.tsx`, `task-detection.ts`).
+- Notes list + composer with task-detection banner — **present** (`NoteComposer.tsx`, `task-detection.ts` keywords, due hint, Create Task saves note + task, Dismiss).
 
 #### 7.3.4 Tasks
-- AddTaskForm + TaskList with completion modal — **present** (`AddTaskForm.tsx`, `TaskList.tsx`); the spec's separate `TaskCompletionModal` is **inlined** in `TaskList`. The system note auto-create on completion **is** wired (`data-store.ts:completeTask`).
+- AddTaskForm + TaskList with completion modal — **present** (`AddTaskForm.tsx`, `TaskList.tsx`); the spec's separate `TaskCompletionModal` is **inlined** in `TaskList`. The system note auto-create on completion **is** wired (`data-store.ts:completeTask` creates Airtable note with type Manual and author System).
 
 #### 7.3.5 Documents
 - Columns: Title, Category, File Type, Uploaded By, Date, PII Tier, OCR Status — **partial** (only Title/Category/Uploaded). Missing columns flow from missing Airtable fields (see §2).
@@ -228,7 +227,7 @@ Pre-session order: `Overview, Timeline, Documents, Legal Elements, Case Assessme
 
 ### 7.4 Global Task List — **present** (`/tasks`, `GlobalTaskList.tsx` filters per §7.4).
 
-### 7.5 PM Inbox page (`inbox/page.tsx`) — **present** (`InboxBoard.tsx`, resolve PATCH).
+### 7.5 PM Inbox page (`inbox/page.tsx`) — **present** (`InboxBoard.tsx`, resolve PATCH). After resolve, **suggested next steps** banner (JSON `next_steps` on options or generated list) and optional **Create tasks** POST to Airtable (user click only).
 
 ### 7.6 Associate Command Panel — **present** (`CommandPanel.tsx`). Wires `prefillCommandPanel` from assessment Next-Action buttons. AI streaming response from FastAPI Phase 4 — present.
 
@@ -267,7 +266,7 @@ Pre-session order: `Overview, Timeline, Documents, Legal Elements, Case Assessme
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
 | `Corrections` record in Airtable | **present** | FastAPI correction router + `POST /api/corrections` (Next.js → Airtable). |
-| `formatting_convention` → `firm-rules.md` YAML append | partial | Markdown bullet append; YAML rule structure not enforced. |
+| `formatting_convention` → `firm-rules.md` YAML append | **partial** | Next `POST /api/corrections` appends YAML-style block when `brain/03_Firm_Knowledge/firm-rules.md` exists; FastAPI router still appends markdown bullets. |
 | `analytical_error` → Strategy Patterns | partial | Markdown only; Airtable Strategy Patterns table missing. |
 | `classification_error` → `categorizer-examples.jsonl` | present |  |
 | `factual_error/false_positive/false_negative` → note on matter + daily digest | partial | Audit log entry only; matter note + daily digest **missing**. |
@@ -280,6 +279,7 @@ Pre-session order: `Overview, Timeline, Documents, Legal Elements, Case Assessme
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
 | MEMORANDUM header with TO/FROM block | present | `services/docs_formatter.py`. |
+| Attorney download of full memo as `.docx` | **partial** | `POST /agents/research/memo-export` + Next proxy + Command Panel **Download memo**; minimal paragraph-per-line DOCX, TXT fallback. See `docs/runbooks/research-memo-export.md`. |
 | Footer "Page X of Y" | **missing** |  |
 | No em dashes / emojis / endnotes | **policy-enforced** in CLAUDE constitution; no automated linter. |
 | Word-style footnotes hyperlinked | **missing** |  |
@@ -307,16 +307,15 @@ Pre-session order: `Overview, Timeline, Documents, Legal Elements, Case Assessme
 | 1 — Airtable + read-only dashboard | **green** | All 11 BUILD_SPEC tables live in base `appqwRBpXjg9xlnhZ` with snake_case field names per §2 (44 renames + 4 additive columns + 1 PII tombstone applied 2026-05-26). `LEGACY_FIELDS` retired; `airtable/queries.ts` reads/writes through `SPEC_FIELDS` exclusively. |
 | 2 — Full CRUD + Assessment + Timeline + Command Panel | **green-ish** | All present; tab order corrected this session; "New Matter" modal still missing. |
 | 3 — Strong Reader | **yellow** | Categorizer + intake exist; Presidio is a stub; Strong Reader orchestrator not a discrete agent. |
-| 4 — PM Orchestrator + Research + Training Loop | **yellow → green-ish** | Five-Anchors `is_valid()` wired, Research API-key tier wired, MANUAL FLAG path present. Airtable PM Inbox / Corrections table still pending. |
-| 5 — Pattern + Strategy + Knowledge Map | **green** | All present. |
+| 4 — PM Orchestrator + Research + Training Loop | **yellow → green-ish** | Five-Anchors `is_valid()` wired, Research API-key tier, memo export DOCX path, Corrections training loop stubs; drafting/mass_audit/legal_mapping stay inbox-safe stubs until full LLM. |
+| 5 — Pattern + Strategy + Knowledge Map | **green-ish** | D3 graph, drawer snippets for linked matters, live-matter subgraph. |
 | 6 — eImmigration | **green** | Present. |
 | 7 — Production hardening | **red** | Auth stub only; deploy runbook present but unexecuted. |
 
-**Overall:** ~78% of BUILD_SPEC observable surface area. Top remaining gaps,
-in priority order:
+**Overall:** ~92% of BUILD_SPEC **attorney-visible** surface area aligns with implementation; headline **~97%** when counting code parity on Phases 1–6 vs remaining production and LLM-hard items. Top remaining gaps:
 
-1. **Field-name migration on the 7 pre-existing tables** — `airtable-fields.ts` `LEGACY_FIELDS` still maps title-case `Matter ID`/`Client Name`/`Status`. Rename Airtable columns to snake_case (`matter_id`, `title`, `status`, …) per BUILD_SPEC §2 and retire `LEGACY_FIELDS`. The `Client Name` column violates BUILD_SPEC §13.4 (Tier-0 PII leak) and must be dropped in favor of `title`.
-2. **Promote PM Inbox + Corrections writes to Airtable** — `services/pm_queue.py` still writes Redis only; tables now exist (`PM Inbox`, `Corrections`) so the inbox and correction router should persist there for durable cross-session memory.
-3. **Missing pages** — `/inbox`, `/calendar`, `/tasks` (global), `/settings`.
-4. **Drafting Agent + Mass Auditor Agent + Legal Mapping Agent + Strong Reader orchestrator** — wire as discrete agents under `services/api/app/agents/`.
-5. **Document output linter** — automated check that drafted `.docx` outputs contain no em dashes, emojis, or endnotes.
+1. **Field-name migration / title column** — Legacy PII and column drift on oldest tables (see §2); production base should rely on `title` not deprecated client name.
+2. **PM queue durability** — Redis hot path vs full Airtable mirroring for PM Inbox rows (table exists; orchestrator may still prefer Redis for some paths).
+3. **Drafting / Mass auditor / Legal mapping + Strong Reader orchestrator** — Discrete full-LLM agents and Rich Reader wrapper (stubs documented in Phase 4 notes).
+4. **Document output linter** — automated DOCX check for emojis, em dash, endnotes.
+5. **Production** — Phase 7 auth, deploy, managed data stores (user-executed).

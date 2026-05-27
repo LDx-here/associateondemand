@@ -338,34 +338,76 @@ export type InboxItem = {
   whatTried: string;
   whatNeeded: string;
   options: string[];
+  /** Structured follow-ups when options JSON embeds next_steps */
+  followUpSteps: string[];
   status: "Pending" | "Resolved" | "Dismissed" | string;
   resolution: string;
   createdAt: string;
   resolvedAt: string | null;
 };
 
-function parseOptions(raw: unknown): string[] {
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw.map(String);
+const DEFAULT_INBOX_BUTTONS = ["Approve", "Reject", "Modify", "Defer"];
+
+function parsePmInboxOptions(raw: unknown): { buttons: string[]; followUpSteps: string[] } {
+  function fromDelimited(source: string): string[] {
+    return source
+      .split(/[\n;|,]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  if (!raw) return { buttons: [...DEFAULT_INBOX_BUTTONS], followUpSteps: [] };
+
+  if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+    const o = raw as Record<string, unknown>;
+    const nextRaw = o.next_steps ?? o.suggested_next_steps ?? o.nextSteps;
+    const followUpSteps = Array.isArray(nextRaw)
+      ? nextRaw.map(String).filter(Boolean)
+      : [];
+    let buttons: string[] = [];
+    if (Array.isArray(o.actions)) buttons = o.actions.map(String).filter(Boolean);
+    else if (Array.isArray(o.buttons)) buttons = o.buttons.map(String).filter(Boolean);
+    else if (Array.isArray(o.options)) buttons = o.options.map(String).filter(Boolean);
+    return {
+      buttons: buttons.length ? buttons : [...DEFAULT_INBOX_BUTTONS],
+      followUpSteps,
+    };
+  }
+
+  if (Array.isArray(raw)) {
+    const buttons = raw.map(String).filter(Boolean);
+    return { buttons: buttons.length ? buttons : [...DEFAULT_INBOX_BUTTONS], followUpSteps: [] };
+  }
+
   const text = String(raw).trim();
-  if (!text) return [];
+  if (!text) return { buttons: [...DEFAULT_INBOX_BUTTONS], followUpSteps: [] };
+
+  if (text.startsWith("{")) {
+    try {
+      const o = JSON.parse(text);
+      return parsePmInboxOptions(o);
+    } catch {
+      /* fallthrough */
+    }
+  }
+
   if (text.startsWith("[")) {
     try {
       const parsed = JSON.parse(text);
-      if (Array.isArray(parsed)) return parsed.map(String);
+      if (Array.isArray(parsed)) return parsePmInboxOptions(parsed);
     } catch {
-      // fall through to delimiter parsing
+      /* fallthrough */
     }
   }
-  return text
-    .split(/[\n;|,]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+
+  const split = fromDelimited(text);
+  return { buttons: split.length ? split : [...DEFAULT_INBOX_BUTTONS], followUpSteps: [] };
 }
 
 function mapInbox(rec: { id: string; fields: RawFields }): InboxItem {
   const f = rec.fields;
   const i = F.pmInbox;
+  const parsed = parsePmInboxOptions(f[i.options]);
   return {
     id: rec.id,
     title: String(f[i.title] ?? ""),
@@ -373,7 +415,8 @@ function mapInbox(rec: { id: string; fields: RawFields }): InboxItem {
     agent: firstString(f[i.agent]),
     whatTried: String(f[i.what_tried] ?? ""),
     whatNeeded: String(f[i.what_needed] ?? ""),
-    options: parseOptions(f[i.options]),
+    options: parsed.buttons,
+    followUpSteps: parsed.followUpSteps,
     status: String(f[i.status] ?? "Pending"),
     resolution: String(f[i.resolution] ?? ""),
     createdAt: String(f[i.created_at] ?? ""),
