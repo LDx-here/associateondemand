@@ -1,3 +1,5 @@
+### [2026-05-26] CHECKPOINT: checkpoint: live smoke + Clio-style polish + Matters columns verified
+
 ### [2026-05-26] CHECKPOINT: checkpoint: Matters spec columns + live-data smoke + UI fixes
 
 ### [2026-05-26] CHECKPOINT: live smoke + Clio-style polish + Matters columns verified
