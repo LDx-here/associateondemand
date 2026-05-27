@@ -6,7 +6,7 @@ import { useState } from "react";
 import {
   TierZeroBanner,
   tierRequiresManualApproval,
-  UploadProgressList,
+  UploadProgressTable,
   uploadDocument,
   type UploadResult,
 } from "@/components/IntakeUploadShared";
@@ -108,7 +108,7 @@ export default function IntakeBatchPage() {
         </button>
       </form>
 
-      <UploadProgressList items={queue} />
+      <UploadProgressTable items={queue} />
     </div>
   );
 }

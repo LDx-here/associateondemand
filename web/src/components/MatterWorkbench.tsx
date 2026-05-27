@@ -23,12 +23,14 @@ import type {
 } from "@/lib/types";
 import { btnPrimary, tabActive, tabInactive } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
+import { dispatchAgentCommand } from "@/lib/agent-dispatch";
 import { prefillCommandPanel } from "@/lib/case-assessment";
 import { AddTaskForm } from "./AddTaskForm";
 import { CaseAssessmentEditor } from "./CaseAssessmentEditor";
 import { MatterDeadlineForm } from "./MatterDeadlineForm";
 import { NoteComposer } from "./NoteComposer";
 import { StatusBadge } from "./StatusBadge";
+import { MatterDocumentUpload } from "./MatterDocumentUpload";
 import { TaskList } from "./TaskList";
 
 // BUILD_SPEC §7.3 tab order. Assessment is the default first tab.
@@ -114,11 +116,16 @@ export function MatterWorkbench({
     }
   }
 
-  function dispatchNextAction(rowId: string, actionText: string) {
+  async function dispatchNextAction(rowId: string, actionText: string) {
     if (!actionText.trim()) return;
-    if (!window.confirm(`Dispatch this action?\n\n${actionText}`)) return;
-    prefillCommandPanel(actionText);
+    if (!window.confirm(`Dispatch this action to PM?\n\n${actionText}`)) return;
     setDispatchedActions((prev) => ({ ...prev, [rowId]: true }));
+    prefillCommandPanel(`pm: ${actionText}`, true);
+    try {
+      await dispatchAgentCommand(`pm: ${actionText}`, matter.matterId);
+    } catch {
+      // Command panel shows offline stub from API route
+    }
   }
 
   return (
@@ -325,6 +332,8 @@ export function MatterWorkbench({
       ) : null}
 
       {tab === "Documents" ? (
+        <div className="space-y-4">
+          <MatterDocumentUpload matterId={matter.matterId} />
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase text-slate-500">
@@ -356,6 +365,7 @@ export function MatterWorkbench({
               )}
             </tbody>
           </table>
+        </div>
         </div>
       ) : null}
 

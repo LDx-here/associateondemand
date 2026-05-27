@@ -18,9 +18,12 @@ from app.services.pm_queue import enqueue_inbox_review
 from app.services.redis_queue import enqueue_job, get_job
 
 _ROUTE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
-    ("research", re.compile(r"\b(research|memo|country conditions|precedent|cite|standard)\b", re.I)),
+    ("research", re.compile(r"\b(research|memo|country conditions|precedent|cite|standard|pm:research)\b", re.I)),
     ("pattern", re.compile(r"\b(pattern|similar|prior matter|like case|compare)\b", re.I)),
     ("strategy", re.compile(r"\b(strategy|approach|posture|relief|plan|motion)\b", re.I)),
+    ("drafting", re.compile(r"\b(draft|petition|brief|cover letter)\b", re.I)),
+    ("mass_audit", re.compile(r"\b(mass audit|auditor|batch audit)\b", re.I)),
+    ("legal_mapping", re.compile(r"\b(legal mapping|map elements|element map)\b", re.I)),
 ]
 
 
@@ -114,10 +117,33 @@ def dispatch(
     return result
 
 
+def _stub_agent(agent: str, matter_id: str, instruction: str) -> AgentResult:
+    """Phase 4+ agents: inbox-safe placeholder until full LLM wrappers ship."""
+
+    label = agent.replace("_", " ").title()
+    return AgentResult(
+        agent=agent,
+        matter_id=matter_id,
+        anchor_facts=[f"Instruction received for {label}."],
+        anchor_law=["Firm rules apply; no automated legal conclusion."],
+        anchor_strategy=[instruction[:200] or "(empty instruction)"],
+        anchor_risk=[f"{label} is not fully automated in Phase 4."],
+        anchor_next=["Attorney review required", "Check PM Inbox for follow-up"],
+        gaps=[
+            f"Phase 4+: {label} agent is not wired yet. Request logged for attorney triage.",
+        ],
+        summary=f"{label} stub: escalate via PM Inbox.",
+        confidence=0.4,
+        complete=False,
+    )
+
+
 def execute_agent(agent: str, payload: dict[str, Any]) -> AgentResult:
     matter_id = str(payload.get("matter_id") or "")
     instruction = str(payload.get("instruction") or payload.get("query") or "")
 
+    if agent in ("drafting", "mass_audit", "legal_mapping"):
+        return _stub_agent(agent, matter_id, instruction)
     if agent == "pattern":
         return run_pattern(matter_id, facts=payload.get("facts"))
     if agent == "strategy":

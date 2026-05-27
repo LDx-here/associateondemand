@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   TierZeroBanner,
   tierRequiresManualApproval,
+  UploadProgressTable,
   uploadDocument,
   type UploadResult,
 } from "@/components/IntakeUploadShared";
@@ -78,39 +79,19 @@ export default function IntakeUploadPage() {
         </button>
       </form>
 
-      {result ? (
-        <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
-          {result.error ? (
-            <p className="text-red-700">{result.error}</p>
-          ) : (
-            <>
-              <p className="font-medium text-emerald-800">
-                {result.processing_status} · {result.ocr_method} · confidence{" "}
-                {Math.round((result.confidence ?? 0) * 100)}%
-              </p>
-              <p className="mt-1 text-slate-600">
-                Category: {result.category} · {result.facts_extracted ?? 0} fact(s)
-              </p>
-              {result.obsidian_path ? (
-                <p className="mt-1 text-slate-600">Obsidian: {result.obsidian_path}</p>
-              ) : null}
-              {result.facts?.length ? (
-                <ul className="mt-2 list-inside list-disc text-slate-700">
-                  {result.facts.map((f) => (
-                    <li key={`${f.fact_type}-${f.value}`}>
-                      {f.fact_type}: {f.value}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              {result.text_preview ? (
-                <pre className="mt-3 max-h-40 overflow-auto rounded bg-slate-50 p-2 text-xs">
-                  {result.text_preview}
-                </pre>
-              ) : null}
-            </>
-          )}
-        </div>
+      {result?.error ? (
+        <p className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{result.error}</p>
+      ) : null}
+      {result && !result.error ? (
+        <UploadProgressTable
+          items={[
+            {
+              name: result.filename ?? "upload",
+              status: "done",
+              result,
+            },
+          ]}
+        />
       ) : null}
     </div>
   );

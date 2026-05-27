@@ -123,8 +123,29 @@ def run_pattern(matter_id: str, facts: str | None = None) -> AgentResult:
     matches = query_similar(query_text)
     strategy_notes = load_strategy_patterns(max_chars=1500)
 
-    match_lines = [f"{m['matter_id']} (score {m['score']}) — {m.get('case_type', 'unknown')}" for m in matches] or [
-        "No indexed prior matters yet."
+    if not matches:
+        return AgentResult(
+            agent="pattern",
+            matter_id=matter_id,
+            anchor_facts=[f"Queried fact pattern for {matter_id}"],
+            anchor_law=["Pattern agent surfaces prior matters only."],
+            anchor_strategy=["Insufficient data: index more matters or seed Qdrant."],
+            anchor_risk=["No similar matters found in the current index."],
+            anchor_next=["Add matters to Airtable", "Run pattern seed when Qdrant is healthy"],
+            uncertain=[
+                Uncertainty(
+                    item="Pattern index coverage",
+                    confidence=0.3,
+                    reason="Zero matches; not an error, but sample size is too small.",
+                )
+            ],
+            summary="Insufficient data for pattern matches. Index more matters or run pattern seed.",
+            confidence=0.35,
+            complete=True,
+        )
+
+    match_lines = [
+        f"{m['matter_id']} (score {m['score']}) · {m.get('case_type', 'unknown')}" for m in matches
     ]
 
     return AgentResult(

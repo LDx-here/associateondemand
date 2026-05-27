@@ -5,10 +5,12 @@ import { listMatters } from "@/lib/data-store";
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 type AgentDispatchResult = {
-  agent: string;
+  agent?: string;
+  agent_name?: string;
   matter_id?: string;
   summary?: string;
   gaps?: string[];
+  gap_questions?: Array<{ question?: string }>;
   complete?: boolean;
   job_id?: string;
 };
@@ -19,7 +21,58 @@ function extractMatterId(query: string): string | null {
 }
 
 function isAgentQuery(q: string): boolean {
-  return /\b(research|memo|strategy|pattern|similar|analyze|agent|dispatch)\b/i.test(q);
+  const ql = q.toLowerCase();
+  if (ql.startsWith("pm:")) return true;
+  return /\b(research|memo|strategy|pattern|similar|analyze|agent|dispatch|draft|audit|mapping)\b/i.test(q);
+}
+
+function normalizeInstruction(q: string): string {
+  const trimmed = q.trim();
+  if (trimmed.toLowerCase().startsWith("pm:")) {
+    return trimmed.slice(3).trim() || trimmed;
+  }
+  return trimmed;
+}
+
+async function dispatchToPm(matterId: string, instruction: string) {
+  try {
+    const resp = await fetch(`${API}/agents/pm/dispatch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ matter_id: matterId, instruction, priority: "normal" }),
+    });
+    const data = (await resp.json()) as AgentDispatchResult;
+    if (!resp.ok) {
+      return NextResponse.json({
+        type: "message",
+        message: `Agent dispatch failed (${resp.status}). Start the API service or try again later.`,
+      });
+    }
+    const gapStrings =
+      data.gaps ??
+      (data.gap_questions ?? [])
+        .map((g) => g.question)
+        .filter((x): x is string => Boolean(x));
+    return NextResponse.json({
+      type: "agent",
+      matterId,
+      agent: data.agent ?? data.agent_name ?? "pm",
+      summary: data.summary ?? "Dispatch complete.",
+      gaps: gapStrings,
+      complete: data.complete ?? true,
+      jobId: data.job_id,
+    });
+  } catch {
+    return NextResponse.json({
+      type: "agent",
+      matterId,
+      agent: "pm_orchestrator",
+      summary:
+        "PM dispatch queued locally. The API service is offline; reconnect Docker and retry for a full research memo.",
+      gaps: ["API offline: start docker compose for live agent output."],
+      complete: false,
+    });
+  }
 }
 
 export async function POST(req: Request) {
@@ -32,31 +85,8 @@ export async function POST(req: Request) {
 
   if (isAgentQuery(q)) {
     const matterId = extractMatterId(q) ?? matters[0]?.matterId ?? "AOD-1001";
-    try {
-      const resp = await fetch(`${API}/agents/pm/dispatch`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ matter_id: matterId, instruction: q, priority: "normal" }),
-      });
-      const data = (await resp.json()) as AgentDispatchResult;
-      if (!resp.ok) {
-        return NextResponse.json({ type: "message", message: `Agent dispatch failed: ${resp.status}` });
-      }
-      return NextResponse.json({
-        type: "agent",
-        matterId,
-        agent: data.agent,
-        summary: data.summary,
-        gaps: data.gaps ?? [],
-        complete: data.complete ?? true,
-        jobId: data.job_id,
-      });
-    } catch (err) {
-      return NextResponse.json({
-        type: "message",
-        message: err instanceof Error ? err.message : "API unreachable — start docker compose.",
-      });
-    }
+    const instruction = normalizeInstruction(q);
+    return dispatchToPm(matterId, instruction);
   }
 
   if (ql.includes("due this week") || ql.includes("due week")) {
@@ -83,6 +113,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     type: "message",
-    message: "No matches. Try AOD-1001, 'due this week', or 'research country conditions for AOD-1001'.",
+    message:
+      "No matches. Try AOD-1001, 'due this week', or 'pm:research country conditions for AOD-1001'.",
   });
 }

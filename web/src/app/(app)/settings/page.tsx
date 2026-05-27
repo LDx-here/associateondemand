@@ -88,6 +88,23 @@ export default async function SettingsPage() {
         </Row>
       </SettingsSection>
 
+      <SettingsSection title="Production deployment">
+        <p className="text-sm text-slate-700">
+          Production deploy, auth, and environment configuration are documented for technical staff. Attorneys
+          do not need these steps for daily practice.
+        </p>
+        <p className="mt-2 text-sm">
+          <a
+            className="font-medium text-slate-800 underline-offset-2 hover:underline"
+            href="https://github.com/LDx-here/associateondemand/blob/cursor/phase0-foundation/docs/runbooks/deploy.md"
+            rel="noreferrer"
+            target="_blank"
+          >
+            Production deployment runbook
+          </a>
+        </p>
+      </SettingsSection>
+
       <SettingsSection title="For IT">
         <p className="text-sm text-slate-700">
           Local setup, environment variables, and deployment steps are documented for technical staff

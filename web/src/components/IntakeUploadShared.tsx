@@ -22,11 +22,10 @@ export function TierZeroBanner({
       className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
       role="alert"
     >
-      <p className="font-medium">Tier 0 — manual attorney approval required</p>
+      <p className="font-medium">Tier 0: manual attorney approval required</p>
       <p className="mt-1 text-amber-900">
-        Documents with client PII should not be processed until Presidio anonymization is live (
-        <code className="text-xs">AOD_PII_TIER=1</code>
-        ). For controlled testing on de-identified or synthetic scans, confirm below.
+        Documents with client PII are not auto-processed until Strong Reader tier 1 is enabled by IT.
+        For controlled testing on de-identified or synthetic scans, confirm below.
       </p>
       <label className="mt-3 flex cursor-pointer items-start gap-2">
         <input
@@ -123,7 +122,7 @@ export function UploadProgressList({
                   : item.status === "error"
                     ? "text-red-700"
                     : item.status === "uploading"
-                      ? "text-sky-700"
+                      ? "text-slate-700"
                       : "text-slate-500"
               }
             >
@@ -146,5 +145,49 @@ export function UploadProgressList({
         </li>
       ))}
     </ul>
+  );
+}
+
+/** BUILD_SPEC §7.8 progress table: filename, status, category. */
+export function UploadProgressTable({
+  items,
+}: {
+  items: Array<{
+    name: string;
+    status: "pending" | "uploading" | "done" | "error";
+    result?: UploadResult;
+  }>;
+}) {
+  if (!items.length) return null;
+  return (
+    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+      <table className="min-w-full text-left text-sm">
+        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+          <tr>
+            <th className="px-3 py-2">Filename</th>
+            <th className="px-3 py-2">Status</th>
+            <th className="px-3 py-2">Category</th>
+            <th className="px-3 py-2">OCR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.name} className="border-t border-slate-100">
+              <td className="px-3 py-2 font-medium">{item.name}</td>
+              <td className="px-3 py-2 capitalize text-slate-700">
+                {item.status === "uploading" ? "processing" : item.status}
+              </td>
+              <td className="px-3 py-2">{item.result?.category ?? "n/a"}</td>
+              <td className="px-3 py-2 text-xs text-slate-600">
+                {item.result?.ocr_method ?? "n/a"}
+                {item.result?.confidence != null
+                  ? ` · ${Math.round(item.result.confidence * 100)}%`
+                  : ""}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

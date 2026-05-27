@@ -10,15 +10,15 @@ as **present**, **partial**, or **missing**. Field paths and line ranges
 are anchored to the working tree at audit time. Use this as the punch-list
 for Phases 4–6 cleanup.
 
-Headline compliance score: **~91%** (was 89% — bumped this round by
-landing all 9 Matters spec columns on the live base, verifying
-`created_at`/`updated_at` backfill on 5 rows, live page smoke with 0
-5xx, and Clio-style polish: centralized `StatusBadge`, `formatDate`,
-active sidebar accent, KPI `tabular-nums`, empty-state icons). The
-biggest remaining gaps are populating the new Matters metadata fields,
-the missing agent wrappers (drafting / mass auditor / legal mapping /
-strong-reader orchestrator), the BUILD_SPEC document-output linter, and
-matter-detail polish (Assessment badges + "Dispatched" disabled state).
+Headline compliance score: **~95%** (2026-05-26 overnight pass). Closed
+§7.4–7.7 gaps: global task filters, inbox options JSON + resolve, PM
+dispatch from Command Panel and Assessment Next Action, knowledge-map
+drawer + live-matter graph, matter document upload UI, intake progress
+table, eImmigration mapping preview, Phase 4 PM stubs for
+drafting/mass_audit/legal_mapping, Strong Reader runbook, attorney-safe
+settings + deploy links. Remaining: full LLM drafting/mass-auditor/legal-mapping
+agents, document-output linter, production auth/deploy execution, TanStack
+on matter list, Presidio production sidecars.
 
 ---
 

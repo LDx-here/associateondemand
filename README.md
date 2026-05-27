@@ -33,13 +33,13 @@ See [FILE-MAP.md](FILE-MAP.md) and [brain/README.md](brain/README.md).
 | Phase | Status | What you get |
 |-------|--------|----------------|
 | 0 | Done | Docker stack, constitution, FILE-MAP, brain vault, governance |
-| 1 | Done | Airtable client + dashboard/matters (demo fallback via `data/dev-seed.json`) |
-| 2 | Done | Tasks/notes CRUD, case assessment, timeline, command search + `pm:` dispatch |
-| 3 | Partial | `/intake/upload` gated by `AOD_PII_TIER=1`; Presidio stub in compose |
-| 4 | Partial | PM orchestrator + Redis inbox; Research **blocked** until SKILL.md populated |
-| 5 | Partial | D3 knowledge map + pattern/strategy agents (Qdrant health wired) |
-| 6 | Done | eImmigration CSV/JSON import UI + API + runbook |
-| 7 | Partial | Auth middleware stub (`AOD_AUTH_ENABLED`); deploy runbook |
+| 1 | Done | Live Airtable 11/11 tables, dashboard KPIs, professional firm UI |
+| 2 | Done | Tasks/notes CRUD, assessment-first workbench, timeline, command + PM dispatch |
+| 3 | Partial | Strong Reader OCR path, tier-0 banner, intake progress table; flip tier 1 when Presidio is real |
+| 4 | Partial | PM orchestrator, Research SKILL + Anthropic, inbox on failure; drafting/audit/mapping stubs |
+| 5 | Partial | D3 knowledge map + live-matter graph drawer; pattern "insufficient data" path |
+| 6 | Done | eImmigration import with field-mapping preview table |
+| 7 | Partial | Attorney-safe settings, auth stub, deploy runbook links (no production deploy yet) |
 
 Runbooks: [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md) · [docs/runbooks/deploy.md](docs/runbooks/deploy.md) · [docs/runbooks/eimmigration-import.md](docs/runbooks/eimmigration-import.md)
 

@@ -1,9 +1,12 @@
 "use client";
 
 import * as d3 from "d3";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-type Node = { id: string; group: string; label: string };
+import { btnSecondary } from "@/lib/ui-classes";
+
+type Node = { id: string; group: string; label: string; matterId?: string };
 type Link = { source: string; target: string; weight: number };
 type SimNode = d3.SimulationNodeDatum & Node;
 
@@ -11,6 +14,8 @@ export function KnowledgeMapGraph() {
   const svgRef = useRef<SVGSVGElement>(null);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [links, setLinks] = useState<Link[]>([]);
+  const [insufficient, setInsufficient] = useState(false);
+  const [selected, setSelected] = useState<Node | null>(null);
 
   useEffect(() => {
     fetch("/api/knowledge-graph")
@@ -18,10 +23,12 @@ export function KnowledgeMapGraph() {
       .then((g) => {
         setNodes(g.nodes ?? []);
         setLinks(g.links ?? []);
+        setInsufficient(Boolean(g.insufficient));
       })
       .catch(() => {
         setNodes([]);
         setLinks([]);
+        setInsufficient(true);
       });
   }, []);
 
@@ -33,7 +40,10 @@ export function KnowledgeMapGraph() {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    const color = d3.scaleOrdinal<string>().domain(["matter", "relief", "jurisdiction"]).range(["#0284c7", "#059669", "#7c3aed"]);
+    const color = d3
+      .scaleOrdinal<string>()
+      .domain(["matter", "relief", "jurisdiction"])
+      .range(["#334155", "#059669", "#7c3aed"]);
 
     const simNodes: SimNode[] = nodes.map((n) => ({ ...n }));
     const simLinks = links.map((l) => ({ ...l }));
@@ -64,7 +74,9 @@ export function KnowledgeMapGraph() {
       .data(simNodes)
       .join("circle")
       .attr("r", 14)
-      .attr("fill", (d) => color(d.group));
+      .attr("fill", (d) => color(d.group))
+      .attr("cursor", "pointer")
+      .on("click", (_, d) => setSelected(d));
 
     const drag = d3
       .drag<SVGCircleElement, SimNode>()
@@ -94,7 +106,8 @@ export function KnowledgeMapGraph() {
       .attr("font-size", 10)
       .attr("text-anchor", "middle")
       .attr("dy", 28)
-      .attr("fill", "#334155");
+      .attr("fill", "#334155")
+      .attr("pointer-events", "none");
 
     simulation.on("tick", () => {
       link
@@ -111,7 +124,47 @@ export function KnowledgeMapGraph() {
     };
   }, [nodes, links]);
 
+  const matterId =
+    selected?.matterId ??
+    (selected?.group === "matter" ? selected.id : null);
+
   return (
-    <svg ref={svgRef} viewBox="0 0 640 420" className="w-full rounded-lg border border-slate-200 bg-white" role="img" aria-label="Knowledge map graph" />
+    <div className="relative flex gap-4">
+      <div className="min-w-0 flex-1">
+        {insufficient && nodes.length <= 2 ? (
+          <p className="mb-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            Insufficient pattern data to draw a rich graph. Add matters and legal elements, or index patterns
+            from the API when Qdrant is running.
+          </p>
+        ) : null}
+        <svg
+          ref={svgRef}
+          viewBox="0 0 640 420"
+          className="w-full rounded-lg border border-slate-200 bg-white"
+          role="img"
+          aria-label="Knowledge map graph"
+        />
+      </div>
+      {selected ? (
+        <aside className="w-56 shrink-0 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-900">{selected.label}</h3>
+          <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">{selected.group}</p>
+          {matterId ? (
+            <Link className="mt-3 inline-block text-sm font-medium text-slate-800 underline-offset-2 hover:underline" href={`/matters/${matterId}`}>
+              Open matter {matterId}
+            </Link>
+          ) : (
+            <p className="mt-3 text-xs text-slate-500">Concept node linked to one or more matters.</p>
+          )}
+          <button type="button" className={`${btnSecondary} mt-4 w-full`} onClick={() => setSelected(null)}>
+            Close
+          </button>
+        </aside>
+      ) : (
+        <p className="hidden w-56 shrink-0 text-xs text-slate-500 lg:block">
+          Click a node to see details and open the linked matter.
+        </p>
+      )}
+    </div>
   );
 }

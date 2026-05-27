@@ -64,6 +64,8 @@ export function serializeCaseAssessment(assessment: CaseAssessment): string {
 
 export const COMMAND_PREFILL_EVENT = "aod:command-prefill";
 
-export function prefillCommandPanel(query: string): void {
-  window.dispatchEvent(new CustomEvent(COMMAND_PREFILL_EVENT, { detail: { query } }));
+export function prefillCommandPanel(query: string, autoDispatch = false): void {
+  window.dispatchEvent(
+    new CustomEvent(COMMAND_PREFILL_EVENT, { detail: { query, autoDispatch } }),
+  );
 }
