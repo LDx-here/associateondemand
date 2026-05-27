@@ -22,6 +22,7 @@
     - `web/src/components/CalendarBoard.tsx` — friendly empty-state banner above the grid for both "no events at all" and "no events match the current filter" cases.
     - `web/src/app/(app)/settings/page.tsx` — tightened `maskPat` to leak only the constant `pat` prefix plus the length.
   - **Build green:** `cd web && rm -rf .next && npm run build` ✅ (Next 16.2.4 Turbopack, 14/14 routes).
+- **Commits ready, push pending:** `2564c35` (checkpoint) and `dd18875` (activity log) are committed on `cursor/phase0-foundation` locally. Sandbox blocked outbound SSH and HTTPS auth to `github.com` in this session — run `git push origin cursor/phase0-foundation` from your machine to ship.
 
 - **Prior session (commit `68d0344`):**
   - Real CLAUDE constitution + Research Memo SKILL landed (delivered upstream this turn).
