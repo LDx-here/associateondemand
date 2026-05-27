@@ -1,3 +1,5 @@
+### [2026-05-27] CHECKPOINT: command panel AgentResult UI
+
 ### [2026-05-27] CHECKPOINT: fix: smoke-docker-e2e runnable via bash
 
 ### [2026-05-27] CHECKPOINT: checkpoint: Docker E2E + PM/Research smoke + gap fixes
