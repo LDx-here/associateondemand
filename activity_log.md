@@ -1,3 +1,5 @@
+### [2026-05-27] CHECKPOINT: Phase 7 complete + LD deploy checklist
+
 ### [2026-05-27] CHECKPOINT: Phase 7 Supabase auth+Postgres + Vercel/Fly deploy scaffold
 
 ### [2026-05-27] CHECKPOINT: full plan backlog - notes/task/inbox/docx
