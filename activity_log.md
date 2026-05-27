@@ -1,3 +1,5 @@
+### [2026-05-27] CHECKPOINT: checkpoint: Docker E2E + PM/Research smoke + gap fixes
+
 ### [2026-05-27] CHECKPOINT: checkpoint: matter filters live activity auth docs
 
 ### [2026-05-26] CHECKPOINT: checkpoint: overnight milestones 1-6 gap closure
