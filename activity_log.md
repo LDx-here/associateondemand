@@ -1,3 +1,5 @@
+### [2026-05-26] CHECKPOINT: checkpoint: Matters metadata backfill
+
 ### [2026-05-26] CHECKPOINT: Matters metadata backfill script (sandbox blocked live PATCH)
 
 - **Details:** Added `scripts/airtable-matters-metadata-backfill.mjs` — idempotent PATCH for empty `title`, `country`, `posture`, `court` (when inferable), bumps `updated_at`. Never writes client PII; backup JSONL used for country hints only. Agent sandbox could not reach `api.airtable.com`; run locally: `node scripts/airtable-matters-metadata-backfill.mjs`.
