@@ -224,7 +224,7 @@ Pre-session order: `Overview, Timeline, Documents, Legal Elements, Case Assessme
 - Expandable rows for supporting facts/cases/notes/last-updated-by — **missing**.
 
 #### 7.3.7 Events
-- Calendar-style table — **stub** (added this session). Add Event form **missing**.
+- Calendar-style table + Add Event form — **present** (`MatterEventsPanel`, `POST /api/events`, live Airtable on matter detail).
 
 ### 7.4 Global Task List — **present** (`/tasks`, `GlobalTaskList.tsx` filters per §7.4).
 
@@ -266,7 +266,7 @@ Pre-session order: `Overview, Timeline, Documents, Legal Elements, Case Assessme
 
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
-| `Corrections` record in Airtable | **missing** | Writes to brain markdown / jsonl only. |
+| `Corrections` record in Airtable | **present** | FastAPI correction router + `POST /api/corrections` (Next.js → Airtable). |
 | `formatting_convention` → `firm-rules.md` YAML append | partial | Markdown bullet append; YAML rule structure not enforced. |
 | `analytical_error` → Strategy Patterns | partial | Markdown only; Airtable Strategy Patterns table missing. |
 | `classification_error` → `categorizer-examples.jsonl` | present |  |

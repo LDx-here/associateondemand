@@ -1,4 +1,5 @@
 import type { AuditLogEntry, Matter, Note, Task } from "./types";
+import type { InboxItem } from "./airtable/queries";
 
 export function overdueTasks(tasks: Task[], today = new Date()): Task[] {
   return tasks.filter((t) => {
@@ -53,6 +54,24 @@ export function greeting(name = "La'Dajia", now = new Date()): string {
   if (hour < 12) return `Good morning, ${name}`;
   if (hour < 17) return `Good afternoon, ${name}`;
   return `Good evening, ${name}`;
+}
+
+/** Map PM Inbox rows into recent-activity agent entries (BUILD_SPEC §7.1). */
+export function inboxToActivityEntries(items: InboxItem[], days = 7, now = new Date()): AuditLogEntry[] {
+  const floor = now.getTime() - days * 24 * 60 * 60 * 1000;
+  return items
+    .filter((item) => {
+      if (!item.createdAt) return true;
+      return new Date(item.createdAt).getTime() >= floor;
+    })
+    .map((item) => ({
+      id: `inbox-${item.id}`,
+      matterId: item.matterId || "firm",
+      timestamp: item.createdAt || now.toISOString(),
+      actor: item.agent || "PM",
+      agent: item.agent || "pm_orchestrator",
+      summary: item.title || item.whatNeeded || "PM inbox review",
+    }));
 }
 
 export type ActivityFeedEntry = {

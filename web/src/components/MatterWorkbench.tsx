@@ -28,6 +28,7 @@ import { prefillCommandPanel } from "@/lib/case-assessment";
 import { AddTaskForm } from "./AddTaskForm";
 import { CaseAssessmentEditor } from "./CaseAssessmentEditor";
 import { MatterDeadlineForm } from "./MatterDeadlineForm";
+import { MatterEventsPanel } from "./MatterEventsPanel";
 import { NoteComposer } from "./NoteComposer";
 import { StatusBadge } from "./StatusBadge";
 import { MatterDocumentUpload } from "./MatterDocumentUpload";
@@ -65,6 +66,7 @@ export function MatterWorkbench({
   initialDocuments,
   initialAssessment,
   initialEvents = [],
+  demoMode = false,
 }: {
   matter: Matter;
   initialTasks: Task[];
@@ -74,6 +76,7 @@ export function MatterWorkbench({
   initialDocuments: DocumentRow[];
   initialAssessment: CaseAssessment;
   initialEvents?: CalendarEvent[];
+  demoMode?: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("Assessment");
   const [tasks, setTasks] = useState(initialTasks);
@@ -440,40 +443,7 @@ export function MatterWorkbench({
       ) : null}
 
       {tab === "Events" ? (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-              <tr>
-                <th className="px-3 py-2">Type</th>
-                <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Description</th>
-                <th className="px-3 py-2">Location</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="p-0">
-                    <EmptyState
-                      icon={Calendar}
-                      title="No events yet."
-                      description="Hearings and deadlines will appear here when scheduled on the firm calendar."
-                    />
-                  </td>
-                </tr>
-              ) : (
-                events.map((ev) => (
-                  <tr key={ev.id} className="border-t border-slate-100">
-                    <td className="px-3 py-2 font-medium">{ev.type}</td>
-                    <td className="px-3 py-2">{new Date(ev.date).toLocaleString()}</td>
-                    <td className="px-3 py-2">{ev.description}</td>
-                    <td className="px-3 py-2">—</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <MatterEventsPanel matterId={matter.matterId} initialEvents={events} demoMode={demoMode} />
       ) : null}
     </div>
   );

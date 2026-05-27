@@ -4,6 +4,7 @@ import {
   createTaskInAirtable,
   getCaseAssessmentFromAirtable,
   listDocumentsFromAirtable,
+  listEventsForMatterFromAirtable,
   listLegalElementsFromAirtable,
   listMattersFromAirtable,
   listAllNotesFromAirtable,
@@ -86,6 +87,14 @@ export async function listLegalElements(matterId: string): Promise<LegalElementR
     return seed.legalElements.filter((e) => e.matterId === matterId);
   }
   return listLegalElementsFromAirtable(matterId);
+}
+
+export async function listEventsForMatter(matterId: string) {
+  if (useDemoMode()) {
+    const seed = await loadDemoSeed();
+    return seed.events.filter((e) => e.matterId === matterId);
+  }
+  return listEventsForMatterFromAirtable(matterId);
 }
 
 export async function listDocumentsForMatter(matterId: string): Promise<DocumentRow[]> {

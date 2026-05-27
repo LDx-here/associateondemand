@@ -49,6 +49,32 @@ Pipeline code: `services/api/app/services/document_categorizer.py`, `idi_pipelin
 
 When tier is 0, the UI shows a manual approval banner. Attorneys must check the box before upload. The API rejects unapproved PII processing unless `X-Manual-Review-Approved: true` is sent (the web app sets this when the checkbox is checked).
 
+## Curl smoke (after `docker compose up -d`)
+
+Full script: `./scripts/smoke-docker-e2e.sh`
+
+```bash
+# Health
+curl -s http://localhost:8000/health | jq
+
+# PM + Research (no client PII in payload)
+curl -s -X POST http://localhost:8000/agents/pm/dispatch \
+  -H "Content-Type: application/json" \
+  -d '{"matter_id":"AOD-1001","instruction":"pm:research What is the standard for past persecution?","priority":"normal"}' | jq '.summary, .gaps, .complete'
+
+# Intake tier 0 (requires manual approval header)
+curl -s -X POST http://localhost:8000/intake/upload \
+  -H "X-Manual-Review-Approved: true" \
+  -F "matter_id=AOD-1001" \
+  -F "manual_review_approved=true" \
+  -F "file=@data/uploads/smoke-test.pdf" | jq '.processing_status, .category, .ocr_method'
+
+# Web command proxy (Next.js on port 3003)
+curl -s -X POST http://localhost:3003/api/command \
+  -H "Content-Type: application/json" \
+  -d '{"query":"pm:research What is the standard for past persecution? AOD-1001"}' | jq
+```
+
 ## Troubleshooting
 
 | Symptom | Fix |

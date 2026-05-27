@@ -409,17 +409,40 @@ export async function resolveInboxItemInAirtable(
 /* Events (BUILD_SPEC §7 Calendar)                                     */
 /* ------------------------------------------------------------------ */
 
-function mapEvent(rec: { id: string; fields: RawFields }): CalendarEvent {
+function mapEvent(rec: { id: string; fields: RawFields }, matterCode = ""): CalendarEvent {
   const f = rec.fields;
   const e = F.events;
   const matterLink = linkedIds(f[e.matter_id])[0] ?? "";
   return {
     id: rec.id,
-    matterId: matterLink,
+    matterId: matterCode || matterLink,
     type: String(f[e.type] ?? ""),
     date: String(f[e.date] ?? ""),
     description: String(f[e.summary] ?? f[e.description] ?? ""),
   };
+}
+
+export async function listEventsForMatterFromAirtable(matterCode: string): Promise<
+  Array<
+    CalendarEvent & {
+      time: string;
+      location: string;
+      longDescription: string;
+      calendarSynced: boolean;
+    }
+  >
+> {
+  const resolved = await resolveMatterRecordId(matterCode);
+  if (!resolved) return [];
+  const formula = `FIND('${escapeFormula(resolved.recordId)}', ARRAYJOIN({${F.events.matter_id}}))`;
+  const records = await airtableListAll<RawFields>(TABLES.events, { filterByFormula: formula });
+  return records.map((r) => ({
+    ...mapEvent(r, resolved.matterId),
+    time: String(r.fields[F.events.time] ?? ""),
+    location: String(r.fields[F.events.location] ?? ""),
+    longDescription: String(r.fields[F.events.description] ?? ""),
+    calendarSynced: Boolean(r.fields[F.events.calendar_synced] ?? false),
+  }));
 }
 
 export async function listEventsFromAirtable(): Promise<
@@ -432,14 +455,20 @@ export async function listEventsFromAirtable(): Promise<
     }
   >
 > {
+  const matters = await listMattersFromAirtable();
+  const codeByRecord = new Map(matters.map((m) => [m.id, m.matterId]));
   const records = await airtableListAll<RawFields>(TABLES.events);
-  return records.map((r) => ({
-    ...mapEvent(r),
+  return records.map((r) => {
+    const linked = linkedIds(r.fields[F.events.matter_id])[0] ?? "";
+    const matterCode = codeByRecord.get(linked) ?? linked;
+    return {
+    ...mapEvent(r, matterCode),
     time: String(r.fields[F.events.time] ?? ""),
     location: String(r.fields[F.events.location] ?? ""),
     longDescription: String(r.fields[F.events.description] ?? ""),
     calendarSynced: Boolean(r.fields[F.events.calendar_synced] ?? false),
-  }));
+  };
+  });
 }
 
 export async function createEventInAirtable(payload: {
@@ -466,7 +495,7 @@ export async function createEventInAirtable(payload: {
     if (resolved) fields[e.matter_id] = [resolved.recordId];
   }
   const rec = await airtableCreate(TABLES.events, fields);
-  return mapEvent(rec);
+  return mapEvent(rec, payload.matterCode ?? "");
 }
 
 /* ------------------------------------------------------------------ */

@@ -8,9 +8,11 @@ import {
   filingDeadlinesWithin,
   greeting,
   overdueTasks,
+  inboxToActivityEntries,
   recentActivity,
   upcomingDeadlines,
 } from "@/lib/dashboard-aggregates";
+import { listInboxItemsFromAirtable } from "@/lib/airtable/queries";
 import {
   listAllNotes,
   listAllTasks,
@@ -50,12 +52,21 @@ export default async function DashboardPage() {
 
   const deadlines30 = upcomingDeadlines(tasks, 30, now);
   const liveNotes = demo ? [] : await listAllNotes();
+  let inboxAudit = seed?.auditLog ?? [];
+  if (!demo) {
+    try {
+      const inboxItems = await listInboxItemsFromAirtable();
+      inboxAudit = inboxToActivityEntries(inboxItems, 7, now);
+    } catch {
+      inboxAudit = [];
+    }
+  }
   const activity = recentActivity({
     notes: demo ? (seed?.notes ?? []) : liveNotes,
     completedTasks: demo
       ? (seed?.tasks.filter((t) => t.status === "Done") ?? [])
       : tasks.filter((t) => t.status === "Done"),
-    auditLog: seed?.auditLog ?? [],
+    auditLog: inboxAudit,
     days: 7,
     now,
   });

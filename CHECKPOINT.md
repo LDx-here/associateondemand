@@ -19,7 +19,13 @@
 
 **BUILD_SPEC compliance:** ~95% ([gap audit](docs/constitution/BUILD_SPEC-GAP-AUDIT.md))
 
-## Last completed (overnight + continuation)
+## Last completed (E2E session)
+
+- **Docker smoke:** Daemon not running on agent host; added `./scripts/smoke-docker-e2e.sh` and curl examples in `strong-reader-setup.md` for user machine.
+- **Gap fixes:** Matter Events tab loads live Airtable + Add Event form (`MatterEventsPanel`, `POST /api/events`); dashboard Recent Activity includes PM Inbox agent rows; `POST /api/corrections` writes Corrections table via Next.js; `data/uploads/smoke-test.pdf` for intake smoke (gitignored path).
+- **Verify:** `npm run build` pass; `test:airtable` 11/11.
+
+## Prior (overnight + continuation)
 
 - **Continuation:** Matter list filters (status, case type, country, posture); dashboard recent activity reads live Notes from Airtable; metadata backfill confirmed 5/5 rows populated; auth env vars documented in `deploy.md`.
 - **Milestone 1:** PM dispatch from Command Panel + Assessment Next Action; knowledge-map drawer; matter Documents upload; inbox options JSON already parsed; global `/tasks` filters verified.
@@ -32,11 +38,10 @@
 
 ## Next step (user return)
 
-1. `git pull` and refresh dev server on port **3003**.
-2. Optional: `node scripts/airtable-matters-metadata-backfill.mjs` if titles still empty.
-3. `docker compose up -d` then `curl http://localhost:8000/health` for full PM/Research/upload.
-4. Flip Strong Reader: follow `docs/runbooks/strong-reader-setup.md` when Presidio sidecars are real.
-5. Phase 7: Clerk/Supabase + `AOD_AUTH_ENABLED=true` before public deploy.
+1. Start **Docker Desktop**, then `./scripts/smoke-docker-e2e.sh` from repo root.
+2. `cd web && npm run dev` (port **3003**): test Command Panel `pm:research …` and Assessment **Dispatch**.
+3. Matter **Events** tab: add a test event; confirm it appears on `/calendar`.
+4. Flip Strong Reader when ready: `docs/runbooks/strong-reader-setup.md`.
 
 ## Blockers
 
@@ -45,7 +50,7 @@
 | Presidio production | Compose stub until real sidecars |
 | Full LLM agents | Drafting / mass auditor / legal mapping are inbox-safe stubs |
 | Production auth/deploy | Documented only; user must execute |
-| Docker daemon | Not running on agent host (`docker:down`); start Docker before PM/Research/upload health checks |
+| Docker daemon | Must be running locally for `/health`, PM dispatch, and intake OCR (`./scripts/smoke-docker-e2e.sh`) |
 
 ## Commands to resume
 
