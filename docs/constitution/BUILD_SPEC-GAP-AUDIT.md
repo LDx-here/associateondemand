@@ -181,14 +181,14 @@ carries the same justification inline.
 | KPI row: Active Matters, Overdue Tasks, Upcoming Deadlines (14d filing deadlines), PM Inbox Unread | **partial** | Current KPI row uses Active matters / Overdue tasks / Deadlines (7d) / Deadlines (30d). PM Inbox unread is **missing**. Upcoming Deadlines is matter-based, not Tasks-where-`is_filing_deadline=true`. **FIXED THIS SESSION.** |
 | Upcoming Deadlines table (30 days, columns per spec, filing deadline rows bold) | **missing → partial** | Replaced "Recent matters" table with deadlines/overdue tables this session. |
 | Overdue Tasks table | **missing → present** | Added this session. |
-| Recent Activity feed (last 7 days, interleaved) | **missing → present (demo only)** | Added this session; reads from demo-store audit log + notes + completed tasks. Live Airtable wiring deferred to PM Inbox table phase. |
+| Recent Activity feed (last 7 days, interleaved) | **present** | Live mode: `listAllNotesFromAirtable` + completed tasks; demo: seed audit + notes. |
 
 ### 7.2 Matter List
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
 | TanStack Table with sortable columns | **partial** | Plain `<table>` used; library imported but unused. |
-| Filter bar (Status / Case Type / Country / Search) | **missing** |  |
+| Filter bar (Status / Case Type / Country / Search) | **present** | Status, case type, country, posture selects + global search in `MattersTable.tsx`. |
 | Required columns (Matter ID, Title, Case Type, Country, Posture, Status, Next Deadline, Assigned To) | partial | `Title` and `Country` columns missing because the Airtable schema lacks those fields (see §2). |
 | "New Matter" modal | **missing** |  |
 
@@ -226,9 +226,9 @@ Pre-session order: `Overview, Timeline, Documents, Legal Elements, Case Assessme
 #### 7.3.7 Events
 - Calendar-style table — **stub** (added this session). Add Event form **missing**.
 
-### 7.4 Global Task List — **missing**.
+### 7.4 Global Task List — **present** (`/tasks`, `GlobalTaskList.tsx` filters per §7.4).
 
-### 7.5 PM Inbox page (`inbox/page.tsx`) — **missing**.
+### 7.5 PM Inbox page (`inbox/page.tsx`) — **present** (`InboxBoard.tsx`, resolve PATCH).
 
 ### 7.6 Associate Command Panel — **present** (`CommandPanel.tsx`). Wires `prefillCommandPanel` from assessment Next-Action buttons. AI streaming response from FastAPI Phase 4 — present.
 

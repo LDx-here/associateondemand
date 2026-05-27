@@ -264,6 +264,17 @@ export async function completeTaskInAirtable(taskId: string): Promise<Task | nul
   return mapTask(rec, firstString(rec.fields[F.tasks.matter_id]));
 }
 
+export async function listAllNotesFromAirtable(): Promise<Note[]> {
+  const matters = await listMattersFromAirtable();
+  const codeByRecord = new Map(matters.map((m) => [m.id, m.matterId]));
+  const records = await airtableListAll<RawFields>(TABLES.notes);
+  return records.map((rec) => {
+    const linked = firstString(rec.fields[F.notes.matter_id]);
+    const matterId = codeByRecord.get(linked) ?? linked;
+    return mapNote(rec, matterId);
+  });
+}
+
 export async function listNotesForMatterFromAirtable(matterCode: string): Promise<Note[]> {
   const resolved = await resolveMatterRecordId(matterCode);
   if (!resolved) return [];

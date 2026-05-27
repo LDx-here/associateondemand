@@ -1,6 +1,6 @@
 # Agent checkpoint — AssociateOnDemand
 
-**Last updated:** 2026-05-26 (EDT)  
+**Last updated:** 2026-05-27 (EDT)  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
 
@@ -19,8 +19,9 @@
 
 **BUILD_SPEC compliance:** ~95% ([gap audit](docs/constitution/BUILD_SPEC-GAP-AUDIT.md))
 
-## Last completed (overnight)
+## Last completed (overnight + continuation)
 
+- **Continuation:** Matter list filters (status, case type, country, posture); dashboard recent activity reads live Notes from Airtable; metadata backfill confirmed 5/5 rows populated; auth env vars documented in `deploy.md`.
 - **Milestone 1:** PM dispatch from Command Panel + Assessment Next Action; knowledge-map drawer; matter Documents upload; inbox options JSON already parsed; global `/tasks` filters verified.
 - **Milestone 2:** `docs/runbooks/strong-reader-setup.md`; intake `UploadProgressTable` (§7.8); tier-0 banner copy without env leaks.
 - **Milestone 3:** `pm:` / research routing; PM stubs for drafting, mass_audit, legal_mapping; pattern insufficient-data `AgentResult`.
@@ -44,7 +45,7 @@
 | Presidio production | Compose stub until real sidecars |
 | Full LLM agents | Drafting / mass auditor / legal mapping are inbox-safe stubs |
 | Production auth/deploy | Documented only; user must execute |
-| Docker | Confirm `/health` on return if agents offline |
+| Docker daemon | Not running on agent host (`docker:down`); start Docker before PM/Research/upload health checks |
 
 ## Commands to resume
 

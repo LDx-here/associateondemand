@@ -6,6 +6,7 @@ import {
   listDocumentsFromAirtable,
   listLegalElementsFromAirtable,
   listMattersFromAirtable,
+  listAllNotesFromAirtable,
   listNotesForMatterFromAirtable,
   listTasksForMatterFromAirtable,
   saveCaseAssessmentInAirtable,
@@ -62,6 +63,13 @@ export async function listAllTasks(): Promise<Task[]> {
     all.push(...(await listTasksForMatter(m.matterId)));
   }
   return all;
+}
+
+export async function listAllNotes(): Promise<Note[]> {
+  if (useDemoMode()) {
+    return (await loadDemoSeed()).notes;
+  }
+  return listAllNotesFromAirtable();
 }
 
 export async function listNotesForMatter(matterId: string): Promise<Note[]> {

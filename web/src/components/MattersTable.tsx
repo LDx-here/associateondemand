@@ -15,16 +15,26 @@ import { CaseTypeBadge, CountryBadge } from "@/components/CaseTypeBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { Matter } from "@/lib/types";
 import { linkMatter } from "@/lib/ui-classes";
-import { formatDate } from "@/lib/utils";
+import { EMPTY_CELL, formatDate } from "@/lib/utils";
 
 const columnHelper = createColumnHelper<Matter>();
 
 export function MattersTable({ matters }: { matters: Matter[] }) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [caseTypeFilter, setCaseTypeFilter] = useState("");
+  const [countryFilter, setCountryFilter] = useState("");
   const [postureFilter, setPostureFilter] = useState("");
 
   const statuses = useMemo(() => [...new Set(matters.map((m) => m.status).filter(Boolean))].sort(), [matters]);
+  const caseTypes = useMemo(
+    () => [...new Set(matters.map((m) => m.caseType).filter(Boolean))].sort(),
+    [matters],
+  );
+  const countries = useMemo(
+    () => [...new Set(matters.map((m) => m.country).filter((c): c is string => Boolean(c)))].sort(),
+    [matters],
+  );
   const postures = useMemo(
     () => [...new Set(matters.map((m) => m.posture).filter((p): p is string => Boolean(p)))].sort(),
     [matters],
@@ -33,10 +43,12 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
   const filteredData = useMemo(() => {
     return matters.filter((m) => {
       if (statusFilter && m.status !== statusFilter) return false;
+      if (caseTypeFilter && m.caseType !== caseTypeFilter) return false;
+      if (countryFilter && m.country !== countryFilter) return false;
       if (postureFilter && m.posture !== postureFilter) return false;
       return true;
     });
-  }, [matters, statusFilter, postureFilter]);
+  }, [matters, statusFilter, caseTypeFilter, countryFilter, postureFilter]);
 
   const columns = useMemo(
     () => [
@@ -51,7 +63,7 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
       columnHelper.accessor((row) => row.title || row.clientName, {
         id: "title",
         header: "Title",
-        cell: (info) => <span className="text-slate-900">{info.getValue() || "—"}</span>,
+        cell: (info) => <span className="text-slate-900">{info.getValue() || EMPTY_CELL}</span>,
       }),
       columnHelper.accessor("caseType", {
         header: "Case type",
@@ -65,7 +77,7 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
       columnHelper.accessor((row) => row.posture ?? "", {
         id: "posture",
         header: "Posture",
-        cell: (info) => info.getValue() || "—",
+        cell: (info) => info.getValue() || EMPTY_CELL,
       }),
       columnHelper.accessor("status", {
         header: "Status",
@@ -75,7 +87,7 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
         header: "Next deadline",
         cell: (info) => {
           const value = info.getValue();
-          if (!value) return "—";
+          if (!value) return EMPTY_CELL;
           return (
             <span className="font-medium text-slate-900 tabular-nums">
               {formatDate(value)}
@@ -118,6 +130,32 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
           {statuses.map((s) => (
             <option key={s} value={s}>
               {s}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Filter matters by case type"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          value={caseTypeFilter}
+          onChange={(e) => setCaseTypeFilter(e.target.value)}
+        >
+          <option value="">All case types</option>
+          {caseTypes.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Filter matters by country"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          value={countryFilter}
+          onChange={(e) => setCountryFilter(e.target.value)}
+        >
+          <option value="">All countries</option>
+          {countries.map((c) => (
+            <option key={c} value={c}>
+              {c}
             </option>
           ))}
         </select>

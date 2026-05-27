@@ -12,6 +12,7 @@ import {
   upcomingDeadlines,
 } from "@/lib/dashboard-aggregates";
 import {
+  listAllNotes,
   listAllTasks,
   listMatters,
   useDemoMode,
@@ -48,9 +49,12 @@ export default async function DashboardPage() {
   }
 
   const deadlines30 = upcomingDeadlines(tasks, 30, now);
+  const liveNotes = demo ? [] : await listAllNotes();
   const activity = recentActivity({
-    notes: seed?.notes ?? [],
-    completedTasks: seed?.tasks.filter((t) => t.status === "Done") ?? tasks.filter((t) => t.status === "Done"),
+    notes: demo ? (seed?.notes ?? []) : liveNotes,
+    completedTasks: demo
+      ? (seed?.tasks.filter((t) => t.status === "Done") ?? [])
+      : tasks.filter((t) => t.status === "Done"),
     auditLog: seed?.auditLog ?? [],
     days: 7,
     now,
