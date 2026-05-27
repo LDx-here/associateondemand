@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 
@@ -69,18 +70,22 @@ export function CalendarBoard({
       {!hasAnyEvents ? (
         <div
           role="status"
-          className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600"
+          className="flex items-center gap-3 rounded-lg border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600"
         >
-          No events on the calendar yet. Use{" "}
-          <span className="font-medium text-slate-800">+ Add event</span> to create the first
-          one, or wait for an agent to schedule one against a matter.
+          <CalendarDays className="h-5 w-5 text-slate-400" aria-hidden />
+          <span>
+            No events on the calendar yet. Use{" "}
+            <span className="font-medium text-slate-800">+ Add event</span> to create the first
+            one, or wait for an agent to schedule one against a matter.
+          </span>
         </div>
       ) : !hasVisibleEvents ? (
         <div
           role="status"
-          className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600"
+          className="flex items-center gap-3 rounded-lg border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600"
         >
-          No events match the current filter.
+          <CalendarDays className="h-5 w-5 text-slate-400" aria-hidden />
+          <span>No events match the current filter.</span>
         </div>
       ) : null}
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -88,6 +93,7 @@ export function CalendarBoard({
           <div className="flex items-center gap-2">
             <Link
               href={`/calendar?month=${formatMonth(prev)}`}
+              aria-label="Previous month"
               className="rounded-md border border-slate-300 px-2.5 py-1 text-sm text-slate-700 hover:bg-slate-50"
             >
               ←
@@ -95,6 +101,7 @@ export function CalendarBoard({
             <h2 className="text-lg font-semibold text-slate-900">{monthLabel}</h2>
             <Link
               href={`/calendar?month=${formatMonth(next)}`}
+              aria-label="Next month"
               className="rounded-md border border-slate-300 px-2.5 py-1 text-sm text-slate-700 hover:bg-slate-50"
             >
               →

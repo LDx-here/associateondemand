@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from "react";
 
 import { StatusBadge } from "./StatusBadge";
 import type { Task } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 
 type MatterRef = { id: string; matterId: string; assignedAttorney: string };
 
@@ -267,7 +268,7 @@ export function GlobalTaskList({
                     </Link>
                   </td>
                   <td className="px-4 py-2">{t.description}</td>
-                  <td className="px-4 py-2">{t.dueDate ?? "—"}</td>
+                  <td className="px-4 py-2 tabular-nums">{formatDate(t.dueDate)}</td>
                   <td className="px-4 py-2">{t.priority}</td>
                   <td className="px-4 py-2">
                     <StatusBadge status={t.status} />

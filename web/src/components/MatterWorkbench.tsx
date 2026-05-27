@@ -1,5 +1,6 @@
 "use client";
 
+import { FileText } from "lucide-react";
 import { useCallback, useState } from "react";
 
 import type {
@@ -12,6 +13,7 @@ import type {
   Task,
   TimelineEntry,
 } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 import { prefillCommandPanel } from "@/lib/case-assessment";
 import { AddTaskForm } from "./AddTaskForm";
 import { CaseAssessmentEditor } from "./CaseAssessmentEditor";
@@ -317,13 +319,17 @@ export function MatterWorkbench({
                   <tr key={doc.id} className="border-t border-slate-100">
                     <td className="px-4 py-3 font-medium">{doc.title}</td>
                     <td className="px-4 py-3">{doc.category}</td>
-                    <td className="px-4 py-3">{new Date(doc.uploadedAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 tabular-nums">{formatDate(doc.uploadedAt)}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-slate-500">
-                    No documents on file. Batch upload arrives via the Intake tab.
+                  <td colSpan={3} className="px-4 py-10 text-center text-sm text-slate-500">
+                    <span className="inline-flex flex-col items-center gap-2">
+                      <FileText className="h-6 w-6 text-slate-400" aria-hidden />
+                      <span className="font-medium text-slate-700">No documents on file.</span>
+                      <span>Batch upload arrives via the Intake tab.</span>
+                    </span>
                   </td>
                 </tr>
               )}

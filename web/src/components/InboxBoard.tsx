@@ -1,9 +1,11 @@
 "use client";
 
+import { Inbox as InboxIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { StatusBadge } from "@/components/StatusBadge";
 import type { InboxItem } from "@/lib/airtable/queries";
 
 type ResolveTarget = {
@@ -91,8 +93,13 @@ export function InboxBoard({
           </h2>
         </div>
         {pending.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-            Inbox clear. Nothing waiting on attorney review.
+          <div
+            role="status"
+            className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500"
+          >
+            <InboxIcon className="h-6 w-6 text-slate-400" aria-hidden />
+            <span className="font-medium text-slate-700">Inbox clear.</span>
+            <span>Nothing waiting on attorney review.</span>
           </div>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
@@ -117,15 +124,7 @@ export function InboxBoard({
               <li key={item.id} className="px-4 py-3 text-sm">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-medium text-slate-800">{item.title || item.agent}</span>
-                  <span
-                    className={
-                      item.status === "Dismissed"
-                        ? "text-xs uppercase tracking-wide text-slate-500"
-                        : "text-xs uppercase tracking-wide text-emerald-700"
-                    }
-                  >
-                    {item.status}
-                  </span>
+                  <StatusBadge status={item.status} />
                 </div>
                 {item.resolution ? (
                   <p className="mt-1 text-slate-700">{item.resolution}</p>
@@ -215,9 +214,7 @@ function InboxCard({
         <h3 className="text-sm font-semibold text-slate-900">
           {item.title || item.agent}
         </h3>
-        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-          {item.status}
-        </span>
+        <StatusBadge status={item.status} />
       </header>
       <p className="text-xs text-slate-500">
         {item.agent}

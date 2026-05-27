@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import type { Task } from "@/lib/types";
+import { cn, formatDate } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
 
 export function TaskList({
@@ -25,18 +26,29 @@ export function TaskList({
   return (
     <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
       {tasks.map((t) => (
-        <li key={t.id} className="flex items-start justify-between gap-3 p-3 text-sm">
+        <li
+          key={t.id}
+          className={cn(
+            "flex items-start justify-between gap-3 p-3 text-sm",
+            t.isFilingDeadline ? "border-l-4 border-l-rose-500 font-semibold" : "",
+          )}
+        >
           <div>
             <p className="font-medium text-slate-900">{t.description}</p>
-            <p className="text-xs text-slate-500">
-              Due {t.dueDate ?? "—"} · {t.priority}
+            <p className="text-xs font-normal text-slate-500 tabular-nums">
+              Due {formatDate(t.dueDate)} · {t.priority}
               {t.isFilingDeadline ? " · filing deadline" : ""}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <StatusBadge status={t.status} />
             {t.status !== "Done" ? (
-              <button type="button" className="text-xs text-sky-700 underline" onClick={() => complete(t.id)}>
+              <button
+                type="button"
+                aria-label={`Complete task: ${t.description}`}
+                className="text-xs text-sky-700 underline"
+                onClick={() => complete(t.id)}
+              >
                 Complete
               </button>
             ) : null}

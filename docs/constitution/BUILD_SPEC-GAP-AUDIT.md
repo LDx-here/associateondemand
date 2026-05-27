@@ -10,13 +10,13 @@ as **present**, **partial**, or **missing**. Field paths and line ranges
 are anchored to the working tree at audit time. Use this as the punch-list
 for Phases 4–6 cleanup.
 
-Headline compliance score: **~89%** (was 87% — bumped this round by
-staging the 9 missing BUILD_SPEC §2 Matters columns in the code, the
-idempotent Meta-API provisioner script, and the page UX polish on
-`/tasks` and `/calendar`). The biggest remaining gaps are landing the
-schema delta on the live base (single `node scripts/airtable-matters-columns.mjs`
-run on a normal dev machine — sandbox blocked it this turn), the still
-missing agent wrappers (drafting / mass auditor / legal mapping /
+Headline compliance score: **~91%** (was 89% — bumped this round by
+landing all 9 Matters spec columns on the live base, verifying
+`created_at`/`updated_at` backfill on 5 rows, live page smoke with 0
+5xx, and Clio-style polish: centralized `StatusBadge`, `formatDate`,
+active sidebar accent, KPI `tabular-nums`, empty-state icons). The
+biggest remaining gaps are populating the new Matters metadata fields,
+the missing agent wrappers (drafting / mass auditor / legal mapping /
 strong-reader orchestrator), the BUILD_SPEC document-output linter, and
 matter-detail polish (Assessment badges + "Dispatched" disabled state).
 

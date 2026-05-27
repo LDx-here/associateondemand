@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 
 import { StatusBadge } from "@/components/StatusBadge";
 import type { Matter } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 
 const columnHelper = createColumnHelper<Matter>();
 
@@ -69,7 +70,12 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
         header: "Next deadline",
         cell: (info) => {
           const value = info.getValue();
-          return value ? <span className="font-medium text-slate-900">{value}</span> : "—";
+          if (!value) return "—";
+          return (
+            <span className="font-medium text-slate-900 tabular-nums">
+              {formatDate(value)}
+            </span>
+          );
         },
       }),
       columnHelper.accessor("assignedAttorney", { header: "Attorney" }),

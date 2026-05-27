@@ -16,15 +16,7 @@ import {
 } from "@/lib/data-store";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
 import { countUnreadInboxFromAirtable } from "@/lib/airtable/queries";
-
-function formatDate(value: string | null | undefined): string {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+import { formatDate } from "@/lib/utils";
 
 function daysUntil(value: string | null | undefined, now = new Date()): number | null {
   if (!value) return null;

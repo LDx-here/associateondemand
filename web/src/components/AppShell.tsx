@@ -1,31 +1,8 @@
 import Link from "next/link";
-import {
-  BookOpen,
-  Briefcase,
-  Calendar,
-  CheckSquare,
-  FileUp,
-  Inbox,
-  LayoutDashboard,
-  Map,
-  Settings,
-  Upload,
-} from "lucide-react";
+import { BookOpen } from "lucide-react";
 
 import { CommandPanel } from "@/components/CommandPanel";
-import { cn } from "@/lib/utils";
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/matters", label: "Matters", icon: Briefcase },
-  { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
-  { href: "/inbox", label: "PM Inbox", icon: Inbox },
-  { href: "/intake/upload", label: "Intake", icon: Upload },
-  { href: "/knowledge-map", label: "Knowledge map", icon: Map },
-  { href: "/import/eimmigration", label: "Import", icon: FileUp },
-  { href: "/settings", label: "Settings", icon: Settings },
-] as const;
+import { SidebarNav } from "@/components/SidebarNav";
 
 export function AppShell({
   children,
@@ -53,27 +30,14 @@ export function AppShell({
             </Link>
             <p className="mt-1 text-xs text-slate-500">Practice management</p>
           </div>
-          <nav className="flex-1 space-y-0.5 p-3">
-            {navItems.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100 hover:text-sky-700",
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
-                {label}
-              </Link>
-            ))}
-          </nav>
+          <SidebarNav />
           <div className="border-t border-slate-200 p-3">
             {demoMode ? (
-              <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-900">
+              <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
                 Demo data
               </span>
             ) : (
-              <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-900">
+              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
                 Airtable live
               </span>
             )}
