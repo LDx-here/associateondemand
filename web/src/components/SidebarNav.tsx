@@ -19,17 +19,11 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 type SidebarNavItem = {
-  /** Statically-known internal route; Next.js typed routes require this. */
   href: Route;
   label: string;
   icon: LucideIcon;
 };
 
-/**
- * Navigation items live alongside the client component so the icon
- * function references never cross the RSC serialization boundary
- * (functions aren't serializable from Server → Client Components).
- */
 const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/matters", label: "Matters", icon: Briefcase },
@@ -57,12 +51,12 @@ export function SidebarNav() {
             className={cn(
               "relative flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition",
               active
-                ? "bg-sky-50 font-medium text-sky-700 before:absolute before:inset-y-1 before:left-0 before:w-0.5 before:rounded-full before:bg-sky-600"
-                : "text-slate-700 hover:bg-slate-100 hover:text-sky-700",
+                ? "bg-slate-800 font-medium text-white before:absolute before:inset-y-1 before:left-0 before:w-0.5 before:rounded-full before:bg-slate-400"
+                : "text-slate-300 hover:bg-slate-800 hover:text-white",
             )}
           >
             <Icon
-              className={cn("h-4 w-4 shrink-0", active ? "text-sky-600" : "text-slate-400")}
+              className={cn("h-4 w-4 shrink-0", active ? "text-slate-200" : "text-slate-500")}
               aria-hidden
             />
             {label}

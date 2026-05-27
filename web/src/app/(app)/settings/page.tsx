@@ -5,20 +5,21 @@ export const dynamic = "force-dynamic";
 
 const CURRENT_ATTORNEY_EMAIL = "ladajia@recovermyvalue.com";
 
-/**
- * Show whether a PAT is configured without ever leaking enough characters
- * to be useful to a copy/paste attacker. BUILD_SPEC §13 — no PII / secrets.
- * The first 3 chars (`pat`) are constant for Airtable PATs and safe to show.
- */
-function maskPat(value: string | undefined): string {
-  if (!value) return "Not configured";
-  return `${value.slice(0, 3)}…${value.length} chars`;
+function piiTierLabel(tier: string): string {
+  switch (tier) {
+    case "0":
+      return "Documents: manual review only";
+    case "1":
+      return "Documents: automated checks with attorney sign-off";
+    case "2":
+      return "Documents: expanded automation (supervised)";
+    default:
+      return "Documents: policy tier not configured";
+  }
 }
 
 export default async function SettingsPage() {
   const demo = useDemoMode();
-  const baseId = process.env.AIRTABLE_BASE_ID ?? "";
-  const pat = process.env.AIRTABLE_PAT;
   const piiTier = process.env.NEXT_PUBLIC_PII_TIER ?? "0";
   const authEnabled =
     (process.env.AOD_AUTH_ENABLED ?? "false").toLowerCase() === "true";
@@ -41,13 +42,13 @@ export default async function SettingsPage() {
       <header>
         <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
         <p className="text-sm text-slate-600">
-          Read-only system summary. Editable fields land in Phase 7 with auth.
+          Firm profile and connection status. Account editing arrives with sign-in.
         </p>
       </header>
 
       <SettingsSection title="Profile">
         {demo ? (
-          <Row label="Mode">Demo data — sign-in profile is unavailable.</Row>
+          <Row label="Mode">Sample data. Connect Airtable to load live matters.</Row>
         ) : attorney ? (
           <>
             <Row label="Name">{attorney.name}</Row>
@@ -59,86 +60,49 @@ export default async function SettingsPage() {
           </>
         ) : (
           <Row label="Profile">
-            No People row matched <code className="rounded bg-slate-100 px-1">{CURRENT_ATTORNEY_EMAIL}</code>.
-            Seed one with{" "}
-            <code className="rounded bg-slate-100 px-1">node scripts/airtable-bootstrap.mjs</code>.
+            Your People record is not linked yet. Ask IT to add your profile in Airtable.
           </Row>
         )}
       </SettingsSection>
 
-      <SettingsSection title="Airtable connection">
-        <Row label="Base id">
-          <code className="rounded bg-slate-100 px-1">{baseId || "Not configured"}</code>
-        </Row>
-        <Row label="PAT">
-          <code className="rounded bg-slate-100 px-1">{maskPat(pat)}</code>
-        </Row>
-        <Row label="Status">
+      <SettingsSection title="Data connection">
+        <Row label="Airtable">
           {demo ? (
-            <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-              Demo data
+            <span className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden />
+              Sample data
             </span>
           ) : (
-            <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-900">
-              Live
+            <span className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
+              Connected to Airtable
             </span>
           )}
         </Row>
       </SettingsSection>
 
-      <SettingsSection title="Privacy &amp; security">
-        <Row label="PII tier">
-          {`Tier ${piiTier}`}
-          <span className="ml-2 text-xs text-slate-500">
-            (`NEXT_PUBLIC_PII_TIER`)
-          </span>
-        </Row>
-        <Row label="Auth">
-          {authEnabled ? (
-            <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-900">
-              Enabled
-            </span>
-          ) : (
-            <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
-              Middleware stub (`AOD_AUTH_ENABLED=false`)
-            </span>
-          )}
+      <SettingsSection title="Privacy and security">
+        <Row label="Document handling">{piiTierLabel(piiTier)}</Row>
+        <Row label="Sign-in">
+          {authEnabled ? "Enabled" : "Not enabled"}
         </Row>
       </SettingsSection>
 
-      <SettingsSection title="Documentation">
-        <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
-          <li>
-            <a
-              className="text-sky-700 hover:underline"
-              href="https://github.com/LDx-here/associateondemand/blob/cursor/phase0-foundation/docs/runbooks/local-dev.md"
-              rel="noreferrer"
-              target="_blank"
-            >
-              docs/runbooks/local-dev.md
-            </a>
-          </li>
-          <li>
-            <a
-              className="text-sky-700 hover:underline"
-              href="https://github.com/LDx-here/associateondemand/blob/cursor/phase0-foundation/docs/constitution/BUILD_SPEC.md"
-              rel="noreferrer"
-              target="_blank"
-            >
-              docs/constitution/BUILD_SPEC.md
-            </a>
-          </li>
-          <li>
-            <a
-              className="text-sky-700 hover:underline"
-              href="https://github.com/LDx-here/associateondemand/blob/cursor/phase0-foundation/docs/constitution/BUILD_SPEC-GAP-AUDIT.md"
-              rel="noreferrer"
-              target="_blank"
-            >
-              docs/constitution/BUILD_SPEC-GAP-AUDIT.md
-            </a>
-          </li>
-        </ul>
+      <SettingsSection title="For IT">
+        <p className="text-sm text-slate-700">
+          Local setup, environment variables, and deployment steps are documented for technical staff
+          only.
+        </p>
+        <p className="mt-2 text-sm">
+          <a
+            className="font-medium text-slate-800 underline-offset-2 hover:underline"
+            href="https://github.com/LDx-here/associateondemand/blob/cursor/phase0-foundation/docs/runbooks/local-dev.md"
+            rel="noreferrer"
+            target="_blank"
+          >
+            Local development runbook
+          </a>
+        </p>
       </SettingsSection>
     </div>
   );

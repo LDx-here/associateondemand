@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { btnPrimary } from "@/lib/ui-classes";
+
 export function AddTaskForm({ matterId, onCreated }: { matterId: string; onCreated?: () => void }) {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -49,7 +51,7 @@ export function AddTaskForm({ matterId, onCreated }: { matterId: string; onCreat
         <input type="checkbox" checked={isFilingDeadline} onChange={(e) => setIsFilingDeadline(e.target.checked)} />
         Statutory / court filing deadline
       </label>
-      <button type="submit" className="rounded-md bg-sky-600 px-3 py-2 text-sm text-white">
+      <button type="submit" className={btnPrimary}>
         Save task
       </button>
     </form>

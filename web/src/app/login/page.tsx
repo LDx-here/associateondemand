@@ -2,7 +2,7 @@ export default function LoginPlaceholder() {
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 px-6 py-24">
       <header>
-        <p className="text-sm font-semibold text-sky-700">Authentication</p>
+        <p className="text-sm font-semibold text-slate-700">Authentication</p>
         <h1 className="text-2xl font-semibold text-slate-900">Login (placeholder)</h1>
         <p className="mt-2 text-sm text-slate-600">
           Real auth (Clerk / Supabase) ships in Phase 7. For Phase 0–1 you stay on trusted localhost.

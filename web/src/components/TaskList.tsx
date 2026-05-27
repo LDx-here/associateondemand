@@ -1,8 +1,11 @@
 "use client";
 
+import { ListTodo } from "lucide-react";
 import { useState } from "react";
 
+import { EmptyState } from "@/components/EmptyState";
 import type { Task } from "@/lib/types";
+import { btnSecondary } from "@/lib/ui-classes";
 import { cn, formatDate } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
 
@@ -23,8 +26,20 @@ export function TaskList({
     onUpdated?.();
   }
 
+  if (!tasks.length) {
+    return (
+      <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <EmptyState
+          icon={ListTodo}
+          title="No tasks yet."
+          description="Create the first task for this matter using the form."
+        />
+      </div>
+    );
+  }
+
   return (
-    <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+    <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white shadow-sm">
       {tasks.map((t) => (
         <li
           key={t.id}
@@ -46,7 +61,7 @@ export function TaskList({
               <button
                 type="button"
                 aria-label={`Complete task: ${t.description}`}
-                className="text-xs text-sky-700 underline"
+                className={btnSecondary}
                 onClick={() => complete(t.id)}
               >
                 Complete
@@ -55,7 +70,6 @@ export function TaskList({
           </div>
         </li>
       ))}
-      {!tasks.length ? <li className="p-4 text-sm text-slate-500">No tasks yet.</li> : null}
     </ul>
   );
 }

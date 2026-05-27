@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 
+import { btnPrimary, linkMatter } from "@/lib/ui-classes";
 import { StatusBadge } from "./StatusBadge";
 import type { Task } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
@@ -219,7 +220,7 @@ export function GlobalTaskList({
           </p>
           <button
             type="button"
-            className="rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700"
+            className={btnPrimary}
             onClick={() => {
               setComposer(true);
               setComposerError(null);
@@ -262,7 +263,7 @@ export function GlobalTaskList({
                   <td className="px-4 py-2">
                     <Link
                       href={`/matters/${t.matterId}`}
-                      className="text-sky-700 hover:underline"
+                      className={linkMatter}
                     >
                       {t.matterId}
                     </Link>
@@ -280,7 +281,7 @@ export function GlobalTaskList({
                       <button
                         type="button"
                         aria-label={`Complete task: ${t.description}`}
-                        className="text-xs text-sky-700 underline"
+                        className={`text-xs ${linkMatter}`}
                         onClick={() => {
                           setCompleteTarget(t);
                           setCompleteError(null);
@@ -354,7 +355,7 @@ export function GlobalTaskList({
           onSubmit={(form) => {
             if (demoMode) {
               setComposerError(
-                "Demo mode — creating tasks requires a live Airtable connection.",
+                "Sample data mode. Connect Airtable in Settings to create tasks.",
               );
               return;
             }
@@ -439,7 +440,7 @@ function TaskComposer({
         <h3 className="text-lg font-semibold text-slate-900">Add task</h3>
         {demoMode ? (
           <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            Demo mode — submission is disabled.
+            Sample data mode. Task submission is disabled.
           </p>
         ) : null}
         <Field label="Matter">
@@ -508,7 +509,7 @@ function TaskComposer({
           </button>
           <button
             type="submit"
-            className="rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+            className={`${btnPrimary} disabled:opacity-60`}
             disabled={isPending}
           >
             {isPending ? "Saving…" : "Save task"}

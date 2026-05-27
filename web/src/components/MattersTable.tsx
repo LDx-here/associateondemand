@@ -11,8 +11,10 @@ import {
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { CaseTypeBadge, CountryBadge } from "@/components/CaseTypeBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { Matter } from "@/lib/types";
+import { linkMatter } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
 
 const columnHelper = createColumnHelper<Matter>();
@@ -41,7 +43,7 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
       columnHelper.accessor("matterId", {
         header: "Matter ID",
         cell: (info) => (
-          <Link className="font-medium text-sky-700 hover:underline" href={`/matters/${info.getValue()}`}>
+          <Link className={linkMatter} href={`/matters/${info.getValue()}`}>
             {info.getValue()}
           </Link>
         ),
@@ -51,11 +53,14 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
         header: "Title",
         cell: (info) => <span className="text-slate-900">{info.getValue() || "—"}</span>,
       }),
-      columnHelper.accessor("caseType", { header: "Case type" }),
+      columnHelper.accessor("caseType", {
+        header: "Case type",
+        cell: (info) => <CaseTypeBadge caseType={info.getValue()} />,
+      }),
       columnHelper.accessor((row) => row.country ?? "", {
         id: "country",
         header: "Country",
-        cell: (info) => info.getValue() || "—",
+        cell: (info) => <CountryBadge country={info.getValue()} />,
       }),
       columnHelper.accessor((row) => row.posture ?? "", {
         id: "posture",

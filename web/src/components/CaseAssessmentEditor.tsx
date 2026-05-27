@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { btnPrimaryMd } from "@/lib/ui-classes";
+
 import type { CaseAssessment } from "@/lib/types";
 import { prefillCommandPanel } from "@/lib/case-assessment";
 
@@ -76,7 +78,7 @@ export function CaseAssessmentEditor({
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-slate-900">A — Procedural posture & history</h3>
+        <h3 className="text-sm font-semibold text-slate-900">A: Procedural posture and history</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <Field label="Court / agency" value={data.courtAgency} onChange={(v) => patch("courtAgency", v)} />
           <Field label="Judge / officer" value={data.judgeOfficer} onChange={(v) => patch("judgeOfficer", v)} />
@@ -100,7 +102,7 @@ export function CaseAssessmentEditor({
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-slate-900">B — Claim basis & assessment</h3>
+        <h3 className="text-sm font-semibold text-slate-900">B: Claim basis and assessment</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <Field label="Claim type" value={data.claimType} onChange={(v) => patch("claimType", v)} />
           <Field label="Legal standard" value={data.legalStandard} onChange={(v) => patch("legalStandard", v)} rows={2} />
@@ -127,7 +129,7 @@ export function CaseAssessmentEditor({
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-slate-900">C — Next steps & follow-ups</h3>
+        <h3 className="text-sm font-semibold text-slate-900">C: Next steps and follow-ups</h3>
         <div className="mt-3 space-y-3">
           {data.immediateActions.map((action, i) => (
             <div key={i} className="flex flex-wrap items-end gap-2">
@@ -202,7 +204,7 @@ export function CaseAssessmentEditor({
         <button
           type="button"
           disabled={saving}
-          className="rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+          className={`${btnPrimaryMd} disabled:opacity-50`}
           onClick={save}
         >
           {saving ? "Saving…" : "Save case assessment"}

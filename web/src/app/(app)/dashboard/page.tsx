@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Activity, AlertCircle, Briefcase, CalendarClock, Inbox } from "lucide-react";
 
+import { EmptyState } from "@/components/EmptyState";
 import { KpiCard } from "@/components/KpiCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -16,6 +18,7 @@ import {
 } from "@/lib/data-store";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
 import { countUnreadInboxFromAirtable } from "@/lib/airtable/queries";
+import { linkMatter } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
 
 function daysUntil(value: string | null | undefined, now = new Date()): number | null {
@@ -65,18 +68,23 @@ export default async function DashboardPage() {
       <header>
         <h1 className="text-2xl font-semibold text-slate-900">{greeting("La'Dajia", now)}</h1>
         <p className="text-sm text-slate-600">{todayLabel}</p>
-        <p className="mt-1 text-xs text-slate-500">
-          {demo
-            ? "Showing bundled demo matters. Add a valid Airtable PAT to web/.env.local for live data."
-            : "Connected to Airtable."}
-        </p>
+        {demo ? (
+          <p className="mt-1 text-xs text-slate-500">
+            Showing sample data. Connect Airtable in Settings to load live matters.
+          </p>
+        ) : null}
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Active matters" value={activeMatters.length} />
-        <KpiCard label="Overdue tasks" value={overdue.length} hint="Past due, not complete" />
-        <KpiCard label="Upcoming deadlines" value={filingDeadlines14} hint="Filing deadlines, next 14 days" />
-        <KpiCard label="PM inbox unread" value={inboxUnread} hint="Awaiting attorney review" />
+        <KpiCard label="Active matters" value={activeMatters.length} icon={Briefcase} />
+        <KpiCard label="Overdue tasks" value={overdue.length} hint="Past due, not complete" icon={AlertCircle} />
+        <KpiCard
+          label="Upcoming deadlines"
+          value={filingDeadlines14}
+          hint="Filing deadlines, next 14 days"
+          icon={CalendarClock}
+        />
+        <KpiCard label="PM inbox unread" value={inboxUnread} hint="Awaiting attorney review" icon={Inbox} />
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -84,7 +92,7 @@ export default async function DashboardPage() {
           <h2 className="font-medium text-slate-900">Upcoming deadlines (next 30 days)</h2>
         </div>
         <table className="min-w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
             <tr>
               <th className="px-4 py-2">Matter</th>
               <th className="px-4 py-2">Description</th>
@@ -97,8 +105,12 @@ export default async function DashboardPage() {
           <tbody>
             {deadlines30.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
-                  No deadlines in the next 30 days.
+                <td colSpan={6} className="px-4 py-2">
+                  <EmptyState
+                    icon={CalendarClock}
+                    title="No deadlines yet."
+                    description="Deadlines from tasks will appear here when they are due in the next 30 days."
+                  />
                 </td>
               </tr>
             ) : (
@@ -113,16 +125,13 @@ export default async function DashboardPage() {
                     }`}
                   >
                     <td className="px-4 py-2">
-                      <Link
-                        className="text-sky-700 hover:underline"
-                        href={`/matters/${t.matterId}`}
-                      >
+                      <Link className={linkMatter} href={`/matters/${t.matterId}`}>
                         {t.matterId}
                       </Link>
                     </td>
                     <td className="px-4 py-2">{t.description}</td>
-                    <td className="px-4 py-2">{formatDate(t.dueDate)}</td>
-                    <td className="px-4 py-2">{daysUntil(t.dueDate, now) ?? "—"}</td>
+                    <td className="px-4 py-2 tabular-nums">{formatDate(t.dueDate)}</td>
+                    <td className="px-4 py-2 tabular-nums">{daysUntil(t.dueDate, now) ?? "—"}</td>
                     <td className="px-4 py-2">{t.priority}</td>
                     <td className="px-4 py-2">
                       {t.assignedTo || matter?.assignedAttorney || "—"}
@@ -140,7 +149,7 @@ export default async function DashboardPage() {
           <h2 className="font-medium text-slate-900">Overdue tasks</h2>
         </div>
         <table className="min-w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
             <tr>
               <th className="px-4 py-2">Matter</th>
               <th className="px-4 py-2">Description</th>
@@ -153,8 +162,8 @@ export default async function DashboardPage() {
           <tbody>
             {overdue.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
-                  Nothing overdue. Good.
+                <td colSpan={6} className="px-4 py-6 text-center text-sm text-slate-500">
+                  No overdue tasks. You are caught up.
                 </td>
               </tr>
             ) : (
@@ -163,13 +172,13 @@ export default async function DashboardPage() {
                 return (
                   <tr key={t.id} className="border-t border-slate-100 hover:bg-slate-50">
                     <td className="px-4 py-2">
-                      <Link className="text-sky-700 hover:underline" href={`/matters/${t.matterId}`}>
+                      <Link className={linkMatter} href={`/matters/${t.matterId}`}>
                         {t.matterId}
                       </Link>
                     </td>
                     <td className="px-4 py-2">{t.description}</td>
-                    <td className="px-4 py-2">{formatDate(t.dueDate)}</td>
-                    <td className="px-4 py-2 text-rose-700">{d === null ? "—" : Math.abs(d)}</td>
+                    <td className="px-4 py-2 tabular-nums">{formatDate(t.dueDate)}</td>
+                    <td className="px-4 py-2 text-rose-700 tabular-nums">{d === null ? "—" : Math.abs(d)}</td>
                     <td className="px-4 py-2">{t.priority}</td>
                     <td className="px-4 py-2">
                       <StatusBadge status={t.status} />
@@ -187,16 +196,18 @@ export default async function DashboardPage() {
           <h2 className="font-medium text-slate-900">Recent activity</h2>
           <p className="text-xs text-slate-500">Last 7 days across notes, completed tasks, and agent actions.</p>
         </div>
-        <ol className="divide-y divide-slate-100">
-          {activity.length === 0 ? (
-            <li className="px-4 py-6 text-center text-sm text-slate-500">
-              No recent activity yet.
-            </li>
-          ) : (
-            activity.map((entry) => (
+        {activity.length === 0 ? (
+          <EmptyState
+            icon={Activity}
+            title="No recent activity yet."
+            description="Notes, completed tasks, and agent actions from the last week will show here."
+          />
+        ) : (
+          <ol className="divide-y divide-slate-100">
+            {activity.map((entry) => (
               <li key={entry.id} className="px-4 py-3 text-sm">
                 <div className="flex items-baseline justify-between gap-2">
-                  <Link className="font-medium text-sky-700 hover:underline" href={`/matters/${entry.matterId}`}>
+                  <Link className={linkMatter} href={`/matters/${entry.matterId}`}>
                     {entry.matterId}
                   </Link>
                   <span className="text-xs uppercase tracking-wide text-slate-400">
@@ -208,9 +219,9 @@ export default async function DashboardPage() {
                   {new Date(entry.timestamp).toLocaleString()} · {entry.actor}
                 </p>
               </li>
-            ))
-          )}
-        </ol>
+            ))}
+          </ol>
+        )}
       </section>
     </div>
   );

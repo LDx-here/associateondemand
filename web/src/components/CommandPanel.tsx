@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { COMMAND_PREFILL_EVENT } from "@/lib/case-assessment";
+import { btnPrimary, linkMatter } from "@/lib/ui-classes";
 
 type CommandResult =
   | { type: "matter"; matter: { matterId: string } }
@@ -44,7 +45,7 @@ export function CommandPanel() {
   return (
     <aside className="flex w-80 shrink-0 flex-col border-l border-slate-200 bg-white">
       <div className="border-b border-slate-200 px-4 py-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Associate Command Panel</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">Associate Command Panel</p>
         <p className="text-xs text-slate-500">Airtable search only (Phase 4 adds AI routing).</p>
       </div>
       <div className="flex flex-1 flex-col gap-2 p-3">
@@ -57,7 +58,7 @@ export function CommandPanel() {
         />
         <button
           type="button"
-          className="rounded-md bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+          className={`${btnPrimary} disabled:opacity-50`}
           disabled={loading || !query.trim()}
           onClick={runSearch}
         >
@@ -65,7 +66,7 @@ export function CommandPanel() {
         </button>
         {result?.type === "message" ? <p className="text-xs text-slate-600">{result.message}</p> : null}
         {result?.type === "matter" ? (
-          <a className="text-sm text-sky-700 underline" href={`/matters/${result.matter.matterId}`}>
+          <a className={`text-sm ${linkMatter}`} href={`/matters/${result.matter.matterId}`}>
             Open {result.matter.matterId}
           </a>
         ) : null}
@@ -73,8 +74,8 @@ export function CommandPanel() {
           <ul className="space-y-1 text-sm">
             {result.matters.map((m) => (
               <li key={m.matterId}>
-                <a className="text-sky-700 hover:underline" href={`/matters/${m.matterId}`}>
-                  {m.matterId} — {m.clientName}
+                <a className={linkMatter} href={`/matters/${m.matterId}`}>
+                  {m.matterId} · {m.clientName}
                 </a>
               </li>
             ))}

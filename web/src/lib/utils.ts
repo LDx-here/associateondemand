@@ -13,9 +13,11 @@ export function cn(...inputs: ClassValue[]): string {
  */
 const MEDIUM_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", { dateStyle: "medium" });
 
+export const EMPTY_CELL = "n/a";
+
 export function formatDate(value: string | number | Date | null | undefined): string {
-  if (value === null || value === undefined || value === "") return "—";
+  if (value === null || value === undefined || value === "") return EMPTY_CELL;
   const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return EMPTY_CELL;
   return MEDIUM_DATE_FORMATTER.format(d);
 }

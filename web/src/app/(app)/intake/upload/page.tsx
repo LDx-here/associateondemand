@@ -43,7 +43,7 @@ export default function IntakeUploadPage() {
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Document intake</h1>
-        <Link className="text-sm text-sky-700 hover:underline" href="/intake/batch">
+        <Link className="text-sm font-medium text-slate-800 underline-offset-2 hover:underline" href="/intake/batch">
           Batch upload →
         </Link>
       </div>
@@ -72,7 +72,7 @@ export default function IntakeUploadPage() {
         <button
           type="submit"
           disabled={loading || (tierRequiresManualApproval() && !manualApproved)}
-          className="rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+          className="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
           {loading ? "Running OCR pipeline…" : "Upload & extract"}
         </button>

@@ -4,6 +4,8 @@ import { CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 
+import { btnPrimary, linkMatter } from "@/lib/ui-classes";
+
 export type CalendarEntry = {
   id: string;
   matterCode: string;
@@ -119,7 +121,7 @@ export function CalendarBoard({
             </label>
             <button
               type="button"
-              className="rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700"
+              className={btnPrimary}
               onClick={() => {
                 setComposer(true);
                 setComposerError(null);
@@ -147,7 +149,7 @@ export function CalendarBoard({
               }`}
             >
               <div className="flex items-baseline justify-between">
-                <span className={cell.isToday ? "rounded-full bg-sky-600 px-2 py-0.5 font-medium text-white" : "font-medium"}>
+                <span className={cell.isToday ? "rounded-full bg-slate-800 px-2 py-0.5 font-medium text-white" : "font-medium"}>
                   {cell.day}
                 </span>
               </div>
@@ -187,7 +189,7 @@ export function CalendarBoard({
           onSubmit={(form) => {
             if (demoMode) {
               setComposerError(
-                "Demo mode — creating events requires a live Airtable connection.",
+                "Sample data mode. Connect Airtable in Settings to create events.",
               );
               return;
             }
@@ -257,7 +259,7 @@ function EventDrawer({
           <Row label="Matter">
             <Link
               href={`/matters/${entry.matterCode}`}
-              className="text-sky-700 hover:underline"
+              className={linkMatter}
             >
               {entry.matterCode}
             </Link>
@@ -342,7 +344,7 @@ function EventComposer({
         <h3 className="text-lg font-semibold text-slate-900">Add event</h3>
         {demoMode ? (
           <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            Demo mode — the form is read-only until a live Airtable PAT is configured.
+            Sample data mode. Connect Airtable in Settings to add events.
           </p>
         ) : null}
 
@@ -437,7 +439,7 @@ function EventComposer({
           </button>
           <button
             type="submit"
-            className="rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+            className={`${btnPrimary} disabled:opacity-60`}
             disabled={isPending}
           >
             {isPending ? "Saving…" : "Save event"}

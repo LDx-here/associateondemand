@@ -1,8 +1,16 @@
 "use client";
 
-import { FileText } from "lucide-react";
+import {
+  Calendar,
+  ClipboardList,
+  FileText,
+  Gavel,
+  MessageSquare,
+  ScrollText,
+} from "lucide-react";
 import { useCallback, useState } from "react";
 
+import { EmptyState } from "@/components/EmptyState";
 import type {
   CalendarEvent,
   CaseAssessment,
@@ -13,6 +21,7 @@ import type {
   Task,
   TimelineEntry,
 } from "@/lib/types";
+import { btnPrimary, tabActive, tabInactive } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
 import { prefillCommandPanel } from "@/lib/case-assessment";
 import { AddTaskForm } from "./AddTaskForm";
@@ -165,9 +174,7 @@ export function MatterWorkbench({
             key={t}
             type="button"
             className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-              tab === t
-                ? "bg-sky-600 text-white"
-                : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+              tab === t ? tabActive : tabInactive
             }`}
             onClick={() => setTab(t)}
           >
@@ -197,8 +204,12 @@ export function MatterWorkbench({
               <tbody>
                 {elements.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
-                      No legal elements mapped yet.
+                    <td colSpan={4} className="p-0">
+                      <EmptyState
+                        icon={Gavel}
+                        title="No legal elements yet."
+                        description="Map elements in the Legal Elements tab or import from your case assessment."
+                      />
                     </td>
                   </tr>
                 ) : (
@@ -226,7 +237,7 @@ export function MatterWorkbench({
                                 className={`self-start rounded-md px-2 py-1 text-xs font-medium ring-1 ${
                                   dispatched
                                     ? "bg-slate-100 text-slate-400 ring-slate-200"
-                                    : "bg-sky-600 text-white ring-sky-600 hover:bg-sky-700"
+                                    : `${btnPrimary} ring-slate-800`
                                 }`}
                               >
                                 {dispatched ? "Dispatched" : "Dispatch"}
@@ -261,8 +272,12 @@ export function MatterWorkbench({
               </li>
             ))
           ) : (
-            <li className="rounded-md border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
-              No timeline entries yet.
+            <li className="list-none">
+              <EmptyState
+                icon={ScrollText}
+                title="No timeline entries yet."
+                description="Notes, tasks, and agent actions will appear here as the matter progresses."
+              />
             </li>
           )}
         </ol>
@@ -276,7 +291,13 @@ export function MatterWorkbench({
               Notes ({notes.length})
             </p>
             {notes.length === 0 ? (
-              <li className="text-slate-500">No notes yet.</li>
+              <li className="list-none">
+                <EmptyState
+                  icon={MessageSquare}
+                  title="No notes yet."
+                  description="Add the first note for this matter using the composer."
+                />
+              </li>
             ) : (
               notes.map((n) => (
                 <li
@@ -324,12 +345,12 @@ export function MatterWorkbench({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="px-4 py-10 text-center text-sm text-slate-500">
-                    <span className="inline-flex flex-col items-center gap-2">
-                      <FileText className="h-6 w-6 text-slate-400" aria-hidden />
-                      <span className="font-medium text-slate-700">No documents on file.</span>
-                      <span>Batch upload arrives via the Intake tab.</span>
-                    </span>
+                  <td colSpan={3} className="p-0">
+                    <EmptyState
+                      icon={FileText}
+                      title="No documents yet."
+                      description="Upload files from the Intake tab to attach them to this matter."
+                    />
                   </td>
                 </tr>
               )}
@@ -394,8 +415,12 @@ export function MatterWorkbench({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
-                    No legal elements mapped yet.
+                  <td colSpan={4} className="p-0">
+                    <EmptyState
+                      icon={ClipboardList}
+                      title="No legal elements yet."
+                      description="Edit assessments inline here or start from the Assessment tab."
+                    />
                   </td>
                 </tr>
               )}
@@ -418,8 +443,12 @@ export function MatterWorkbench({
             <tbody>
               {events.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
-                    No events scheduled. Add Event form arrives once the Events Airtable table is wired (BUILD_SPEC §2 Table 7).
+                  <td colSpan={4} className="p-0">
+                    <EmptyState
+                      icon={Calendar}
+                      title="No events yet."
+                      description="Hearings and deadlines will appear here when scheduled on the firm calendar."
+                    />
                   </td>
                 </tr>
               ) : (

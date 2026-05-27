@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { InboxItem } from "@/lib/airtable/queries";
+import { btnPrimary, linkMatter } from "@/lib/ui-classes";
 
 type ResolveTarget = {
   item: InboxItem;
@@ -114,12 +116,12 @@ export function InboxBoard({
         )}
       </section>
 
-      {resolved.length > 0 ? (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Recently resolved
-          </h2>
-          <ol className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          Recently resolved
+        </h2>
+        {resolved.length > 0 ? (
+          <ol className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white shadow-sm">
             {resolved.map((item) => (
               <li key={item.id} className="px-4 py-3 text-sm">
                 <div className="flex items-baseline justify-between gap-2">
@@ -138,7 +140,7 @@ export function InboxBoard({
                       {" · "}
                       <Link
                         href={`/matters/${item.matterId}`}
-                        className="text-sky-700 hover:underline"
+                        className={linkMatter}
                       >
                         {item.matterId}
                       </Link>
@@ -148,8 +150,16 @@ export function InboxBoard({
               </li>
             ))}
           </ol>
-        </section>
-      ) : null}
+        ) : (
+          <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <EmptyState
+              icon={InboxIcon}
+              title="No resolved items yet."
+              description="Resolved PM inbox items will appear here after you review pending items."
+            />
+          </div>
+        )}
+      </section>
 
       {target ? (
         <div
@@ -186,7 +196,7 @@ export function InboxBoard({
               </button>
               <button
                 type="button"
-                className="rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+                className={`${btnPrimary} disabled:opacity-60`}
                 onClick={submit}
                 disabled={isPending}
               >
@@ -223,7 +233,7 @@ function InboxCard({
             {" · "}
             <Link
               href={`/matters/${item.matterId}`}
-              className="text-sky-700 hover:underline"
+              className={linkMatter}
             >
               {item.matterId}
             </Link>
@@ -257,7 +267,7 @@ function InboxCard({
           <button
             key={option}
             type="button"
-            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 hover:border-sky-500 hover:bg-sky-50 hover:text-sky-800"
+            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 hover:border-slate-500 hover:bg-slate-50"
             onClick={() => onAction(option)}
           >
             {option}
