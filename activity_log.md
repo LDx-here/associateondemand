@@ -1,3 +1,5 @@
+### [2026-05-26] CHECKPOINT: checkpoint: professional firm UI polish
+
 ### [2026-05-26] CHECKPOINT: checkpoint: Matters metadata backfill
 
 ### [2026-05-26] CHECKPOINT: Matters metadata backfill script (sandbox blocked live PATCH)
