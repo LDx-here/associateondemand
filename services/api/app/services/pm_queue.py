@@ -1,14 +1,26 @@
-"""Redis-backed PM work queue (Phase 4)."""
+"""Redis-backed PM work queue (Phase 4).
+
+Redis remains the in-flight job queue for fast pickup by the orchestrator.
+PM Inbox cards are *also* persisted to Airtable (BUILD_SPEC §7.5 system of
+record) so review state survives Redis restarts and the attorney can
+resolve items from the `/inbox` page. Airtable writes are best-effort: if
+the base is unreachable or unconfigured the Redis enqueue still happens.
+"""
 
 from __future__ import annotations
 
 import json
+import logging
 import os
 import uuid
 from datetime import datetime, timezone
 from typing import Any
 
 import redis
+
+from app.services import airtable as airtable_client
+
+LOGGER = logging.getLogger(__name__)
 
 QUEUE_KEY = "aod:pm:inbox"
 AUDIT_KEY = "aod:audit:log"
@@ -44,22 +56,41 @@ def enqueue_inbox_review(
 ) -> dict[str, Any]:
     """Surface an item that needs attorney review (BUILD_SPEC §8 inbox card)."""
 
+    resolved_options = options or ["Approve", "Reject", "Modify", "Defer"]
+    created_at = datetime.now(timezone.utc).isoformat()
     item = {
         "id": f"inbox-{uuid.uuid4().hex[:8]}",
         "matter_id": matter_id or "",
         "agent": agent,
         "what_tried": what_tried[:1000],
         "what_needed": what_needed[:1000],
-        "options": options or ["Approve", "Reject", "Modify", "Defer"],
+        "options": resolved_options,
         "status": "Unread",
         "reason": reason[:500],
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": created_at,
     }
     try:
         _redis().lpush(QUEUE_KEY, json.dumps(item))
     except Exception:
-        # Redis offline — log audit only so orchestrator never crashes.
-        pass
+        LOGGER.warning("PM inbox redis enqueue failed; falling back to audit log only.")
+
+    # Mirror to Airtable PM Inbox so the attorney UI sees a durable row.
+    title = f"{agent}: {what_needed[:80]}".strip()
+    try:
+        record = airtable_client.create_inbox_item(
+            title=title or agent or "PM Inbox item",
+            agent=agent,
+            what_tried=what_tried,
+            what_needed=what_needed,
+            options=resolved_options,
+            matter_code=matter_id,
+            created_at_iso=created_at,
+        )
+        if record and record.get("id"):
+            item["airtable_id"] = record["id"]
+    except Exception:
+        LOGGER.exception("PM inbox airtable write failed (continuing on Redis).")
+
     append_audit(
         matter_id or "",
         agent,

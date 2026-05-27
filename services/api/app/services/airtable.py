@@ -1,0 +1,206 @@
+"""Minimal Airtable HTTP client for FastAPI workers.
+
+The Next.js app is the primary Airtable reader (BUILD_SPEC §3 lib/airtable/).
+This module is the narrow exception: PM Inbox and Corrections writers in
+the agent layer must persist durable rows so the attorney inbox and
+training corpus survive Redis restarts.
+
+The PAT never leaves the API container. If `AIRTABLE_PAT` or
+`AIRTABLE_BASE_ID` are unset (local dev without Airtable), every helper
+returns ``None`` and the caller is expected to keep its Redis / file
+fallback. No exception is raised, so agent code can call these helpers
+unconditionally.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import os
+from typing import Any, Mapping
+
+import httpx
+
+LOGGER = logging.getLogger(__name__)
+
+TABLE_MATTERS = "Matters"
+TABLE_PM_INBOX = "PM Inbox"
+TABLE_CORRECTIONS = "Corrections"
+
+# BUILD_SPEC §2 — snake_case column names (post-rename, 2026-05-26).
+FIELDS_PM_INBOX = {
+    "title": "title",
+    "matter_id": "matter_id",
+    "agent": "agent",
+    "what_tried": "what_tried",
+    "what_needed": "what_needed",
+    "options": "options",
+    "status": "status",
+    "resolution": "resolution",
+    "created_at": "created_at",
+    "resolved_at": "resolved_at",
+}
+
+FIELDS_CORRECTIONS = {
+    "agent": "agent",
+    "matter_id": "matter_id",
+    "original_output": "original_output",
+    "attorney_edit": "attorney_edit",
+    "correction_type": "correction_type",
+    "reason": "reason",
+    "applied_to": "applied_to",
+    "created_at": "created_at",
+}
+
+_CATEGORY_TO_TYPE = {
+    "factual_error": "Factual",
+    "classification_error": "Classification",
+    "formatting_convention": "Convention",
+    "analytical_error": "Analytical",
+    "false_positive": "False Positive",
+    "false_negative": "False Negative",
+}
+
+
+def is_configured() -> bool:
+    return bool(os.getenv("AIRTABLE_PAT") and os.getenv("AIRTABLE_BASE_ID"))
+
+
+def _client() -> httpx.Client:
+    pat = os.environ["AIRTABLE_PAT"]
+    return httpx.Client(
+        timeout=httpx.Timeout(10.0, connect=5.0),
+        headers={
+            "Authorization": f"Bearer {pat}",
+            "Content-Type": "application/json",
+        },
+    )
+
+
+def _base_url(table: str) -> str:
+    base = os.environ["AIRTABLE_BASE_ID"]
+    safe_table = table.replace(" ", "%20")
+    return f"https://api.airtable.com/v0/{base}/{safe_table}"
+
+
+def _create_record(table: str, fields: Mapping[str, Any]) -> dict[str, Any] | None:
+    if not is_configured():
+        return None
+    try:
+        with _client() as client:
+            # ``typecast`` lets us pass new singleSelect values (e.g. an
+            # agent name not yet on the dropdown) and have Airtable add
+            # them rather than 422.
+            resp = client.post(
+                _base_url(table),
+                json={"fields": dict(fields), "typecast": True},
+            )
+            if resp.status_code >= 400:
+                LOGGER.warning(
+                    "airtable create %s failed: %s %s",
+                    table,
+                    resp.status_code,
+                    resp.text[:300],
+                )
+                return None
+            return resp.json()
+    except httpx.HTTPError:
+        LOGGER.exception("airtable create %s network error", table)
+        return None
+
+
+def _resolve_matter_record_id(matter_code: str) -> str | None:
+    """Look up the Airtable rec id for the given Matter ID code."""
+
+    if not is_configured() or not matter_code:
+        return None
+    if matter_code.startswith("rec"):
+        return matter_code
+    safe = matter_code.replace("'", "\\'")
+    formula = f"{{{FIELDS_PM_INBOX['matter_id']}}} = '{safe}'"
+    try:
+        with _client() as client:
+            resp = client.get(
+                _base_url(TABLE_MATTERS),
+                params={"filterByFormula": formula, "maxRecords": "1"},
+            )
+            if resp.status_code >= 400:
+                return None
+            records = resp.json().get("records", [])
+            return records[0]["id"] if records else None
+    except httpx.HTTPError:
+        return None
+
+
+def create_inbox_item(
+    *,
+    title: str,
+    agent: str,
+    what_tried: str,
+    what_needed: str,
+    options: list[str] | None = None,
+    matter_code: str | None = None,
+    created_at_iso: str | None = None,
+) -> dict[str, Any] | None:
+    """Persist a PM Inbox card (BUILD_SPEC §7.5).
+
+    Returns the Airtable record dict on success, ``None`` if Airtable is
+    not configured or the write failed (caller should rely on Redis).
+    """
+
+    fields: dict[str, Any] = {
+        FIELDS_PM_INBOX["title"]: title[:240],
+        FIELDS_PM_INBOX["agent"]: agent[:120],
+        FIELDS_PM_INBOX["what_tried"]: what_tried[:4000],
+        FIELDS_PM_INBOX["what_needed"]: what_needed[:4000],
+        FIELDS_PM_INBOX["status"]: "Pending",
+        FIELDS_PM_INBOX["options"]: json.dumps(options or []),
+    }
+    if matter_code:
+        fields[FIELDS_PM_INBOX["matter_id"]] = matter_code
+    if created_at_iso:
+        # PM Inbox.created_at is a date column in the live base.
+        fields[FIELDS_PM_INBOX["created_at"]] = created_at_iso.split("T", 1)[0]
+    return _create_record(TABLE_PM_INBOX, fields)
+
+
+def create_correction(
+    *,
+    agent: str,
+    original_output: str,
+    attorney_edit: str,
+    category: str,
+    reason: str,
+    applied_to: str,
+    matter_code: str | None = None,
+    created_at_iso: str | None = None,
+) -> dict[str, Any] | None:
+    """Persist a Corrections row (BUILD_SPEC §10).
+
+    ``category`` accepts the legacy snake_case correction enum
+    (``factual_error``, ``analytical_error``, ...) and maps it to the
+    Airtable single-select value. Returns ``None`` if Airtable is not
+    configured or the write failed; caller keeps writing to firm-rules /
+    strategy-patterns / categorizer-examples markdown.
+    """
+
+    fields: dict[str, Any] = {
+        FIELDS_CORRECTIONS["agent"]: agent[:120],
+        FIELDS_CORRECTIONS["original_output"]: original_output[:4000],
+        FIELDS_CORRECTIONS["attorney_edit"]: attorney_edit[:4000],
+        FIELDS_CORRECTIONS["correction_type"]: _CATEGORY_TO_TYPE.get(category, "Analytical"),
+        FIELDS_CORRECTIONS["reason"]: reason[:1000],
+        FIELDS_CORRECTIONS["applied_to"]: applied_to,
+        FIELDS_CORRECTIONS["created_at"]: created_at_iso or _now_iso(),
+    }
+    if matter_code:
+        rec_id = _resolve_matter_record_id(matter_code)
+        if rec_id:
+            fields[FIELDS_CORRECTIONS["matter_id"]] = [rec_id]
+    return _create_record(TABLE_CORRECTIONS, fields)
+
+
+def _now_iso() -> str:
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")

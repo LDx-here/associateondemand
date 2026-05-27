@@ -2,9 +2,13 @@ import Link from "next/link";
 import {
   BookOpen,
   Briefcase,
+  Calendar,
+  CheckSquare,
   FileUp,
+  Inbox,
   LayoutDashboard,
   Map,
+  Settings,
   Upload,
 } from "lucide-react";
 
@@ -14,9 +18,13 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/matters", label: "Matters", icon: Briefcase },
+  { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/calendar", label: "Calendar", icon: Calendar },
+  { href: "/inbox", label: "PM Inbox", icon: Inbox },
   { href: "/intake/upload", label: "Intake", icon: Upload },
   { href: "/knowledge-map", label: "Knowledge map", icon: Map },
   { href: "/import/eimmigration", label: "Import", icon: FileUp },
+  { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 export function AppShell({

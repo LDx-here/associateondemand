@@ -10,13 +10,13 @@ as **present**, **partial**, or **missing**. Field paths and line ranges
 are anchored to the working tree at audit time. Use this as the punch-list
 for Phases 4–6 cleanup.
 
-Headline compliance score: **~78%** (was 74% — bumped by the live bootstrap of
-the 4 missing tables and the seeded foundational `People` row this round).
-The skeleton is in place. The biggest remaining gaps are the legacy
-title-case field names in the 7 pre-existing tables (`Matter ID` vs.
-`matter_id`, `Client Name` PII column, etc.), matter-detail tab fine-tuning
-(Assessment badges + "Dispatched" disabled state), and several mandatory
-pages (Inbox, Calendar, Global Tasks, Settings).
+Headline compliance score: **~87%** (was 78% — bumped this round by the
+snake_case migration on the 7 pre-existing tables, the four new pages
+`/inbox` `/calendar` `/tasks` `/settings`, and durable PM Inbox + Corrections
+Airtable writes). The biggest remaining gaps are matter-detail polish
+(Assessment badges + "Dispatched" disabled state, "New Matter" modal),
+the missing agent wrappers (drafting / mass auditor / legal mapping /
+strong-reader orchestrator), and the BUILD_SPEC document-output linter.
 
 ---
 
@@ -78,13 +78,14 @@ for the BUILD_SPEC §2 column list.
 
 ### Schema Adaptations — BUILD_SPEC §2 deviations forced by the Airtable Meta API
 
-The Airtable Meta API enforces two restrictions that prevent a literal
-implementation of BUILD_SPEC §2 for newly created tables. Both are
-platform-level limitations (verified 2026-05-26 against
-`POST /v0/meta/bases/{baseId}/tables`), not gaps in the bootstrap script:
+The Airtable Meta API enforces three restrictions that prevent a literal
+implementation of BUILD_SPEC §2. All three are platform-level limitations
+(verified 2026-05-26 against the Meta API endpoints), not gaps in the
+bootstrap or rename scripts:
 
 1. `UNSUPPORTED_FIELD_TYPE_FOR_CREATE — Creating autoNumber fields is not supported at this time`
 2. `UNSUPPORTED_FIELD_TYPE_FOR_CREATE — Creating createdTime fields is not supported at this time`
+3. `DELETE /v0/meta/bases/{baseId}/tables/{tableId}/fields/{fieldId}` is rejected on this base/plan, so field deletion is not available via the API. `scripts/airtable-rename-fields.mjs` falls back to a tombstone rename (e.g. `Client Name` → `DEPRECATED_client_name`) so the PII column stops being read by the app even though the column physically remains in the base.
 
 Because every BUILD_SPEC §2 table specifies an `*_id` autoNumber primary and
 a `created_at` Created-time column, the four newly-bootstrapped tables
@@ -301,7 +302,7 @@ Pre-session order: `Overview, Timeline, Documents, Legal Elements, Case Assessme
 | Phase | Status | Notes |
 |-------|--------|-------|
 | 0 — Foundation | **green** | Docker, Next.js skeleton, FastAPI, brain vault, governance docs all present. |
-| 1 — Airtable + read-only dashboard | **yellow → green-ish** | Connector works; all 11 BUILD_SPEC tables now live in base `appqwRBpXjg9xlnhZ` (7 pre-existing + 4 bootstrapped 2026-05-26). Field-name migration on the 7 legacy tables is the last remaining task. |
+| 1 — Airtable + read-only dashboard | **green** | All 11 BUILD_SPEC tables live in base `appqwRBpXjg9xlnhZ` with snake_case field names per §2 (44 renames + 4 additive columns + 1 PII tombstone applied 2026-05-26). `LEGACY_FIELDS` retired; `airtable/queries.ts` reads/writes through `SPEC_FIELDS` exclusively. |
 | 2 — Full CRUD + Assessment + Timeline + Command Panel | **green-ish** | All present; tab order corrected this session; "New Matter" modal still missing. |
 | 3 — Strong Reader | **yellow** | Categorizer + intake exist; Presidio is a stub; Strong Reader orchestrator not a discrete agent. |
 | 4 — PM Orchestrator + Research + Training Loop | **yellow → green-ish** | Five-Anchors `is_valid()` wired, Research API-key tier wired, MANUAL FLAG path present. Airtable PM Inbox / Corrections table still pending. |

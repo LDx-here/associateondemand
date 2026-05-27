@@ -1,5 +1,7 @@
 ### [2026-05-26] CHECKPOINT: checkpoint: bootstrap 4 missing Airtable tables, live data online
 
+### [2026-05-26] CHECKPOINT: snake_case fields, PM→Airtable, /inbox /calendar /tasks /settings — 44 fields renamed across 7 pre-existing tables, 4 additive columns (Notes.type, PM Inbox.options/resolution/resolved_at), Matters.Client Name tombstoned (PII backup at data/backups/airtable-client-names-2026-05-26.jsonl, 5 rows); LEGACY_FIELDS retired; FastAPI PM Inbox + Corrections writers durable via services/api/app/services/airtable.py (typecast=true); four BUILD_SPEC pages live and 200 OK; build green; 11/11 smoke; ~87% compliance
+
 ### [2026-05-26] CHECKPOINT: bootstrap 4 missing Airtable tables, live data online — People (tbli83q37pINneS53), Events (tblXOky0GIsgM991L), Strategy Patterns (tbl6lhZXRb3G8MZOz), Corrections (tbl7TaDDuu9fawhfA); seeded La'Dajia Ferguson (recz8Twgpny19xDm5); 11/11 tables reachable; BUILD_SPEC §2 schema adaptations documented (autoNumber/createdTime Meta API limitations)
 
 ### [2026-05-26] CHECKPOINT: checkpoint: real CLAUDE + SKILL, BUILD_SPEC audit, Phase 4 unblock

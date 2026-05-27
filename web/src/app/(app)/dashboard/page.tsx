@@ -15,6 +15,7 @@ import {
   useDemoMode,
 } from "@/lib/data-store";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
+import { countUnreadInboxFromAirtable } from "@/lib/airtable/queries";
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
@@ -42,7 +43,14 @@ export default async function DashboardPage() {
   const activeMatters = matters.filter((m) => m.status !== "Closed");
   const overdue = overdueTasks(tasks, now);
   const filingDeadlines14 = filingDeadlinesWithin(tasks, 14, now);
-  const inboxUnread = 0; // PM Inbox Airtable table not yet wired (BUILD_SPEC §2 Table 9).
+  let inboxUnread = 0;
+  if (!demo) {
+    try {
+      inboxUnread = await countUnreadInboxFromAirtable();
+    } catch {
+      inboxUnread = 0;
+    }
+  }
 
   const deadlines30 = upcomingDeadlines(tasks, 30, now);
   const activity = recentActivity({

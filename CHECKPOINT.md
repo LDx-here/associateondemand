@@ -15,23 +15,31 @@
 
 - **This session:**
   - Real CLAUDE constitution + Research Memo SKILL landed (delivered upstream this turn).
-  - **BUILD_SPEC v1 accepted.** Wrote [`docs/constitution/BUILD_SPEC-GAP-AUDIT.md`](docs/constitution/BUILD_SPEC-GAP-AUDIT.md) (~78% compliance after this round, gaps documented).
+  - **BUILD_SPEC v1 accepted.** Wrote [`docs/constitution/BUILD_SPEC-GAP-AUDIT.md`](docs/constitution/BUILD_SPEC-GAP-AUDIT.md) (~87% compliance after this round, gaps documented).
+  - **Live Airtable schema migrated to snake_case.** Ran [`scripts/airtable-rename-fields.mjs`](scripts/airtable-rename-fields.mjs): 44 fields renamed across Matters/Contacts/Tasks/Notes/Documents/Legal Elements/PM Inbox; 4 additive columns added (Notes.type, PM Inbox.options/resolution/resolved_at); 1 PII column tombstoned (`Matters.Client Name` → `DEPRECATED_client_name` — Airtable Meta API rejects field DELETE on this plan, so the column stays in the base but no app code reads it). 5 Matters rows backed up to `data/backups/airtable-client-names-2026-05-26.jsonl` (gitignored). Documented in BUILD_SPEC gap audit under "Schema Adaptations".
+  - **`LEGACY_FIELDS` retired.** `web/src/lib/airtable/fields.ts` and `queries.ts` read/write through `SPEC_FIELDS` exclusively. All consumers verified via `npm run build`.
+  - **PM Inbox + Corrections promoted to Airtable.** `services/api/app/services/airtable.py` is the new FastAPI Airtable writer (uses `typecast: true` so unknown agent names auto-add as singleSelect options). `services/pm_queue.enqueue_inbox_review` mirrors every inbox card to Airtable PM Inbox; `routers/correction_router.submit_correction` writes a durable Corrections row in addition to the brain markdown/jsonl. Both writers fall back silently when Airtable is unconfigured. Smoke verified end-to-end via [`scripts/smoke-airtable-writes.mjs`](scripts/smoke-airtable-writes.mjs) (creates → reads-back → deletes; PM Inbox and Corrections both pass).
+  - **Four BUILD_SPEC pages built.** All return HTTP 200 against live Airtable:
+    - [`/inbox`](web/src/app/(app)/inbox/page.tsx) — PM Inbox cards with agent/matter/what-tried/what-needed, action buttons rendered from the `options` field, resolution modal → PATCH `status='Resolved'`, `resolution`, `resolved_at`. Dashboard KPI now reads `countUnreadInboxFromAirtable()`.
+    - [`/calendar`](web/src/app/(app)/calendar/page.tsx) — Monthly grid keyed off `Events`; chips colored by `type`; click → side drawer with link to Matter; "Filing deadlines only" toggle; "+ Add event" composer POSTs to `/api/events`.
+    - [`/tasks`](web/src/app/(app)/tasks/page.tsx) — Global task list with filters (Matter, Status, Priority, Assigned, Due Range, Filing Deadlines Only, search), Complete + Add Task wired to the existing matter-scoped task endpoints.
+    - [`/settings`](web/src/app/(app)/settings/page.tsx) — Phase-1 read-only: Profile (live People row), Airtable connection (base id + redacted PAT), PII tier + auth status, doc links.
   - **Research agent unblocked.** Removed PENDING refuse guard; now follows BUILD_SPEC §9 multi-source protocol with MIDPAGE/FASTCASE key tier check + MANUAL FLAG inbox card when both keys absent.
   - **Five-Anchors AgentResult contract** wired (Pydantic v2). PM Orchestrator validates every result via `is_valid()` and routes failures to the inbox.
-  - **Dashboard rebuilt** to BUILD_SPEC §7.1: time-aware greeting + today's date, 4 KPIs (Active matters / Overdue tasks / Upcoming filing deadlines 14d / PM inbox unread), Upcoming Deadlines table (30d, filing rows bold + red border), Overdue Tasks table, Recent Activity feed (last 7d).
-  - **Matter Detail tabs reordered to BUILD_SPEC §7.3:** Assessment (default) · Timeline · Notes · Tasks · Documents · Legal Elements · Events. Notes/Tasks/Events now first-class tabs; Assessment renders the Element/Pathway × Assessment × Key Gap × Next Action table with Dispatch buttons.
-  - **Airtable lib migrated to BUILD_SPEC §3 layout:** `web/src/lib/airtable/{client,queries,fields,types}.ts`. Legacy `lib/airtable-*.ts` files kept as one-line shim re-exports.
-  - **Live Airtable schema bootstrapped.** Ran [`scripts/airtable-bootstrap.mjs`](scripts/airtable-bootstrap.mjs) against base `appqwRBpXjg9xlnhZ` and created the 4 missing tables: People `tbli83q37pINneS53`, Events `tblXOky0GIsgM991L`, Strategy Patterns `tbl6lhZXRb3G8MZOz`, Corrections `tbl7TaDDuu9fawhfA`. Idempotent re-run confirms skip-all behavior. Seeded foundational People row `La'Dajia Ferguson` → `recz8Twgpny19xDm5`.
-  - **Schema adaptations vs. BUILD_SPEC §2.** Airtable Meta API rejects both `autoNumber` and `createdTime` field creation. Dropped `person_id` / `event_id` / `pattern_id` / `correction_id` from `SPEC_FIELDS`; primaries are now `name` / `summary` / `fact_pattern` / `agent` Single line text. Relations use Airtable's built-in `recXXX` IDs (exposed as `RECORD_ID` in `fields.ts`). `created_at` on the 4 new tables is a writable `dateTime` column; writers must set ISO timestamp on insert. Documented in BUILD_SPEC gap audit under "Schema Adaptations".
-  - **Smoke test green:** `cd web && npm run test:airtable` reports 11/11 OK (Matters 5, Contacts 0, Tasks 6, Notes 0, Documents 0, Legal Elements 6, PM Inbox 3, People 1, Events 0, Strategy Patterns 0, Corrections 0).
-  - Build: `cd web && rm -rf .next && npm run build` ✅ passes (Next 16.2.4, Turbopack).
+  - **Dashboard rebuilt** to BUILD_SPEC §7.1.
+  - **Matter Detail tabs reordered to BUILD_SPEC §7.3.**
+  - **Airtable lib migrated to BUILD_SPEC §3 layout** (`web/src/lib/airtable/{client,queries,fields,types}.ts`).
+  - **Schema adaptations vs. BUILD_SPEC §2.** Airtable Meta API rejects `autoNumber`/`createdTime` field creation and field DELETE; bootstrap and rename scripts encode the workarounds. People/Events/Strategy Patterns/Corrections use Single line text primaries; `created_at` columns are writable `dateTime`; Matters keeps `DEPRECATED_client_name` tombstone.
+  - **Smoke test green:** `cd web && npm run test:airtable` reports 11/11 OK (Matters 5, Contacts 0, Tasks 6, Notes 0, Documents 0, Legal Elements 6, PM Inbox 3, People 1, Events 0, Strategy Patterns 0, Corrections 0). PM Inbox + Corrections write smoke also green (`node scripts/smoke-airtable-writes.mjs`).
+  - **Build green:** `cd web && rm -rf .next && npm run build` ✅ (Next 16.2.4 Turbopack, 14/14 routes including the four new pages).
+  - **Dev-server page smoke:** `/inbox` `/calendar` `/tasks` `/settings` all return HTTP 200 with no console errors.
   - Removed staging dir `litigation-associate 3/`.
   - Runbook: [`docs/runbooks/airtable-base-setup.md`](docs/runbooks/airtable-base-setup.md) — 11-table copy-paste checklist + bootstrap instructions.
 
 ## Next step
 
-1. **Field-name migration on the 7 pre-existing tables.** `airtable-queries.ts` still reads `LEGACY_FIELDS` (`Matter ID`, `Client Name`, `Status`, …). Rename Airtable columns to snake_case per BUILD_SPEC §2 and retire `LEGACY_FIELDS`. The `Client Name` column also violates BUILD_SPEC §13.4 (Tier-0 PII leak) — drop in favor of `title`.
-2. **Promote PM Inbox + Corrections writes from Redis to Airtable** now that the tables exist. `services/pm_queue.py` + `routers/correction_router.py` are the writers to update.
+1. **Add the still-missing Matters columns** (`title`, `country`, `posture`, `court`, `judge`, `next_hearing`, `assessment_data`, `created_at`, `updated_at`) and wire `mapMatter` to surface them so the matter list and detail header carry the BUILD_SPEC §2 metadata. `assessment_data` in particular unblocks live case-assessment persistence (currently a silent no-op against Airtable; see `getCaseAssessmentFromAirtable`).
+2. **Drafting / Mass Auditor / Legal Mapping / Strong Reader orchestrator** — wire as discrete agents under `services/api/app/agents/` per BUILD_SPEC §4.
 3. **Strong Reader:** flip `AOD_PII_TIER=1` after Presidio sidecars replace compose stub; verify `PRESIDIO_HEALTH_URL`.
 4. **Phase 7:** wire Clerk/Supabase and set `AOD_AUTH_ENABLED=true` before public deploy.
 5. Build missing BUILD_SPEC pages: `/inbox` (PM Inbox cards), `/calendar`, `/tasks` (global), `/settings`.
@@ -40,7 +48,8 @@
 
 | Item | Notes |
 |------|--------|
-| Live schema migration | App still reads against the Phase 1 base shape via `LEGACY_FIELDS`. BUILD_SPEC §2 snake_case migration deferred until column renames in Airtable UI. |
+| Matters extra columns | `title`, `country`, `posture`, `court`, `judge`, `next_hearing`, `assessment_data`, `created_at`, `updated_at` not yet added to Matters. Once provisioned, `mapMatter` and `getCaseAssessmentFromAirtable` should be updated to surface and persist them. |
+| Airtable field DELETE | Meta API rejects field deletion on this base/plan. `Matters.DEPRECATED_client_name` tombstone remains in the base; remove via Airtable UI when convenient. |
 | Presidio production | Compose uses health stub until real sidecars. |
 | Production auth | Middleware stub only until Clerk/Supabase wired. |
 | Docker | Not running locally this session — `/health` smoke skipped; confirm next session. |

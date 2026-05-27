@@ -19,6 +19,7 @@ from app.agents.firm_context import (
 )
 from app.db import get_db
 from app.models.db_models import AuditLog
+from app.services import airtable as airtable_client
 
 router = APIRouter(prefix="/agents/corrections", tags=["corrections"])
 
@@ -102,6 +103,23 @@ def submit_correction(body: CorrectionRequest, db: Session = Depends(get_db)) ->
         persisted.append("brain/03_Firm_Knowledge/strategy-patterns.md")
 
     status = "accepted_to_training" if body.accepted else "logged_for_review"
+
+    # BUILD_SPEC §10 — every correction is also persisted as a durable
+    # Airtable Corrections row so the training loop survives without
+    # depending on the brain markdown files alone.
+    applied_to_label = _APPLIED_TO_LABEL.get(cat, "Notes only")
+    airtable_record = airtable_client.create_correction(
+        agent=body.agent,
+        original_output=body.original_output,
+        attorney_edit=body.attorney_correction,
+        category=cat,
+        reason=body.reason,
+        applied_to=applied_to_label,
+        matter_code=body.matter_id,
+    )
+    if airtable_record and airtable_record.get("id"):
+        persisted.append(f"airtable:Corrections/{airtable_record['id']}")
+
     db.add(
         AuditLog(
             matter_id=body.matter_id,
@@ -124,6 +142,16 @@ def submit_correction(body: CorrectionRequest, db: Session = Depends(get_db)) ->
         category=cat,
         persisted_to=persisted,
     )
+
+
+_APPLIED_TO_LABEL: dict[str, str] = {
+    "formatting_convention": "firm-rules.md",
+    "analytical_error": "Strategy Patterns",
+    "false_positive": "Strategy Patterns",
+    "false_negative": "Strategy Patterns",
+    "classification_error": "categorizer-examples.jsonl",
+    "factual_error": "Notes only",
+}
 
 
 @router.get("/firm-rules")

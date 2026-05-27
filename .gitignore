@@ -45,6 +45,7 @@ brain/.trash/
 data/uploads/
 data/qdrant/
 data/postgres/
+data/backups/
 
 # Incoming staging for attorney-provided constitution files
 .incoming/*
