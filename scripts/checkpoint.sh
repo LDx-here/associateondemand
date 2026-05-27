@@ -56,7 +56,11 @@ is_forbidden() {
     [[ "$path" == "$f" ]] && return 0
   done
   for pat in "${FORBIDDEN_PATTERNS[@]}"; do
-    [[ "$path" == *"$pat"* ]] && return 0
+    if [[ "$path" == *"$pat"* ]]; then
+      # Allow documented templates (e.g. web/.env.local.example).
+      [[ "$path" == *.example ]] && continue
+      return 0
+    fi
   done
   return 1
 }

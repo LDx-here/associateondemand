@@ -39,7 +39,7 @@ See [FILE-MAP.md](FILE-MAP.md) and [brain/README.md](brain/README.md).
 | 4 | Partial | PM orchestrator, Research SKILL, inbox follow-up UI, DOCX memo export stub; drafting/audit/mapping stay inbox stubs |
 | 5 | Partial | D3 knowledge map, drawer snippets on linked matters, live-matter subgraph; pattern tier messaging |
 | 6 | Done | eImmigration import with field-mapping preview table |
-| 7 | Partial | Attorney-safe settings, auth stub, deploy runbook links (no production deploy yet) |
+| 7 | Partial (scaffold) | Supabase Auth + deploy runbook (Vercel/Fly/Upstash); you create projects and paste keys |
 
 Runbooks: [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md) · [docs/runbooks/deploy.md](docs/runbooks/deploy.md) · [docs/runbooks/eimmigration-import.md](docs/runbooks/eimmigration-import.md)
 
@@ -52,4 +52,4 @@ Constitution: [docs/constitution/README.md](docs/constitution/README.md)
 - **Airtable:** PAT + base ID in `web/.env.local` — run `npm run test:airtable`
 - **Research tiers:** MIDPAGE/FASTCASE API keys optional in `.env`; Research memo SKILL is live at [`docs/constitution/04-Research-Memo-SKILL.md`](docs/constitution/04-Research-Memo-SKILL.md). Memo Word export runbook: [`docs/runbooks/research-memo-export.md`](docs/runbooks/research-memo-export.md)
 - **Strong Reader:** Flip `AOD_PII_TIER=1` after Presidio sidecars replace compose stub
-- **Production auth:** Wire Clerk/Supabase and set `AOD_AUTH_ENABLED=true`
+- **Production:** Create Supabase, Vercel, and Fly.io projects per [docs/runbooks/deploy.md](docs/runbooks/deploy.md); set `AOD_AUTH_ENABLED=true` after keys are live

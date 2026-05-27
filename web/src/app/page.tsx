@@ -19,7 +19,7 @@ export default function PhaseZeroHome() {
           Open dashboard
         </Link>
         <Link className="rounded-md border border-slate-300 px-5 py-2 text-sm font-medium text-slate-800 hover:bg-white" href="/login">
-          Login placeholder
+          Sign in
         </Link>
       </div>
 

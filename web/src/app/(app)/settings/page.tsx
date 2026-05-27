@@ -1,3 +1,4 @@
+import { SessionAccount } from "@/components/SessionAccount";
 import { listPeopleFromAirtable } from "@/lib/airtable/queries";
 import { useDemoMode } from "@/lib/data-store";
 
@@ -83,8 +84,11 @@ export default async function SettingsPage() {
 
       <SettingsSection title="Privacy and security">
         <Row label="Document handling">{piiTierLabel(piiTier)}</Row>
-        <Row label="Sign-in">
-          {authEnabled ? "Enabled" : "Not enabled"}
+        <Row label="Account">
+          <SessionAccount />
+        </Row>
+        <Row label="Sign-in gate">
+          {authEnabled ? "AOD_AUTH_ENABLED is on" : "Off for local development"}
         </Row>
       </SettingsSection>
 

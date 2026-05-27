@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     app_name: str = "AssociateOnDemand API"
+    # Local: docker-compose postgres. Production: Supabase pooler URI on Fly (see docs/runbooks/deploy.md).
     database_url: str = "postgresql+psycopg://aod:aod@localhost:5432/aod"
     redis_url: str = "redis://localhost:6379/0"
     qdrant_url: str = "http://localhost:6333"

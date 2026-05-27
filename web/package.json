@@ -10,6 +10,8 @@
     "test:airtable": "node scripts/smoke-airtable.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.106.2",
     "@tanstack/react-table": "^8.21.3",
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
@@ -24,8 +26,8 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
-    "@types/d3": "^7.4.3",
     "@tailwindcss/postcss": "^4",
+    "@types/d3": "^7.4.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
