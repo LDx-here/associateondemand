@@ -5,6 +5,10 @@ export type AgentCommandResult = {
   matterId: string;
   agent?: string;
   summary?: string;
+  /** Full research memo when backend includes metadata.full_memo (length-capped by /api/command). */
+  fullMemo?: string;
+  /** True when memo was trimmed to FULL_MEMO_MAX_CHARS. */
+  fullMemoTruncated?: boolean;
   gaps?: string[];
   /**
    * BUILD_SPEC next steps surfaced from AgentResult.next_steps / anchor_next.

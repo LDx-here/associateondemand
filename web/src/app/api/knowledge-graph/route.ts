@@ -13,12 +13,28 @@ function slugify(label: string): string {
 
 async function graphFromMatters() {
   const matters = await listMatters();
-  const nodes: Array<{ id: string; group: string; label: string; matterId?: string }> = [];
+  const nodes: Array<{
+    id: string;
+    group: string;
+    label: string;
+    matterId?: string;
+    snippet?: string;
+  }> = [];
   const links: Array<{ source: string; target: string; weight: number }> = [];
   const reliefSeen = new Set<string>();
 
   for (const m of matters) {
-    nodes.push({ id: m.matterId, group: "matter", label: m.matterId, matterId: m.matterId });
+    const summary = (m.summary ?? "").trim();
+    const snippet =
+      summary.length > 480 ? `${summary.slice(0, 477).trim()}...` : summary || undefined;
+
+    nodes.push({
+      id: m.matterId,
+      group: "matter",
+      label: m.matterId,
+      matterId: m.matterId,
+      ...(snippet ? { snippet } : {}),
+    });
     const caseType = m.caseType || "Unknown";
     const slug = slugify(caseType);
     if (!reliefSeen.has(slug)) {

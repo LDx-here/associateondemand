@@ -2,11 +2,37 @@
 
 import * as d3 from "d3";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { btnSecondary } from "@/lib/ui-classes";
 
-type Node = { id: string; group: string; label: string; matterId?: string };
+type Node = { id: string; group: string; label: string; matterId?: string; snippet?: string };
+
+const ADJACENT_MATTER_LINK_LIMIT = 10;
+
+function linkEndpoint(id: unknown): string {
+  if (typeof id === "string") return id;
+  if (id && typeof id === "object" && "id" in id) return String((id as { id: string }).id);
+  return "";
+}
+
+/** Neighbors linked to `selectedId` whose node has group "matter". */
+function adjacentMatterIds(selectedId: string, allNodes: Node[], graphLinks: Link[]): string[] {
+  const matterKey = new Map<string, string>();
+  for (const n of allNodes) {
+    if (n.group === "matter") {
+      matterKey.set(n.id, n.matterId ?? n.id);
+    }
+  }
+  const out = new Set<string>();
+  for (const l of graphLinks) {
+    const s = linkEndpoint(l.source);
+    const t = linkEndpoint(l.target);
+    if (s === selectedId && matterKey.has(t)) out.add(matterKey.get(t)!);
+    if (t === selectedId && matterKey.has(s)) out.add(matterKey.get(s)!);
+  }
+  return Array.from(out);
+}
 type Link = { source: string; target: string; weight: number };
 type SimNode = d3.SimulationNodeDatum & Node;
 
@@ -128,6 +154,18 @@ export function KnowledgeMapGraph() {
     selected?.matterId ??
     (selected?.group === "matter" ? selected.id : null);
 
+  const adjacentMatters = useMemo(() => {
+    if (!selected) return [];
+    return adjacentMatterIds(selected.id, nodes, links);
+  }, [selected, nodes, links]);
+
+  const showAdjacentList = Boolean(selected && !matterId && adjacentMatters.length > 0);
+  const adjacentShown = adjacentMatters.slice(0, ADJACENT_MATTER_LINK_LIMIT);
+  const adjacentMore =
+    adjacentMatters.length > ADJACENT_MATTER_LINK_LIMIT
+      ? adjacentMatters.length - ADJACENT_MATTER_LINK_LIMIT
+      : 0;
+
   return (
     <div className="relative flex gap-4">
       <div className="min-w-0 flex-1">
@@ -146,16 +184,42 @@ export function KnowledgeMapGraph() {
         />
       </div>
       {selected ? (
-        <aside className="w-56 shrink-0 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <aside className="w-72 max-w-[min(18rem,100%)] shrink-0 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <h3 className="text-sm font-semibold text-slate-900">{selected.label}</h3>
           <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">{selected.group}</p>
+          {selected.snippet ? (
+            <p className="mt-2 text-xs leading-relaxed text-slate-600">{selected.snippet}</p>
+          ) : null}
           {matterId ? (
             <Link className="mt-3 inline-block text-sm font-medium text-slate-800 underline-offset-2 hover:underline" href={`/matters/${matterId}`}>
               Open matter {matterId}
             </Link>
-          ) : (
-            <p className="mt-3 text-xs text-slate-500">Concept node linked to one or more matters.</p>
-          )}
+          ) : null}
+          {showAdjacentList ? (
+            <div className="mt-3">
+              <p className="text-xs font-medium text-slate-700">Linked matters</p>
+              <ul className="mt-2 space-y-1.5 text-sm">
+                {adjacentShown.map((id) => (
+                  <li key={id}>
+                    <Link
+                      className="font-medium text-slate-800 underline-offset-2 hover:underline"
+                      href={`/matters/${id}`}
+                    >
+                      {id}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              {adjacentMore > 0 ? (
+                <p className="mt-2 text-xs text-slate-500">...and {adjacentMore} more</p>
+              ) : null}
+            </div>
+          ) : null}
+          {!matterId && !showAdjacentList ? (
+            <p className="mt-3 text-xs text-slate-500">
+              Concept node with no linked matter in this graph. Select a gray matter node to open its record.
+            </p>
+          ) : null}
           <button type="button" className={`${btnSecondary} mt-4 w-full`} onClick={() => setSelected(null)}>
             Close
           </button>

@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 
 import type { AgentCommandResult } from "@/lib/agent-dispatch";
-import { linkMatter } from "@/lib/ui-classes";
+import { btnSecondary, linkMatter } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
 
@@ -16,11 +19,16 @@ export function AgentResultPanel({
   variant?: Variant;
   className?: string;
 }) {
+  const [memoOpen, setMemoOpen] = useState(false);
+  const [copyDone, setCopyDone] = useState(false);
+
   const hasGaps = (result.gaps ?? []).length > 0;
   const hasUncertainties = (result.uncertainties ?? []).length > 0;
   const hasManualFlags = (result.manualFlags ?? []).length > 0;
   const hasSources = (result.sources ?? []).length > 0;
   const hasNextSteps = (result.nextSteps ?? []).length > 0;
+  const fullMemo = result.fullMemo?.trim();
+  const hasFullMemo = Boolean(fullMemo);
 
   const statusLabel = hasManualFlags
     ? "Manual review required"
@@ -29,6 +37,17 @@ export function AgentResultPanel({
       : "Needs review";
 
   const showSummary = Boolean(result.summary);
+
+  async function copyFullMemo() {
+    if (!fullMemo) return;
+    try {
+      await navigator.clipboard.writeText(fullMemo);
+      setCopyDone(true);
+      window.setTimeout(() => setCopyDone(false), 2000);
+    } catch {
+      // Clipboard may be denied; no noisy logging.
+    }
+  }
 
   return (
     <div
@@ -48,6 +67,33 @@ export function AgentResultPanel({
 
       {showSummary ? (
         <p className={cn("text-slate-700", variant === "compact" && "line-clamp-3")}>{result.summary}</p>
+      ) : null}
+
+      {result.fullMemoTruncated ? (
+        <p className="text-[0.65rem] font-medium text-amber-800">Full memo was truncated for transport size.</p>
+      ) : null}
+
+      {hasFullMemo ? (
+        <div className="space-y-1">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="text-left text-[0.65rem] font-semibold uppercase tracking-wide text-sky-800 underline-offset-2 hover:underline"
+              onClick={() => setMemoOpen((o) => !o)}
+              aria-expanded={memoOpen}
+            >
+              {memoOpen ? "Hide full memo" : "View full memo"}
+            </button>
+            <button type="button" className={cn(btnSecondary, "py-0.5 px-2 text-[0.65rem]")} onClick={() => void copyFullMemo()}>
+              {copyDone ? "Copied" : "Copy full memo"}
+            </button>
+          </div>
+          {memoOpen ? (
+            <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded border border-slate-200 bg-white p-2 font-mono text-[0.7rem] leading-relaxed text-slate-800">
+              {fullMemo}
+            </pre>
+          ) : null}
+        </div>
       ) : null}
 
       {hasNextSteps ? (
@@ -144,4 +190,3 @@ export function AgentResultPanel({
     </div>
   );
 }
-

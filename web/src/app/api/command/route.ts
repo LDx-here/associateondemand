@@ -4,6 +4,9 @@ import { listMatters } from "@/lib/data-store";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+/** Max characters forwarded for full memo JSON (trimmed with flag if larger). */
+const FULL_MEMO_MAX_CHARS = 128 * 1024;
+
 type AgentDispatchResult = {
   agent?: string;
   agent_name?: string;
@@ -18,6 +21,7 @@ type AgentDispatchResult = {
   job_id?: string;
   metadata?: {
     manual_flags?: string[];
+    full_memo?: string;
   };
 };
 
@@ -65,7 +69,7 @@ async function dispatchToPm(matterId: string, instruction: string) {
         ?.map((u) => {
           const item = u.item?.trim();
           const reason = u.reason?.trim();
-          if (item && reason) return `${item} — ${reason}`;
+          if (item && reason) return `${item} - ${reason}`;
           return item || reason || null;
         })
         .filter((x): x is string => Boolean(x)) ?? [];
@@ -73,7 +77,7 @@ async function dispatchToPm(matterId: string, instruction: string) {
       data.sources
         ?.map((s) => {
           const parts = [s.claim, s.source].filter(Boolean);
-          const label = parts.join(" — ").trim();
+          const label = parts.join(" - ").trim();
           if (!label) return null;
           return { label, url: s.url ?? undefined };
         })
@@ -82,7 +86,20 @@ async function dispatchToPm(matterId: string, instruction: string) {
       data.metadata?.manual_flags && data.metadata.manual_flags.length
         ? data.metadata.manual_flags
         : gapStrings?.filter((g) => g.toUpperCase().includes("MANUAL FLAG")) ?? [];
-    return NextResponse.json({
+
+    const rawMemo = data.metadata?.full_memo;
+    let fullMemo: string | undefined;
+    let fullMemoTruncated = false;
+    if (typeof rawMemo === "string" && rawMemo.length > 0) {
+      if (rawMemo.length > FULL_MEMO_MAX_CHARS) {
+        fullMemo = rawMemo.slice(0, FULL_MEMO_MAX_CHARS);
+        fullMemoTruncated = true;
+      } else {
+        fullMemo = rawMemo;
+      }
+    }
+
+    const payload: Record<string, unknown> = {
       type: "agent",
       matterId,
       agent: data.agent ?? data.agent_name ?? "pm",
@@ -94,7 +111,14 @@ async function dispatchToPm(matterId: string, instruction: string) {
       manualFlags: manualFlags.length ? manualFlags : undefined,
       complete: data.complete ?? true,
       jobId: data.job_id,
-    });
+    };
+    if (fullMemo !== undefined) {
+      payload.fullMemo = fullMemo;
+    }
+    if (fullMemoTruncated) {
+      payload.fullMemoTruncated = true;
+    }
+    return NextResponse.json(payload);
   } catch {
     return NextResponse.json({
       type: "agent",

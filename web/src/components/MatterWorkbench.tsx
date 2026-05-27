@@ -201,11 +201,13 @@ export function MatterWorkbench({
 
       {tab === "Assessment" ? (
         <div className="space-y-4">
+          <CaseAssessmentEditor matterId={matter.matterId} initial={initialAssessment} />
+          <MatterDeadlineForm matterId={matter.matterId} initialDeadline={deadline} onUpdated={refresh} />
           <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 px-4 py-3">
-              <h2 className="font-medium text-slate-900">Case assessment</h2>
-              <p className="text-xs text-slate-500">
-                Element / Pathway · Assessment · Key Gap · Next Action (dispatchable).
+              <h2 className="font-medium text-slate-900">Legal element pathway matrix</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Extend pathway rows below. Structured posture, deadlines, and overall notes stay in Case assessment sections above.
               </p>
             </div>
             <table className="min-w-full text-left text-sm">
@@ -287,8 +289,6 @@ export function MatterWorkbench({
               </div>
             </div>
           ) : null}
-          <CaseAssessmentEditor matterId={matter.matterId} initial={initialAssessment} />
-          <MatterDeadlineForm matterId={matter.matterId} initialDeadline={deadline} onUpdated={refresh} />
         </div>
       ) : null}
 

@@ -21,9 +21,7 @@
 
 ## Last completed (E2E session)
 
-- **Docker smoke:** Daemon not running on agent host; added `./scripts/smoke-docker-e2e.sh` and curl examples in `strong-reader-setup.md` for user machine.
-- **Gap fixes:** Matter Events tab loads live Airtable + Add Event form (`MatterEventsPanel`, `POST /api/events`); dashboard Recent Activity includes PM Inbox agent rows; `POST /api/corrections` writes Corrections table via Next.js; `data/uploads/smoke-test.pdf` for intake smoke (gitignored path).
-- **Verify:** `npm run build` pass; `test:airtable` 11/11.
+- **Audit UX fixes:** Matter **Assessment** tab: `CaseAssessmentEditor` + `MatterDeadlineForm` above legal element pathway matrix; clearer matrix heading/helper line. Knowledge map drawer: adjacent matter IDs from graph links for concept nodes (`...and N more` overflow); optional matter `snippet` from `listMatters` summaries in `/api/knowledge-graph`. Command Panel: `/api/command` forwards `fullMemo` (128k cap, `fullMemoTruncated`), `AgentResultPanel` summary + expandable full memo + clipboard copy only.
 
 ## Prior (overnight + continuation)
 
