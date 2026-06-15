@@ -1,7 +1,7 @@
 "use client";
 
+import { createColumnHelper } from "@tanstack/table-core";
 import {
-  createColumnHelper,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,

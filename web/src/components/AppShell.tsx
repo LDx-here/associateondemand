@@ -17,7 +17,7 @@ export function AppShell({
           role="status"
           className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-950"
         >
-          Showing sample data. Connect Airtable in Settings to load live matters.
+          Demo data — add AIRTABLE_PAT to web/.env.local
         </div>
       ) : null}
       <div className="flex min-h-0 flex-1">
