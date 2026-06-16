@@ -25,7 +25,7 @@
 - **Repo move:** Fresh clone at `/Users/ladaj/Developer/AssociateOnDemand`; copied `web/.env.local`; retired broken iCloud-evicted `~/AssociateOnDemand`.
 - **Docker smoke PASS:** `bash scripts/smoke-docker-e2e.sh` — health, PM research dispatch, intake OCR upload (tier 0).
 - **API fixes:** OCR deps in Docker image (`pdf2image`, tesseract, poppler); Alembic `002_documents_extracted_facts`; unified `app.db` ORM for intake persistence.
-- **Local verify:** Airtable 11/11; web `npm run dev -p 3003`; `/api/command` → FastAPI research memo OK.
+- **Production web:** Vercel live at https://aod-next.vercel.app (Airtable routes; API/Command Panel pending Fly).
 
 ## Prior (overnight + continuation)
 
