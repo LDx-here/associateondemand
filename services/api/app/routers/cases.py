@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, File, Form, Header, UploadFile
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
-from app.services.database import get_db
+from app.db import get_db
 from app.services.intake_processor import process_uploaded_document
 from app.services.presidio_gate import require_strong_reader
 

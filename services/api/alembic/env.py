@@ -10,6 +10,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.db import Base
 from app.models.db_models import AgentJob, AuditLog  # noqa: F401
+from app.models.document import Document, ExtractedFact  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

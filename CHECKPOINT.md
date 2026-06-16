@@ -1,6 +1,7 @@
 # Agent checkpoint — AssociateOnDemand
 
-**Last updated:** 2026-05-27 (EDT)  
+**Last updated:** 2026-06-15 (EDT)  
+**Workspace:** `/Users/ladaj/Developer/AssociateOnDemand` (moved from `~/AssociateOnDemand` / `~/Documents/…` — old tree had iCloud eviction; do not use)  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
 
@@ -15,18 +16,16 @@
 | 4 | **Partial** | PM + Research wired; Assessment dispatch → `/api/command` → FastAPI; drafting/mass_audit/legal_mapping stubs |
 | 5 | **Partial** | Knowledge graph from live matters; node drawer; pattern insufficient-data message |
 | 6 | **Done** | eImmigration Tier A + mapping preview UI |
-| 7 | **Scaffold complete** | Auth middleware, login (password/magic link), Settings session row, `fly.toml`, `deploy.md`. LD checklist: [phase-7-deploy-checklist.md](docs/runbooks/phase-7-deploy-checklist.md). **Blocked on you:** Supabase project, Alembic on direct URL, Vercel/Fly/Upstash deploy clicks |
+| 7 | **Scaffold complete — deploy next** | Auth middleware, login, `fly.toml`, `deploy.md`, LD checklist. **Next:** Supabase + Alembic + Fly + Vercel + Upstash (see [phase-7-deploy-checklist.md](docs/runbooks/phase-7-deploy-checklist.md)) |
 
 **BUILD_SPEC compliance:** ~97% ([gap audit](docs/constitution/BUILD_SPEC-GAP-AUDIT.md))
 
 ## Last completed (E2E session)
 
-- **Docker smoke:** Daemon not running on agent host; added `./scripts/smoke-docker-e2e.sh` and curl examples in `strong-reader-setup.md` for user machine.
-- **Gap fixes:** Matter Events tab loads live Airtable + Add Event form (`MatterEventsPanel`, `POST /api/events`); dashboard Recent Activity includes PM Inbox agent rows; `POST /api/corrections` writes Corrections table via Next.js; `data/uploads/smoke-test.pdf` for intake smoke (gitignored path).
-- **Verify:** `npm run build` pass; `test:airtable` 11/11.
-- **Audit UX fixes:** Matter **Assessment** tab: `CaseAssessmentEditor` + `MatterDeadlineForm` above legal element pathway matrix; clearer matrix heading/helper line. Knowledge map drawer: adjacent matter IDs from graph links for concept nodes (`...and N more` overflow); optional matter `snippet` from `listMatters` summaries in `/api/knowledge-graph`. Command Panel: `/api/command` forwards `fullMemo` (128k cap, `fullMemoTruncated`), `AgentResultPanel` summary + expandable full memo + clipboard copy only.
-- **Phase 7 complete:** `@supabase/ssr` middleware (gated by `AOD_AUTH_ENABLED` + keys), login page, `/auth/callback`, Settings session (email/name), `docs/runbooks/deploy.md`, `docs/runbooks/phase-7-deploy-checklist.md`, root `fly.toml`, `web/.env.local.example`.
-- **BUILD_SPEC backlog pass:** §7.3.3 richer task detection + composer banner; inbox resolve **Suggested next steps** + optional tasks POST; DOCX memo export (`POST /agents/research/memo-export`, Next `/api/research/memo-export`); Correction `formatting_convention` YAML append when `firm-rules.md` exists; KM drawer snippets for linked matters list.
+- **Repo move:** Fresh clone at `/Users/ladaj/Developer/AssociateOnDemand`; copied `web/.env.local`; retired broken iCloud-evicted `~/AssociateOnDemand`.
+- **Docker smoke PASS:** `bash scripts/smoke-docker-e2e.sh` — health, PM research dispatch, intake OCR upload (tier 0).
+- **API fixes:** OCR deps in Docker image (`pdf2image`, tesseract, poppler); Alembic `002_documents_extracted_facts`; unified `app.db` ORM for intake persistence.
+- **Local verify:** Airtable 11/11; web `npm run dev -p 3003`; `/api/command` → FastAPI research memo OK.
 
 ## Prior (overnight + continuation)
 
@@ -41,10 +40,9 @@
 
 ## Next step (user return)
 
-1. Start **Docker Desktop**, then from repo root: `bash scripts/smoke-docker-e2e.sh` (use Terminal.app if Cursor reports pseudo-tty or command not found).
-2. `cd web && npm run dev` (port **3003**): test Command Panel `pm:research …` and Assessment **Dispatch**.
-3. Matter **Events** tab: add a test event; confirm it appears on `/calendar`.
-4. Flip Strong Reader when ready: `docs/runbooks/strong-reader-setup.md`.
+1. **Production deploy** — follow [phase-7-deploy-checklist.md](docs/runbooks/phase-7-deploy-checklist.md) (Supabase → Alembic → Fly → Upstash → Vercel → enable auth).
+2. Local smoke (already passing): `bash scripts/smoke-docker-e2e.sh` then `cd web && npm run dev -- -p 3003`.
+3. UI spot-check: Command Panel `pm:research …`, Assessment **Dispatch**, Events → `/calendar`.
 
 ## Blockers
 
@@ -52,20 +50,20 @@
 |------|--------|
 | Presidio production | Compose stub until real sidecars |
 | Full LLM agents | Drafting / mass auditor / legal mapping are inbox-safe stubs |
-| Production auth/deploy | Scaffold in repo; user must create Supabase + Vercel + Fly accounts and paste secrets |
-| Docker daemon | Must be running locally for `/health`, PM dispatch, and intake OCR (`bash scripts/smoke-docker-e2e.sh`) |
+| Production auth/deploy | Supabase/Vercel/Fly/Upstash accounts + CLI login (`fly auth login`, `vercel login`); paste secrets into hosts only |
+| Docker daemon | Required for local API/intake; smoke script verifies stack |
 
 ## Commands to resume
 
 ```bash
-cd /Users/ladaj/Documents/AssociateOnDemand
+cd /Users/ladaj/Developer/AssociateOnDemand
 git checkout cursor/phase0-foundation
 git pull origin cursor/phase0-foundation
 
-cd web && npm run dev   # port 3003 per user preference
-npm run test:airtable
-bash scripts/smoke-docker-e2e.sh   # Docker Desktop must be running; use bash not ./
 docker compose up -d --build
+bash scripts/smoke-docker-e2e.sh
+cd web && npm run dev -- -p 3003
+npm run test:airtable
 curl -s http://localhost:8000/health | jq
 ```
 

@@ -17,6 +17,7 @@ from sqlalchemy.exc import OperationalError
 from app.config import Settings, get_settings
 from app.db import Base, get_engine
 from app.models.db_models import AgentJob, AuditLog  # noqa: F401 — register ORM models
+from app.models.document import Document, ExtractedFact  # noqa: F401 — register ORM models
 from app.routers import agents, eimmigration, intake
 from app.routers import correction_router
 
