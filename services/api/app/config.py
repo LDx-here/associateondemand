@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     aod_pii_tier: str = "0"
     upload_dir: str = "./data/uploads"
     ocr_provider: str = "tesseract"
+    anthropic_api_key: str = ""
+    llm_default_model: str = "claude-sonnet-4-20250514"
+    qdrant_api_key: str = ""
 
 
 @lru_cache(maxsize=1)

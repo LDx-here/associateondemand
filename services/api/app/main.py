@@ -84,10 +84,13 @@ def redis_ok(url: str) -> bool:
         return False
 
 
-def qdrant_ok(qdrant_url: str) -> dict[str, Any]:
+def qdrant_ok(qdrant_url: str, api_key: str = "") -> dict[str, Any]:
     payload: dict[str, Any] = {"reachable": False, "collections": None}
     try:
-        client = QdrantClient(url=qdrant_url, timeout=2)
+        kwargs: dict[str, Any] = {"url": qdrant_url, "timeout": 2}
+        if api_key:
+            kwargs["api_key"] = api_key
+        client = QdrantClient(**kwargs)
         collections = client.get_collections()
         payload["reachable"] = True
         payload["collections"] = len(collections.collections)
@@ -109,7 +112,7 @@ def presidio_stub_ok() -> bool:
 
 @app.get("/health")
 def health(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
-    qdrant = qdrant_ok(settings.qdrant_url)
+    qdrant = qdrant_ok(settings.qdrant_url, settings.qdrant_api_key)
 
     deps = {
         "postgres": postgres_ok(settings.database_url),

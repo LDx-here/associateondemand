@@ -30,7 +30,9 @@ from typing import Any
 from app.agents._context import load_constitution
 from app.agents.firm_context import load_firm_rules
 from app.models.agent_result import AgentResult, GapQuestion, SourceRef, Uncertainty
-from app.services.docs_formatter import format_research_memo
+from app.services.docs_formatter import format_memorandum_header, format_research_memo
+from app.services.llm import generate_text, is_configured as llm_configured
+from app.services.matter_context import fetch_matter_context, format_matter_context
 
 def _resolve_skill_path() -> Path:
     if env := os.getenv("AOD_RESEARCH_SKILL_PATH"):
@@ -111,6 +113,146 @@ def _gov_practice_sources(country: str | None) -> list[SourceRef]:
     return sources
 
 
+def _build_llm_system_prompt(skill: str) -> str:
+    return (
+        "You are Litigation Associate for RMV immigration practice. "
+        "Follow the Research Memo SKILL below exactly. "
+        "Write a professional research memorandum an attorney could review before client use.\n\n"
+        "Rules:\n"
+        "- Use Roman numeral sections I through VI from the SKILL template (Purpose, Summary/Next Steps, "
+        "Legal Framework, Analysis, Authorities Consulted, Items Requiring Further Development).\n"
+        "- Lead with a direct answer in Section II (In short, ...).\n"
+        "- No em dashes. No emojis.\n"
+        "- Cite sources; note when Westlaw/Lexis Shepardizing is required.\n"
+        "- Target 1.5–3 pages of substantive analysis.\n"
+        "- Do not invent case citations; if unsure, say what must be verified.\n\n"
+        f"--- RESEARCH MEMO SKILL ---\n{skill[:28000]}"
+    )
+
+
+def _build_llm_user_prompt(
+    *,
+    matter_id: str,
+    query: str,
+    matter_ctx: dict | None,
+    tier: dict[str, bool],
+    constitution_excerpt: str,
+    firm_rules: str,
+) -> str:
+    connector_note = (
+        f"Midpage configured: {tier['midpage']}. Fastcase configured: {tier['fastcase']}."
+    )
+    if not tier["midpage"] and not tier["fastcase"]:
+        connector_note += (
+            " No live citator MCPs — use government and practice-resource sources; "
+            "flag every case citation for attorney Shepardizing."
+        )
+    return "\n\n".join(
+        [
+            f"Matter ID: {matter_id}",
+            f"Research question: {query}",
+            connector_note,
+            "## Live matter context (Airtable)",
+            format_matter_context(matter_ctx),
+            "## Firm rules (excerpt)",
+            firm_rules[:1500] or "(none loaded)",
+            "## Constitution pack (excerpt)",
+            constitution_excerpt[:6000],
+            "",
+            "Write the complete research memorandum now. Include MEMORANDUM header "
+            "(TO/FROM/DATE/RE) and sections I–VI.",
+        ]
+    )
+
+
+def _memo_from_llm(raw: str, *, matter_id: str, query: str) -> str:
+    text = raw.strip()
+    if "MEMORANDUM" in text.upper()[:200]:
+        return text
+    header = format_memorandum_header(re_line=f"Research — {query[:80]} — Matter {matter_id}")
+    return header + text + "\n\n---\n*Attorney review required before filing or client communication.*\n"
+
+
+def _run_with_llm(
+    *,
+    matter_id: str,
+    query: str,
+    skill: str,
+    tier: dict[str, bool],
+    firm_rules: str,
+    constitution: str,
+    country: str | None,
+) -> AgentResult | None:
+    if not llm_configured():
+        return None
+
+    matter_ctx = fetch_matter_context(matter_id)
+    system = _build_llm_system_prompt(skill)
+    user = _build_llm_user_prompt(
+        matter_id=matter_id,
+        query=query,
+        matter_ctx=matter_ctx,
+        tier=tier,
+        constitution_excerpt=constitution,
+        firm_rules=firm_rules,
+    )
+    raw = generate_text(system=system, user=user, max_tokens=8192, temperature=0.2)
+    if not raw:
+        return None
+
+    memo = _memo_from_llm(raw, matter_id=matter_id, query=query)
+    gaps: list[str] = []
+    manual_flags: list[str] = []
+    if not tier["midpage"] and not tier["fastcase"]:
+        manual_flags.append(
+            "Westlaw/Lexis Shepardizing of every cited case is required before reliance."
+        )
+        gaps.append(
+            "Awaiting attorney verification: Shepardize/KeyCite every case citation in this memo."
+        )
+
+    structured_sources = _gov_practice_sources(country)
+    gap_questions = [
+        GapQuestion(question=g, priority=1, why_it_matters="Required before memo can be relied upon.")
+        for g in gaps
+    ]
+
+    return AgentResult(
+        agent="research",
+        matter_id=matter_id,
+        anchor_facts=[f"Research query scoped for {matter_id}", "Memo drafted via Anthropic + Research SKILL"],
+        anchor_law=["Governing standards synthesized from constitution pack and cited sources."],
+        anchor_strategy=["Attorney review memo before filing or client communication."],
+        anchor_risk=[
+            "Verify every case citation in Westlaw/Lexis before filing.",
+            "Do not cite unverified web sources in filings.",
+        ],
+        anchor_next=["Attorney review memo", "Accept or edit via Correction Pipeline"],
+        gaps=gaps,
+        gap_questions=gap_questions,
+        uncertain=[
+            Uncertainty(
+                item="Draft research memo",
+                confidence=0.82 if tier["midpage"] or tier["fastcase"] else 0.72,
+                reason="LLM draft from SKILL + live matter context; attorney must verify citations.",
+            )
+        ],
+        sources=structured_sources,
+        summary=memo[:600],
+        citations=["Anthropic", str(_SKILL_PATH.name)],
+        confidence=0.82 if tier["midpage"] or tier["fastcase"] else 0.72,
+        metadata={
+            "full_memo": memo,
+            "skill_status": "loaded",
+            "llm": "anthropic",
+            "tier": tier,
+            "manual_flags": manual_flags,
+            "matter_context": matter_ctx,
+        },
+        complete=True,
+    )
+
+
 def run_research(
     matter_id: str,
     query: str,
@@ -148,6 +290,43 @@ def run_research(
     country = _extract_country_from_query(query)
     tier = _connector_tier()
 
+    llm_result = _run_with_llm(
+        matter_id=matter_id,
+        query=query,
+        skill=skill,
+        tier=tier,
+        firm_rules=firm_rules,
+        constitution=constitution,
+        country=country,
+    )
+    if llm_result is not None:
+        return llm_result
+
+    return _run_template(
+        matter_id=matter_id,
+        query=query,
+        source_list=source_list,
+        skill=skill,
+        firm_rules=firm_rules,
+        constitution=constitution,
+        country=country,
+        tier=tier,
+    )
+
+
+def _run_template(
+    *,
+    matter_id: str,
+    query: str,
+    source_list: list[str],
+    skill: str,
+    firm_rules: str,
+    constitution: str,
+    country: str | None,
+    tier: dict[str, bool],
+) -> AgentResult:
+    """Template fallback when Anthropic is unavailable."""
+
     findings_lines = [
         f"Query: {query}",
         "",
@@ -163,6 +342,9 @@ def run_research(
     if not tier["midpage"] and not tier["fastcase"]:
         findings_lines.extend(
             [
+                "",
+                "ANTHROPIC_API_KEY not configured or LLM call failed — template memo only.",
+                "Set ANTHROPIC_API_KEY on the API host for SKILL-quality drafts.",
                 "",
                 "No citator MCPs configured. Falling back to government + practice-resource "
                 "tier per BUILD_SPEC §9 step 3.",

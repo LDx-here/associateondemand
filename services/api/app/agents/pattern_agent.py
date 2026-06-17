@@ -40,7 +40,11 @@ def embed_text(text: str, size: int = VECTOR_SIZE) -> list[float]:
 
 
 def _client() -> QdrantClient:
-    return QdrantClient(url=get_settings().qdrant_url, timeout=5)
+    settings = get_settings()
+    kwargs: dict[str, Any] = {"url": settings.qdrant_url, "timeout": 5}
+    if settings.qdrant_api_key:
+        kwargs["api_key"] = settings.qdrant_api_key
+    return QdrantClient(**kwargs)
 
 
 def _ensure_collection(client: QdrantClient) -> None:
