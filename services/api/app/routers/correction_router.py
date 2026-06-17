@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Depends
@@ -22,6 +24,35 @@ from app.models.db_models import AuditLog
 from app.services import airtable as airtable_client
 
 router = APIRouter(prefix="/agents/corrections", tags=["corrections"])
+
+
+def _activity_log_path() -> Path | None:
+    if env := os.getenv("AOD_ACTIVITY_LOG_PATH"):
+        return Path(env)
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / "CHECKPOINT.md").is_file():
+            return parent / "activity_log.md"
+    brain = Path(os.getenv("AOD_BRAIN_ROOT", "/app/brain"))
+    return brain / "05_Admin" / "activity_log.md"
+
+
+def _append_activity_log(line: str) -> None:
+    """BUILD_SPEC §10 — log every correction to activity_log.md."""
+
+    path = _activity_log_path()
+    if not path:
+        return
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        entry = f"### [{stamp}] CORRECTION: {line}\n"
+        if path.exists():
+            path.write_text(entry + "\n" + path.read_text(encoding="utf-8"), encoding="utf-8")
+        else:
+            path.write_text(entry, encoding="utf-8")
+    except OSError:
+        pass
 
 CorrectionCategory = Literal[
     "factual_error",
@@ -135,6 +166,10 @@ def submit_correction(body: CorrectionRequest, db: Session = Depends(get_db)) ->
         )
     )
     db.commit()
+
+    _append_activity_log(
+        f"{body.matter_id} · {body.agent} · {cat}: {body.attorney_correction[:120]}"
+    )
 
     return CorrectionResponse(
         status=status,

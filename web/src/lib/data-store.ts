@@ -6,7 +6,9 @@ import {
   listDocumentsFromAirtable,
   listEventsForMatterFromAirtable,
   listLegalElementsFromAirtable,
+  listContactsFromAirtable,
   listMattersFromAirtable,
+  createMatterInAirtable,
   listAllNotesFromAirtable,
   listNotesForMatterFromAirtable,
   listTasksForMatterFromAirtable,
@@ -21,6 +23,7 @@ import type {
   CaseAssessment,
   DevSeed,
   DocumentRow,
+  Contact,
   LegalElementRow,
   Matter,
   Note,
@@ -39,6 +42,48 @@ export async function listMatters(): Promise<Matter[]> {
     return (await loadDemoSeed()).matters;
   }
   return listMattersFromAirtable();
+}
+
+export async function listContacts(): Promise<Contact[]> {
+  if (useDemoMode()) {
+    return [];
+  }
+  return listContactsFromAirtable();
+}
+
+export async function createMatter(payload: {
+  title: string;
+  caseType: string;
+  country?: string;
+  posture?: string;
+  status?: string;
+  summary?: string;
+}): Promise<Matter> {
+  if (useDemoMode()) {
+    const seed = await loadDemoSeed();
+    const matterId = `AOD-${1000 + seed.matters.length + 1}`;
+    const matter: Matter = {
+      id: `rec-demo-${Date.now()}`,
+      matterId,
+      clientName: payload.title,
+      title: payload.title,
+      caseType: payload.caseType,
+      country: payload.country,
+      posture: payload.posture,
+      status: payload.status ?? "Open",
+      proceduralPosture: payload.posture ?? "",
+      fidelityScore: 0,
+      nextDeadline: null,
+      vulnerabilityFlags: [],
+      assignedAttorney: "",
+      summary: payload.summary ?? "",
+    };
+    seed.matters.push(matter);
+    const { persistSeed } = await import("./demo-store-mutable");
+    await persistSeed();
+    return matter;
+  }
+  return createMatterInAirtable(payload);
 }
 
 export async function getMatterByCode(matterId: string): Promise<Matter | null> {

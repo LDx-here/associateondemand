@@ -24,6 +24,7 @@ import type {
   CalendarEvent,
   CaseAssessment,
   DocumentRow,
+  Contact,
   LegalElementRow,
   Matter,
   Note,
@@ -138,6 +139,57 @@ function mapDocument(rec: { id: string; fields: RawFields }, matterId: string): 
 export async function listMattersFromAirtable(): Promise<Matter[]> {
   const records = await airtableListAll<RawFields>(TABLES.matters);
   return records.map(mapMatter);
+}
+
+function mapContact(rec: { id: string; fields: RawFields }) {
+  const f = rec.fields;
+  const c = F.contacts;
+  return {
+    id: rec.id,
+    displayName: String(f[c.display_name] ?? ""),
+    role: String(f[c.role] ?? ""),
+    email: String(f[c.email] ?? ""),
+    phone: String(f[c.phone] ?? ""),
+    organization: String(f[c.organization] ?? ""),
+    notes: String(f[c.notes] ?? ""),
+  };
+}
+
+export async function listContactsFromAirtable(): Promise<Contact[]> {
+  const records = await airtableListAll<RawFields>(TABLES.contacts);
+  return records.map(mapContact);
+}
+
+export async function createMatterInAirtable(payload: {
+  title: string;
+  caseType: string;
+  country?: string;
+  posture?: string;
+  status?: string;
+  summary?: string;
+}): Promise<Matter> {
+  const existing = await listMattersFromAirtable();
+  let maxNum = 1000;
+  for (const m of existing) {
+    const match = m.matterId.match(/^AOD-(\d+)$/i);
+    if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
+  }
+  const matterId = `AOD-${maxNum + 1}`;
+  const m = F.matters;
+  const now = new Date().toISOString();
+  const fields: RawFields = {
+    [m.matter_id]: matterId,
+    [m.title]: payload.title,
+    [m.case_type]: payload.caseType,
+    [m.status]: payload.status ?? "Open",
+    [m.created_at]: now,
+    [m.updated_at]: now,
+  };
+  if (payload.country) fields[m.country] = payload.country;
+  if (payload.posture) fields[m.posture] = payload.posture;
+  if (payload.summary) fields[m.summary] = payload.summary;
+  const rec = await airtableCreate(TABLES.matters, fields);
+  return mapMatter(rec);
 }
 
 export async function resolveMatterRecordId(

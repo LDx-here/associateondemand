@@ -24,6 +24,8 @@ import httpx
 LOGGER = logging.getLogger(__name__)
 
 TABLE_MATTERS = "Matters"
+TABLE_TASKS = "Tasks"
+TABLE_LEGAL_ELEMENTS = "Legal Elements"
 TABLE_PM_INBOX = "PM Inbox"
 TABLE_CORRECTIONS = "Corrections"
 
@@ -130,6 +132,83 @@ def _resolve_matter_record_id(matter_code: str) -> str | None:
             return records[0]["id"] if records else None
     except httpx.HTTPError:
         return None
+
+
+def _list_records(table: str, *, max_records: int = 100, fields: list[str] | None = None) -> list[dict[str, Any]]:
+    if not is_configured():
+        return []
+    params: dict[str, str] = {"pageSize": str(min(max_records, 100))}
+    if fields:
+        for idx, name in enumerate(fields):
+            params[f"fields[{idx}]"] = name
+    rows: list[dict[str, Any]] = []
+    offset: str | None = None
+    try:
+        with _client() as client:
+            while len(rows) < max_records:
+                if offset:
+                    params["offset"] = offset
+                resp = client.get(_base_url(table), params=params)
+                if resp.status_code >= 400:
+                    LOGGER.warning("airtable list %s failed: %s", table, resp.status_code)
+                    break
+                data = resp.json()
+                for rec in data.get("records") or []:
+                    fields_out = rec.get("fields") or {}
+                    fields_out["_record_id"] = rec.get("id")
+                    rows.append(fields_out)
+                    if len(rows) >= max_records:
+                        break
+                offset = data.get("offset")
+                if not offset:
+                    break
+    except httpx.HTTPError:
+        LOGGER.exception("airtable list %s network error", table)
+    return rows
+
+
+def list_matters(limit: int = 100) -> list[dict[str, Any]]:
+    """Return matter rows keyed by BUILD_SPEC snake_case field names."""
+
+    return _list_records(
+        TABLE_MATTERS,
+        max_records=limit,
+        fields=[
+            "matter_id",
+            "title",
+            "case_type",
+            "country",
+            "posture",
+            "status",
+            "summary",
+            "next_deadline",
+            "next_hearing",
+        ],
+    )
+
+
+def list_tasks(limit: int = 100) -> list[dict[str, Any]]:
+    return _list_records(
+        TABLE_TASKS,
+        max_records=limit,
+        fields=["description", "matter_id", "status", "priority", "due_date", "is_filing_deadline"],
+    )
+
+
+def list_legal_elements(limit: int = 100) -> list[dict[str, Any]]:
+    return _list_records(
+        TABLE_LEGAL_ELEMENTS,
+        max_records=limit,
+        fields=[
+            "element_name",
+            "matter_id",
+            "assessment",
+            "key_gap",
+            "next_action",
+            "supporting_facts",
+            "supporting_cases",
+        ],
+    )
 
 
 def create_inbox_item(

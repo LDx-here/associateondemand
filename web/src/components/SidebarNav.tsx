@@ -10,6 +10,7 @@ import {
   Map,
   Settings,
   Upload,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import type { Route } from "next";
@@ -27,6 +28,7 @@ type SidebarNavItem = {
 const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/matters", label: "Matters", icon: Briefcase },
+  { href: "/contacts", label: "Contacts", icon: Users },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/inbox", label: "PM Inbox", icon: Inbox },

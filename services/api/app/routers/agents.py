@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.agents._context import load_constitution
-from app.agents.pattern_agent import build_knowledge_graph, run_pattern, seed_from_dev_data
+from app.agents.pattern_agent import build_knowledge_graph, run_pattern, seed_all, seed_from_dev_data
 from app.agents.pm_orchestrator import dispatch, get_job_result, list_inbox, process_next_job
 from app.agents.research_agent import run_research
 from app.agents.strategy_agent import run_strategy
@@ -80,8 +80,12 @@ def pattern_analyze(matter_id: str, facts: str = "") -> AgentResult:
 
 
 @router.post("/pattern/seed")
-def pattern_seed() -> dict[str, int]:
-    return {"indexed": seed_from_dev_data()}
+def pattern_seed(source: str = "all") -> dict[str, int]:
+    if source == "dev":
+        return {"indexed": seed_from_dev_data(), "source": "dev"}
+    result = seed_all()
+    result["source"] = "all"
+    return result
 
 
 class MemoExportBody(BaseModel):
@@ -153,6 +157,23 @@ def research_memo_export(body: MemoExportBody) -> Response:
 @router.post("/strategy/recommend", response_model=AgentResult)
 def strategy_recommend(matter_id: str, posture: str = "", selected_strategy: str = "") -> AgentResult:
     return run_strategy(matter_id, posture=posture, selected_strategy=selected_strategy or None)
+
+
+@router.post("/strong-reader/run", response_model=AgentResult)
+def strong_reader_run(
+    matter_id: str,
+    document_id: str,
+    text: str,
+    filename: str = "",
+) -> AgentResult:
+    from app.agents.strong_reader_agent import run_strong_reader
+
+    return run_strong_reader(
+        matter_id=matter_id,
+        document_id=document_id,
+        text=text,
+        filename=filename,
+    )
 
 
 @router.get("/knowledge-map/graph")

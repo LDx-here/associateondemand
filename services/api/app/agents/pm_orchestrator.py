@@ -9,6 +9,9 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.agents.firm_context import load_firm_rules
+from app.agents.drafting_agent import run_drafting
+from app.agents.legal_mapping_agent import run_legal_mapping
+from app.agents.mass_auditor_agent import run_mass_audit
 from app.agents.pattern_agent import run_pattern
 from app.agents.research_agent import run_research
 from app.agents.strategy_agent import run_strategy
@@ -142,8 +145,12 @@ def execute_agent(agent: str, payload: dict[str, Any]) -> AgentResult:
     matter_id = str(payload.get("matter_id") or "")
     instruction = str(payload.get("instruction") or payload.get("query") or "")
 
-    if agent in ("drafting", "mass_audit", "legal_mapping"):
-        return _stub_agent(agent, matter_id, instruction)
+    if agent == "drafting":
+        return run_drafting(matter_id, instruction)
+    if agent == "mass_audit":
+        return run_mass_audit(matter_id, instruction)
+    if agent == "legal_mapping":
+        return run_legal_mapping(matter_id, instruction)
     if agent == "pattern":
         return run_pattern(matter_id, facts=payload.get("facts"))
     if agent == "strategy":

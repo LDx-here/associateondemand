@@ -31,13 +31,25 @@ services:
     volumes:
       - aod_qdrant_data:/qdrant/storage
 
+  presidio-analyzer:
+    image: mcr.microsoft.com/presidio-analyzer:latest
+    container_name: aod-presidio-analyzer
+    ports:
+      - "5002:3000"
+
+  presidio-anonymizer:
+    image: mcr.microsoft.com/presidio-anonymizer:latest
+    container_name: aod-presidio-anonymizer
+    ports:
+      - "5001:3000"
+
+  # Legacy stub name kept for tier-0 health checks that expect :8080
   presidio:
     image: python:3.12-alpine
     container_name: aod-presidio-stub
     command: ["python", "-m", "http.server", "8080", "--bind", "0.0.0.0"]
     ports:
       - "8080:8080"
-    # Replace with real Presidio Analyzer + Anonymizer + LiteLLM in production.
 
   api:
     build:
@@ -54,6 +66,8 @@ services:
       AOD_BRAIN_ROOT: /app/brain
       UPLOAD_DIR: /data/uploads
       PRESIDIO_HEALTH_URL: http://presidio:8080
+      PRESIDIO_ANALYZER_URL: http://presidio-analyzer:3000
+      PRESIDIO_ANONYMIZER_URL: http://presidio-anonymizer:3000
       OCR_PROVIDER: tesseract
       APP_NAME: AssociateOnDemand API
     volumes:
@@ -69,6 +83,10 @@ services:
       qdrant:
         condition: service_started
       presidio:
+        condition: service_started
+      presidio-analyzer:
+        condition: service_started
+      presidio-anonymizer:
         condition: service_started
 
 volumes:

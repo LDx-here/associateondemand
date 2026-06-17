@@ -101,11 +101,61 @@ def seed_from_dev_data() -> int:
     return count
 
 
+def seed_from_airtable() -> int:
+    """Index live Airtable matters into Qdrant (falls back to dev-seed when empty)."""
+
+    from app.services import airtable as at
+
+    count = 0
+    if at.is_configured():
+        for row in at.list_matters(limit=200):
+            mid = str(row.get("matter_id") or "")
+            if not mid:
+                continue
+            text = " ".join(
+                filter(
+                    None,
+                    [
+                        str(row.get("case_type") or ""),
+                        str(row.get("posture") or ""),
+                        str(row.get("summary") or ""),
+                        str(row.get("country") or ""),
+                    ],
+                )
+            )
+            if text.strip():
+                index_matter(
+                    mid,
+                    text,
+                    {
+                        "case_type": row.get("case_type"),
+                        "status": row.get("status"),
+                        "source": "airtable",
+                    },
+                )
+                count += 1
+    if count == 0:
+        return seed_from_dev_data()
+    return count
+
+
+def seed_all() -> dict[str, int]:
+    """Seed Qdrant from Airtable first, then dev-seed for any gaps."""
+
+    airtable_count = 0
+    try:
+        airtable_count = seed_from_airtable()
+    except Exception:
+        airtable_count = 0
+    dev_count = seed_from_dev_data() if airtable_count == 0 else 0
+    return {"airtable": airtable_count, "dev_seed": dev_count, "indexed": airtable_count or dev_count}
+
+
 def query_similar(fact_pattern: str, limit: int = 5) -> list[dict[str, Any]]:
     client = _client()
     _ensure_collection(client)
     if client.count(COLLECTION).count == 0:
-        seed_from_dev_data()
+        seed_from_airtable()
     hits = client.search(
         collection_name=COLLECTION,
         query_vector=embed_text(fact_pattern),

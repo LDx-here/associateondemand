@@ -93,6 +93,16 @@ export type LegalElementRow = {
   nextAction: string;
 };
 
+export type Contact = {
+  id: string;
+  displayName: string;
+  role: string;
+  email: string;
+  phone: string;
+  organization: string;
+  notes: string;
+};
+
 export type DocumentRow = {
   id: string;
   matterId: string;

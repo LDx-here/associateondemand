@@ -45,3 +45,5 @@ if llm!='anthropic' and len(m.get('full_memo',''))<2500:
 echo "PASS: smoke-production completed"
 echo "  Web:  $WEB (sign in, then Command Panel pm:research …)"
 echo "  API:  $API"
+echo ""
+echo "Optional: POST $API/agents/pattern/seed to index Airtable matters into Qdrant"

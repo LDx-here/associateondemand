@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Activity, AlertCircle, Briefcase, CalendarClock, Inbox } from "lucide-react";
 
 import { EmptyState } from "@/components/EmptyState";
+import { DashboardCharts } from "@/components/DashboardCharts";
 import { KpiCard } from "@/components/KpiCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
@@ -78,6 +79,14 @@ export default async function DashboardPage() {
     year: "numeric",
   });
 
+  const statusCounts = [...new Set(matters.map((m) => m.status || "Unknown"))]
+    .map((name) => ({ name, value: matters.filter((m) => (m.status || "Unknown") === name).length }))
+    .filter((row) => row.value > 0);
+  const caseTypeCounts = [...new Set(matters.map((m) => m.caseType).filter(Boolean))]
+    .map((name) => ({ name, value: matters.filter((m) => m.caseType === name).length }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+
   return (
     <div className="space-y-6">
       <header>
@@ -101,6 +110,8 @@ export default async function DashboardPage() {
         />
         <KpiCard label="PM inbox unread" value={inboxUnread} hint="Awaiting attorney review" icon={Inbox} />
       </section>
+
+      <DashboardCharts statusCounts={statusCounts} caseTypeCounts={caseTypeCounts} />
 
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-4 py-3">
