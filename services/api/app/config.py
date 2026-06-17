@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     upload_dir: str = "./data/uploads"
     ocr_provider: str = "tesseract"
     anthropic_api_key: str = ""
-    llm_default_model: str = "claude-sonnet-4-20250514"
+    llm_default_model: str = "claude-sonnet-4-6"
     qdrant_api_key: str = ""
 
 
