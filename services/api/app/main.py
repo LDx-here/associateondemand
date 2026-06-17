@@ -122,7 +122,9 @@ def health(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
         "tier": settings.aod_pii_tier,
     }
 
-    ready = deps["postgres"] and deps["redis"] and qdrant["reachable"]
+    ready = deps["postgres"] and deps["redis"]
+    if deps["tier"] != "0":
+        ready = ready and qdrant["reachable"]
     status = "ok" if ready else "degraded"
     return {
         "service": settings.app_name,
