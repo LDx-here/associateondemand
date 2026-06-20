@@ -115,6 +115,7 @@ def dispatch(
 
     result = execute_agent(target, payload)
     result.job_id = job_id
+    result.metadata = {**(result.metadata or {}), "routed_to": target}
     _validate_and_route(db, result, payload, target)
     _update_job_record(db, job_id, result)
     return result

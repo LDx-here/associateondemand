@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { listMatters } from "@/lib/data-store";
+import {
+  getMatterByCode,
+  listAllTasks,
+  listLegalElements,
+  listMatters,
+  listNotesForMatter,
+  listTasksForMatter,
+} from "@/lib/data-store";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -22,6 +29,7 @@ type AgentDispatchResult = {
   metadata?: {
     manual_flags?: string[];
     full_memo?: string;
+    routed_to?: string;
   };
 };
 
@@ -30,10 +38,32 @@ function extractMatterId(query: string): string | null {
   return match ? match[1].toUpperCase() : null;
 }
 
+function resolveMatterId(q: string, fallback?: string | null): string | null {
+  return extractMatterId(q) ?? (fallback ? fallback.toUpperCase() : null);
+}
+
 function isAgentQuery(q: string): boolean {
   const ql = q.toLowerCase();
   if (ql.startsWith("pm:")) return true;
+  if (/\b(summarize|summary|status of|tell me about|brief me on)\b/i.test(q) && !/\b(research|draft|audit|mapping)\b/i.test(q)) {
+    return false;
+  }
   return /\b(research|memo|strategy|pattern|similar|analyze|agent|dispatch|draft|audit|mapping)\b/i.test(q);
+}
+
+function isSummarizeQuery(q: string): boolean {
+  return /\b(summarize|summary|status of|tell me about|brief me on|what's on)\b/i.test(q);
+}
+
+function isDueQuery(q: string): boolean {
+  const ql = q.toLowerCase();
+  return (
+    ql.includes("due this week") ||
+    ql.includes("due week") ||
+    ql.includes("what's due") ||
+    ql.includes("whats due") ||
+    ql.includes("due soon")
+  );
 }
 
 function normalizeInstruction(q: string): string {
@@ -42,6 +72,98 @@ function normalizeInstruction(q: string): string {
     return trimmed.slice(3).trim() || trimmed;
   }
   return trimmed;
+}
+
+async function buildMatterBriefing(matterId: string) {
+  const matter = await getMatterByCode(matterId);
+  if (!matter) return null;
+
+  const [tasks, notes, elements] = await Promise.all([
+    listTasksForMatter(matterId),
+    listNotesForMatter(matterId),
+    listLegalElements(matterId),
+  ]);
+
+  const openTasks = tasks.filter((t) => t.status !== "Done");
+  const overdue = openTasks.filter((t) => t.dueDate && new Date(t.dueDate) < new Date());
+  const dueSoon = openTasks.filter((t) => {
+    if (!t.dueDate) return false;
+    const ms = new Date(t.dueDate).getTime() - Date.now();
+    return ms >= 0 && ms <= 7 * 24 * 60 * 60 * 1000;
+  });
+  const gapElements = elements.filter(
+    (e) => /gap|partial|weak/i.test(e.assessment) || Boolean(e.keyGap?.trim()),
+  );
+  const recentNotes = [...notes].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 3);
+
+  const sections: Array<{ heading: string; lines: string[] }> = [
+    {
+      heading: "Matter",
+      lines: [
+        `${matter.matterId} · ${matter.title || matter.clientName}`,
+        [matter.caseType, matter.country, matter.posture].filter(Boolean).join(" · ") || "No type/country/posture",
+        `Status: ${matter.status || "Unknown"}`,
+        matter.nextDeadline ? `Next deadline: ${matter.nextDeadline}` : "No matter deadline on file",
+        matter.summary ? matter.summary.slice(0, 400) : "No summary on file",
+      ],
+    },
+    {
+      heading: "Tasks",
+      lines:
+        openTasks.length === 0
+          ? ["No open tasks."]
+          : [
+              `${openTasks.length} open (${overdue.length} overdue, ${dueSoon.length} due within 7 days)`,
+              ...openTasks.slice(0, 5).map((t) => {
+                const due = t.dueDate ? ` due ${t.dueDate}` : "";
+                return `• ${t.description}${due} [${t.priority}]`;
+              }),
+            ],
+    },
+    {
+      heading: "Assessment",
+      lines:
+        gapElements.length === 0
+          ? ["No flagged element gaps."]
+          : gapElements.slice(0, 5).map((e) => `• ${e.element}: ${e.keyGap || e.assessment}`),
+    },
+    {
+      heading: "Recent notes",
+      lines:
+        recentNotes.length === 0
+          ? ["No notes yet."]
+          : recentNotes.map((n) => `• ${n.content.slice(0, 120)}${n.content.length > 120 ? "…" : ""}`),
+    },
+  ];
+
+  return {
+    type: "briefing" as const,
+    matterId,
+    title: matter.title || matter.matterId,
+    sections,
+  };
+}
+
+async function tasksDueThisWeek() {
+  const now = Date.now();
+  const end = now + 7 * 24 * 60 * 60 * 1000;
+  const tasks = await listAllTasks();
+  const hits = tasks
+    .filter((t) => t.status !== "Done" && t.dueDate)
+    .filter((t) => {
+      const ts = new Date(t.dueDate!).getTime();
+      return ts >= now && ts <= end;
+    })
+    .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
+    .slice(0, 25)
+    .map((t) => ({
+      matterId: t.matterId,
+      description: t.description,
+      dueDate: t.dueDate,
+      status: t.status,
+      priority: t.priority,
+    }));
+  return { type: "tasks_due" as const, tasks: hits };
 }
 
 async function dispatchToPm(matterId: string, instruction: string) {
@@ -102,7 +224,7 @@ async function dispatchToPm(matterId: string, instruction: string) {
     const payload: Record<string, unknown> = {
       type: "agent",
       matterId,
-      agent: data.agent ?? data.agent_name ?? "pm",
+      agent: data.agent ?? data.agent_name ?? data.metadata?.routed_to ?? "pm",
       summary: data.summary ?? "Dispatch complete.",
       gaps: gapStrings,
       nextSteps,
@@ -133,28 +255,35 @@ async function dispatchToPm(matterId: string, instruction: string) {
 }
 
 export async function POST(req: Request) {
-  const { query } = (await req.json()) as { query?: string };
-  const q = (query ?? "").trim();
+  const body = (await req.json()) as { query?: string; matterId?: string };
+  const q = (body.query ?? "").trim();
   if (!q) return NextResponse.json({ type: "empty" });
 
   const ql = q.toLowerCase();
   const matters = await listMatters();
+  const contextMatter = body.matterId ?? null;
 
-  if (isAgentQuery(q)) {
-    const matterId = extractMatterId(q) ?? matters[0]?.matterId ?? "AOD-1001";
-    const instruction = normalizeInstruction(q);
-    return dispatchToPm(matterId, instruction);
+  if (isDueQuery(q)) {
+    return NextResponse.json(await tasksDueThisWeek());
   }
 
-  if (ql.includes("due this week") || ql.includes("due week")) {
-    const now = Date.now();
-    const end = now + 7 * 24 * 60 * 60 * 1000;
-    const hits = matters.filter((m) => {
-      if (!m.nextDeadline) return false;
-      const ts = new Date(m.nextDeadline).getTime();
-      return ts >= now && ts <= end;
-    });
-    return NextResponse.json({ type: "matters", matters: hits });
+  if (isSummarizeQuery(q)) {
+    const matterId = resolveMatterId(q, contextMatter) ?? matters[0]?.matterId;
+    if (!matterId) {
+      return NextResponse.json({ type: "message", message: "No matter found to summarize." });
+    }
+    const briefing = await buildMatterBriefing(matterId);
+    if (!briefing) {
+      return NextResponse.json({ type: "message", message: `Matter ${matterId} not found.` });
+    }
+    return NextResponse.json(briefing);
+  }
+
+  if (isAgentQuery(q)) {
+    const matterId =
+      resolveMatterId(q, contextMatter) ?? matters[0]?.matterId ?? "AOD-1001";
+    const instruction = normalizeInstruction(q);
+    return dispatchToPm(matterId, instruction);
   }
 
   const direct = matters.find((m) => m.matterId.toLowerCase() === ql || m.id.toLowerCase() === ql);
@@ -164,13 +293,14 @@ export async function POST(req: Request) {
     (m) =>
       m.clientName.toLowerCase().includes(ql) ||
       m.matterId.toLowerCase().includes(ql) ||
-      m.caseType.toLowerCase().includes(ql),
+      m.caseType.toLowerCase().includes(ql) ||
+      (m.title ?? "").toLowerCase().includes(ql),
   );
   if (partial.length) return NextResponse.json({ type: "matters", matters: partial });
 
   return NextResponse.json({
     type: "message",
     message:
-      "No matches. Try AOD-1001, 'due this week', or 'pm:research country conditions for AOD-1001'.",
+      "Try: summarize AOD-1001 · due this week · pm:research … · draft … · legal mapping …",
   });
 }

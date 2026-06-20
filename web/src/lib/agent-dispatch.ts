@@ -30,9 +30,29 @@ export type AgentCommandResult = {
   jobId?: string;
 };
 
+export type BriefingCommandResult = {
+  type: "briefing";
+  matterId: string;
+  title: string;
+  sections: Array<{ heading: string; lines: string[] }>;
+};
+
+export type TasksDueCommandResult = {
+  type: "tasks_due";
+  tasks: Array<{
+    matterId: string;
+    description: string;
+    dueDate: string | null;
+    status: string;
+    priority: string;
+  }>;
+};
+
 export type CommandResult =
   | AgentCommandResult
-  | { type: "matter"; matter: { matterId: string } }
+  | BriefingCommandResult
+  | TasksDueCommandResult
+  | { type: "matter"; matter: { matterId: string; clientName?: string } }
   | { type: "matters"; matters: Array<{ matterId: string; clientName: string }> }
   | { type: "message"; message: string }
   | { type: "empty" };
@@ -45,7 +65,7 @@ export async function dispatchAgentCommand(
   const resp = await fetch("/api/command", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query: q.trim() }),
+    body: JSON.stringify({ query: q.trim(), matterId: matterId ?? undefined }),
   });
   return (await resp.json()) as CommandResult;
 }
