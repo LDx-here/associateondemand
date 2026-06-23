@@ -39,6 +39,7 @@ export type BriefingCommandResult = {
 
 export type TasksDueCommandResult = {
   type: "tasks_due";
+  label?: string;
   tasks: Array<{
     matterId: string;
     description: string;
@@ -48,10 +49,18 @@ export type TasksDueCommandResult = {
   }>;
 };
 
+export type NoteCreatedCommandResult = {
+  type: "note_created";
+  matterId: string;
+  noteId: string;
+  content: string;
+};
+
 export type CommandResult =
   | AgentCommandResult
   | BriefingCommandResult
   | TasksDueCommandResult
+  | NoteCreatedCommandResult
   | { type: "matter"; matter: { matterId: string; clientName?: string } }
   | { type: "matters"; matters: Array<{ matterId: string; clientName: string }> }
   | { type: "message"; message: string }

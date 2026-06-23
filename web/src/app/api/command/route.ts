@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import {
+  createNoteForMatter,
   getMatterByCode,
   listAllTasks,
   listLegalElements,
@@ -64,6 +65,26 @@ function isDueQuery(q: string): boolean {
     ql.includes("whats due") ||
     ql.includes("due soon")
   );
+}
+
+function isOverdueQuery(q: string): boolean {
+  const ql = q.toLowerCase();
+  return ql.includes("overdue") || ql.includes("past due");
+}
+
+function isNoteQuery(q: string): boolean {
+  const trimmed = q.trim();
+  if (/^note:\s*/i.test(trimmed)) return true;
+  return /\b(add a note|create a note|add note)\b/i.test(trimmed);
+}
+
+function noteContent(q: string): string {
+  const trimmed = q.trim();
+  if (/^note:\s*/i.test(trimmed)) return trimmed.replace(/^note:\s*/i, "").trim();
+  return trimmed
+    .replace(/\b(add a note|create a note|add note)\b\s*(about|on|for|to)?\s*/i, "")
+    .replace(/\b(AOD-\d+)\b/gi, "")
+    .trim();
 }
 
 function normalizeInstruction(q: string): string {
@@ -144,6 +165,24 @@ async function buildMatterBriefing(matterId: string) {
   };
 }
 
+async function tasksOverdue() {
+  const now = Date.now();
+  const tasks = await listAllTasks();
+  const hits = tasks
+    .filter((t) => t.status !== "Done" && t.dueDate)
+    .filter((t) => new Date(t.dueDate!).getTime() < now)
+    .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
+    .slice(0, 25)
+    .map((t) => ({
+      matterId: t.matterId,
+      description: t.description,
+      dueDate: t.dueDate,
+      status: t.status,
+      priority: t.priority,
+    }));
+  return { type: "tasks_due" as const, label: "Overdue tasks", tasks: hits };
+}
+
 async function tasksDueThisWeek() {
   const now = Date.now();
   const end = now + 7 * 24 * 60 * 60 * 1000;
@@ -163,7 +202,7 @@ async function tasksDueThisWeek() {
       status: t.status,
       priority: t.priority,
     }));
-  return { type: "tasks_due" as const, tasks: hits };
+  return { type: "tasks_due" as const, label: "Due this week", tasks: hits };
 }
 
 async function dispatchToPm(matterId: string, instruction: string) {
@@ -267,6 +306,34 @@ export async function POST(req: Request) {
     return NextResponse.json(await tasksDueThisWeek());
   }
 
+  if (isOverdueQuery(q)) {
+    return NextResponse.json(await tasksOverdue());
+  }
+
+  if (isNoteQuery(q)) {
+    const matterId = resolveMatterId(q, contextMatter);
+    const content = noteContent(q);
+    if (!matterId) {
+      return NextResponse.json({
+        type: "message",
+        message: "Open a matter or include AOD-#### to save a note. Example: note: Client interview summary",
+      });
+    }
+    if (!content) {
+      return NextResponse.json({
+        type: "message",
+        message: "Add note text after note: — e.g. note: Client interview summary",
+      });
+    }
+    const note = await createNoteForMatter(matterId, content, "Associate");
+    return NextResponse.json({
+      type: "note_created",
+      matterId,
+      noteId: note.id,
+      content: note.content,
+    });
+  }
+
   if (isSummarizeQuery(q)) {
     const matterId = resolveMatterId(q, contextMatter) ?? matters[0]?.matterId;
     if (!matterId) {
@@ -301,6 +368,6 @@ export async function POST(req: Request) {
   return NextResponse.json({
     type: "message",
     message:
-      "Try: summarize AOD-1001 · due this week · pm:research … · draft … · legal mapping …",
+      "Try: summarize AOD-1001 · due this week · overdue · note: … · pm:research …",
   });
 }
