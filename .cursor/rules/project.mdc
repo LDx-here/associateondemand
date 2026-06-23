@@ -1,0 +1,32 @@
+---
+description: AssociateOnDemand project guardrails for every AI agent/edit session
+alwaysApply: true
+---
+
+# AssociateOnDemand — agent rules
+
+1. **Operational scope stays inside `/Users/ladaj/Documents/AssociateOnDemand`** (and approved child paths such as synced Obsidian folders if configured later).
+
+2. **Do not mutate** `activity_log.md` entries besides **appending** new entries (immutable history per governance docs).
+
+3. **Constitution-first thinking:** skim `docs/constitution/` before proposing architecture changes:
+
+   - `00-Master-Blueprint.md`
+   - `01-Backend-Architecture.md`
+   - `02-Amended-Build-Plan.md`
+   - `03-CLAUDE-Firm-Constitution.md`
+   - `04-Research-Memo-SKILL.md`
+   - `references/*`
+
+   If `04-Research-Memo-SKILL.md` is still the PENDING stub, call that out loudly before implying research automation exists.
+
+4. **`LEGAL_BOUNDARIES.md` wins** on integrations (Harvey/Wordsmith, Clio, eImmigration, etc.).
+
+5. **Do not churn unrelated files.** Keep edits tight to the user’s milestone (Phase 1 = Airtable read-only dash, Phase 3 = ingestion, etc.). Don’t scaffold unused microservices prematurely.
+
+6. **Checkpoint protocol** (milestones, ~30 min, or before user goes offline):
+
+   - Follow [docs/runbooks/agent-checkpoint-protocol.md](../../docs/runbooks/agent-checkpoint-protocol.md).
+   - **Session start:** read [CHECKPOINT.md](../../CHECKPOINT.md) first, then continue from **Next step**.
+   - **On milestone completion:** update `CHECKPOINT.md` (Last completed / Next / Blockers / Commands to resume), append one line to `activity_log.md` (append-only), commit with `checkpoint: <what>`, push if remote exists.
+   - Prefer `./scripts/checkpoint.sh "description" [--push]` — never commit `.env`, `web/.env.local`, or secrets.
