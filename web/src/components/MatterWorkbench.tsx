@@ -8,7 +8,7 @@ import {
   MessageSquare,
   ScrollText,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { Fragment, useCallback, useState } from "react";
 
 import { EmptyState } from "@/components/EmptyState";
 import type {
@@ -85,25 +85,33 @@ export function MatterWorkbench({
   const [notes, setNotes] = useState(initialNotes);
   const [elements, setElements] = useState(initialElements);
   const [timeline, setTimeline] = useState(initialTimeline);
-  const [documents] = useState(initialDocuments);
+  const [documents, setDocuments] = useState(initialDocuments);
   const [events] = useState(initialEvents);
   const [deadline, setDeadline] = useState(matter.nextDeadline);
   const [refreshKey, setRefreshKey] = useState(0);
   const [dispatchedActions, setDispatchedActions] = useState<Record<string, boolean>>({});
   const [lastAgentResult, setLastAgentResult] = useState<AgentCommandResult | null>(null);
+  const [timelineKinds, setTimelineKinds] = useState<Set<TimelineEntry["kind"]>>(
+    () => new Set(["note", "task_created", "task_completed", "document", "event", "agent"]),
+  );
+  const [expandedTimelineId, setExpandedTimelineId] = useState<string | null>(null);
+  const [expandedElementId, setExpandedElementId] = useState<string | null>(null);
+  const [newElementName, setNewElementName] = useState("");
 
   const refresh = useCallback(async () => {
-    const [t, n, tl, el, m] = await Promise.all([
+    const [t, n, tl, el, m, docs] = await Promise.all([
       fetch(`/api/matters/${matter.matterId}/tasks`).then((r) => r.json()),
       fetch(`/api/matters/${matter.matterId}/notes`).then((r) => r.json()),
       fetch(`/api/matters/${matter.matterId}/timeline`).then((r) => r.json()),
       fetch(`/api/matters/${matter.matterId}/legal-elements`).then((r) => r.json()),
       fetch(`/api/matters/${matter.matterId}`).then((r) => r.json()),
+      fetch(`/api/matters/${matter.matterId}/documents`).then((r) => r.json()),
     ]);
     setTasks(t.tasks);
     setNotes(n.notes);
     setTimeline(tl.timeline);
     setElements(el.rows);
+    setDocuments(docs.documents ?? []);
     if (m.matter?.nextDeadline !== undefined) setDeadline(m.matter.nextDeadline);
     setRefreshKey((k) => k + 1);
   }, [matter.matterId]);
@@ -120,6 +128,32 @@ export function MatterWorkbench({
       const { row: updated } = (await resp.json()) as { row: LegalElementRow };
       setElements((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
     }
+  }
+
+  async function addElement() {
+    const name = newElementName.trim();
+    if (!name) return;
+    const resp = await fetch(`/api/matters/${matter.matterId}/legal-elements`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ elementName: name }),
+    });
+    if (resp.ok) {
+      const { row } = (await resp.json()) as { row: LegalElementRow };
+      setElements((prev) => [...prev, row]);
+      setNewElementName("");
+    }
+  }
+
+  const filteredTimeline = timeline.filter((e) => timelineKinds.has(e.kind));
+
+  function toggleTimelineKind(kind: TimelineEntry["kind"]) {
+    setTimelineKinds((prev) => {
+      const next = new Set(prev);
+      if (next.has(kind)) next.delete(kind);
+      else next.add(kind);
+      return next;
+    });
   }
 
   async function dispatchNextAction(rowId: string, actionText: string) {
@@ -293,20 +327,53 @@ export function MatterWorkbench({
       ) : null}
 
       {tab === "Timeline" ? (
-        <ol className="space-y-2">
-          {timeline.length ? (
-            timeline.map((e) => (
-              <li
-                key={`${e.id}-${refreshKey}`}
-                className="rounded-md border border-slate-200 bg-white p-3 text-sm shadow-sm"
-              >
-                <p className="text-xs text-slate-500">
-                  {new Date(e.timestamp).toLocaleString()} · {e.actor} · {e.kind.replace("_", " ")}
-                </p>
-                <p className="text-slate-800">{e.summary}</p>
-              </li>
-            ))
-          ) : (
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2 text-xs">
+            {(["note", "task_created", "task_completed", "document", "event", "agent"] as const).map(
+              (kind) => (
+                <button
+                  key={kind}
+                  type="button"
+                  className={`rounded-full px-2 py-0.5 ring-1 ${
+                    timelineKinds.has(kind)
+                      ? "bg-slate-800 text-white ring-slate-800"
+                      : "bg-white text-slate-600 ring-slate-300"
+                  }`}
+                  onClick={() => toggleTimelineKind(kind)}
+                >
+                  {kind.replace("_", " ")}
+                </button>
+              ),
+            )}
+          </div>
+          <ol className="space-y-2">
+            {filteredTimeline.length ? (
+              filteredTimeline.map((e) => (
+                <li
+                  key={`${e.id}-${refreshKey}`}
+                  className="rounded-md border border-slate-200 bg-white p-3 text-sm shadow-sm"
+                >
+                  <button
+                    type="button"
+                    className="w-full text-left"
+                    onClick={() =>
+                      setExpandedTimelineId((id) => (id === e.id ? null : e.id))
+                    }
+                  >
+                    <p className="text-xs text-slate-500">
+                      {new Date(e.timestamp).toLocaleString()} · {e.actor} ·{" "}
+                      {e.kind.replace("_", " ")}
+                    </p>
+                    <p className="text-slate-800">{e.summary}</p>
+                  </button>
+                  {expandedTimelineId === e.id ? (
+                    <p className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-600">
+                      {e.summary}
+                    </p>
+                  ) : null}
+                </li>
+              ))
+            ) : (
             <li className="list-none">
               <EmptyState
                 icon={ScrollText}
@@ -315,7 +382,8 @@ export function MatterWorkbench({
               />
             </li>
           )}
-        </ol>
+          </ol>
+        </div>
       ) : null}
 
       {tab === "Notes" ? (
@@ -361,28 +429,34 @@ export function MatterWorkbench({
 
       {tab === "Documents" ? (
         <div className="space-y-4">
-          <MatterDocumentUpload matterId={matter.matterId} />
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Title</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Uploaded</th>
-              </tr>
-            </thead>
-            <tbody>
-              {documents.length ? (
-                documents.map((doc) => (
-                  <tr key={doc.id} className="border-t border-slate-100">
-                    <td className="px-4 py-3 font-medium">{doc.title}</td>
-                    <td className="px-4 py-3">{doc.category}</td>
-                    <td className="px-4 py-3 tabular-nums">{formatDate(doc.uploadedAt)}</td>
-                  </tr>
-                ))
-              ) : (
+          <MatterDocumentUpload matterId={matter.matterId} onUploaded={refresh} />
+          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                 <tr>
-                  <td colSpan={3} className="p-0">
+                  <th className="px-4 py-3">Title</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">OCR</th>
+                  <th className="px-4 py-3">PII tier</th>
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">Uploaded</th>
+                </tr>
+              </thead>
+              <tbody>
+                {documents.length ? (
+                  documents.map((doc) => (
+                    <tr key={doc.id} className="border-t border-slate-100">
+                      <td className="px-4 py-3 font-medium">{doc.title}</td>
+                      <td className="px-4 py-3">{doc.category || "—"}</td>
+                      <td className="px-4 py-3">{doc.ocrStatus || "—"}</td>
+                      <td className="px-4 py-3">{doc.piiTier ?? "—"}</td>
+                      <td className="px-4 py-3">{doc.fileType || "—"}</td>
+                      <td className="px-4 py-3 tabular-nums">{formatDate(doc.uploadedAt)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="p-0">
                     <EmptyState
                       icon={FileText}
                       title="No documents yet."
@@ -398,62 +472,111 @@ export function MatterWorkbench({
       ) : null}
 
       {tab === "Legal Elements" ? (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-              <tr>
-                <th className="px-3 py-2">Element</th>
-                <th className="px-3 py-2">Assessment</th>
-                <th className="px-3 py-2">Key gap</th>
-                <th className="px-3 py-2">Next action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {elements.length ? (
-                elements.map((row) => (
-                  <tr key={row.id} className="border-t border-slate-100 align-top">
-                    <td className="px-3 py-2 font-medium">{row.element}</td>
-                    <td className="px-3 py-2">
-                      <input
-                        className="w-full rounded border border-slate-200 px-2 py-1 text-sm"
-                        value={row.assessment}
-                        onChange={(e) =>
-                          setElements((prev) =>
-                            prev.map((r) => (r.id === row.id ? { ...r, assessment: e.target.value } : r)),
-                          )
-                        }
-                        onBlur={() => saveElement(row.id)}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        className="w-full rounded border border-slate-200 px-2 py-1 text-sm"
-                        value={row.keyGap}
-                        onChange={(e) =>
-                          setElements((prev) =>
-                            prev.map((r) => (r.id === row.id ? { ...r, keyGap: e.target.value } : r)),
-                          )
-                        }
-                        onBlur={() => saveElement(row.id)}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        className="w-full rounded border border-slate-200 px-2 py-1 text-sm"
-                        value={row.nextAction}
-                        onChange={(e) =>
-                          setElements((prev) =>
-                            prev.map((r) => (r.id === row.id ? { ...r, nextAction: e.target.value } : r)),
-                          )
-                        }
-                        onBlur={() => saveElement(row.id)}
-                      />
-                    </td>
-                  </tr>
-                ))
-              ) : (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+            <label className="flex min-w-[12rem] flex-1 flex-col text-sm">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Add element
+              </span>
+              <input
+                className="mt-1 rounded border border-slate-200 px-2 py-1.5"
+                value={newElementName}
+                onChange={(e) => setNewElementName(e.target.value)}
+                placeholder="e.g. Persecution on account of membership"
+              />
+            </label>
+            <button type="button" className={btnPrimary} onClick={() => void addElement()}>
+              Add
+            </button>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                 <tr>
-                  <td colSpan={4} className="p-0">
+                  <th className="px-3 py-2">Element</th>
+                  <th className="px-3 py-2">Assessment</th>
+                  <th className="px-3 py-2">Key gap</th>
+                  <th className="px-3 py-2">Next action</th>
+                  <th className="px-3 py-2 w-20">Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {elements.length ? (
+                  elements.map((row) => (
+                    <Fragment key={row.id}>
+                      <tr className="border-t border-slate-100 align-top">
+                        <td className="px-3 py-2 font-medium">{row.element}</td>
+                        <td className="px-3 py-2">
+                          <input
+                            className="w-full rounded border border-slate-200 px-2 py-1 text-sm"
+                            value={row.assessment}
+                            onChange={(e) =>
+                              setElements((prev) =>
+                                prev.map((r) =>
+                                  r.id === row.id ? { ...r, assessment: e.target.value } : r,
+                                ),
+                              )
+                            }
+                            onBlur={() => saveElement(row.id)}
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            className="w-full rounded border border-slate-200 px-2 py-1 text-sm"
+                            value={row.keyGap}
+                            onChange={(e) =>
+                              setElements((prev) =>
+                                prev.map((r) => (r.id === row.id ? { ...r, keyGap: e.target.value } : r)),
+                              )
+                            }
+                            onBlur={() => saveElement(row.id)}
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            className="w-full rounded border border-slate-200 px-2 py-1 text-sm"
+                            value={row.nextAction}
+                            onChange={(e) =>
+                              setElements((prev) =>
+                                prev.map((r) =>
+                                  r.id === row.id ? { ...r, nextAction: e.target.value } : r,
+                                ),
+                              )
+                            }
+                            onBlur={() => saveElement(row.id)}
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <button
+                            type="button"
+                            className="text-xs font-medium text-sky-700 hover:underline"
+                            onClick={() =>
+                              setExpandedElementId((id) => (id === row.id ? null : row.id))
+                            }
+                          >
+                            {expandedElementId === row.id ? "Hide" : "Show"}
+                          </button>
+                        </td>
+                      </tr>
+                      {expandedElementId === row.id ? (
+                        <tr key={`${row.id}-detail`} className="border-t border-slate-50 bg-slate-50/50">
+                          <td colSpan={5} className="px-3 py-3 text-xs text-slate-700">
+                            <p>
+                              <span className="font-semibold">Supporting facts: </span>
+                              {row.supportingFacts?.trim() || "None recorded."}
+                            </p>
+                            <p className="mt-2">
+                              <span className="font-semibold">Supporting cases: </span>
+                              {row.supportingCases?.trim() || "None recorded."}
+                            </p>
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="p-0">
                     <EmptyState
                       icon={ClipboardList}
                       title="No legal elements yet."
@@ -464,6 +587,7 @@ export function MatterWorkbench({
               )}
             </tbody>
           </table>
+        </div>
         </div>
       ) : null}
 

@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 from app.agents.categorizer_agent import categorizer_agent
 from app.agents.fact_extraction_agent import fact_extraction_agent
 from app.agents.obsidian_sync_agent import obsidian_sync_agent
-from app.models.document import Document, ExtractedFact
-from app.services.idi_pipeline import run_ocr_pipeline, text_quality_score
+from app.services import airtable as at
+from app.services.presidio_gate import current_tier
 
 
 def process_uploaded_document(
@@ -75,6 +75,15 @@ def process_uploaded_document(
         text_preview=ocr.text,
     )
 
+    airtable_doc = at.create_document(
+        matter_code=external_id,
+        title=filename,
+        category=str(cat.get("category") or "uncategorized"),
+        ocr_status=ocr.processing_status,
+        pii_tier=str(current_tier()),
+        file_type=(mime_type or Path(filename).suffix or "")[:80],
+    )
+
     return {
         "document_id": doc_id,
         "external_id": external_id,
@@ -90,5 +99,6 @@ def process_uploaded_document(
         "facts": facts_payload,
         "text_preview": ocr.text[:500],
         "obsidian_path": str(obsidian),
+        "airtable_document_id": (airtable_doc or {}).get("id"),
         "metadata": ocr.metadata,
     }

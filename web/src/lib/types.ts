@@ -91,6 +91,8 @@ export type LegalElementRow = {
   assessment: string;
   keyGap: string;
   nextAction: string;
+  supportingFacts?: string;
+  supportingCases?: string;
 };
 
 export type Contact = {
@@ -109,6 +111,10 @@ export type DocumentRow = {
   title: string;
   category: string;
   uploadedAt: string;
+  uploadedBy?: string;
+  ocrStatus?: string;
+  piiTier?: string;
+  fileType?: string;
 };
 
 export type CalendarEvent = {

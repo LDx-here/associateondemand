@@ -97,7 +97,7 @@ export function InboxBoard({
       const resp = await fetch(`/api/inbox/${target.item.id}/resolve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resolution: trimmed, status }),
+        body: JSON.stringify({ resolution: trimmed, status, option: target.option }),
       });
       if (!resp.ok) {
         const text = await resp.text();

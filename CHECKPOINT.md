@@ -1,13 +1,13 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-06-17 (EDT)  
+**Last updated:** 2026-06-15  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
 
-## Project status: **COMPLETE** (BUILD_SPEC implementation)
+## Project status: **BUILD_SPEC complete** (code)
 
-Production firm OS is live with all Phase 0–7 surfaces and Phase 4 specialist agents wired to Anthropic + SKILL files.
+Production firm OS is live. All Phase 0–7 surfaces, Phase 4 specialist agents, intake→Airtable persistence, PM inbox approve→resume, document linter on export, matter workbench UX, and GitHub CI are implemented in code.
 
 | Surface | URL |
 |---------|-----|
@@ -27,27 +27,35 @@ Production firm OS is live with all Phase 0–7 surfaces and Phase 4 specialist 
 | Strategy | Heuristic + patterns | `strategy approach …` |
 | Strong Reader | OCR pipeline orchestrator | `/agents/strong-reader/run` |
 
-### Web UI (complete)
+### Recently closed gaps (2026-06-15)
 
-Dashboard (KPIs + Recharts), matters (TanStack + **New matter**), contacts, tasks, calendar, inbox, knowledge map, intake, eImmigration import, settings, auth.
+- Intake OCR → **Documents** row in Airtable; matter Documents tab refreshes after upload
+- Agent corrections → **Notes** / **Strategy Patterns** in Airtable
+- PM valid runs → agent memo persisted to matter **Notes**
+- **PM Inbox Approve** → `/agents/pm/dispatch` resume with attorney resolution
+- **Document linter** (§11) on memo export; DOCX **Page X of Y** footer
+- Matter workbench: timeline filters, legal element add/expand, richer document columns
+- **GitHub CI**: pytest + Next build + eslint
+- Docker compose: `PRESIDIO_HEALTH_URL` → real Presidio analyzer
 
-### Smoke & tests
+### Optional / external keys (not code blockers)
+
+- **Midpage / Fastcase** citator APIs — env keys enable live calls
+- **Google Drive** document storage — not integrated (BUILD_SPEC stretch)
+- **LiteLLM** Presidio scrub proxy — compose uses Presidio sidecars directly
+- **Qdrant on Fly** — pattern seed via `POST /agents/pattern/seed`; cloud Qdrant optional
+
+---
+
+## Smoke & tests
 
 ```bash
 bash scripts/smoke-production.sh
 bash scripts/smoke-docker-e2e.sh
 cd web && npm run test:airtable
 cd services/api && python -m pytest tests/ -q
+cd web && npm run build
 ```
-
-### Optional / external keys (not code blockers)
-
-- **Midpage / Fastcase** citator APIs — env keys enable future live calls; memos flag Shepardizing today
-- **Google Drive** document storage — not integrated (BUILD_SPEC stretch)
-- **LiteLLM** Presidio scrub proxy — compose has real Presidio images locally; Fly tier-0 uses manual approval gate
-- **Qdrant on Fly** — pattern seed from Airtable via `POST /agents/pattern/seed`; internal Fly Qdrant optional
-
----
 
 ## Commands to resume
 

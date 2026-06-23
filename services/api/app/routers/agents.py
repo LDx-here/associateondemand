@@ -14,6 +14,7 @@ from app.agents.pattern_agent import build_knowledge_graph, run_pattern, seed_al
 from app.agents.pm_orchestrator import dispatch, get_job_result, list_inbox, process_next_job
 from app.agents.research_agent import run_research
 from app.agents.strategy_agent import run_strategy
+from app.services.document_linter import lint_document
 from app.db import get_db
 from app.models.agent_result import AgentResult
 from app.services.redis_queue import get_job, queue_depth
@@ -95,18 +96,44 @@ class MemoExportBody(BaseModel):
 
 
 def _memo_docx_blob(text: str) -> bytes:
-    """Build a minimal .docx from plain memo lines (requires python-docx)."""
+    """Build a .docx from plain memo lines with Page X of Y footer (BUILD_SPEC §11)."""
 
     from io import BytesIO
 
     try:
         from docx import Document  # type: ignore[import-not-found]
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.oxml import OxmlElement
+        from docx.oxml.ns import qn
     except ImportError:
         raise RuntimeError("python-docx unavailable") from None
+
+    def _add_field(paragraph, instruction: str) -> None:
+        run = paragraph.add_run()
+        fld_begin = OxmlElement("w:fldChar")
+        fld_begin.set(qn("w:fldCharType"), "begin")
+        instr = OxmlElement("w:instrText")
+        instr.set(qn("xml:space"), "preserve")
+        instr.text = instruction
+        fld_end = OxmlElement("w:fldChar")
+        fld_end.set(qn("w:fldCharType"), "end")
+        run._r.append(fld_begin)
+        run._r.append(instr)
+        run._r.append(fld_end)
 
     doc = Document()
     for line in text.replace("\r\n", "\n").split("\n"):
         doc.add_paragraph(line)
+
+    section = doc.sections[0]
+    footer = section.footer
+    paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.add_run("Page ")
+    _add_field(paragraph, "PAGE")
+    paragraph.add_run(" of ")
+    _add_field(paragraph, "NUMPAGES")
+
     buf = BytesIO()
     doc.save(buf)
     return buf.getvalue()
@@ -121,6 +148,13 @@ def research_memo_export(body: MemoExportBody) -> Response:
     memo = body.memo_text.strip()
     if not memo:
         raise HTTPException(status_code=400, detail="memo_text is required")
+
+    lint_issues = lint_document(memo)
+    if lint_issues:
+        raise HTTPException(
+            status_code=422,
+            detail={"message": "Document linter failed", "issues": lint_issues},
+        )
 
     if body.format == "txt":
         return Response(

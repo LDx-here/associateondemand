@@ -151,6 +151,27 @@ def submit_correction(body: CorrectionRequest, db: Session = Depends(get_db)) ->
     if airtable_record and airtable_record.get("id"):
         persisted.append(f"airtable:Corrections/{airtable_record['id']}")
 
+    if cat == "factual_error" and body.matter_id:
+        note = airtable_client.create_matter_note(
+            matter_code=body.matter_id,
+            content=f"Correction: {body.attorney_correction[:3500]}",
+            note_type="Correction",
+        )
+        if note and note.get("id"):
+            persisted.append(f"airtable:Notes/{note['id']}")
+
+    if cat in ("analytical_error", "false_positive", "false_negative"):
+        pattern = airtable_client.create_strategy_pattern(
+            fact_pattern=body.original_output[:240] or body.matter_id,
+            strategy_used=body.agent,
+            outcome=body.attorney_correction[:4000],
+            detail=body.reason[:2000],
+            correction_note=body.attorney_correction[:2000],
+            matter_code=body.matter_id,
+        )
+        if pattern and pattern.get("id"):
+            persisted.append(f"airtable:Strategy Patterns/{pattern['id']}")
+
     db.add(
         AuditLog(
             matter_id=body.matter_id,

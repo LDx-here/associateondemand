@@ -19,6 +19,7 @@ from app.models.agent_result import AgentResult, Uncertainty
 from app.models.db_models import AgentJob, AuditLog
 from app.services.pm_queue import enqueue_inbox_review
 from app.services.redis_queue import enqueue_job, get_job
+from app.services import airtable as airtable_client
 
 _ROUTE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("research", re.compile(r"\b(research|memo|country conditions|precedent|cite|standard|pm:research)\b", re.I)),
@@ -159,6 +160,24 @@ def execute_agent(agent: str, payload: dict[str, Any]) -> AgentResult:
     return run_research(matter_id, instruction, sources=payload.get("sources"))
 
 
+def _persist_valid_result(result: AgentResult, target: str) -> None:
+    """BUILD_SPEC §8/§9 — save agent work product to matter notes when complete."""
+
+    matter_id = result.matter_id
+    if not matter_id:
+        return
+    meta = result.metadata or {}
+    memo = meta.get("full_memo")
+    if not memo or target not in {"research", "drafting", "legal_mapping", "mass_audit"}:
+        return
+    label = target.replace("_", " ").title()
+    body = f"[{label} — PM dispatch]\n\n{str(memo)[:7500]}"
+    rec = airtable_client.create_matter_note(matter_code=matter_id, content=body, note_type="Agent")
+    if rec and rec.get("id"):
+        meta["airtable_note_id"] = rec["id"]
+        result.metadata = meta
+
+
 def _validate_and_route(
     db: Session,
     result: AgentResult,
@@ -177,6 +196,7 @@ def _validate_and_route(
     matter_id = result.matter_id or str(payload.get("matter_id") or "") or None
     valid = result.is_valid()
     if valid and result.complete:
+        _persist_valid_result(result, target)
         return
 
     if not valid:

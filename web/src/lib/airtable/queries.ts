@@ -121,6 +121,8 @@ function mapLegalElement(rec: { id: string; fields: RawFields }, matterId: strin
     assessment: String(f[le.assessment] ?? ""),
     keyGap: String(f[le.key_gap] ?? "").slice(0, 240),
     nextAction: String(f[le.next_action] ?? ""),
+    supportingFacts: String(f[le.supporting_facts] ?? ""),
+    supportingCases: String(f[le.supporting_cases] ?? ""),
   };
 }
 
@@ -133,6 +135,10 @@ function mapDocument(rec: { id: string; fields: RawFields }, matterId: string): 
     title: String(f[d.title] ?? "Untitled"),
     category: String(f[d.category] ?? ""),
     uploadedAt: String(f[d.created_at] ?? new Date().toISOString()),
+    uploadedBy: String(f[d.uploaded_by] ?? ""),
+    ocrStatus: String(f[d.ocr_status] ?? ""),
+    piiTier: String(f[d.pii_tier] ?? ""),
+    fileType: String(f[d.file_type] ?? ""),
   };
 }
 
@@ -363,6 +369,21 @@ export async function listLegalElementsFromAirtable(matterCode: string): Promise
     filterByFormula: formula,
   });
   return records.map((r) => mapLegalElement(r, resolved.matterId));
+}
+
+export async function createLegalElementInAirtable(
+  matterCode: string,
+  elementName: string,
+): Promise<LegalElementRow> {
+  const resolved = await resolveMatterRecordId(matterCode);
+  if (!resolved) throw new Error(`Matter not found: ${matterCode}`);
+  const le = F.legalElements;
+  const rec = await airtableCreate(TABLES.legalElements, {
+    [le.element_name]: elementName.trim(),
+    [le.matter_id]: resolved.matterId,
+    [le.assessment]: "Not assessed",
+  });
+  return mapLegalElement(rec, resolved.matterId);
 }
 
 export async function updateMatterDeadlineInAirtable(

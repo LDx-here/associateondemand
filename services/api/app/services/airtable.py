@@ -26,6 +26,9 @@ LOGGER = logging.getLogger(__name__)
 TABLE_MATTERS = "Matters"
 TABLE_TASKS = "Tasks"
 TABLE_LEGAL_ELEMENTS = "Legal Elements"
+TABLE_DOCUMENTS = "Documents"
+TABLE_NOTES = "Notes"
+TABLE_STRATEGY_PATTERNS = "Strategy Patterns"
 TABLE_PM_INBOX = "PM Inbox"
 TABLE_CORRECTIONS = "Corrections"
 
@@ -51,6 +54,34 @@ FIELDS_CORRECTIONS = {
     "correction_type": "correction_type",
     "reason": "reason",
     "applied_to": "applied_to",
+    "created_at": "created_at",
+}
+
+FIELDS_DOCUMENTS = {
+    "title": "title",
+    "matter_id": "matter_id",
+    "category": "category",
+    "created_at": "created_at",
+    "uploaded_by": "uploaded_by",
+    "ocr_status": "ocr_status",
+    "pii_tier": "pii_tier",
+    "file_type": "file_type",
+}
+
+FIELDS_NOTES = {
+    "content": "content",
+    "matter_id": "matter_id",
+    "author": "author",
+    "created_at": "created_at",
+    "type": "type",
+}
+
+FIELDS_STRATEGY_PATTERNS = {
+    "fact_pattern": "fact_pattern",
+    "fact_pattern_detail": "fact_pattern_detail",
+    "strategy_used": "strategy_used",
+    "outcome": "outcome",
+    "correction_note": "correction_note",
     "created_at": "created_at",
 }
 
@@ -277,6 +308,84 @@ def create_correction(
         if rec_id:
             fields[FIELDS_CORRECTIONS["matter_id"]] = [rec_id]
     return _create_record(TABLE_CORRECTIONS, fields)
+
+
+def create_document(
+    *,
+    matter_code: str,
+    title: str,
+    category: str = "",
+    uploaded_by: str = "Strong Reader",
+    ocr_status: str = "processed",
+    pii_tier: str = "0",
+    file_type: str = "",
+) -> dict[str, Any] | None:
+    """Persist a Documents row after intake (BUILD_SPEC §7.8)."""
+
+    fields: dict[str, Any] = {
+        FIELDS_DOCUMENTS["title"]: title[:240],
+        FIELDS_DOCUMENTS["category"]: category[:120] or "uncategorized",
+        FIELDS_DOCUMENTS["created_at"]: _now_iso(),
+        FIELDS_DOCUMENTS["uploaded_by"]: uploaded_by[:120],
+        FIELDS_DOCUMENTS["ocr_status"]: ocr_status[:80],
+        FIELDS_DOCUMENTS["pii_tier"]: str(pii_tier),
+    }
+    if file_type:
+        fields[FIELDS_DOCUMENTS["file_type"]] = file_type[:80]
+    rec_id = _resolve_matter_record_id(matter_code)
+    if rec_id:
+        fields[FIELDS_DOCUMENTS["matter_id"]] = [rec_id]
+    else:
+        fields[FIELDS_DOCUMENTS["matter_id"]] = matter_code
+    return _create_record(TABLE_DOCUMENTS, fields)
+
+
+def create_matter_note(
+    *,
+    matter_code: str,
+    content: str,
+    author: str = "Litigation Associate",
+    note_type: str = "Agent",
+) -> dict[str, Any] | None:
+    """Create a matter note (agent output or correction)."""
+
+    rec_id = _resolve_matter_record_id(matter_code)
+    if not rec_id:
+        return None
+    fields: dict[str, Any] = {
+        FIELDS_NOTES["content"]: content[:8000],
+        FIELDS_NOTES["author"]: author[:120],
+        FIELDS_NOTES["matter_id"]: [rec_id],
+        FIELDS_NOTES["created_at"]: _now_iso(),
+        FIELDS_NOTES["type"]: note_type,
+    }
+    return _create_record(TABLE_NOTES, fields)
+
+
+def create_strategy_pattern(
+    *,
+    fact_pattern: str,
+    strategy_used: str,
+    outcome: str,
+    detail: str = "",
+    correction_note: str = "",
+    matter_code: str | None = None,
+) -> dict[str, Any] | None:
+    """Persist analytical correction to Strategy Patterns table (BUILD_SPEC §10)."""
+
+    label = fact_pattern[:240] or "Correction pattern"
+    fields: dict[str, Any] = {
+        FIELDS_STRATEGY_PATTERNS["fact_pattern"]: label,
+        FIELDS_STRATEGY_PATTERNS["fact_pattern_detail"]: detail[:4000] or outcome[:4000],
+        FIELDS_STRATEGY_PATTERNS["strategy_used"]: strategy_used[:240],
+        FIELDS_STRATEGY_PATTERNS["outcome"]: outcome[:4000],
+        FIELDS_STRATEGY_PATTERNS["created_at"]: _now_iso(),
+    }
+    if correction_note:
+        fields[FIELDS_STRATEGY_PATTERNS["correction_note"]] = correction_note[:2000]
+    if matter_code:
+        fields["matching_matters"] = matter_code[:240]
+    return _create_record(TABLE_STRATEGY_PATTERNS, fields)
 
 
 def _now_iso() -> str:

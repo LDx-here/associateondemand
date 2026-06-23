@@ -124,6 +124,9 @@ export const SPEC_FIELDS = {
     category: "category",
     created_at: "created_at",
     uploaded_by: "uploaded_by",
+    ocr_status: "ocr_status",
+    pii_tier: "pii_tier",
+    file_type: "file_type",
   },
   events: {
     summary: "summary",

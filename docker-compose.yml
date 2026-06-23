@@ -65,7 +65,7 @@ services:
       AOD_CONSTITUTION_DIR: /app/docs/constitution
       AOD_BRAIN_ROOT: /app/brain
       UPLOAD_DIR: /data/uploads
-      PRESIDIO_HEALTH_URL: http://presidio:8080
+      PRESIDIO_HEALTH_URL: http://presidio-analyzer:3000/health
       PRESIDIO_ANALYZER_URL: http://presidio-analyzer:3000
       PRESIDIO_ANONYMIZER_URL: http://presidio-anonymizer:3000
       OCR_PROVIDER: tesseract

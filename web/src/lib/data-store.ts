@@ -1,5 +1,6 @@
 import {
   completeTaskInAirtable,
+  createLegalElementInAirtable,
   createNoteInAirtable,
   createTaskInAirtable,
   getCaseAssessmentFromAirtable,
@@ -172,6 +173,28 @@ export async function saveCaseAssessment(matterId: string, assessment: CaseAsses
     return payload;
   }
   return saveCaseAssessmentInAirtable(matterId, assessment);
+}
+
+export async function createLegalElement(
+  matterId: string,
+  elementName: string,
+): Promise<LegalElementRow> {
+  if (useDemoMode()) {
+    const seed = await loadDemoSeed();
+    const row: LegalElementRow = {
+      id: `le-${Date.now()}`,
+      matterId,
+      element: elementName,
+      assessment: "Not assessed",
+      keyGap: "",
+      nextAction: "",
+    };
+    seed.legalElements.push(row);
+    const { persistSeed } = await import("./demo-store-mutable");
+    await persistSeed();
+    return row;
+  }
+  return createLegalElementInAirtable(matterId, elementName);
 }
 
 export async function updateLegalElementRow(

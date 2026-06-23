@@ -11,7 +11,13 @@ import {
 } from "@/components/IntakeUploadShared";
 import { btnPrimary } from "@/lib/ui-classes";
 
-export function MatterDocumentUpload({ matterId }: { matterId: string }) {
+export function MatterDocumentUpload({
+  matterId,
+  onUploaded,
+}: {
+  matterId: string;
+  onUploaded?: () => void;
+}) {
   const [manualApproved, setManualApproved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [apiReachable, setApiReachable] = useState<boolean | null>(null);
@@ -50,6 +56,7 @@ export function MatterDocumentUpload({ matterId }: { matterId: string }) {
         setError(data.error);
       } else {
         setResult(data);
+        onUploaded?.();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
