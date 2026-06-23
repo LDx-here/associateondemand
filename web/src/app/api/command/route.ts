@@ -31,6 +31,9 @@ type AgentDispatchResult = {
     manual_flags?: string[];
     full_memo?: string;
     routed_to?: string;
+    draft_type?: string;
+    citation_verification_summary?: string;
+    document_lint?: { passed?: boolean; issues?: string[] };
   };
 };
 
@@ -278,6 +281,18 @@ async function dispatchToPm(matterId: string, instruction: string) {
     }
     if (fullMemoTruncated) {
       payload.fullMemoTruncated = true;
+    }
+    const citationSummary =
+      typeof data.metadata?.citation_verification_summary === "string"
+        ? data.metadata.citation_verification_summary
+        : undefined;
+    const draftType =
+      typeof data.metadata?.draft_type === "string" ? data.metadata.draft_type : undefined;
+    const lintMeta = data.metadata?.document_lint as { passed?: boolean } | undefined;
+    if (citationSummary) payload.citationVerification = citationSummary;
+    if (draftType) payload.draftType = draftType;
+    if (lintMeta && typeof lintMeta.passed === "boolean") {
+      payload.documentLintPassed = lintMeta.passed;
     }
     return NextResponse.json(payload);
   } catch {

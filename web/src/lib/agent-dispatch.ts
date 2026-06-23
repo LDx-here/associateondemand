@@ -28,6 +28,9 @@ export type AgentCommandResult = {
   manualFlags?: string[];
   complete?: boolean;
   jobId?: string;
+  draftType?: string;
+  citationVerification?: string;
+  documentLintPassed?: boolean;
 };
 
 export type BriefingCommandResult = {

@@ -23,6 +23,7 @@ COPY services/api/alembic ./alembic
 COPY services/api/alembic.ini .
 COPY docs/constitution ./docs/constitution
 COPY data/dev-seed.json ./data/dev-seed.json
+COPY data/templates ./data/templates
 
 EXPOSE 8000
 

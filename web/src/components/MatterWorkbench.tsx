@@ -21,7 +21,7 @@ import type {
   Task,
   TimelineEntry,
 } from "@/lib/types";
-import { btnPrimary, tabActive, tabInactive } from "@/lib/ui-classes";
+import { btnPrimary, btnSecondary, tabActive, tabInactive } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
 import type { AgentCommandResult } from "@/lib/agent-dispatch";
 import { dispatchAgentCommand } from "@/lib/agent-dispatch";
@@ -235,6 +235,24 @@ export function MatterWorkbench({
 
       {tab === "Assessment" ? (
         <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
+            <div>
+              <p className="font-semibold text-sky-900">AOS discretionary factors workbook</p>
+              <p className="mt-0.5 text-xs text-sky-900">
+                Case Intake → Brief Development Matrix → Case Theme → Legal Framework. Complete in Excel,
+                then draft with{" "}
+                <code className="rounded bg-sky-100 px-1">draft aos discretionary brief</code> in the
+                Associate panel.
+              </p>
+            </div>
+            <a
+              className={btnSecondary}
+              download
+              href="/templates/AOS_Discretionary_Factors_Case_Assessment_Tool.xlsx"
+            >
+              Download .xlsx
+            </a>
+          </div>
           <CaseAssessmentEditor matterId={matter.matterId} initial={initialAssessment} />
           <MatterDeadlineForm matterId={matter.matterId} initialDeadline={deadline} onUpdated={refresh} />
           <div className="rounded-lg border border-slate-200 bg-white shadow-sm">

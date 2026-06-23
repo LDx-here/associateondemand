@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -186,6 +187,112 @@ def research_memo_export(body: MemoExportBody) -> Response:
             media_type="text/plain; charset=utf-8",
             headers={"Content-Disposition": f'attachment; filename="{fname}.txt"'},
         )
+
+
+@router.get("/drafting/assessment-template")
+def drafting_assessment_template() -> FileResponse:
+    """Download the AOS Discretionary Factors case assessment workbook (4 tabs)."""
+
+    from pathlib import Path
+
+    candidates = [
+        Path(os.getenv("AOD_ASSESSMENT_XLSX", "")),
+        Path(__file__).resolve().parents[3] / "data" / "templates" / "AOS_Discretionary_Factors_Case_Assessment_Tool.xlsx",
+        Path("/app/data/templates/AOS_Discretionary_Factors_Case_Assessment_Tool.xlsx"),
+    ]
+    for path in candidates:
+        if path.is_file():
+            return FileResponse(
+                path,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                filename="AOS_Discretionary_Factors_Case_Assessment_Tool.xlsx",
+            )
+    raise HTTPException(status_code=404, detail="Assessment template not found — run scripts/generate-aos-assessment-template.py")
+
+
+@router.post("/drafting/run", response_model=AgentResult)
+def drafting_run(matter_id: str, instruction: str) -> AgentResult:
+    from app.agents.drafting_agent import run_drafting
+
+    return run_drafting(matter_id, instruction)
+
+
+class CitationPackageBody(BaseModel):
+    matter_id: str = ""
+    memo_text: str = ""
+    matter_label: str = ""
+
+
+@router.post("/drafting/citation-package")
+def drafting_citation_package(body: CitationPackageBody) -> dict[str, Any]:
+    """Build citation verification manifest + reference PDFs from draft text."""
+
+    memo = body.memo_text.strip()
+    if not memo:
+        raise HTTPException(status_code=400, detail="memo_text is required")
+
+    from app.drafting.citation_extractor import resolve_sources_for_draft
+    from app.drafting.citation_package import build_citation_package
+    import tempfile
+    import os
+
+    sources = resolve_sources_for_draft(memo)
+    out_dir = tempfile.mkdtemp(prefix="citation-pkg-", dir=os.getenv("UPLOAD_DIR", "/tmp/aod-uploads"))
+    label = body.matter_label or body.matter_id or "Draft"
+    pkg = build_citation_package(sources, out_dir, matter_label=label)
+    if not pkg.get("ok"):
+        raise HTTPException(status_code=503, detail=pkg.get("error", "Citation package build failed"))
+    return pkg
+
+
+class AosBriefExportBody(BaseModel):
+    matter_id: str
+    memo_text: str = ""
+    client_name: str = ""
+    a_number: str = ""
+    case_theme: str = ""
+    xlsx_path: str = ""
+
+
+@router.post("/drafting/aos-brief-export")
+def drafting_aos_brief_export(body: AosBriefExportBody) -> Response:
+    """Export AOS discretionary brief as DOCX (from memo text or assessment workbook)."""
+
+    from app.drafting.aos_brief_docx import build_aos_brief_docx, build_from_xlsx
+    import tempfile
+    import os
+
+    fname = (body.matter_id or "aos_brief").replace("/", "_").replace(" ", "") + "_discretionary_brief.docx"
+
+    if body.xlsx_path and os.path.isfile(body.xlsx_path):
+        tmp = tempfile.mktemp(suffix=".docx")
+        build_from_xlsx(body.xlsx_path, tmp, body.client_name or body.matter_id, body.a_number)
+        with open(tmp, "rb") as fh:
+            blob = fh.read()
+        os.remove(tmp)
+    else:
+        memo = body.memo_text.strip()
+        if not memo:
+            raise HTTPException(status_code=400, detail="memo_text or xlsx_path is required")
+        lint_issues = lint_document(memo)
+        if lint_issues:
+            raise HTTPException(
+                status_code=422,
+                detail={"message": "Document linter failed", "issues": lint_issues},
+            )
+        blob = build_aos_brief_docx(
+            client_name=body.client_name or body.matter_id,
+            matter_id=body.matter_id,
+            draft_text=memo,
+            case_theme=body.case_theme,
+            a_number=body.a_number,
+        )
+
+    return Response(
+        content=blob,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
 
 
 @router.post("/strategy/recommend", response_model=AgentResult)

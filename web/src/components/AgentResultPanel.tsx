@@ -54,14 +54,15 @@ export function AgentResultPanel({
     if (!fullMemo || !result.matterId) return;
     setDownloadBusy(true);
     try {
-      const r = await fetch("/api/research/memo-export", {
+      const isAosBrief = result.draftType === "aos_discretionary_brief";
+      const endpoint = isAosBrief ? "/api/drafting/aos-brief-export" : "/api/research/memo-export";
+      const payload = isAosBrief
+        ? { matterId: result.matterId, memo: fullMemo, format: "docx" }
+        : { matterId: result.matterId, memo: fullMemo, format: "docx" };
+      const r = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          matterId: result.matterId,
-          memo: fullMemo,
-          format: "docx",
-        }),
+        body: JSON.stringify(payload),
       });
       const blob = await r.blob();
       const dispo = r.headers.get("Content-Disposition");
@@ -101,6 +102,21 @@ export function AgentResultPanel({
 
       {showSummary ? (
         <p className={cn("text-slate-700", variant === "compact" && "line-clamp-3")}>{result.summary}</p>
+      ) : null}
+
+      {result.draftType ? (
+        <p className="text-[0.65rem] font-medium text-slate-600">
+          Draft type: <span className="text-slate-800">{result.draftType.replace(/_/g, " ")}</span>
+          {result.documentLintPassed === false ? (
+            <span className="ml-2 text-amber-800"> · linter issues — fix before export</span>
+          ) : null}
+        </p>
+      ) : null}
+
+      {result.citationVerification ? (
+        <p className="rounded border border-sky-200 bg-sky-50 px-2 py-1 text-[0.65rem] text-sky-950">
+          Citation package: {result.citationVerification}
+        </p>
       ) : null}
 
       {result.fullMemoTruncated ? (
