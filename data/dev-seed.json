@@ -1,0 +1,136 @@
+{
+  "matters": [
+    {
+      "id": "recAOD1001",
+      "matterId": "AOD-1001",
+      "clientName": "Sample Client A",
+      "caseType": "General Asylum",
+      "status": "In Progress",
+      "proceduralPosture": "Removal proceedings — master calendar",
+      "fidelityScore": 72,
+      "nextDeadline": "2026-06-01",
+      "vulnerabilityFlags": ["Missing Evidence"],
+      "assignedAttorney": "La'Dajia Ferguson",
+      "summary": "Affirmative asylum pathway; country conditions memo pending."
+    },
+    {
+      "id": "recAOD1002",
+      "matterId": "AOD-1002",
+      "clientName": "Sample Client B",
+      "caseType": "Cancellation of Removal",
+      "status": "Intake",
+      "proceduralPosture": "EOIR — individual calendar",
+      "fidelityScore": 58,
+      "nextDeadline": "2026-05-28",
+      "vulnerabilityFlags": ["Approaching SOL"],
+      "assignedAttorney": "La'Dajia Ferguson",
+      "summary": "Ten-year presence and exceptional hardship analysis started."
+    },
+    {
+      "id": "recAOD1003",
+      "matterId": "AOD-1003",
+      "clientName": "Sample Client C",
+      "caseType": "Adjustment",
+      "status": "Pending Filing",
+      "proceduralPosture": "USCIS — I-485 pending",
+      "fidelityScore": 81,
+      "nextDeadline": "2026-07-15",
+      "vulnerabilityFlags": [],
+      "assignedAttorney": "La'Dajia Ferguson",
+      "summary": "Family-based adjustment; medical exam scheduled."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "tsk1",
+      "matterId": "AOD-1001",
+      "description": "Retrieve State Dept country report 2024 + 2023",
+      "dueDate": "2026-05-20",
+      "status": "To Do",
+      "priority": "High",
+      "isFilingDeadline": false
+    },
+    {
+      "id": "tsk2",
+      "matterId": "AOD-1001",
+      "description": "Client intake interview — detention narrative",
+      "dueDate": "2026-05-18",
+      "status": "In Progress",
+      "priority": "High",
+      "isFilingDeadline": false
+    },
+    {
+      "id": "tsk3",
+      "matterId": "AOD-1002",
+      "description": "File motion to continue",
+      "dueDate": "2026-05-28",
+      "status": "To Do",
+      "priority": "High",
+      "isFilingDeadline": true
+    }
+  ],
+  "notes": [
+    {
+      "id": "note1",
+      "matterId": "AOD-1001",
+      "author": "Attorney",
+      "content": "Client reports two-day detention in 2023; need dates and facility.",
+      "createdAt": "2026-05-10T14:00:00Z",
+      "type": "Client Call"
+    },
+    {
+      "id": "note2",
+      "matterId": "AOD-1001",
+      "author": "System",
+      "content": "Country conditions research queued.",
+      "createdAt": "2026-05-11T09:30:00Z",
+      "type": "System Log"
+    }
+  ],
+  "legalElements": [
+    {
+      "id": "le1",
+      "matterId": "AOD-1001",
+      "element": "Past Persecution",
+      "assessment": "Moderate",
+      "keyGap": "Detention details undeveloped",
+      "nextAction": "Run client intake interview: duration, conditions, threats"
+    },
+    {
+      "id": "le2",
+      "matterId": "AOD-1001",
+      "element": "Well-Founded Fear",
+      "assessment": "Strong",
+      "keyGap": "Country report not retrieved",
+      "nextAction": "Retrieve State Dept reports 2024 + prior years"
+    }
+  ],
+  "documents": [
+    {
+      "id": "doc1",
+      "matterId": "AOD-1001",
+      "title": "I-589 draft",
+      "category": "Court Filing",
+      "uploadedAt": "2026-05-01T10:00:00Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt1",
+      "matterId": "AOD-1002",
+      "type": "Hearing",
+      "date": "2026-06-12T13:30:00Z",
+      "description": "Individual hearing"
+    }
+  ],
+  "auditLog": [
+    {
+      "id": "audit-demo-1",
+      "matterId": "AOD-1001",
+      "timestamp": "2026-05-18T14:00:00Z",
+      "actor": "pm_orchestrator",
+      "agent": "pm_orchestrator",
+      "summary": "Queued research memo draft for country conditions review"
+    }
+  ]
+}
