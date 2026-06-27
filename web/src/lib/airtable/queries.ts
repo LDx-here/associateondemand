@@ -317,8 +317,19 @@ export async function createTaskInAirtable(
   return mapTask(rec, resolved.matterId);
 }
 
-export async function completeTaskInAirtable(taskId: string): Promise<Task | null> {
-  const rec = await airtablePatch(TABLES.tasks, taskId, { [F.tasks.status]: "Done" });
+export async function completeTaskInAirtable(
+  taskId: string,
+  options?: { completionDocs?: string; completionNote?: string; completedBy?: string },
+): Promise<Task | null> {
+  const now = new Date().toISOString();
+  const fields: RawFields = {
+    [F.tasks.status]: "Done",
+    completed_at: now,
+  };
+  if (options?.completionDocs) fields.completion_docs = options.completionDocs.slice(0, 500);
+  if (options?.completionNote) fields.completion_note = options.completionNote.slice(0, 2000);
+  if (options?.completedBy) fields.completed_by = options.completedBy.slice(0, 120);
+  const rec = await airtablePatch(TABLES.tasks, taskId, fields);
   return mapTask(rec, firstString(rec.fields[F.tasks.matter_id]));
 }
 
@@ -396,6 +407,44 @@ export async function updateMatterDeadlineInAirtable(
     [F.matters.next_deadline]: nextDeadline,
     [F.matters.updated_at]: new Date().toISOString(),
   });
+  return mapMatter(rec);
+}
+
+export async function updateMatterInAirtable(
+  matterCode: string,
+  patch: Partial<
+    Pick<
+      Matter,
+      | "title"
+      | "caseType"
+      | "country"
+      | "posture"
+      | "court"
+      | "judge"
+      | "status"
+      | "summary"
+      | "nextDeadline"
+      | "nextHearing"
+      | "assignedAttorney"
+    >
+  >,
+): Promise<Matter | null> {
+  const resolved = await resolveMatterRecordId(matterCode);
+  if (!resolved) return null;
+  const m = F.matters;
+  const fields: RawFields = { [m.updated_at]: new Date().toISOString() };
+  if (patch.title !== undefined) fields[m.title] = patch.title;
+  if (patch.caseType !== undefined) fields[m.case_type] = patch.caseType;
+  if (patch.country !== undefined) fields[m.country] = patch.country;
+  if (patch.posture !== undefined) fields[m.posture] = patch.posture;
+  if (patch.court !== undefined) fields[m.court] = patch.court;
+  if (patch.judge !== undefined) fields[m.judge] = patch.judge;
+  if (patch.status !== undefined) fields[m.status] = patch.status;
+  if (patch.summary !== undefined) fields[m.summary] = patch.summary;
+  if (patch.nextDeadline !== undefined) fields[m.next_deadline] = patch.nextDeadline;
+  if (patch.nextHearing !== undefined) fields[m.next_hearing] = patch.nextHearing;
+  if (patch.assignedAttorney !== undefined) fields[m.assigned_to] = patch.assignedAttorney;
+  const rec = await airtablePatch(TABLES.matters, resolved.recordId, fields);
   return mapMatter(rec);
 }
 

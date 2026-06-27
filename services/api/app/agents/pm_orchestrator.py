@@ -225,6 +225,15 @@ def _validate_and_route(
         options=["Approve", "Reject", "Modify", "Defer"],
         reason=reason,
     )
+
+    if matter_id and result.gap_questions:
+        for gap in result.gap_questions[:3]:
+            airtable_client.create_agent_task(
+                matter_code=matter_id,
+                description=f"[Agent gap] {gap.question[:400]}",
+                priority="High" if gap.priority <= 1 else "Medium",
+                created_from_agent=target,
+            )
     _log_audit(
         db,
         matter_id=matter_id,

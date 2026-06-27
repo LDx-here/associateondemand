@@ -66,6 +66,32 @@ FIELDS_DOCUMENTS = {
     "ocr_status": "ocr_status",
     "pii_tier": "pii_tier",
     "file_type": "file_type",
+    "file_path": "file_path",
+}
+
+FIELDS_MATTERS = {
+    "matter_id": "matter_id",
+    "title": "title",
+    "case_type": "case_type",
+    "country": "country",
+    "posture": "posture",
+    "court": "court",
+    "judge": "judge",
+    "status": "status",
+    "next_deadline": "next_deadline",
+    "next_hearing": "next_hearing",
+    "summary": "summary",
+    "created_at": "created_at",
+    "updated_at": "updated_at",
+}
+
+FIELDS_TASKS = {
+    "description": "description",
+    "matter_id": "matter_id",
+    "status": "status",
+    "priority": "priority",
+    "due_date": "due_date",
+    "created_from_agent": "created_from_agent",
 }
 
 FIELDS_NOTES = {
@@ -142,6 +168,114 @@ def _create_record(table: str, fields: Mapping[str, Any]) -> dict[str, Any] | No
         return None
 
 
+def _patch_record(table: str, record_id: str, fields: Mapping[str, Any]) -> dict[str, Any] | None:
+    if not is_configured():
+        return None
+    try:
+        with _client() as client:
+            resp = client.patch(
+                f"{_base_url(table)}/{record_id}",
+                json={"fields": dict(fields), "typecast": True},
+            )
+            if resp.status_code >= 400:
+                LOGGER.warning("airtable patch %s/%s failed: %s", table, record_id, resp.text[:300])
+                return None
+            return resp.json()
+    except httpx.HTTPError:
+        LOGGER.exception("airtable patch network error")
+        return None
+
+
+def _list_matter_codes() -> list[str]:
+    if not is_configured():
+        return []
+    try:
+        with _client() as client:
+            resp = client.get(_base_url(TABLE_MATTERS), params={"pageSize": "100"})
+            if resp.status_code >= 400:
+                return []
+            codes: list[str] = []
+            for rec in resp.json().get("records", []):
+                code = rec.get("fields", {}).get(FIELDS_MATTERS["matter_id"])
+                if code:
+                    codes.append(str(code))
+            return codes
+    except httpx.HTTPError:
+        return []
+
+
+def _next_matter_code() -> str:
+    import re
+
+    max_num = 1000
+    for code in _list_matter_codes():
+        match = re.match(r"^AOD-(\d+)$", code, re.I)
+        if match:
+            max_num = max(max_num, int(match.group(1)))
+    return f"AOD-{max_num + 1}"
+
+
+def upsert_matter_from_import(row: Mapping[str, Any]) -> dict[str, Any]:
+    """Create or update a Matter from eImmigration Tier A import row."""
+
+    matter_id = str(row.get("matter_id") or "").strip()
+    title = str(row.get("client_name") or row.get("title") or matter_id or "Imported matter").strip()
+    if not matter_id and not title:
+        return {"action": "skipped", "reason": "missing matter_id and client_name"}
+
+    if not matter_id:
+        matter_id = _next_matter_code()
+
+    existing_id = _resolve_matter_record_id(matter_id)
+    fm = FIELDS_MATTERS
+    now = _now_iso()
+    fields: dict[str, Any] = {
+        fm["matter_id"]: matter_id,
+        fm["title"]: title[:240],
+        fm["updated_at"]: now,
+    }
+    if row.get("case_type"):
+        fields[fm["case_type"]] = str(row["case_type"])[:120]
+    if row.get("status"):
+        fields[fm["status"]] = str(row["status"])[:80]
+    if row.get("procedural_posture") or row.get("posture"):
+        fields[fm["posture"]] = str(row.get("procedural_posture") or row.get("posture"))[:120]
+    if row.get("next_deadline"):
+        fields[fm["next_deadline"]] = str(row["next_deadline"])[:40]
+
+    if existing_id:
+        rec = _patch_record(TABLE_MATTERS, existing_id, fields)
+        return {"action": "updated", "matter_id": matter_id, "record": rec}
+
+    fields[fm["status"]] = fields.get(fm["status"], "Open")
+    fields[fm["created_at"]] = now
+    rec = _create_record(TABLE_MATTERS, fields)
+    return {"action": "created", "matter_id": matter_id, "record": rec}
+
+
+def create_agent_task(
+    *,
+    matter_code: str,
+    description: str,
+    priority: str = "High",
+    created_from_agent: str = "pm_orchestrator",
+) -> dict[str, Any] | None:
+    """Create a follow-up task when PM surfaces gap questions."""
+
+    rec_id = _resolve_matter_record_id(matter_code)
+    if not rec_id:
+        return None
+    ft = FIELDS_TASKS
+    fields: dict[str, Any] = {
+        ft["description"]: description[:500],
+        ft["matter_id"]: [rec_id],
+        ft["status"]: "To Do",
+        ft["priority"]: priority[:40],
+        ft["created_from_agent"]: created_from_agent[:120],
+    }
+    return _create_record(TABLE_TASKS, fields)
+
+
 def _resolve_matter_record_id(matter_code: str) -> str | None:
     """Look up the Airtable rec id for the given Matter ID code."""
 
@@ -150,7 +284,7 @@ def _resolve_matter_record_id(matter_code: str) -> str | None:
     if matter_code.startswith("rec"):
         return matter_code
     safe = matter_code.replace("'", "\\'")
-    formula = f"{{{FIELDS_PM_INBOX['matter_id']}}} = '{safe}'"
+    formula = f"{{{FIELDS_MATTERS['matter_id']}}} = '{safe}'"
     try:
         with _client() as client:
             resp = client.get(
@@ -319,6 +453,7 @@ def create_document(
     ocr_status: str = "processed",
     pii_tier: str = "0",
     file_type: str = "",
+    file_path: str = "",
 ) -> dict[str, Any] | None:
     """Persist a Documents row after intake (BUILD_SPEC §7.8)."""
 
@@ -332,6 +467,8 @@ def create_document(
     }
     if file_type:
         fields[FIELDS_DOCUMENTS["file_type"]] = file_type[:80]
+    if file_path:
+        fields[FIELDS_DOCUMENTS["file_path"]] = file_path[:500]
     rec_id = _resolve_matter_record_id(matter_code)
     if rec_id:
         fields[FIELDS_DOCUMENTS["matter_id"]] = [rec_id]

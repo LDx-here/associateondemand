@@ -288,11 +288,14 @@ async function dispatchToPm(matterId: string, instruction: string) {
         : undefined;
     const draftType =
       typeof data.metadata?.draft_type === "string" ? data.metadata.draft_type : undefined;
-    const lintMeta = data.metadata?.document_lint as { passed?: boolean } | undefined;
+    const lintMeta = data.metadata?.document_lint as { passed?: boolean; issues?: string[] } | undefined;
     if (citationSummary) payload.citationVerification = citationSummary;
     if (draftType) payload.draftType = draftType;
     if (lintMeta && typeof lintMeta.passed === "boolean") {
       payload.documentLintPassed = lintMeta.passed;
+    }
+    if (lintMeta?.issues?.length) {
+      payload.documentLintIssues = lintMeta.issues;
     }
     return NextResponse.json(payload);
   } catch {

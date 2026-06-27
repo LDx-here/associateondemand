@@ -11,11 +11,13 @@ import {
   listMattersFromAirtable,
   createMatterInAirtable,
   listAllNotesFromAirtable,
+  listAllTasksFromAirtable,
   listNotesForMatterFromAirtable,
   listTasksForMatterFromAirtable,
   saveCaseAssessmentInAirtable,
   updateLegalElementInAirtable,
   updateMatterDeadlineInAirtable,
+  updateMatterInAirtable,
   useDemoMode,
 } from "./airtable/queries";
 import { emptyCaseAssessment } from "./case-assessment";
@@ -104,12 +106,7 @@ export async function listAllTasks(): Promise<Task[]> {
   if (useDemoMode()) {
     return (await loadDemoSeed()).tasks;
   }
-  const matters = await listMatters();
-  const all: Task[] = [];
-  for (const m of matters) {
-    all.push(...(await listTasksForMatter(m.matterId)));
-  }
-  return all;
+  return listAllTasksFromAirtable();
 }
 
 export async function listAllNotes(): Promise<Note[]> {
@@ -208,20 +205,23 @@ export async function updateLegalElementRow(
   return updateLegalElementInAirtable(id, patch);
 }
 
-export async function completeTask(taskId: string): Promise<Task | null> {
+export async function completeTask(
+  taskId: string,
+  options?: { completionDocs?: string; completionNote?: string; completedBy?: string },
+): Promise<Task | null> {
   if (useDemoMode()) {
     const { completeTask: completeDemoTask } = await import("./demo-store-mutable");
     return completeDemoTask(taskId);
   }
-  const task = await completeTaskInAirtable(taskId);
+  const task = await completeTaskInAirtable(taskId, options);
   if (!task) return null;
   const when = new Date().toISOString();
-  await createNoteInAirtable(
-    task.matterId,
-    `Task completed: ${task.description}. By: Attorney. Date: ${when}. Documents: (not specified).`,
-    "System",
-    "Manual",
-  );
+  const docs = options?.completionDocs?.trim() || "(not specified)";
+  const note = options?.completionNote?.trim();
+  const body = note
+    ? `Task completed: ${task.description}. By: ${options?.completedBy ?? "Attorney"}. Date: ${when}. Documents: ${docs}. Note: ${note}`
+    : `Task completed: ${task.description}. By: ${options?.completedBy ?? "Attorney"}. Date: ${when}. Documents: ${docs}.`;
+  await createNoteInAirtable(task.matterId, body, "System", "Manual");
   return task;
 }
 
@@ -261,6 +261,20 @@ export async function createNoteForMatter(matterId: string, content: string, aut
     return note;
   }
   return createNoteInAirtable(matterId, content, author);
+}
+
+export async function updateMatterFields(
+  matterId: string,
+  patch: Parameters<typeof updateMatterInAirtable>[1],
+): Promise<Matter | null> {
+  if (useDemoMode()) {
+    const seed = await loadDemoSeed();
+    const matter = seed.matters.find((m) => m.matterId === matterId);
+    if (!matter) return null;
+    Object.assign(matter, patch);
+    return matter;
+  }
+  return updateMatterInAirtable(matterId, patch);
 }
 
 export async function updateMatterDeadline(matterId: string, nextDeadline: string | null): Promise<Matter | null> {
@@ -350,9 +364,20 @@ export async function buildTimeline(matterId: string): Promise<TimelineEntry[]> 
         id: d.id,
         matterId,
         timestamp: d.uploadedAt,
-        actor: "Upload",
+        actor: d.uploadedBy || "Upload",
         kind: "document",
         summary: d.title,
+      });
+    }
+    const events = await listEventsForMatter(matterId);
+    for (const e of events) {
+      entries.push({
+        id: e.id,
+        matterId,
+        timestamp: e.date,
+        actor: "Calendar",
+        kind: "event",
+        summary: e.description,
       });
     }
   }

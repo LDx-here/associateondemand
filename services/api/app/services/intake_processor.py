@@ -11,6 +11,9 @@ from sqlalchemy.orm import Session
 from app.agents.categorizer_agent import categorizer_agent
 from app.agents.fact_extraction_agent import fact_extraction_agent
 from app.agents.obsidian_sync_agent import obsidian_sync_agent
+from app.models.document import Document, ExtractedFact
+from app.pipelines.ocr_pipeline import run_ocr_pipeline, text_quality_score
+from app.pipelines.pii_pipeline import anonymize_text
 from app.services import airtable as at
 from app.services.presidio_gate import current_tier
 
@@ -26,11 +29,12 @@ def process_uploaded_document(
     """Run OCR pipeline, agents, persist Document + ExtractedFact rows."""
 
     ocr = run_ocr_pipeline(stored_path)
-    quality = text_quality_score(ocr.text)
+    ocr_text, _anon = anonymize_text(ocr.text, tier=current_tier())
+    quality = text_quality_score(ocr_text)
     combined_confidence = round((ocr.confidence + quality) / 2, 3)
 
-    cat = categorizer_agent.categorize(ocr.text, filename)
-    fact_records = fact_extraction_agent.extract(ocr.text)
+    cat = categorizer_agent.categorize(ocr_text, filename)
+    fact_records = fact_extraction_agent.extract(ocr_text)
     facts_payload = [f.to_dict() for f in fact_records]
 
     doc_id = str(uuid.uuid4())
@@ -44,7 +48,7 @@ def process_uploaded_document(
         processing_status=ocr.processing_status,
         confidence=combined_confidence,
         category=cat["category"],
-        raw_text=ocr.text[:500_000] if ocr.text else None,
+        raw_text=ocr_text[:500_000] if ocr_text else None,
     )
     db.add(document)
 
@@ -72,7 +76,7 @@ def process_uploaded_document(
         confidence=combined_confidence,
         processing_status=ocr.processing_status,
         facts=facts_payload,
-        text_preview=ocr.text,
+        text_preview=ocr_text,
     )
 
     airtable_doc = at.create_document(
@@ -82,6 +86,7 @@ def process_uploaded_document(
         ocr_status=ocr.processing_status,
         pii_tier=str(current_tier()),
         file_type=(mime_type or Path(filename).suffix or "")[:80],
+        file_path=str(stored_path),
     )
 
     return {
@@ -97,7 +102,7 @@ def process_uploaded_document(
         "category_confidence": cat["confidence"],
         "facts_extracted": len(fact_records),
         "facts": facts_payload,
-        "text_preview": ocr.text[:500],
+        "text_preview": ocr_text[:500],
         "obsidian_path": str(obsidian),
         "airtable_document_id": (airtable_doc or {}).get("id"),
         "metadata": ocr.metadata,

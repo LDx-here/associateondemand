@@ -31,6 +31,7 @@ export type AgentCommandResult = {
   draftType?: string;
   citationVerification?: string;
   documentLintPassed?: boolean;
+  documentLintIssues?: string[];
 };
 
 export type BriefingCommandResult = {

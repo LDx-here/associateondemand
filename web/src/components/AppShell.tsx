@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 import { CommandPanel } from "@/components/CommandPanel";
+import { InboxBadge } from "@/components/InboxBadge";
+import { SessionAccount } from "@/components/SessionAccount";
 import { SidebarNav } from "@/components/SidebarNav";
 
-export function AppShell({
+export async function AppShell({
   children,
   demoMode,
 }: {
@@ -27,9 +29,12 @@ export function AppShell({
               Recover My Value
             </Link>
             <p className="mt-1 text-xs text-slate-400">Practice management</p>
+            <div className="mt-2">
+              <InboxBadge />
+            </div>
           </div>
           <SidebarNav />
-          <div className="border-t border-slate-800 p-3">
+          <div className="mt-auto space-y-3 border-t border-slate-800 p-3">
             {demoMode ? (
               <span className="inline-flex items-center gap-2 text-xs text-slate-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-400" aria-hidden />
@@ -41,6 +46,7 @@ export function AppShell({
                 Live data
               </span>
             )}
+            <SessionAccount compact />
           </div>
         </aside>
         <div className="flex min-w-0 flex-1 overflow-hidden">

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Any
 
 
 def _format_date(dt: datetime | None = None) -> str:
@@ -57,6 +58,27 @@ def format_research_memo(
             "*Attorney review required before filing or client communication.*",
         ]
     )
+    return "\n".join(lines)
+
+
+def format_source_table(sources: list[Any]) -> str:
+    """BUILD_SPEC §9 / §11 — markdown source documentation table."""
+
+    if not sources:
+        return "**V. SOURCE DOCUMENTATION TABLE**\n\n_No structured sources recorded._\n"
+
+    lines = [
+        "**V. SOURCE DOCUMENTATION TABLE**",
+        "",
+        "| Source | Claim / topic | URL |",
+        "| --- | --- | --- |",
+    ]
+    for src in sources:
+        label = getattr(src, "source", None) or getattr(src, "label", None) or "Source"
+        claim = getattr(src, "claim", None) or getattr(src, "description", None) or "—"
+        url = getattr(src, "url", None) or "—"
+        lines.append(f"| {label} | {str(claim)[:120]} | {url} |")
+    lines.append("")
     return "\n".join(lines)
 
 

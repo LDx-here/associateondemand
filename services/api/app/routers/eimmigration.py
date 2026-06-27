@@ -75,7 +75,7 @@ def eimmigration_status() -> dict[str, Any]:
 
 @router.post("/eimmigration/import")
 @router.post("/api/import/eimmigration")
-async def import_file(file: UploadFile = File(...)) -> dict[str, Any]:
+async def import_file(file: UploadFile = File(...), write_airtable: bool = True) -> dict[str, Any]:
     records, err = await _parse_upload(file)
     if err:
         return {"error": err, "filename": file.filename}
@@ -84,15 +84,36 @@ async def import_file(file: UploadFile = File(...)) -> dict[str, Any]:
     valid = [r for r in normalized if r.get("matter_id") or r.get("client_name")]
     skipped = len(normalized) - len(valid)
 
+    airtable_results: list[dict[str, Any]] = []
+    created = updated = 0
+    if write_airtable:
+        from app.services import airtable as at
+
+        for row in valid:
+            if not at.is_configured():
+                break
+            result = at.upsert_matter_from_import(row)
+            airtable_results.append(result)
+            if result.get("action") == "created":
+                created += 1
+            elif result.get("action") == "updated":
+                updated += 1
+
     return {
         "imported": len(valid),
         "skipped": skipped,
+        "airtable_created": created,
+        "airtable_updated": updated,
         "preview": valid[:5],
+        "airtable_results": airtable_results[:10],
         "field_map": list(FIELD_ALIASES.keys()),
-        "message": "Tier A import complete. Map fields to Airtable in web UI or POST to matters API.",
+        "message": (
+            f"Tier A import complete — {created} created, {updated} updated in Airtable."
+            if write_airtable and (created or updated)
+            else "Tier A import parsed. Connect AIRTABLE_PAT to persist rows."
+        ),
         "next_steps": [
             "Review preview rows for field mapping",
-            "Write to Airtable Matters table (Phase 6 production)",
-            "Re-run Pattern Agent seed after import",
+            "Re-run Pattern Agent seed after import: POST /agents/pattern/seed",
         ],
     }

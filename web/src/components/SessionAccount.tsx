@@ -1,29 +1,57 @@
 import { isAuthEnabledFlag, shouldEnforceAuth } from "@/lib/supabase/env";
 import { getSupabaseSessionUser } from "@/lib/supabase/server";
 
-export async function SessionAccount() {
+export async function SessionAccount({ compact = false }: { compact?: boolean }) {
   if (!isAuthEnabledFlag()) {
-    return <span className="text-slate-700">Not enabled (local development)</span>;
+    return (
+      <span className={compact ? "text-xs text-slate-400" : "text-slate-700"}>
+        Not enabled (local)
+      </span>
+    );
   }
 
   if (!shouldEnforceAuth()) {
     return (
-      <span className="text-slate-700">
-        Enabled in config; add Supabase URL and anon key to complete setup.
+      <span className={compact ? "text-xs text-slate-400" : "text-slate-700"}>
+        Auth enabled; add Supabase keys
       </span>
     );
   }
 
   const session = await getSupabaseSessionUser();
   if (!session) {
-    return <span className="text-slate-700">No active session. Sign in from the login page.</span>;
+    return compact ? (
+      <a className="text-xs text-sky-300 underline-offset-2 hover:underline" href="/login">
+        Sign in
+      </a>
+    ) : (
+      <span className="text-slate-700">No active session. Sign in from the login page.</span>
+    );
   }
 
-  const label = session.name ? `${session.name} (${session.email})` : session.email;
+  const label = session.name ? session.name.split(" ")[0] : session.email.split("@")[0];
+
+  if (compact) {
+    return (
+      <div className="space-y-2">
+        <p className="truncate text-xs text-slate-300" title={session.email}>
+          {label}
+        </p>
+        <form action="/api/auth/signout" method="post">
+          <button
+            type="submit"
+            className="w-full rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
+          >
+            Sign out
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <span className="text-slate-800">Signed in as {label}</span>
+      <span className="text-slate-800">Signed in as {session.name ? `${session.name} (${session.email})` : session.email}</span>
       <form action="/api/auth/signout" method="post">
         <button
           type="submit"

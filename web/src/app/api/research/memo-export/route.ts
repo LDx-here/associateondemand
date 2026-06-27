@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-/** Proxy research memo export: prefers FastAPI .docx (BUILD_SPEC §11), else plain TXT. */
+/** Proxy research memo export: prefers FastAPI .docx (BUILD_SPEC §11), surfaces linter 422. */
 export async function POST(req: Request) {
   let body: { matterId?: string; memo?: string; format?: "docx" | "txt" };
   try {
@@ -39,8 +39,24 @@ export async function POST(req: Request) {
       if (cd) headers.set("Content-Disposition", cd);
       return new NextResponse(buf, { status: 200, headers });
     }
+
+    if (upstream.status === 422) {
+      try {
+        const err = (await upstream.json()) as { detail?: { message?: string; issues?: string[] } | string };
+        const detail = typeof err.detail === "object" ? err.detail : { message: String(err.detail) };
+        return NextResponse.json(
+          {
+            error: detail.message ?? "Document linter failed",
+            issues: detail.issues ?? [],
+          },
+          { status: 422 },
+        );
+      } catch {
+        return NextResponse.json({ error: "Document linter failed" }, { status: 422 });
+      }
+    }
   } catch {
-    /* local fallback */
+    /* local fallback below */
   }
 
   const safe = matterId.replace(/[^a-zA-Z0-9-_]/g, "_") || "memo";

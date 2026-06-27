@@ -5,6 +5,7 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
@@ -108,7 +109,9 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     globalFilterFn: "includesString",
+    initialState: { pagination: { pageSize: 25 } },
   });
 
   return (
@@ -211,6 +214,50 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
             )}
           </tbody>
         </table>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+        <p>
+          Showing{" "}
+          {filteredData.length === 0
+            ? "0"
+            : `${table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}–${Math.min(
+                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                filteredData.length,
+              )}`}{" "}
+          of {filteredData.length} matters
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-2 text-xs">
+            Rows
+            <select
+              className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+              value={table.getState().pagination.pageSize}
+              onChange={(e) => table.setPageSize(Number(e.target.value))}
+            >
+              {[25, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="rounded-md border border-slate-300 px-2 py-1 text-xs hover:bg-white disabled:opacity-50"
+            disabled={!table.getCanPreviousPage()}
+            onClick={() => table.previousPage()}
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            className="rounded-md border border-slate-300 px-2 py-1 text-xs hover:bg-white disabled:opacity-50"
+            disabled={!table.getCanNextPage()}
+            onClick={() => table.nextPage()}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );

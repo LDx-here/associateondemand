@@ -245,6 +245,44 @@ def drafting_citation_package(body: CitationPackageBody) -> dict[str, Any]:
     return pkg
 
 
+@router.post("/drafting/citation-package/download")
+def drafting_citation_package_download(body: CitationPackageBody) -> Response:
+    """Build citation package and return a ZIP for browser download."""
+
+    import os
+    import shutil
+    import tempfile
+
+    from app.drafting.citation_extractor import resolve_sources_for_draft
+    from app.drafting.citation_package import build_citation_package
+    from app.drafting.citation_zip import zip_citation_package
+
+    memo = body.memo_text.strip()
+    if not memo:
+        raise HTTPException(status_code=400, detail="memo_text is required")
+
+    sources = resolve_sources_for_draft(memo)
+    out_dir = tempfile.mkdtemp(prefix="citation-pkg-", dir=os.getenv("UPLOAD_DIR", "/tmp/aod-uploads"))
+    label = body.matter_label or body.matter_id or "Draft"
+    try:
+        pkg = build_citation_package(sources, out_dir, matter_label=label)
+        if not pkg.get("ok"):
+            raise HTTPException(status_code=503, detail=pkg.get("error", "Citation package build failed"))
+        if not pkg.get("paths"):
+            raise HTTPException(status_code=404, detail="No citation package files were generated")
+
+        safe_id = (body.matter_id or "draft").replace("/", "_").replace(" ", "")
+        filename = f"{safe_id}_citation_package.zip"
+        blob = zip_citation_package(pkg)
+        return Response(
+            content=blob,
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    finally:
+        shutil.rmtree(out_dir, ignore_errors=True)
+
+
 class AosBriefExportBody(BaseModel):
     matter_id: str
     memo_text: str = ""

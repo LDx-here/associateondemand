@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-06-15  
+**Last updated:** 2026-06-16  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -37,6 +37,26 @@ Production firm OS is live. All Phase 0–7 surfaces, Phase 4 specialist agents,
 - Matter workbench: timeline filters, legal element add/expand, richer document columns
 - **GitHub CI**: pytest + Next build + eslint
 - Docker compose: `PRESIDIO_HEALTH_URL` → real Presidio analyzer
+
+### UX polish (2026-06-16)
+
+- **Citation package ZIP** download from Associate panel + `/api/drafting/citation-package`
+- **Tasks list**: single Airtable query (`listAllTasksFromAirtable`) instead of N+1
+- **Associate panel**: HTTP error surfacing, linter issues inline, export failure messages
+- **Matters table**: pagination (25/50/100) with row counts
+- **Auth UX**: forgot/reset password flow, sidebar sign-in/out, signed-in home → dashboard redirect
+- **Quick actions**: require open matter (no more silent `AOD-1001` fallback)
+
+### Full-project pass (2026-06-16 overnight)
+
+- **Intake OCR pipeline** fixed (`pipelines/ocr_pipeline.py`) — Tesseract + PDF text + PII anonymization hook
+- **eImmigration Tier A** writes to Airtable (`upsert_matter_from_import`)
+- **PM orchestrator** creates Airtable tasks from agent gap questions
+- **Research memos** append source documentation table; Midpage/Fastcase client stubs
+- **Matter edit modal** (court, judge, posture, deadlines) + PATCH `/api/matters/[id]`
+- **Task completion modal** on matter tab with completion docs/note → Airtable + system note
+- **Live timeline** interleaves calendar events; inbox unread badge in sidebar
+- **18 API tests** pass; Next build green
 
 ### Optional / external keys (not code blockers)
 

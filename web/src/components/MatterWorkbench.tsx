@@ -33,6 +33,7 @@ import { MatterEventsPanel } from "./MatterEventsPanel";
 import { NoteComposer } from "./NoteComposer";
 import { StatusBadge } from "./StatusBadge";
 import { MatterDocumentUpload } from "./MatterDocumentUpload";
+import { MatterHeaderEditModal } from "./MatterHeaderEditModal";
 import { TaskList } from "./TaskList";
 import { AgentResultPanel } from "./AgentResultPanel";
 
@@ -81,6 +82,8 @@ export function MatterWorkbench({
   demoMode?: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("Assessment");
+  const [matterHeader, setMatterHeader] = useState(matter);
+  const [editOpen, setEditOpen] = useState(false);
   const [tasks, setTasks] = useState(initialTasks);
   const [notes, setNotes] = useState(initialNotes);
   const [elements, setElements] = useState(initialElements);
@@ -176,19 +179,24 @@ export function MatterWorkbench({
       <header className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">{matter.matterId}</h1>
+            <h1 className="text-2xl font-semibold text-slate-900">{matterHeader.matterId}</h1>
             <p className="text-sm text-slate-600">
-              {[matter.caseType, matter.proceduralPosture, matter.status]
+              {[matterHeader.caseType, matterHeader.proceduralPosture ?? matterHeader.posture, matterHeader.status]
                 .filter(Boolean)
                 .join(" · ")}
             </p>
           </div>
-          <StatusBadge status={matter.status} />
+          <div className="flex items-center gap-2">
+            <button type="button" className={btnSecondary} onClick={() => setEditOpen(true)}>
+              Edit matter
+            </button>
+            <StatusBadge status={matterHeader.status} />
+          </div>
         </div>
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <dt className="text-slate-500">Assigned attorney</dt>
-            <dd className="font-medium">{matter.assignedAttorney || "—"}</dd>
+            <dd className="font-medium">{matterHeader.assignedAttorney || "—"}</dd>
           </div>
           <div>
             <dt className="text-slate-500">Next deadline</dt>
@@ -196,15 +204,15 @@ export function MatterWorkbench({
           </div>
           <div>
             <dt className="text-slate-500">Procedural posture</dt>
-            <dd>{matter.proceduralPosture || "—"}</dd>
+            <dd>{matterHeader.proceduralPosture ?? matterHeader.posture ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">Fidelity score</dt>
-            <dd>{matter.fidelityScore}</dd>
+            <dt className="text-slate-500">Court / judge</dt>
+            <dd>{[matterHeader.court, matterHeader.judge].filter(Boolean).join(" · ") || "—"}</dd>
           </div>
         </dl>
-        <p className="mt-2 text-sm text-slate-700">{matter.summary}</p>
-        {matter.vulnerabilityFlags.length ? (
+        <p className="mt-2 text-sm text-slate-700">{matterHeader.summary}</p>
+        {matterHeader.vulnerabilityFlags.length ? (
           <div className="mt-2 flex flex-wrap gap-1">
             {matter.vulnerabilityFlags.map((flag) => (
               <span
@@ -611,6 +619,17 @@ export function MatterWorkbench({
 
       {tab === "Events" ? (
         <MatterEventsPanel matterId={matter.matterId} initialEvents={events} demoMode={demoMode} />
+      ) : null}
+
+      {editOpen ? (
+        <MatterHeaderEditModal
+          matter={matterHeader}
+          onClose={() => setEditOpen(false)}
+          onSaved={(updated) => {
+            setMatterHeader(updated);
+            if (updated.nextDeadline !== undefined) setDeadline(updated.nextDeadline);
+          }}
+        />
       ) : null}
     </div>
   );

@@ -22,6 +22,8 @@ export function AgentResultPanel({
   const [memoOpen, setMemoOpen] = useState(false);
   const [copyDone, setCopyDone] = useState(false);
   const [downloadBusy, setDownloadBusy] = useState(false);
+  const [citationBusy, setCitationBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const hasGaps = (result.gaps ?? []).length > 0;
   const hasUncertainties = (result.uncertainties ?? []).length > 0;
@@ -53,6 +55,7 @@ export function AgentResultPanel({
   async function downloadMemoFile() {
     if (!fullMemo || !result.matterId) return;
     setDownloadBusy(true);
+    setExportError(null);
     try {
       const isAosBrief = result.draftType === "aos_discretionary_brief";
       const endpoint = isAosBrief ? "/api/drafting/aos-brief-export" : "/api/research/memo-export";
@@ -64,6 +67,21 @@ export function AgentResultPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      if (!r.ok) {
+        let message = `Export failed (${r.status})`;
+        try {
+          const err = (await r.json()) as { error?: string; issues?: string[] };
+          if (err.issues?.length) {
+            message = `${err.error ?? "Document linter failed"}: ${err.issues.join("; ")}`;
+          } else if (err.error) {
+            message = err.error;
+          }
+        } catch {
+          message = (await r.text()) || message;
+        }
+        setExportError(message);
+        return;
+      }
       const blob = await r.blob();
       const dispo = r.headers.get("Content-Disposition");
       let filename = `${result.matterId}_research_memo.docx`;
@@ -81,6 +99,45 @@ export function AgentResultPanel({
       URL.revokeObjectURL(url);
     } finally {
       setDownloadBusy(false);
+    }
+  }
+
+  async function downloadCitationPackage() {
+    if (!fullMemo || !result.matterId) return;
+    setCitationBusy(true);
+    setExportError(null);
+    try {
+      const r = await fetch("/api/drafting/citation-package", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ matterId: result.matterId, memo: fullMemo }),
+      });
+      if (!r.ok) {
+        let message = `Citation package failed (${r.status})`;
+        try {
+          const err = (await r.json()) as { error?: string };
+          if (err.error) message = err.error;
+        } catch {
+          message = (await r.text()) || message;
+        }
+        setExportError(message);
+        return;
+      }
+      const blob = await r.blob();
+      const dispo = r.headers.get("Content-Disposition");
+      let filename = `${result.matterId}_citation_package.zip`;
+      if (dispo) {
+        const m = /filename="([^"]+)"/.exec(dispo);
+        if (m?.[1]) filename = m[1];
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setCitationBusy(false);
     }
   }
 
@@ -113,9 +170,36 @@ export function AgentResultPanel({
         </p>
       ) : null}
 
+      {result.documentLintIssues?.length ? (
+        <div className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[0.65rem] text-amber-950">
+          <p className="font-semibold">Document linter</p>
+          <ul className="mt-1 list-inside list-disc">
+            {result.documentLintIssues.map((issue) => (
+              <li key={issue}>{issue}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {result.citationVerification ? (
-        <p className="rounded border border-sky-200 bg-sky-50 px-2 py-1 text-[0.65rem] text-sky-950">
-          Citation package: {result.citationVerification}
+        <div className="space-y-1 rounded border border-sky-200 bg-sky-50 px-2 py-1 text-[0.65rem] text-sky-950">
+          <p>Citation package: {result.citationVerification}</p>
+          {fullMemo && result.matterId ? (
+            <button
+              type="button"
+              className={cn(btnSecondary, "py-0.5 px-2 text-[0.65rem]")}
+              disabled={citationBusy}
+              onClick={() => void downloadCitationPackage()}
+            >
+              {citationBusy ? "Building ZIP…" : "Download citation package"}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {exportError ? (
+        <p className="rounded border border-rose-200 bg-rose-50 px-2 py-1 text-[0.65rem] text-rose-900" role="alert">
+          {exportError}
         </p>
       ) : null}
 

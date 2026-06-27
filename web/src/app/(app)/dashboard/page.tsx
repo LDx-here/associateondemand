@@ -39,7 +39,10 @@ export default async function DashboardPage() {
   const demo = useDemoMode();
   const seed = demo ? await getMutableSeed() : null;
 
-  const activeMatters = matters.filter((m) => m.status !== "Closed");
+  const activeMatters = matters.filter((m) => {
+    const s = m.status.toLowerCase();
+    return s === "active" || s === "open" || (s !== "closed" && s !== "archived");
+  });
   const overdue = overdueTasks(tasks, now);
   const filingDeadlines14 = filingDeadlinesWithin(tasks, 14, now);
   let inboxUnread = 0;

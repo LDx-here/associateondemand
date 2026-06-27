@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { shouldEnforceAuth } from "@/lib/supabase/env";
 import { getSupabaseSessionUser } from "@/lib/supabase/server";
@@ -7,6 +8,10 @@ import { btnPrimaryMd } from "@/lib/ui-classes";
 export default async function PhaseZeroHome() {
   const authOn = shouldEnforceAuth();
   const user = authOn ? await getSupabaseSessionUser() : null;
+
+  if (authOn && user) {
+    redirect("/dashboard");
+  }
 
   return (
     <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-8 bg-slate-50 px-6 text-slate-900">
@@ -41,8 +46,6 @@ export default async function PhaseZeroHome() {
               >
                 Sign in
               </Link>
-            ) : user ? (
-              <span className="text-sm text-slate-600">Signed in as {user.email}</span>
             ) : null}
           </>
         )}

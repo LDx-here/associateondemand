@@ -10,12 +10,12 @@ import type { CommandResult } from "@/lib/agent-dispatch";
 import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 
 const QUICK_ACTIONS = [
-  { label: "Summarize", template: (mid: string) => `summarize ${mid}` },
-  { label: "Research", template: (mid: string) => `pm:research legal standard for ${mid}` },
-  { label: "Draft", template: (mid: string) => `draft internal memo for ${mid}` },
-  { label: "Due week", template: () => `due this week` },
-  { label: "Overdue", template: () => `overdue` },
-  { label: "Audit", template: (mid: string) => `mass audit ${mid}` },
+  { label: "Summarize", template: (mid: string) => `summarize ${mid}`, needsMatter: true },
+  { label: "Research", template: (mid: string) => `pm:research legal standard for ${mid}`, needsMatter: true },
+  { label: "Draft", template: (mid: string) => `draft internal memo for ${mid}`, needsMatter: true },
+  { label: "Due week", template: () => `due this week`, needsMatter: false },
+  { label: "Overdue", template: () => `overdue`, needsMatter: false },
+  { label: "Audit", template: (mid: string) => `mass audit ${mid}`, needsMatter: true },
 ] as const;
 
 type HistoryEntry = {
@@ -68,6 +68,26 @@ export function CommandPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: q, matterId: contextMatter ?? undefined }),
       });
+      if (!resp.ok) {
+        let message = `Request failed (${resp.status})`;
+        try {
+          const err = (await resp.json()) as { error?: string; message?: string };
+          message = err.error ?? err.message ?? message;
+        } catch {
+          message = (await resp.text()) || message;
+        }
+        setHistory((prev) => [
+          {
+            id: `${Date.now()}`,
+            query: q,
+            result: { type: "message" as const, message },
+            at: new Date().toISOString(),
+          },
+          ...prev,
+        ].slice(0, 20));
+        setQuery("");
+        return;
+      }
       const result = (await resp.json()) as CommandResult;
       setHistory((prev) => [
         { id: `${Date.now()}`, query: q, result, at: new Date().toISOString() },
@@ -79,9 +99,23 @@ export function CommandPanel() {
     }
   }
 
-  function runQuickAction(template: (mid: string) => string) {
-    const mid = contextMatter ?? "AOD-1001";
-    void runSearch(template(mid));
+  function runQuickAction(template: (mid: string) => string, needsMatter: boolean) {
+    if (needsMatter && !contextMatter) {
+      setHistory((prev) => [
+        {
+          id: `${Date.now()}`,
+          query: template(""),
+          result: {
+            type: "message" as const,
+            message: "Open a matter first — quick actions need matter context.",
+          },
+          at: new Date().toISOString(),
+        },
+        ...prev,
+      ].slice(0, 20));
+      return;
+    }
+    void runSearch(template(contextMatter ?? ""));
   }
 
   if (!open) {
@@ -149,13 +183,14 @@ export function CommandPanel() {
 
         <div className="space-y-2 border-t border-slate-200 bg-slate-50 p-3">
           <div className="flex flex-wrap gap-1">
-            {QUICK_ACTIONS.map(({ label, template }) => (
+            {QUICK_ACTIONS.map(({ label, template, needsMatter }) => (
               <button
                 key={label}
                 type="button"
-                disabled={loading}
+                disabled={loading || (needsMatter && !contextMatter)}
+                title={needsMatter && !contextMatter ? "Open a matter first" : undefined}
                 className={`${btnSecondary} px-2 py-1 text-[11px] disabled:opacity-50`}
-                onClick={() => runQuickAction(template)}
+                onClick={() => runQuickAction(template, needsMatter)}
               >
                 {label}
               </button>

@@ -30,7 +30,7 @@ from typing import Any
 from app.agents._context import load_constitution
 from app.agents.firm_context import load_firm_rules
 from app.models.agent_result import AgentResult, GapQuestion, SourceRef, Uncertainty
-from app.services.docs_formatter import format_memorandum_header, format_research_memo
+from app.services.docs_formatter import format_memorandum_header, format_research_memo, format_source_table
 from app.services.llm import generate_text, is_configured as llm_configured
 from app.services.matter_context import fetch_matter_context, format_matter_context
 
@@ -201,6 +201,8 @@ def _run_with_llm(
         return None
 
     memo = _memo_from_llm(raw, matter_id=matter_id, query=query)
+    structured_sources = _gov_practice_sources(country)
+    memo = memo.rstrip() + "\n\n" + format_source_table(structured_sources)
     gaps: list[str] = []
     manual_flags: list[str] = []
     if not tier["midpage"] and not tier["fastcase"]:
@@ -210,8 +212,6 @@ def _run_with_llm(
         gaps.append(
             "Awaiting attorney verification: Shepardize/KeyCite every case citation in this memo."
         )
-
-    structured_sources = _gov_practice_sources(country)
     gap_questions = [
         GapQuestion(question=g, priority=1, why_it_matters="Required before memo can be relied upon.")
         for g in gaps
