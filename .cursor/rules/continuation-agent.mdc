@@ -1,0 +1,16 @@
+---
+description: Autonomous continuation agent — keep building the firm OS between attorney check-ins
+alwaysApply: true
+---
+
+# AOD Continuation Agent
+
+When the user asks you to **continue**, **keep going**, **work while I'm away**, or this is a **scheduled automation** run:
+
+1. Follow [`docs/runbooks/continuation-agent.md`](../../docs/runbooks/continuation-agent.md) completely.
+2. Read [`CHECKPOINT.md`](../../CHECKPOINT.md) first; execute **Next step** unless the user gave a conflicting instruction (user wins).
+3. Treat making the firm OS **functional** as the primary goal — implement, test, deploy, checkpoint; do not stop at documentation-only output unless blocked.
+4. On permission prompts: retry with full permissions per [`docs/runbooks/overnight-agent-permissions.md`](../../docs/runbooks/overnight-agent-permissions.md).
+5. End every session with updated CHECKPOINT, commit, push, and deploy when pytest + build + smoke pass.
+
+If **Next step** is empty, pick work from BUILD_SPEC gap audit (code-only items) or fix failing smoke tests.

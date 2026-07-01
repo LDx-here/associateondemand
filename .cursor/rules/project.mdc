@@ -5,7 +5,7 @@ alwaysApply: true
 
 # AssociateOnDemand — agent rules
 
-1. **Operational scope stays inside `/Users/ladaj/Documents/AssociateOnDemand`** (and approved child paths such as synced Obsidian folders if configured later).
+1. **Operational scope stays inside `/Users/ladaj/Developer/AssociateOnDemand`** (and approved child paths such as synced Obsidian folders if configured later).
 
 2. **Do not mutate** `activity_log.md` entries besides **appending** new entries (immutable history per governance docs).
 
@@ -30,3 +30,8 @@ alwaysApply: true
    - **Session start:** read [CHECKPOINT.md](../../CHECKPOINT.md) first, then continue from **Next step**.
    - **On milestone completion:** update `CHECKPOINT.md` (Last completed / Next / Blockers / Commands to resume), append one line to `activity_log.md` (append-only), commit with `checkpoint: <what>`, push if remote exists.
    - Prefer `./scripts/checkpoint.sh "description" [--push]` — never commit `.env`, `web/.env.local`, or secrets.
+
+7. **Continuation Agent** (user away, “keep going”, or scheduled automation):
+
+   - Follow [docs/runbooks/continuation-agent.md](../../docs/runbooks/continuation-agent.md) and [.cursor/rules/continuation-agent.mdc](./continuation-agent.mdc).
+   - Goal: functional firm OS — implement, test, deploy, checkpoint; work around credential blockers.

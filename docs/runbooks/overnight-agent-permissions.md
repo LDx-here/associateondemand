@@ -21,13 +21,19 @@ Agents are instructed to retry with full permissions rather than stopping.
 - `docker compose up -d --build`, `curl localhost:8000/health`
 - Edit any file under the repo except secrets
 - Call `api.airtable.com`, Anthropic API (keys already in gitignored `.env` files)
+- **`flyctl deploy -a associateondemand-api`** and **`vercel deploy --prod`** when pytest + Next build + smoke-production pass (Continuation Agent)
+
+## Continuation Agent
+
+Follow [continuation-agent.md](./continuation-agent.md). Runs manually (“keep going”) or on schedule. Goal: functional firm OS — implement, test, deploy, checkpoint.
 
 ## Still requires the attorney (not auto)
 
 - Force-push, hard reset, delete Airtable data
 - Commit `.env` or `web/.env.local`
 - Flip `AOD_PII_TIER=1` or upload client PII without review
-- Production deploy (Vercel/Railway) or Clerk/Supabase setup
+- Production deploy (Vercel/Fly) when tests + smoke pass — **pre-authorized for Continuation Agent**
+- Clerk/Supabase **account/SMTP setup** (not deploy)
 - Revoke or rotate API keys in chat
 
 ## Keep agents running overnight

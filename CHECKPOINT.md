@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-06-16  
+**Last updated:** 2026-06-16 (vision + marketplace charter added)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -65,9 +65,52 @@ Production firm OS is live. All Phase 0–7 surfaces, Phase 4 specialist agents,
 - **LiteLLM** Presidio scrub proxy — compose uses Presidio sidecars directly
 - **Qdrant on Fly** — pattern seed via `POST /agents/pattern/seed`; cloud Qdrant optional
 
----
+## Product vision — verified associate marketplace (2026)
 
-## Smoke & tests
+**North star:** A platform where a client (or contracting attorney) submits an assignment — *“I need X drafted; here are the facts and attachments”* — and receives **associate-quality work** that reads like it came from a person, not a raw chatbot. **La'Dajia (RMV) verifies** first; later, **contract associate attorneys** verify work they take on — matching entry-level lawyers who want flexible, Docketly-style contract work without full employment.
+
+**Docketly analogy (adapted for associate work):**
+| Docketly (coverage) | AssociateOnDemand (deliverables) |
+|---------------------|----------------------------------|
+| Hearing assignment + attachments | Writing assignment + fact packet + templates |
+| Local attorney appears | Verified associate output + attorney sign-off |
+| Platform handles logistics | PM orchestrator + specialist agents + inbox |
+
+**Usage tiers (template labor model):**
+1. **Template tier** — Firm workbook / DOCX templates exist (AOS brief, research memo, cover letter). Agent fills from facts; attorney approves.
+2. **Custom tier** — No template yet. Extra labor: build template once, then reuse at tier 1. Billable as setup + execution.
+3. **Research / audit tier** — Memo, mass audit, legal mapping — already wired via agents + citation packages.
+
+**Human feel (not “AI slop”):**
+- PM inbox when agents pause (gaps, MANUAL FLAG, linter failures)
+- Attorney corrections → Notes + Strategy Patterns (training loop)
+- Citation verification packages + document linter before export
+- Future: named associate persona, assignment queue, SLA/status like “In review / Returned for revision / Approved”
+
+**Multi-attorney future (permissions-aware build order):**
+1. **Now:** Single verifying attorney (Supabase auth + RMV inbox)
+2. **Next:** Assignment request form (facts + attachments + deliverable type + tier)
+3. **Then:** Review queue + approve/reject/return workflow on PM Inbox
+4. **Later:** Contractor roles (verify-only vs draft-only), payout/assignment routing — needs user OAuth, billing, bar rules (document in LEGAL_BOUNDARIES)
+
+**Autonomous agent charter (between check-ins every few days):**
+- Ship code that works without external keys; scaffold with graceful fallbacks
+- Prefer: assignment intake → agent run → export → attorney inbox over new infrastructure
+- Run smoke + pytest + build before push/deploy
+- Only block on user for: SMTP/auth secrets, API keys, Airtable schema writes, legal/billing decisions
+- Update this CHECKPOINT when a pass completes
+
+### Scheduled automation (laptop can be closed)
+
+| Mechanism | What runs | Laptop needed? |
+|-----------|-----------|----------------|
+| **Cursor Automation** (Mon/Thu cron + Cloud Agent) | Full build pass per `docs/runbooks/autonomous-agent-pass.md` | No — runs in Cursor cloud after you save the automation |
+| **GitHub Actions** `scheduled-health.yml` | pytest + Next build + production smoke curl | No |
+| **This chat / local dev server** | Only while Cursor is open | Yes |
+
+Enable Cloud Agents: https://cursor.com/dashboard?tab=cloud-agents
+
+---
 
 ```bash
 bash scripts/smoke-production.sh
