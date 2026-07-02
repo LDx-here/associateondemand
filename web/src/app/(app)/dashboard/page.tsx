@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Activity, AlertCircle, Briefcase, CalendarClock, Inbox } from "lucide-react";
+import { Activity, AlertCircle, Briefcase, CalendarClock, ClipboardList, Inbox } from "lucide-react";
 
 import { EmptyState } from "@/components/EmptyState";
 import { DashboardCharts } from "@/components/DashboardCharts";
@@ -13,15 +13,14 @@ import {
   recentActivity,
   upcomingDeadlines,
 } from "@/lib/dashboard-aggregates";
-import { listInboxItemsFromAirtable } from "@/lib/airtable/queries";
 import {
   listAllNotes,
   listAllTasks,
+  listInboxItems,
   listMatters,
   useDemoMode,
 } from "@/lib/data-store";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
-import { countUnreadInboxFromAirtable } from "@/lib/airtable/queries";
 import { linkMatter } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
 
@@ -45,25 +44,28 @@ export default async function DashboardPage() {
   });
   const overdue = overdueTasks(tasks, now);
   const filingDeadlines14 = filingDeadlinesWithin(tasks, 14, now);
-  let inboxUnread = 0;
-  if (!demo) {
-    try {
-      inboxUnread = await countUnreadInboxFromAirtable();
-    } catch {
-      inboxUnread = 0;
-    }
+  let inboxItems: Awaited<ReturnType<typeof listInboxItems>> = [];
+  try {
+    inboxItems = await listInboxItems();
+  } catch {
+    inboxItems = [];
   }
+  const inboxUnread = inboxItems.filter(
+    (i) => i.status === "Pending" || i.status === "Submitted",
+  ).length;
+  const openAssignments = inboxItems.filter(
+    (i) => i.kind === "assignment" && i.status !== "Approved" && i.status !== "Returned",
+  ).length;
 
   const deadlines30 = upcomingDeadlines(tasks, 30, now);
   const liveNotes = demo ? [] : await listAllNotes();
   let inboxAudit = seed?.auditLog ?? [];
   if (!demo) {
-    try {
-      const inboxItems = await listInboxItemsFromAirtable();
-      inboxAudit = inboxToActivityEntries(inboxItems, 7, now);
-    } catch {
-      inboxAudit = [];
-    }
+    inboxAudit = inboxToActivityEntries(
+      inboxItems.filter((i) => i.kind !== "assignment"),
+      7,
+      now,
+    );
   }
   const activity = recentActivity({
     notes: demo ? (seed?.notes ?? []) : liveNotes,
@@ -102,7 +104,7 @@ export default async function DashboardPage() {
         ) : null}
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <KpiCard label="Active matters" value={activeMatters.length} icon={Briefcase} />
         <KpiCard label="Overdue tasks" value={overdue.length} hint="Past due, not complete" icon={AlertCircle} />
         <KpiCard
@@ -112,6 +114,12 @@ export default async function DashboardPage() {
           icon={CalendarClock}
         />
         <KpiCard label="PM inbox unread" value={inboxUnread} hint="Awaiting attorney review" icon={Inbox} />
+        <KpiCard
+          label="Open assignments"
+          value={openAssignments}
+          hint="Submitted, in progress, or ready for review"
+          icon={ClipboardList}
+        />
       </section>
 
       <DashboardCharts statusCounts={statusCounts} caseTypeCounts={caseTypeCounts} />
