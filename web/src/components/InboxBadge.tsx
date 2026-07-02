@@ -1,13 +1,14 @@
 import Link from "next/link";
 
-import { countUnreadInboxFromAirtable } from "@/lib/airtable/queries";
-import { useDemoMode } from "@/lib/data-store";
+import { listInboxItems } from "@/lib/data-store";
+
+const OPEN_STATUSES = new Set(["Pending", "Submitted", "In Progress", "Ready for Review"]);
 
 export async function InboxBadge() {
-  if (useDemoMode()) return null;
   let count = 0;
   try {
-    count = await countUnreadInboxFromAirtable();
+    const items = await listInboxItems();
+    count = items.filter((item) => OPEN_STATUSES.has(item.status)).length;
   } catch {
     count = 0;
   }

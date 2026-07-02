@@ -1,11 +1,13 @@
 import {
   completeTaskInAirtable,
+  createInboxItemInAirtable,
   createLegalElementInAirtable,
   createNoteInAirtable,
   createTaskInAirtable,
   getCaseAssessmentFromAirtable,
   listDocumentsFromAirtable,
   listEventsForMatterFromAirtable,
+  listInboxItemsFromAirtable,
   listLegalElementsFromAirtable,
   listContactsFromAirtable,
   listMattersFromAirtable,
@@ -15,6 +17,7 @@ import {
   listNotesForMatterFromAirtable,
   listTasksForMatterFromAirtable,
   saveCaseAssessmentInAirtable,
+  updateInboxItemStatusInAirtable,
   updateLegalElementInAirtable,
   updateMatterDeadlineInAirtable,
   updateMatterInAirtable,
@@ -27,6 +30,7 @@ import type {
   DevSeed,
   DocumentRow,
   Contact,
+  InboxItem,
   LegalElementRow,
   Matter,
   Note,
@@ -286,6 +290,92 @@ export async function updateMatterDeadline(matterId: string, nextDeadline: strin
     return matter;
   }
   return updateMatterDeadlineInAirtable(matterId, nextDeadline);
+}
+
+/* ------------------------------------------------------------------ */
+/* PM Inbox + assignment intake (autonomous pass 2026-07-02)           */
+/* ------------------------------------------------------------------ */
+
+export async function listInboxItems(): Promise<InboxItem[]> {
+  if (useDemoMode()) {
+    const seed = await loadDemoSeed();
+    return [...(seed.inboxItems ?? [])].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  }
+  return listInboxItemsFromAirtable();
+}
+
+export async function createAssignmentInboxItem(payload: {
+  matterId: string;
+  deliverableName: string;
+  tier: string;
+  facts: string;
+  priority?: "Normal" | "Rush";
+}): Promise<InboxItem> {
+  const title = `New assignment: ${payload.deliverableName}${payload.priority === "Rush" ? " (RUSH)" : ""}`;
+  const whatNeeded = `Attorney to triage this ${payload.tier}-tier deliverable request and start work.`;
+  const options = ["Start work", "Return for more info"];
+
+  if (useDemoMode()) {
+    const seed = await loadDemoSeed();
+    if (!seed.inboxItems) seed.inboxItems = [];
+    const item: InboxItem = {
+      id: `inbox-${Date.now()}`,
+      title,
+      matterId: payload.matterId,
+      agent: "Assignment Intake",
+      whatTried: payload.facts,
+      whatNeeded,
+      options,
+      followUpSteps: [],
+      status: "Submitted",
+      resolution: "",
+      createdAt: new Date().toISOString(),
+      resolvedAt: null,
+      kind: "assignment",
+      deliverableType: payload.deliverableName,
+      tier: payload.tier,
+      facts: payload.facts,
+    };
+    seed.inboxItems.unshift(item);
+    const { persistSeed } = await import("./demo-store-mutable");
+    await persistSeed();
+    return item;
+  }
+
+  return createInboxItemInAirtable({
+    title,
+    matterCode: payload.matterId,
+    agent: "Assignment Intake",
+    whatTried: payload.facts,
+    whatNeeded,
+    options,
+    status: "Submitted",
+    kind: "assignment",
+    deliverableType: payload.deliverableName,
+    tier: payload.tier,
+    facts: payload.facts,
+  });
+}
+
+const TERMINAL_INBOX_STATUSES = new Set(["Approved", "Returned", "Resolved", "Dismissed"]);
+
+export async function updateInboxItemStatus(
+  id: string,
+  status: string,
+  note?: string,
+): Promise<InboxItem | null> {
+  if (useDemoMode()) {
+    const seed = await loadDemoSeed();
+    const item = (seed.inboxItems ?? []).find((i) => i.id === id);
+    if (!item) return null;
+    item.status = status;
+    if (note !== undefined) item.resolution = note;
+    if (TERMINAL_INBOX_STATUSES.has(status)) item.resolvedAt = new Date().toISOString();
+    const { persistSeed } = await import("./demo-store-mutable");
+    await persistSeed();
+    return item;
+  }
+  return updateInboxItemStatusInAirtable(id, status, note);
 }
 
 export async function buildTimeline(matterId: string): Promise<TimelineEntry[]> {
