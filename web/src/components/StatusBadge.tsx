@@ -51,6 +51,12 @@ const STATUS_BUCKETS: Record<string, Bucket> = {
   Read: "slate",
   Resolved: "emerald",
   Dismissed: "slate",
+  // Assignment intake lifecycle (Submitted -> In Progress -> Ready for
+  // Review -> Approved / Returned)
+  Submitted: "amber",
+  "Ready for Review": "sky",
+  Returned: "rose",
+  Approved: "emerald",
 };
 
 function bucketFor(status: string): Bucket {

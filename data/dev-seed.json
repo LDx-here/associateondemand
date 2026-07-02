@@ -132,5 +132,61 @@
       "agent": "pm_orchestrator",
       "summary": "Queued research memo draft for country conditions review"
     }
+  ],
+  "inboxItems": [
+    {
+      "id": "demo-inbox-1",
+      "title": "Research: Sixth Circuit asylum standard",
+      "matterId": "AOD-1001",
+      "agent": "Research Agent",
+      "whatTried": "Loaded the Five-Anchors SKILL and gathered gov + practice-resource hits for Matter of A-B- progeny.",
+      "whatNeeded": "Attorney to confirm whether the strategy memo should cite Niang v. Holder.",
+      "options": ["Approve", "Modify", "Defer"],
+      "followUpSteps": [
+        "Confirm Niang v. Holder citation in the research memo.",
+        "Update Case Assessment Next Action if strategy changes."
+      ],
+      "status": "Pending",
+      "resolution": "",
+      "createdAt": "2026-06-15T18:00:00.000Z",
+      "resolvedAt": null,
+      "kind": "agent"
+    },
+    {
+      "id": "demo-inbox-2",
+      "title": "Fact extraction confidence low",
+      "matterId": "AOD-1003",
+      "agent": "Fact Extraction",
+      "whatTried": "Extracted 14 facts from intake declaration; 4 anchored to corroborating documents.",
+      "whatNeeded": "Attorney to review uncertain facts before strategy memo is finalized.",
+      "options": ["Approve", "Reject"],
+      "followUpSteps": [
+        "Spot-check the four uncertain facts against the declaration file.",
+        "Add a correction note if any fact line must change."
+      ],
+      "status": "Pending",
+      "resolution": "",
+      "createdAt": "2026-06-14T18:00:00.000Z",
+      "resolvedAt": null,
+      "kind": "agent"
+    },
+    {
+      "id": "demo-inbox-3",
+      "title": "New assignment: AOS discretionary factors brief",
+      "matterId": "AOD-1001",
+      "agent": "Assignment Intake",
+      "whatTried": "Client submitted I-485 for adjustment of status; needs discretionary factors brief covering positive equities (10 years US residence, US citizen spouse, community ties) before biometrics appointment.",
+      "whatNeeded": "Attorney to triage this template-tier deliverable request and start work.",
+      "options": ["Start work", "Return for more info"],
+      "followUpSteps": [],
+      "status": "Submitted",
+      "resolution": "",
+      "createdAt": "2026-06-16T14:00:00.000Z",
+      "resolvedAt": null,
+      "kind": "assignment",
+      "deliverableType": "AOS discretionary factors brief",
+      "tier": "template",
+      "facts": "Client submitted I-485 for adjustment of status; needs discretionary factors brief covering positive equities (10 years US residence, US citizen spouse, community ties) before biometrics appointment."
+    }
   ]
 }

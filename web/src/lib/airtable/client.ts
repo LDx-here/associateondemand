@@ -93,7 +93,10 @@ export async function airtableCreate(
   const resp = await fetch(baseUrl(table), {
     method: "POST",
     headers: { ...authHeaders(), "Content-Type": "application/json" },
-    body: JSON.stringify({ fields }),
+    // typecast lets single-select columns (e.g. PM Inbox `status`) accept
+    // new option strings — like "Submitted" / "Ready for Review" — as the
+    // assignment lifecycle evolves, without a manual Airtable schema edit.
+    body: JSON.stringify({ fields, typecast: true }),
     cache: "no-store",
   });
   if (!resp.ok) {
@@ -111,7 +114,7 @@ export async function airtablePatch(
   const resp = await fetch(`${baseUrl(table)}/${recordId}`, {
     method: "PATCH",
     headers: { ...authHeaders(), "Content-Type": "application/json" },
-    body: JSON.stringify({ fields }),
+    body: JSON.stringify({ fields, typecast: true }),
     cache: "no-store",
   });
   if (!resp.ok) {

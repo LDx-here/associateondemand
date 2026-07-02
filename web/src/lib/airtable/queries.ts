@@ -25,6 +25,8 @@ import type {
   CaseAssessment,
   DocumentRow,
   Contact,
+  InboxItem,
+  InboxItemKind,
   LegalElementRow,
   Matter,
   Note,
@@ -452,25 +454,20 @@ export async function updateMatterInAirtable(
 /* PM Inbox (BUILD_SPEC §7.5)                                          */
 /* ------------------------------------------------------------------ */
 
-export type InboxItem = {
-  id: string;
-  title: string;
-  matterId: string;
-  agent: string;
-  whatTried: string;
-  whatNeeded: string;
-  options: string[];
-  /** Structured follow-ups when options JSON embeds next_steps */
-  followUpSteps: string[];
-  status: "Pending" | "Resolved" | "Dismissed" | string;
-  resolution: string;
-  createdAt: string;
-  resolvedAt: string | null;
-};
+export type { InboxItem, InboxItemKind } from "../types";
 
 const DEFAULT_INBOX_BUTTONS = ["Approve", "Reject", "Modify", "Defer"];
 
-function parsePmInboxOptions(raw: unknown): { buttons: string[]; followUpSteps: string[] } {
+type ParsedInboxOptions = {
+  buttons: string[];
+  followUpSteps: string[];
+  kind?: InboxItemKind;
+  deliverableType?: string;
+  tier?: string;
+  facts?: string;
+};
+
+function parsePmInboxOptions(raw: unknown): ParsedInboxOptions {
   function fromDelimited(source: string): string[] {
     return source
       .split(/[\n;|,]/)
@@ -490,9 +487,18 @@ function parsePmInboxOptions(raw: unknown): { buttons: string[]; followUpSteps: 
     if (Array.isArray(o.actions)) buttons = o.actions.map(String).filter(Boolean);
     else if (Array.isArray(o.buttons)) buttons = o.buttons.map(String).filter(Boolean);
     else if (Array.isArray(o.options)) buttons = o.options.map(String).filter(Boolean);
+    const kindRaw = o.kind;
+    const kind = kindRaw === "assignment" ? "assignment" : kindRaw === "agent" ? "agent" : undefined;
+    const deliverableType = o.deliverable_type ?? o.deliverableType;
+    const tier = o.tier;
+    const facts = o.facts;
     return {
       buttons: buttons.length ? buttons : [...DEFAULT_INBOX_BUTTONS],
       followUpSteps,
+      kind,
+      deliverableType: deliverableType ? String(deliverableType) : undefined,
+      tier: tier ? String(tier) : undefined,
+      facts: facts ? String(facts) : undefined,
     };
   }
 
@@ -543,6 +549,10 @@ function mapInbox(rec: { id: string; fields: RawFields }): InboxItem {
     resolution: String(f[i.resolution] ?? ""),
     createdAt: String(f[i.created_at] ?? ""),
     resolvedAt: (f[i.resolved_at] as string | undefined) ?? null,
+    kind: parsed.kind ?? "agent",
+    deliverableType: parsed.deliverableType,
+    tier: parsed.tier,
+    facts: parsed.facts,
   };
 }
 
@@ -736,19 +746,51 @@ export async function createInboxItemInAirtable(payload: {
   whatTried: string;
   whatNeeded: string;
   options?: string[];
+  status?: string;
+  kind?: InboxItemKind;
+  deliverableType?: string;
+  tier?: string;
+  facts?: string;
 }): Promise<InboxItem> {
   const i = F.pmInbox;
+  const optionsPayload: Record<string, unknown> = { actions: payload.options ?? [] };
+  if (payload.kind) optionsPayload.kind = payload.kind;
+  if (payload.deliverableType) optionsPayload.deliverable_type = payload.deliverableType;
+  if (payload.tier) optionsPayload.tier = payload.tier;
+  if (payload.facts) optionsPayload.facts = payload.facts;
   const fields: RawFields = {
     [i.title]: payload.title,
     [i.agent]: payload.agent,
     [i.what_tried]: payload.whatTried,
     [i.what_needed]: payload.whatNeeded,
-    [i.options]: JSON.stringify(payload.options ?? []),
-    [i.status]: "Pending",
+    [i.options]: JSON.stringify(optionsPayload),
+    [i.status]: payload.status ?? "Pending",
     [i.created_at]: new Date().toISOString(),
   };
   if (payload.matterCode) fields[i.matter_id] = payload.matterCode;
   const rec = await airtableCreate(TABLES.pmInbox, fields);
+  return mapInbox(rec);
+}
+
+/**
+ * Advance a PM Inbox row through the assignment lifecycle (Submitted ->
+ * In Progress -> Ready for Review -> Approved/Returned) or the legacy
+ * agent-flagged lifecycle (Pending -> Resolved/Dismissed). Uses the same
+ * writer for both since the underlying column is a single text/select
+ * field — `airtablePatch` sends `typecast: true` so new status strings
+ * don't require a schema change on the live base.
+ */
+export async function updateInboxItemStatusInAirtable(
+  recordId: string,
+  status: string,
+  resolution?: string,
+): Promise<InboxItem> {
+  const i = F.pmInbox;
+  const terminal = ["Approved", "Returned", "Resolved", "Dismissed"].includes(status);
+  const fields: RawFields = { [i.status]: status };
+  if (resolution !== undefined) fields[i.resolution] = resolution;
+  if (terminal) fields[i.resolved_at] = new Date().toISOString();
+  const rec = await airtablePatch(TABLES.pmInbox, recordId, fields);
   return mapInbox(rec);
 }
 

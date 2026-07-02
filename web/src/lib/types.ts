@@ -144,6 +144,48 @@ export type AuditLogEntry = {
   summary: string;
 };
 
+/**
+ * PM Inbox row (BUILD_SPEC §7.5) plus the assignment-intake lifecycle
+ * extension (autonomous pass 2026-07-02): a `kind: "assignment"` item
+ * tracks Submitted -> In Progress -> Ready for Review -> Approved/Returned
+ * in addition to the legacy agent-flagged Pending -> Resolved/Dismissed
+ * flow. Both kinds share one Airtable table (`PM Inbox`) and one status
+ * string column; the extra assignment metadata rides inside the `options`
+ * JSON blob so no new Airtable columns are required.
+ */
+export type InboxItemKind = "agent" | "assignment";
+
+export type InboxItem = {
+  id: string;
+  title: string;
+  matterId: string;
+  agent: string;
+  whatTried: string;
+  whatNeeded: string;
+  options: string[];
+  /** Structured follow-ups when options JSON embeds next_steps */
+  followUpSteps: string[];
+  status:
+    | "Pending"
+    | "Submitted"
+    | "In Progress"
+    | "Ready for Review"
+    | "Returned"
+    | "Approved"
+    | "Resolved"
+    | "Dismissed"
+    | string;
+  resolution: string;
+  createdAt: string;
+  resolvedAt: string | null;
+  /** Defaults to "agent" for legacy/agent-flagged rows. */
+  kind?: InboxItemKind;
+  /** Assignment-intake metadata (kind === "assignment" only). */
+  deliverableType?: string;
+  tier?: string;
+  facts?: string;
+};
+
 export type DevSeed = {
   matters: Matter[];
   tasks: Task[];
@@ -153,4 +195,5 @@ export type DevSeed = {
   events: CalendarEvent[];
   auditLog?: AuditLogEntry[];
   caseAssessments?: CaseAssessment[];
+  inboxItems?: InboxItem[];
 };
