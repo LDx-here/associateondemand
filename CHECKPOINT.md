@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-06-16 (vision + marketplace charter added)
+**Last updated:** 2026-07-02 (assignment intake -> inbox workflow -> template catalog)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -57,6 +57,44 @@ Production firm OS is live. All Phase 0–7 surfaces, Phase 4 specialist agents,
 - **Task completion modal** on matter tab with completion docs/note → Airtable + system note
 - **Live timeline** interleaves calendar events; inbox unread badge in sidebar
 - **18 API tests** pass; Next build green
+
+### Autonomous pass (2026-07-02) — assignment intake -> inbox workflow -> template catalog
+
+Shipped per `docs/runbooks/autonomous-agent-pass.md` priority order #1-3 (this pass ran on
+branch `cursor/assignment-intake-workflow-3e13`, base `cursor/phase0-foundation`):
+
+- **Assignment intake UX** (`/assignments/new`, `web/src/components/AssignmentIntakeForm.tsx`,
+  `POST /api/assignments`) — pick an existing matter or create a new one, choose a deliverable
+  from the template catalog, describe facts/instructions, flag Normal/Rush. Creates the matter
+  (if new) + a Submitted PM Inbox row + a triage task in one request.
+- **Review workflow** (`InboxBoard.tsx`, `PATCH /api/inbox/[itemId]/status`) — PM Inbox now has
+  two lanes: **Assignments** (new lifecycle: Submitted -> In Progress -> Ready for Review ->
+  Approved/Returned, with a required note on any "return") and **Agent flags** (legacy
+  Pending -> Resolved/Dismissed flow, unchanged). The status endpoint works in demo mode too
+  (writes through `data-store.ts` to `data/dev-seed.json`), not just live Airtable.
+- **Template catalog** (`/templates`, `web/src/lib/template-catalog.ts`) — 10 deliverables
+  (AOS brief, brief section, cover letter, general memo, research memo, mass audit, legal
+  mapping, citation package, motion, custom/other) tagged Template / Research-audit / Custom
+  tier with ready-vs-needs-setup badges and a "Start assignment" deep link into the intake form.
+- **Data model**: `InboxItem` (moved to `lib/types.ts`, re-exported from `lib/airtable/queries.ts`)
+  gained `kind: "agent" | "assignment"`, `deliverableType`, `tier`, `facts` — packed into the
+  existing PM Inbox `options` JSON column, so no new Airtable fields are required. Added
+  `typecast: true` to Airtable create/patch writes so new `status` strings (e.g. "Submitted",
+  "Ready for Review") don't need a manual single-select schema edit on the live base.
+- **Dashboard**: new "Open assignments" KPI card; PM inbox unread + InboxBadge now work in demo
+  mode (previously live-Airtable only).
+- **Verification**: `services/api` pytest 18/18 green; `web` `next build` green (24 routes,
+  including new `/assignments/new`, `/templates`, `/api/assignments`,
+  `/api/inbox/[itemId]/status`); manually exercised the full assignment lifecycle end-to-end in
+  demo mode (create -> Submitted -> In Progress -> Ready for Review -> Approved, plus a Returned
+  path) via curl against a local dev server, confirmed persistence in `data/dev-seed.json`, then
+  reverted the smoke-test rows before committing.
+- **Blocked / documented, not guessed**: `scripts/smoke-production.sh` and
+  `flyctl deploy` / `vercel deploy --prod` were skipped — this Cloud Agent sandbox has no
+  `FLY_API_TOKEN` / Vercel credentials and no Docker/flyctl/vercel CLI installed, so there is no
+  live target to smoke or deploy to from here. Whoever merges this PR should run the end-of-pass
+  checklist (`git pull`, `flyctl deploy`, `vercel deploy --prod --yes`,
+  `bash scripts/smoke-production.sh`) from a machine with those credentials.
 
 ### Optional / external keys (not code blockers)
 
