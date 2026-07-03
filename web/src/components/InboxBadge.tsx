@@ -1,13 +1,11 @@
 import Link from "next/link";
 
-import { countUnreadInboxFromAirtable } from "@/lib/airtable/queries";
-import { useDemoMode } from "@/lib/data-store";
+import { countUnreadInbox } from "@/lib/data-store";
 
 export async function InboxBadge() {
-  if (useDemoMode()) return null;
   let count = 0;
   try {
-    count = await countUnreadInboxFromAirtable();
+    count = await countUnreadInbox();
   } catch {
     count = 0;
   }

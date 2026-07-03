@@ -144,6 +144,60 @@ export type AuditLogEntry = {
   summary: string;
 };
 
+/**
+ * Assignment intake tier (product vision §"Usage tiers" in CHECKPOINT.md).
+ *   Template — firm workbook/DOCX templates exist; agent fills from facts.
+ *   Custom   — no template yet; build once, then reuse at Template tier.
+ *   Research — memo / mass audit / legal mapping tier.
+ */
+export type AssignmentTier = "Template" | "Custom" | "Research";
+
+/** Distinguishes attorney-submitted assignments from agent-raised escalations sharing the PM Inbox table. */
+export type InboxKind = "assignment" | "agent_flag";
+
+/** Full lifecycle used by assignment-kind inbox items (BUILD_SPEC marketplace pass). */
+export type AssignmentStatus =
+  | "Submitted"
+  | "In progress"
+  | "Ready for review"
+  | "Returned"
+  | "Approved";
+
+/** Legacy lifecycle used by agent-raised escalations (gaps, MANUAL FLAG, linter failures). */
+export type AgentFlagStatus = "Pending" | "Resolved" | "Dismissed";
+
+export type InboxStatus = AssignmentStatus | AgentFlagStatus;
+
+/**
+ * PM Inbox row (BUILD_SPEC §7.5), extended for the marketplace build pass to
+ * also carry assignment-intake metadata. Kind/deliverableType/tier are
+ * encoded inside the Airtable `options` JSON blob (no live schema change
+ * required) — see `parsePmInboxOptions` in `lib/airtable/queries.ts`.
+ */
+export type InboxItem = {
+  id: string;
+  title: string;
+  matterId: string;
+  agent: string;
+  whatTried: string;
+  whatNeeded: string;
+  options: string[];
+  /** Structured follow-ups when options JSON embeds next_steps */
+  followUpSteps: string[];
+  status: InboxStatus | string;
+  resolution: string;
+  createdAt: string;
+  resolvedAt: string | null;
+  /** "assignment" for client-submitted work requests, "agent_flag" for agent escalations. Defaults to "agent_flag". */
+  kind: InboxKind;
+  deliverableType?: string;
+  tier?: AssignmentTier;
+  facts?: string;
+  priority?: string;
+  dueDate?: string | null;
+  history?: Array<{ status: string; note?: string; at: string; by?: string }>;
+};
+
 export type DevSeed = {
   matters: Matter[];
   tasks: Task[];
@@ -153,4 +207,5 @@ export type DevSeed = {
   events: CalendarEvent[];
   auditLog?: AuditLogEntry[];
   caseAssessments?: CaseAssessment[];
+  inboxItems?: InboxItem[];
 };

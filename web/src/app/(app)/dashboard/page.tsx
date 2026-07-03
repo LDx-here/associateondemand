@@ -13,15 +13,15 @@ import {
   recentActivity,
   upcomingDeadlines,
 } from "@/lib/dashboard-aggregates";
-import { listInboxItemsFromAirtable } from "@/lib/airtable/queries";
 import {
+  countUnreadInbox,
   listAllNotes,
   listAllTasks,
+  listInboxItems,
   listMatters,
   useDemoMode,
 } from "@/lib/data-store";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
-import { countUnreadInboxFromAirtable } from "@/lib/airtable/queries";
 import { linkMatter } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
 
@@ -46,24 +46,20 @@ export default async function DashboardPage() {
   const overdue = overdueTasks(tasks, now);
   const filingDeadlines14 = filingDeadlinesWithin(tasks, 14, now);
   let inboxUnread = 0;
-  if (!demo) {
-    try {
-      inboxUnread = await countUnreadInboxFromAirtable();
-    } catch {
-      inboxUnread = 0;
-    }
+  try {
+    inboxUnread = await countUnreadInbox();
+  } catch {
+    inboxUnread = 0;
   }
 
   const deadlines30 = upcomingDeadlines(tasks, 30, now);
   const liveNotes = demo ? [] : await listAllNotes();
   let inboxAudit = seed?.auditLog ?? [];
-  if (!demo) {
-    try {
-      const inboxItems = await listInboxItemsFromAirtable();
-      inboxAudit = inboxToActivityEntries(inboxItems, 7, now);
-    } catch {
-      inboxAudit = [];
-    }
+  try {
+    const inboxItems = await listInboxItems();
+    inboxAudit = [...inboxAudit, ...inboxToActivityEntries(inboxItems, 7, now)];
+  } catch {
+    /* keep seed audit log only */
   }
   const activity = recentActivity({
     notes: demo ? (seed?.notes ?? []) : liveNotes,

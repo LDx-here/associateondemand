@@ -21,15 +21,20 @@ import {
 import { SPEC_FIELDS as F, TABLES } from "./fields";
 import { emptyCaseAssessment, parseCaseAssessment, serializeCaseAssessment } from "../case-assessment";
 import type {
+  AssignmentStatus,
+  AssignmentTier,
   CalendarEvent,
   CaseAssessment,
   DocumentRow,
   Contact,
+  InboxItem,
   LegalElementRow,
   Matter,
   Note,
   Task,
 } from "../types";
+
+export type { InboxItem } from "../types";
 
 type RawFields = Record<string, unknown>;
 
@@ -222,7 +227,10 @@ export async function resolveMatterRecordId(
 export async function listDocumentsFromAirtable(matterCode: string): Promise<DocumentRow[]> {
   const resolved = await resolveMatterRecordId(matterCode);
   if (!resolved) return [];
-  const formula = `FIND('${escapeFormula(resolved.recordId)}', ARRAYJOIN({${F.documents.matter_id}}))`;
+  // ARRAYJOIN on a linked-record field renders the *primary field* of the
+  // linked row (Matters' primary field is the human-readable matter_id
+  // code), not the raw record id — match on `matterId`, not `recordId`.
+  const formula = `FIND('${escapeFormula(resolved.matterId)}', ARRAYJOIN({${F.documents.matter_id}}))`;
   try {
     const records = await airtableListAll<RawFields>(TABLES.documents, { filterByFormula: formula });
     return records.map((r) => mapDocument(r, resolved.matterId));
@@ -347,7 +355,9 @@ export async function listAllNotesFromAirtable(): Promise<Note[]> {
 export async function listNotesForMatterFromAirtable(matterCode: string): Promise<Note[]> {
   const resolved = await resolveMatterRecordId(matterCode);
   if (!resolved) return [];
-  const formula = `FIND('${escapeFormula(resolved.recordId)}', ARRAYJOIN({${F.notes.matter_id}}))`;
+  // See comment on `listDocumentsFromAirtable` — formulas render linked
+  // fields as the linked row's primary field, so match on `matterId`.
+  const formula = `FIND('${escapeFormula(resolved.matterId)}', ARRAYJOIN({${F.notes.matter_id}}))`;
   const records = await airtableListAll<RawFields>(TABLES.notes, { filterByFormula: formula });
   return records.map((r) => mapNote(r, resolved.matterId));
 }
@@ -452,57 +462,79 @@ export async function updateMatterInAirtable(
 /* PM Inbox (BUILD_SPEC §7.5)                                          */
 /* ------------------------------------------------------------------ */
 
-export type InboxItem = {
-  id: string;
-  title: string;
-  matterId: string;
-  agent: string;
-  whatTried: string;
-  whatNeeded: string;
-  options: string[];
-  /** Structured follow-ups when options JSON embeds next_steps */
-  followUpSteps: string[];
-  status: "Pending" | "Resolved" | "Dismissed" | string;
-  resolution: string;
-  createdAt: string;
-  resolvedAt: string | null;
-};
-
 const DEFAULT_INBOX_BUTTONS = ["Approve", "Reject", "Modify", "Defer"];
 
-function parsePmInboxOptions(raw: unknown): { buttons: string[]; followUpSteps: string[] } {
+/**
+ * PM Inbox `options` is a multilineText column shared by two item kinds:
+ *   - agent_flag items store an actions/next_steps JSON blob (legacy shape).
+ *   - assignment items additionally carry deliverableType/tier/facts/priority/
+ *     dueDate/history so the Airtable schema does not need new columns.
+ */
+type ParsedInboxOptions = {
+  buttons: string[];
+  followUpSteps: string[];
+  kind: "assignment" | "agent_flag";
+  deliverableType?: string;
+  tier?: AssignmentTier;
+  facts?: string;
+  priority?: string;
+  dueDate?: string | null;
+  history?: Array<{ status: string; note?: string; at: string; by?: string }>;
+};
+
+function parsePmInboxOptions(raw: unknown): ParsedInboxOptions {
   function fromDelimited(source: string): string[] {
     return source
       .split(/[\n;|,]/)
       .map((s) => s.trim())
       .filter(Boolean);
   }
+  const fallback: ParsedInboxOptions = {
+    buttons: [...DEFAULT_INBOX_BUTTONS],
+    followUpSteps: [],
+    kind: "agent_flag",
+  };
 
-  if (!raw) return { buttons: [...DEFAULT_INBOX_BUTTONS], followUpSteps: [] };
+  if (!raw) return fallback;
 
   if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
     const o = raw as Record<string, unknown>;
     const nextRaw = o.next_steps ?? o.suggested_next_steps ?? o.nextSteps;
-    const followUpSteps = Array.isArray(nextRaw)
-      ? nextRaw.map(String).filter(Boolean)
-      : [];
+    const followUpSteps = Array.isArray(nextRaw) ? nextRaw.map(String).filter(Boolean) : [];
     let buttons: string[] = [];
     if (Array.isArray(o.actions)) buttons = o.actions.map(String).filter(Boolean);
     else if (Array.isArray(o.buttons)) buttons = o.buttons.map(String).filter(Boolean);
     else if (Array.isArray(o.options)) buttons = o.options.map(String).filter(Boolean);
+    const history = Array.isArray(o.history)
+      ? (o.history as Array<Record<string, unknown>>)
+          .map((h) => ({
+            status: String(h.status ?? ""),
+            note: h.note ? String(h.note) : undefined,
+            at: String(h.at ?? ""),
+            by: h.by ? String(h.by) : undefined,
+          }))
+          .filter((h) => h.status)
+      : undefined;
     return {
       buttons: buttons.length ? buttons : [...DEFAULT_INBOX_BUTTONS],
       followUpSteps,
+      kind: o.kind === "assignment" ? "assignment" : "agent_flag",
+      deliverableType: o.deliverableType ? String(o.deliverableType) : undefined,
+      tier: o.tier === "Template" || o.tier === "Custom" || o.tier === "Research" ? o.tier : undefined,
+      facts: o.facts ? String(o.facts) : undefined,
+      priority: o.priority ? String(o.priority) : undefined,
+      dueDate: o.dueDate ? String(o.dueDate) : null,
+      history,
     };
   }
 
   if (Array.isArray(raw)) {
     const buttons = raw.map(String).filter(Boolean);
-    return { buttons: buttons.length ? buttons : [...DEFAULT_INBOX_BUTTONS], followUpSteps: [] };
+    return { ...fallback, buttons: buttons.length ? buttons : [...DEFAULT_INBOX_BUTTONS] };
   }
 
   const text = String(raw).trim();
-  if (!text) return { buttons: [...DEFAULT_INBOX_BUTTONS], followUpSteps: [] };
+  if (!text) return fallback;
 
   if (text.startsWith("{")) {
     try {
@@ -523,7 +555,7 @@ function parsePmInboxOptions(raw: unknown): { buttons: string[]; followUpSteps: 
   }
 
   const split = fromDelimited(text);
-  return { buttons: split.length ? split : [...DEFAULT_INBOX_BUTTONS], followUpSteps: [] };
+  return { ...fallback, buttons: split.length ? split : [...DEFAULT_INBOX_BUTTONS] };
 }
 
 function mapInbox(rec: { id: string; fields: RawFields }): InboxItem {
@@ -543,6 +575,13 @@ function mapInbox(rec: { id: string; fields: RawFields }): InboxItem {
     resolution: String(f[i.resolution] ?? ""),
     createdAt: String(f[i.created_at] ?? ""),
     resolvedAt: (f[i.resolved_at] as string | undefined) ?? null,
+    kind: parsed.kind,
+    deliverableType: parsed.deliverableType,
+    tier: parsed.tier,
+    facts: parsed.facts,
+    priority: parsed.priority,
+    dueDate: parsed.dueDate,
+    history: parsed.history,
   };
 }
 
@@ -551,9 +590,12 @@ export async function listInboxItemsFromAirtable(): Promise<InboxItem[]> {
   return records.map(mapInbox).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 
+/** Statuses that still require attorney attention, across both inbox kinds. */
+const OPEN_STATUSES = new Set(["Pending", "Submitted", "In progress", "Ready for review", "Returned"]);
+
 export async function countUnreadInboxFromAirtable(): Promise<number> {
   const all = await listInboxItemsFromAirtable();
-  return all.filter((item) => item.status === "Pending").length;
+  return all.filter((item) => OPEN_STATUSES.has(item.status)).length;
 }
 
 export async function resolveInboxItemInAirtable(
@@ -567,6 +609,117 @@ export async function resolveInboxItemInAirtable(
     [i.resolution]: resolution,
     [i.resolved_at]: new Date().toISOString(),
   });
+  return mapInbox(rec);
+}
+
+/* ------------------------------------------------------------------ */
+/* Assignment intake + review workflow (marketplace build pass)        */
+/* ------------------------------------------------------------------ */
+
+function serializeAssignmentOptions(payload: {
+  deliverableType: string;
+  tier: AssignmentTier;
+  facts: string;
+  priority?: string;
+  dueDate?: string | null;
+  history: Array<{ status: string; note?: string; at: string; by?: string }>;
+}): string {
+  return JSON.stringify({
+    kind: "assignment",
+    deliverableType: payload.deliverableType,
+    tier: payload.tier,
+    facts: payload.facts,
+    priority: payload.priority ?? "Medium",
+    dueDate: payload.dueDate ?? null,
+    history: payload.history,
+  });
+}
+
+export async function createAssignmentInAirtable(payload: {
+  matterCode: string;
+  deliverableType: string;
+  tier: AssignmentTier;
+  facts: string;
+  priority?: string;
+  dueDate?: string | null;
+  submittedBy?: string;
+}): Promise<InboxItem> {
+  const resolved = await resolveMatterRecordId(payload.matterCode);
+  if (!resolved) throw new Error(`Matter not found: ${payload.matterCode}`);
+  const i = F.pmInbox;
+  const now = new Date().toISOString();
+  const history = [
+    {
+      status: "Submitted",
+      note: "Assignment submitted via intake form.",
+      at: now,
+      by: payload.submittedBy ?? "Attorney",
+    },
+  ];
+  const fields: RawFields = {
+    [i.title]: `${payload.deliverableType} \u2014 ${payload.tier} tier`,
+    [i.matter_id]: resolved.matterId,
+    [i.agent]: "PM Orchestrator",
+    [i.what_tried]: "Assignment submitted via intake form. Awaiting PM pickup.",
+    [i.what_needed]: payload.facts.slice(0, 4000),
+    [i.options]: serializeAssignmentOptions({
+      deliverableType: payload.deliverableType,
+      tier: payload.tier,
+      facts: payload.facts,
+      priority: payload.priority,
+      dueDate: payload.dueDate,
+      history,
+    }),
+    [i.status]: "Submitted",
+    [i.created_at]: now,
+  };
+  const rec = await airtableCreate(TABLES.pmInbox, fields);
+  return mapInbox(rec);
+}
+
+const ASSIGNMENT_TRANSITIONS: Record<AssignmentStatus, AssignmentStatus[]> = {
+  Submitted: ["In progress"],
+  "In progress": ["Ready for review"],
+  "Ready for review": ["Approved", "Returned"],
+  Returned: ["In progress"],
+  Approved: [],
+};
+
+export function isValidAssignmentTransition(from: string, to: AssignmentStatus): boolean {
+  const allowed = ASSIGNMENT_TRANSITIONS[from as AssignmentStatus];
+  return Array.isArray(allowed) && allowed.includes(to);
+}
+
+export async function updateAssignmentStatusInAirtable(
+  recordId: string,
+  nextStatus: AssignmentStatus,
+  options?: { note?: string; by?: string },
+): Promise<InboxItem> {
+  const existing = await airtableGetRecord<RawFields>(TABLES.pmInbox, recordId);
+  const current = mapInbox(existing);
+  if (!isValidAssignmentTransition(current.status, nextStatus)) {
+    throw new Error(`Cannot move assignment from "${current.status}" to "${nextStatus}"`);
+  }
+  const i = F.pmInbox;
+  const now = new Date().toISOString();
+  const history = [
+    ...(current.history ?? []),
+    { status: nextStatus, note: options?.note?.trim() || undefined, at: now, by: options?.by ?? "Attorney" },
+  ];
+  const fields: RawFields = {
+    [i.status]: nextStatus,
+    [i.options]: serializeAssignmentOptions({
+      deliverableType: current.deliverableType ?? "",
+      tier: current.tier ?? "Custom",
+      facts: current.facts ?? current.whatNeeded,
+      priority: current.priority,
+      dueDate: current.dueDate,
+      history,
+    }),
+  };
+  if (options?.note?.trim()) fields[i.resolution] = options.note.trim();
+  if (nextStatus === "Approved" || nextStatus === "Returned") fields[i.resolved_at] = now;
+  const rec = await airtablePatch(TABLES.pmInbox, recordId, fields);
   return mapInbox(rec);
 }
 
@@ -599,7 +752,9 @@ export async function listEventsForMatterFromAirtable(matterCode: string): Promi
 > {
   const resolved = await resolveMatterRecordId(matterCode);
   if (!resolved) return [];
-  const formula = `FIND('${escapeFormula(resolved.recordId)}', ARRAYJOIN({${F.events.matter_id}}))`;
+  // See comment on `listDocumentsFromAirtable` — formulas render linked
+  // fields as the linked row's primary field, so match on `matterId`.
+  const formula = `FIND('${escapeFormula(resolved.matterId)}', ARRAYJOIN({${F.events.matter_id}}))`;
   const records = await airtableListAll<RawFields>(TABLES.events, { filterByFormula: formula });
   return records.map((r) => ({
     ...mapEvent(r, resolved.matterId),

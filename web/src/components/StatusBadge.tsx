@@ -10,13 +10,15 @@ import { cn } from "@/lib/utils";
  *   - emerald (success / strong / resolved / complete)
  *   - sky      (in flight / open / active / moderate)
  *   - amber    (attention / pending / unread / intake / on hold / weak)
- *   - rose     (risk / overdue / blocked / dismissed)
+ *   - violet   (ready for review / awaiting sign-off)
+ *   - rose     (risk / overdue / blocked / dismissed / returned)
  *   - slate    (terminal / archived / unknown)
  */
 const PALETTE = {
   emerald: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20",
   sky: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-600/20",
   amber: "bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-600/20",
+  violet: "bg-violet-50 text-violet-800 ring-1 ring-inset ring-violet-600/20",
   rose: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/20",
   slate: "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-500/20",
 } as const;
@@ -51,6 +53,13 @@ const STATUS_BUCKETS: Record<string, Bucket> = {
   Read: "slate",
   Resolved: "emerald",
   Dismissed: "slate",
+  // Assignment intake lifecycle (Submitted -> In progress -> Ready for
+  // review -> Returned / Approved)
+  Submitted: "amber",
+  "In progress": "sky",
+  "Ready for review": "violet",
+  Returned: "rose",
+  Approved: "emerald",
 };
 
 function bucketFor(status: string): Bucket {

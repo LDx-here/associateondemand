@@ -8,6 +8,7 @@ import {
   MessageSquare,
   ScrollText,
 } from "lucide-react";
+import Link from "next/link";
 import { Fragment, useCallback, useState } from "react";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -187,6 +188,9 @@ export function MatterWorkbench({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Link href={`/assignments/new?matterId=${matterHeader.matterId}`} className={btnSecondary}>
+              New assignment
+            </Link>
             <button type="button" className={btnSecondary} onClick={() => setEditOpen(true)}>
               Edit matter
             </button>

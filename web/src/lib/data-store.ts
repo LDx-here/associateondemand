@@ -1,11 +1,13 @@
 import {
   completeTaskInAirtable,
+  createAssignmentInAirtable,
   createLegalElementInAirtable,
   createNoteInAirtable,
   createTaskInAirtable,
   getCaseAssessmentFromAirtable,
   listDocumentsFromAirtable,
   listEventsForMatterFromAirtable,
+  listInboxItemsFromAirtable,
   listLegalElementsFromAirtable,
   listContactsFromAirtable,
   listMattersFromAirtable,
@@ -15,18 +17,27 @@ import {
   listNotesForMatterFromAirtable,
   listTasksForMatterFromAirtable,
   saveCaseAssessmentInAirtable,
+  updateAssignmentStatusInAirtable,
   updateLegalElementInAirtable,
   updateMatterDeadlineInAirtable,
   updateMatterInAirtable,
   useDemoMode,
 } from "./airtable/queries";
 import { emptyCaseAssessment } from "./case-assessment";
-import { getMutableSeed } from "./demo-store-mutable";
+import {
+  createAssignmentDemo,
+  getMutableSeed,
+  listInboxItemsDemo,
+  updateAssignmentStatusDemo,
+} from "./demo-store-mutable";
 import type {
+  AssignmentStatus,
+  AssignmentTier,
   CaseAssessment,
   DevSeed,
   DocumentRow,
   Contact,
+  InboxItem,
   LegalElementRow,
   Matter,
   Note,
@@ -286,6 +297,40 @@ export async function updateMatterDeadline(matterId: string, nextDeadline: strin
     return matter;
   }
   return updateMatterDeadlineInAirtable(matterId, nextDeadline);
+}
+
+const OPEN_INBOX_STATUSES = new Set(["Pending", "Submitted", "In progress", "Ready for review", "Returned"]);
+
+export async function listInboxItems(): Promise<InboxItem[]> {
+  if (useDemoMode()) return listInboxItemsDemo();
+  return listInboxItemsFromAirtable();
+}
+
+export async function countUnreadInbox(): Promise<number> {
+  const items = await listInboxItems();
+  return items.filter((item) => OPEN_INBOX_STATUSES.has(item.status)).length;
+}
+
+export async function createAssignment(payload: {
+  matterId: string;
+  deliverableType: string;
+  tier: AssignmentTier;
+  facts: string;
+  priority?: string;
+  dueDate?: string | null;
+  submittedBy?: string;
+}): Promise<InboxItem> {
+  if (useDemoMode()) return createAssignmentDemo(payload);
+  return createAssignmentInAirtable({ matterCode: payload.matterId, ...payload });
+}
+
+export async function updateAssignmentStatus(
+  itemId: string,
+  nextStatus: AssignmentStatus,
+  options?: { note?: string; by?: string },
+): Promise<InboxItem | null> {
+  if (useDemoMode()) return updateAssignmentStatusDemo(itemId, nextStatus, options);
+  return updateAssignmentStatusInAirtable(itemId, nextStatus, options);
 }
 
 export async function buildTimeline(matterId: string): Promise<TimelineEntry[]> {

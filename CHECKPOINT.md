@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-06-16 (vision + marketplace charter added)
+**Last updated:** 2026-07-02 (assignment intake + review workflow + template catalog shipped)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -57,6 +57,80 @@ Production firm OS is live. All Phase 0–7 surfaces, Phase 4 specialist agents,
 - **Task completion modal** on matter tab with completion docs/note → Airtable + system note
 - **Live timeline** interleaves calendar events; inbox unread badge in sidebar
 - **18 API tests** pass; Next build green
+
+### Autonomous pass log — 2026-07-02 (marketplace build pass: intake, review workflow, catalog)
+
+Shipped the three priority surfaces from the autonomous agent runbook end to end
+against live Airtable (no demo-mode fallback needed — matches Clio/eImmigration
+polish bar):
+
+- **Assignment intake (`/assignments/new`)** — form for deliverable type, tier
+  (Template/Custom/Research), facts, optional file upload, priority, due date.
+  New matter or link to an existing one. `POST /api/assignments` creates the
+  Matter (if new), a Task, a facts Note, and a PM Inbox row in the Submitted
+  lane — full validation, inline field errors, and toast on success/failure.
+  Linked from the sidebar, the matter workbench header, and every template
+  catalog card.
+- **Inbox review workflow (`/inbox`)** — new `AssignmentBoard` Kanban with five
+  lanes: **Submitted → In progress → Ready for review → Returned / Approved**.
+  Actions: Start work, Send for review, Approve (optional sign-off note),
+  Return (required revision note), Resume work. Legacy agent-flag escalations
+  (Pending/Resolved/Dismissed) keep their existing approve/reject UI in a
+  separate "Agent escalations" section below the board — no regression to the
+  PM-orchestrator gap-flagging path. `PATCH /api/inbox/[itemId]/status`
+  enforces the state machine server-side; illegal transitions are rejected
+  with a 409. Assignment metadata (deliverableType/tier/facts/priority/
+  dueDate/history) is encoded in the existing PM Inbox `options` JSON column
+  — no live schema migration needed. `client.ts` now sends `typecast: true`
+  so Airtable auto-adds the new lifecycle values to the `status` single-select
+  instead of rejecting the write.
+- **Template catalog (`/templates`)** — `lib/deliverable-catalog.ts` is the
+  shared source of truth (Cover Letter, AOS Discretionary Brief, Citation
+  Package, Research Memo, Mass Audit, Legal Mapping = Template/Research tier;
+  Custom Motion/Other = Custom tier). Each card links straight into
+  `/assignments/new?deliverable=<id>` with the deliverable + tier prefilled.
+- **App-wide toast system** (`components/Toast.tsx`) — mounted once in
+  `AppShell`; every new write path (assignment submit, status transitions)
+  surfaces success/error instead of failing silently.
+- **Demo-mode parity** — `data/dev-seed.json` gained an `inboxItems` array and
+  `demo-store-mutable.ts` gained matching create/transition helpers so the
+  Kanban board and intake flow are fully exercisable without `AIRTABLE_PAT`.
+
+**Production bug found + fixed during this pass:** `Notes.matter_id` and
+`Documents.matter_id` were `multipleRecordLinks` fields pointing at the
+legacy `Cases` table instead of `Matters` (pre-existing schema drift, not
+caused by this pass). Every note/document write had been failing with
+`ROW_TABLE_DOES_NOT_MATCH_LINKED_TABLE` in production — both tables were
+100% empty. Fixed live via `scripts/airtable-fix-matter-links.mjs`
+(tombstones the broken field to `DEPRECATED_matter_id_wrong_link`, recreates
+`matter_id` correctly linked to Matters — same pattern as the existing
+`DEPRECATED_client_name` tombstone). Also fixed a second latent bug: the
+`FIND(..., ARRAYJOIN({matter_id}))` filter formulas in
+`listDocumentsFromAirtable` / `listNotesForMatterFromAirtable` /
+`listEventsForMatterFromAirtable` were matching against the Matters record
+id, but Airtable formulas render linked fields as the *linked row's primary
+field* (the human-readable `matter_id` code) — now matches on `matterId`.
+Verified end-to-end against live Airtable: assignment → matter/task/note
+creation → Submitted → In progress → Ready for review → Approved, with the
+Notes/Documents/Events tabs and Timeline all populating correctly; smoke-test
+records deleted from the live base after verification.
+
+Verified: `pytest` (18 passed), `next build` (all 37 routes, including the 3
+new pages + 2 new API routes), `npm run test:airtable` (11/11 tables),
+`scripts/smoke-production.sh` (baseline pass before deploy).
+
+**Remaining gaps for the next pass:**
+- Assignment → agent dispatch is manual (attorney clicks through lanes); no
+  automatic hand-off from "Submitted" to a drafting/research agent yet — the
+  PM Inbox row is the queue, but nothing currently auto-advances it to "In
+  progress" when an agent picks it up.
+- No email/Slack notification on new Submitted assignments.
+- Template catalog is a static config, not read from Airtable — fine for now
+  since it is not attorney-editable data, but flag if that changes.
+- `eslint` is broken repo-wide (`ESLint: 9.39.4` circular-config crash in
+  `eslint-config-next` — pre-existing, reproduced on a clean stash, not
+  introduced by this pass). `next build`'s own TypeScript pass is green and
+  was used as the gate instead.
 
 ### Optional / external keys (not code blockers)
 

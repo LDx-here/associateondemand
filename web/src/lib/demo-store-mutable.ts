@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "fs/promises";
 import path from "path";
 
-import type { DevSeed, LegalElementRow, Note, Task } from "./types";
+import type { AssignmentStatus, AssignmentTier, DevSeed, InboxItem, LegalElementRow, Note, Task } from "./types";
 
 let cache: DevSeed | null = null;
 
@@ -84,4 +84,86 @@ export async function updateLegalElement(
   Object.assign(row, patch);
   await persistSeed();
   return row;
+}
+
+const ASSIGNMENT_TRANSITIONS: Record<AssignmentStatus, AssignmentStatus[]> = {
+  Submitted: ["In progress"],
+  "In progress": ["Ready for review"],
+  "Ready for review": ["Approved", "Returned"],
+  Returned: ["In progress"],
+  Approved: [],
+};
+
+export async function listInboxItemsDemo(): Promise<InboxItem[]> {
+  const seed = await getMutableSeed();
+  return [...(seed.inboxItems ?? [])].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
+export async function createAssignmentDemo(payload: {
+  matterId: string;
+  deliverableType: string;
+  tier: AssignmentTier;
+  facts: string;
+  priority?: string;
+  dueDate?: string | null;
+  submittedBy?: string;
+}): Promise<InboxItem> {
+  const seed = await getMutableSeed();
+  if (!seed.inboxItems) seed.inboxItems = [];
+  const now = new Date().toISOString();
+  const item: InboxItem = {
+    id: `inbox-demo-${Date.now()}`,
+    title: `${payload.deliverableType} \u2014 ${payload.tier} tier`,
+    matterId: payload.matterId,
+    agent: "PM Orchestrator",
+    whatTried: "Assignment submitted via intake form. Awaiting PM pickup.",
+    whatNeeded: payload.facts,
+    options: [],
+    followUpSteps: [],
+    status: "Submitted",
+    resolution: "",
+    createdAt: now,
+    resolvedAt: null,
+    kind: "assignment",
+    deliverableType: payload.deliverableType,
+    tier: payload.tier,
+    facts: payload.facts,
+    priority: payload.priority ?? "Medium",
+    dueDate: payload.dueDate ?? null,
+    history: [
+      {
+        status: "Submitted",
+        note: "Assignment submitted via intake form.",
+        at: now,
+        by: payload.submittedBy ?? "Attorney",
+      },
+    ],
+  };
+  seed.inboxItems.push(item);
+  await persistSeed();
+  return item;
+}
+
+export async function updateAssignmentStatusDemo(
+  itemId: string,
+  nextStatus: AssignmentStatus,
+  options?: { note?: string; by?: string },
+): Promise<InboxItem | null> {
+  const seed = await getMutableSeed();
+  const item = (seed.inboxItems ?? []).find((i) => i.id === itemId);
+  if (!item) return null;
+  const allowed = ASSIGNMENT_TRANSITIONS[item.status as AssignmentStatus];
+  if (!Array.isArray(allowed) || !allowed.includes(nextStatus)) {
+    throw new Error(`Cannot move assignment from "${item.status}" to "${nextStatus}"`);
+  }
+  const now = new Date().toISOString();
+  item.status = nextStatus;
+  if (options?.note?.trim()) item.resolution = options.note.trim();
+  if (nextStatus === "Approved" || nextStatus === "Returned") item.resolvedAt = now;
+  item.history = [
+    ...(item.history ?? []),
+    { status: nextStatus, note: options?.note?.trim() || undefined, at: now, by: options?.by ?? "Attorney" },
+  ];
+  await persistSeed();
+  return item;
 }

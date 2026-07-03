@@ -1,72 +1,52 @@
-import {
-  listInboxItemsFromAirtable,
-  type InboxItem,
-} from "@/lib/airtable/queries";
-import { useDemoMode } from "@/lib/data-store";
+import Link from "next/link";
+
+import { AssignmentBoard } from "@/components/AssignmentBoard";
 import { InboxBoard } from "@/components/InboxBoard";
+import { listInboxItems, useDemoMode } from "@/lib/data-store";
+import { btnPrimary } from "@/lib/ui-classes";
 
 export const dynamic = "force-dynamic";
 
-const DEMO_INBOX: InboxItem[] = [
-  {
-    id: "demo-inbox-1",
-    title: "Research: Sixth Circuit asylum standard",
-    matterId: "AOD-1001",
-    agent: "Research Agent",
-    whatTried:
-      "Loaded the Five-Anchors SKILL and gathered gov + practice-resource hits for Matter of A-B- progeny.",
-    whatNeeded:
-      "Attorney to confirm whether the strategy memo should cite Niang v. Holder.",
-    options: ["Approve", "Modify", "Defer"],
-    followUpSteps: [
-      "Confirm Niang v. Holder citation in the research memo.",
-      "Update Case Assessment Next Action if strategy changes.",
-    ],
-    status: "Pending",
-    resolution: "",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-    resolvedAt: null,
-  },
-  {
-    id: "demo-inbox-2",
-    title: "Fact extraction confidence low",
-    matterId: "AOD-1003",
-    agent: "Fact Extraction",
-    whatTried:
-      "Extracted 14 facts from intake declaration; 4 anchored to corroborating documents.",
-    whatNeeded:
-      "Attorney to review uncertain facts before strategy memo is finalized.",
-    options: ["Approve", "Reject"],
-    followUpSteps: [
-      "Spot-check the four uncertain facts against the declaration file.",
-      "Add a correction note if any fact line must change.",
-    ],
-    status: "Pending",
-    resolution: "",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(),
-    resolvedAt: null,
-  },
-];
-
 export default async function InboxPage() {
   const demo = useDemoMode();
-  const items = demo ? DEMO_INBOX : await listInboxItemsFromAirtable();
-  const pending = items.filter((item) => item.status === "Pending");
-  const resolved = items
-    .filter((item) => item.status !== "Pending")
-    .slice(0, 25);
+  const items = await listInboxItems();
+
+  const assignments = items.filter((item) => item.kind === "assignment");
+  const agentFlags = items.filter((item) => item.kind !== "assignment");
+  const pending = agentFlags.filter((item) => item.status === "Pending");
+  const resolved = agentFlags.filter((item) => item.status !== "Pending").slice(0, 25);
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-slate-900">PM Inbox</h1>
-        <p className="text-sm text-slate-600">
-          Items the orchestrator routed for attorney review. Resolve from here
-          to clear the unread badge on the dashboard.
-        </p>
+    <div className="space-y-8">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">PM Inbox</h1>
+          <p className="text-sm text-slate-600">
+            Assignments move Submitted → In progress → Ready for review → Returned / Approved. Agent
+            escalations below need a quick approve, reject, or resolution note.
+          </p>
+        </div>
+        <Link href="/assignments/new" className={btnPrimary}>
+          New assignment
+        </Link>
       </header>
 
-      <InboxBoard pending={pending} resolved={resolved} demoMode={demo} />
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          Assignments ({assignments.length})
+        </h2>
+        <AssignmentBoard assignments={assignments} demoMode={demo} />
+      </section>
+
+      <section className="space-y-4 border-t border-slate-200 pt-6">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agent escalations</h2>
+          <p className="text-xs text-slate-500">
+            Items an agent routed here because it hit a gap, low-confidence extraction, or MANUAL FLAG.
+          </p>
+        </div>
+        <InboxBoard pending={pending} resolved={resolved} demoMode={demo} />
+      </section>
     </div>
   );
 }

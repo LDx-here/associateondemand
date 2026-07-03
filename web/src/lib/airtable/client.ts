@@ -93,7 +93,11 @@ export async function airtableCreate(
   const resp = await fetch(baseUrl(table), {
     method: "POST",
     headers: { ...authHeaders(), "Content-Type": "application/json" },
-    body: JSON.stringify({ fields }),
+    // `typecast: true` lets Airtable auto-add new singleSelect choices (e.g.
+    // assignment lifecycle statuses) instead of rejecting the write with
+    // INVALID_MULTIPLE_CHOICE_OPTIONS. Safe because every select field in
+    // this base is attorney-reviewable, not a locked enum.
+    body: JSON.stringify({ fields, typecast: true }),
     cache: "no-store",
   });
   if (!resp.ok) {
@@ -111,7 +115,7 @@ export async function airtablePatch(
   const resp = await fetch(`${baseUrl(table)}/${recordId}`, {
     method: "PATCH",
     headers: { ...authHeaders(), "Content-Type": "application/json" },
-    body: JSON.stringify({ fields }),
+    body: JSON.stringify({ fields, typecast: true }),
     cache: "no-store",
   });
   if (!resp.ok) {
