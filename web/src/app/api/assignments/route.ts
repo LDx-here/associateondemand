@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 
+import { dispatchAssignmentToPm } from "@/lib/assignment-dispatch";
 import {
   createAssignment,
   createMatter,
   createNoteForMatter,
   createTaskForMatter,
   getMatterByCode,
+  updateAssignmentStatus,
+  useDemoMode,
 } from "@/lib/data-store";
+import { notifyNewAssignment } from "@/lib/notify-assignment";
 import type { AssignmentTier } from "@/lib/types";
 
 const VALID_TIERS: AssignmentTier[] = ["Template", "Custom", "Research"];
@@ -92,7 +96,7 @@ export async function POST(req: Request) {
       "Attorney",
     );
 
-    const inboxItem = await createAssignment({
+    let inboxItem = await createAssignment({
       matterId,
       deliverableType,
       tier: tier as AssignmentTier,
@@ -102,7 +106,27 @@ export async function POST(req: Request) {
       submittedBy: "La'Dajia Ferguson",
     });
 
-    return NextResponse.json({ matterId, inboxItem }, { status: 201 });
+    let dispatch = null as Awaited<ReturnType<typeof dispatchAssignmentToPm>> | null;
+    let notify = null as Awaited<ReturnType<typeof notifyNewAssignment>> | null;
+
+    if (!useDemoMode()) {
+      dispatch = await dispatchAssignmentToPm(matterId, deliverableType, tier as AssignmentTier, facts);
+      if (dispatch.started) {
+        const advanced = await updateAssignmentStatus(inboxItem.id, "In progress", {
+          note: `Auto-dispatched to ${dispatch.agent ?? "PM orchestrator"}.`,
+          by: "System",
+        });
+        if (advanced) inboxItem = advanced;
+      }
+      notify = await notifyNewAssignment({
+        matterId,
+        deliverableType,
+        tier: tier as AssignmentTier,
+        inboxItemId: inboxItem.id,
+      });
+    }
+
+    return NextResponse.json({ matterId, inboxItem, dispatch, notify }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not submit assignment.";
     return NextResponse.json({ error: message }, { status: 502 });

@@ -311,6 +311,11 @@ export async function countUnreadInbox(): Promise<number> {
   return items.filter((item) => OPEN_INBOX_STATUSES.has(item.status)).length;
 }
 
+export async function countSubmittedAssignments(): Promise<number> {
+  const items = await listInboxItems();
+  return items.filter((item) => item.kind === "assignment" && item.status === "Submitted").length;
+}
+
 export async function createAssignment(payload: {
   matterId: string;
   deliverableType: string;

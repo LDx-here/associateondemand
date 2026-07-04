@@ -123,6 +123,7 @@ export function AssignmentIntakeForm({
       }
 
       const matterId = data.matterId as string;
+      const dispatch = data.dispatch as { started?: boolean; agent?: string; error?: string } | null;
 
       if (files.length > 0) {
         const initialQueue: QueueItem[] = files.map((f) => ({ name: f.name, status: "pending" }));
@@ -146,7 +147,12 @@ export function AssignmentIntakeForm({
         }
       }
 
-      showToast(`Assignment submitted for ${matterId}. It's now in the Submitted lane of PM Inbox.`, "success");
+      const dispatchNote = dispatch?.started
+        ? ` PM agent started (${dispatch.agent ?? "orchestrator"}). Check In progress lane.`
+        : dispatch?.error
+          ? " Saved to Submitted lane — agent dispatch will run when API is online."
+          : "";
+      showToast(`Assignment submitted for ${matterId}.${dispatchNote}`, "success");
       router.push("/inbox");
       router.refresh();
     } catch (err) {

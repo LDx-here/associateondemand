@@ -120,17 +120,20 @@ new pages + 2 new API routes), `npm run test:airtable` (11/11 tables),
 `scripts/smoke-production.sh` (baseline pass before deploy).
 
 **Remaining gaps for the next pass:**
-- Assignment → agent dispatch is manual (attorney clicks through lanes); no
-  automatic hand-off from "Submitted" to a drafting/research agent yet — the
-  PM Inbox row is the queue, but nothing currently auto-advances it to "In
-  progress" when an agent picks it up.
-- No email/Slack notification on new Submitted assignments.
 - Template catalog is a static config, not read from Airtable — fine for now
-  since it is not attorney-editable data, but flag if that changes.
 - `eslint` is broken repo-wide (`ESLint: 9.39.4` circular-config crash in
-  `eslint-config-next` — pre-existing, reproduced on a clean stash, not
-  introduced by this pass). `next build`'s own TypeScript pass is green and
-  was used as the gate instead.
+  `eslint-config-next` — pre-existing). `next build` TypeScript gate is green.
+- Optional: set `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` on Vercel for email on new assignments
+
+### Autonomous pass log — pass 2 (2026-07-03, coordinator recovery)
+
+Background subagents timed out (PING); shipped in foreground:
+
+- **`assignment-dispatch.ts`** — deliverable-type → PM instruction; sync dispatch to Fly API
+- **`notify-assignment.ts`** — matter system note + optional Resend email
+- **`POST /api/assignments`** — auto PM dispatch + In progress transition + notify
+- **`InboxBadge`** — **N new** (Submitted) + open count badges
+- **`AssignmentIntakeForm`** — dispatch-aware success toast
 
 ### Optional / external keys (not code blockers)
 
