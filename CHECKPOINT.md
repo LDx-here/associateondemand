@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-02 (assignment intake + review workflow + template catalog shipped)
+**Last updated:** 2026-07-03 (pass 2: auto PM dispatch + notify, deployed)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -134,6 +134,14 @@ Background subagents timed out (PING); shipped in foreground:
 - **`POST /api/assignments`** — auto PM dispatch + In progress transition + notify
 - **`InboxBadge`** — **N new** (Submitted) + open count badges
 - **`AssignmentIntakeForm`** — dispatch-aware success toast
+
+**Deployed 2026-07-03:** commit `503ea7e` pushed to `cursor/phase0-foundation`;
+`pytest` (18 passed), `next build` (all routes green), pre- and post-deploy
+`scripts/smoke-production.sh` both passed (web auth gate, API health, PM
+research dispatch via Anthropic). Fly API redeployed
+(`flyctl deploy -a associateondemand-api`, both machines healthy) and Vercel
+web redeployed to production (`vercel deploy --prod`, aliased to
+https://aod-next.vercel.app).
 
 ### Optional / external keys (not code blockers)
 
