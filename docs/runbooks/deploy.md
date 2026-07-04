@@ -142,3 +142,4 @@ fly deploy
 - [local-dev.md](./local-dev.md)
 - [strong-reader-setup.md](./strong-reader-setup.md)
 - [research-memo-export.md](./research-memo-export.md)
+- [auth-email-setup.md](./auth-email-setup.md) — fix "Error sending magic link email"

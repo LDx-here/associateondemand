@@ -190,3 +190,4 @@ Only after Supabase keys are in Vercel and redirect URLs match.
 - Full architecture notes: [deploy.md](./deploy.md)
 - Local dev (auth off): [local-dev.md](./local-dev.md)
 - Env template: `web/.env.local.example`
+- Sign-in email broken ("Error sending magic link email")? [auth-email-setup.md](./auth-email-setup.md)
