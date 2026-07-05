@@ -163,8 +163,10 @@ https://aod-next.vercel.app).
 
 Verified: `pytest` (22 passed), `next build` green, `scripts/smoke-production.sh` pass.
 
+**Deployed 2026-07-05:** commit `ff25481`; Fly API + Vercel production redeployed;
+post-deploy smoke pass.
+
 **Remaining gaps for the next pass:**
-- Deploy Fly API + Vercel for pass 3 code (local tests green; production still on pass 2 deploy)
 - Supabase custom SMTP (Resend) — magic link still attorney-side config
 - Optional: `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` on Vercel
 - Template catalog static config; eslint circular-config crash (pre-existing)
@@ -240,6 +242,22 @@ bash scripts/smoke-production.sh
 docker compose up -d --build
 cd web && npm run dev -- -p 3003
 ```
+
+## Next step
+
+**Phase 0 B2B overflow launch** — sell first 1–3 paid matters using the existing intake → inbox → export flow with manual off-platform invoicing. Follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md). Launch SKUs: `aos-discretionary-brief` (+ optional `research-memo`). Provisional decisions locked in [`AssociateOnDemand_Implementation_Phasing.md`](AssociateOnDemand_Implementation_Phasing.md) (July 5, 2026 section).
+
+Immediate ops: deploy pass 3 code (Fly + Vercel) if not already live; resolve any **Blocked — needs user** items in phasing doc (pilot attorney queue, bar counsel, multi-state marketing) before scaling beyond pilot clients.
+
+## Blockers
+
+| Blocker | Owner | Notes |
+|---------|-------|-------|
+| Pilot attorney queue | La'Dajia | Which friendly external solos / RMV overflow matters first |
+| Bar counsel for B2B overflow model | La'Dajia | Required before self-serve AI tier; recommended before multi-state scale |
+| Primary bar / multi-state disclaimer set | La'Dajia | Provisional default MN; confirm target client states |
+| Pass 3 deploy | Agent/dev | Local tests green; production may still be on pass 2 deploy |
+| Supabase custom SMTP (Resend) | La'Dajia | Magic link / password reset — see `docs/runbooks/auth-email-setup.md` |
 
 ## Quick links
 
