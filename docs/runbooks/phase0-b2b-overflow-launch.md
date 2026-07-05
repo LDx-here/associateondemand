@@ -1,7 +1,7 @@
 # Phase 0: B2B overflow launch (manual billing)
 
 **Last updated:** July 5, 2026  
-**Provisional decisions:** [`AssociateOnDemand_Implementation_Phasing.md`](../../AssociateOnDemand_Implementation_Phasing.md) — Provisional Lock (July 5, 2026)  
+**Provisional decisions:** [`docs/strategy/AssociateOnDemand_Implementation_Phasing.md`](../strategy/AssociateOnDemand_Implementation_Phasing.md) — Strategic lock (2026-07-05)  
 **Legal guardrails:** [`LEGAL_BOUNDARIES.md`](../../LEGAL_BOUNDARIES.md)
 
 Phase 0 sells lawyer-reviewed deliverables through the **existing** assignment → PM Inbox → export workflow. No Stripe, chat intake, or e-sign in this phase.
@@ -14,8 +14,8 @@ Phase 0 sells lawyer-reviewed deliverables through the **existing** assignment �
 |----------|----------------------------|
 | Manual sales to 1–3 pilot clients (external solo immigration attorneys ± RMV overflow) | In-app Stripe / deposits |
 | Off-platform invoicing (invoice + ACH/check/Stripe payment link sent manually) | Engagement letter + e-sign |
-| Launch SKUs: **`aos-discretionary-brief`** (hero), **`research-memo`** (upsell) | `custom-motion`, hearing-packet SKU |
-| RMV signs every deliverable | Contract associate routing |
+| Launch SKUs: **`aos-discretionary-brief`**, **`custom-motion`**, **`hearing-packet`**, **`research-memo`** (upsell) | In-app Stripe / deposits; chat-first intake |
+| RMV signs every deliverable (Phase 0–2) | Contract associate routing (Phase 3+) |
 | Form intake at `/assignments/new` | Chat-first intake |
 | Manual conflict check | Conflict-check UX in app |
 | Catalog turnaround SLAs (+ optional rush fee quoted at intake) | "Usable by Tomorrow" blanket promise |
@@ -29,11 +29,13 @@ Phase 0 sells lawyer-reviewed deliverables through the **existing** assignment �
 | Catalog ID | Name | Tier | Turnaround (client-facing) | Flat-fee range (USD) |
 |------------|------|------|----------------------------|------------------------|
 | `aos-discretionary-brief` | AOS Discretionary Brief | Template | 1–2 business days | $750–$1,500 |
+| `custom-motion` | Motion or Short Filing | Custom | 1–3 business days | $250–$450 |
+| `hearing-packet` | Hearing Packet / Exhibit Organization | Template | 1–2 business days | $500–$1,250 |
 | `research-memo` | Research Memo | Research | 1–3 business days (scope-dependent) | $500–$900 |
 
 Source of truth: [`web/src/lib/deliverable-catalog.ts`](../../web/src/lib/deliverable-catalog.ts). Rush: quote **+30–50%** at intake for expedited queue priority — not a guaranteed next-calendar-day delivery unless explicitly scoped and priced as rush.
 
-Deferred SKUs: `custom-motion` (Phase 2+), hearing-packet (future catalog entry).
+Intake requires **limited-scope disclaimer acknowledgment** (jurisdiction/practice-area aware) before submit.
 
 ---
 
@@ -67,10 +69,11 @@ Clock starts when the facts packet is **complete** (intake form submitted with s
 ### 2. Intake (platform)
 
 1. Client or RMV opens **New assignment**: https://aod-next.vercel.app/assignments/new  
-   - Or prefill from catalog: `/assignments/new?deliverable=aos-discretionary-brief` or `?deliverable=research-memo`
+   - Or prefill from catalog: `/assignments/new?deliverable=aos-discretionary-brief`, `?deliverable=custom-motion`, `?deliverable=hearing-packet`, or `?deliverable=research-memo`
 2. Complete: deliverable type, tier (prefilled), facts packet, attachments, priority, due date if rush.
-3. Submit — creates Matter, Task, facts Note, and PM Inbox row in **Submitted**.
-4. PM auto-dispatches on submit; row may advance to **In progress** then **Ready for review** when a reviewable draft exists.
+3. Acknowledge the **limited-scope disclaimer** (required checkbox).
+4. Submit — creates Matter, Task, facts Note, and PM Inbox row in **Submitted**.
+5. PM auto-dispatches on submit; row may advance to **In progress** then **Ready for review** when a reviewable draft exists.
 
 Optional: set `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` on Vercel so RMV gets email on new assignments.
 
