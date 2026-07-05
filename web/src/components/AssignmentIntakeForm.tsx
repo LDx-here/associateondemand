@@ -12,6 +12,10 @@ import {
 } from "@/components/IntakeUploadShared";
 import { useToast } from "@/components/Toast";
 import {
+  buildIntakeDisclaimerBody,
+  intakeDisclaimerCheckboxLabel,
+} from "@/lib/intake-disclaimer";
+import {
   DELIVERABLE_CATALOG,
   deliverableById,
   formatCatalogQuote,
@@ -62,6 +66,7 @@ export function AssignmentIntakeForm({
   const [dueDate, setDueDate] = useState("");
 
   const [manualApproved, setManualApproved] = useState(false);
+  const [disclaimerAcknowledged, setDisclaimerAcknowledged] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [uploadQueue, setUploadQueue] = useState<QueueItem[]>([]);
 
@@ -75,6 +80,26 @@ export function AssignmentIntakeForm({
   );
   const deliverableType = selectedCatalog ? selectedCatalog.name : customDeliverableName.trim();
   const tier: AssignmentTier = selectedCatalog ? selectedCatalog.tier : customTier;
+
+  const existingMatter = useMemo(
+    () => matters.find((m) => m.matterId === existingMatterId),
+    [matters, existingMatterId],
+  );
+
+  const disclaimerContext = useMemo(
+    () => ({
+      caseType: matterMode === "new" ? newCaseType : undefined,
+      country: matterMode === "new" ? newCountry : undefined,
+      existingCaseType: matterMode === "existing" ? existingMatter?.caseType : undefined,
+    }),
+    [matterMode, newCaseType, newCountry, existingMatter?.caseType],
+  );
+
+  const disclaimerBody = useMemo(() => buildIntakeDisclaimerBody(disclaimerContext), [disclaimerContext]);
+  const disclaimerCheckbox = useMemo(
+    () => intakeDisclaimerCheckboxLabel(disclaimerContext),
+    [disclaimerContext],
+  );
 
   function validate(): Record<string, string> {
     const errors: Record<string, string> = {};
@@ -94,6 +119,9 @@ export function AssignmentIntakeForm({
     }
     if (files.length > 0 && tierRequiresManualApproval() && !manualApproved) {
       errors.files = "Check the tier 0 manual approval box before attaching files.";
+    }
+    if (!disclaimerAcknowledged) {
+      errors.disclaimer = "Acknowledge the limited-scope disclaimer before submitting.";
     }
     return errors;
   }
@@ -386,6 +414,21 @@ export function AssignmentIntakeForm({
         />
         {fieldErrors.files ? <p className="text-sm text-rose-700">{fieldErrors.files}</p> : null}
         <UploadProgressTable items={uploadQueue} />
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-slate-900">5. Limited-scope acknowledgment</h2>
+        <p className="text-sm leading-relaxed text-slate-700">{disclaimerBody}</p>
+        <label className="flex items-start gap-2 text-sm text-slate-800">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={disclaimerAcknowledged}
+            onChange={(e) => setDisclaimerAcknowledged(e.target.checked)}
+          />
+          <span>{disclaimerCheckbox}</span>
+        </label>
+        {fieldErrors.disclaimer ? <p className="text-sm text-rose-700">{fieldErrors.disclaimer}</p> : null}
       </section>
 
       {formError ? (

@@ -52,6 +52,12 @@ export function buildAssignmentPmInstruction(
   if (lower.includes("aos") || lower.includes("discretionary")) {
     return `draft aos discretionary brief ${matterId}. ${factsSnippet}`;
   }
+  if (lower.includes("hearing packet") || lower.includes("exhibit")) {
+    return `draft hearing packet exhibit organization ${matterId}. ${factsSnippet}`;
+  }
+  if (lower.includes("motion") || lower.includes("short filing")) {
+    return `draft motion ${matterId}. ${factsSnippet}`;
+  }
   if (lower.includes("citation verification") || lower.includes("citation package")) {
     return `pm:research citation verification package ${matterId}. ${factsSnippet}`;
   }

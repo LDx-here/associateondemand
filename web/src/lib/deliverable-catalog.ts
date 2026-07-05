@@ -7,8 +7,13 @@ export type DeliverablePricing = {
   note?: string;
 };
 
-/** Phase 0 B2B overflow launch SKUs — hero + upsell. */
-export const PHASE0_LAUNCH_SKU_IDS = ["aos-discretionary-brief", "research-memo"] as const;
+/** Phase 0 B2B overflow launch SKUs — immigration brief, motion, hearing packet, research upsell. */
+export const PHASE0_LAUNCH_SKU_IDS = [
+  "aos-discretionary-brief",
+  "custom-motion",
+  "hearing-packet",
+  "research-memo",
+] as const;
 
 export type Phase0LaunchSkuId = (typeof PHASE0_LAUNCH_SKU_IDS)[number];
 
@@ -29,12 +34,10 @@ export type DeliverableCatalogEntry = {
  * graduate to Template tier; Research tier entries are memo/audit work
  * that is already fully agent-drafted end to end.
  *
- * Phase 0 launch SKUs: `aos-discretionary-brief` (hero) and `research-memo`
- * (upsell). Pricing ranges follow AssociateOnDemand_Monetization_Strategy.md;
- * surfaced on `/templates` and `/assignments/new`.
- *
- * Future SKU (not in catalog yet): hearing-packet / exhibit organization
- * ($500–$1,250 target in monetization doc) — add when exhibit workflow exists.
+ * Phase 0 launch SKUs: `aos-discretionary-brief` (hero), `custom-motion`,
+ * `hearing-packet`, and `research-memo` (upsell). Pricing ranges follow
+ * docs/strategy/AssociateOnDemand_Monetization_Strategy.md; surfaced on
+ * `/templates` and `/assignments/new`.
  */
 export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
   {
@@ -94,16 +97,26 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
     skillDoc: "docs/constitution/07-Legal-Mapping-SKILL.md",
   },
   {
+    id: "hearing-packet",
+    name: "Hearing Packet / Exhibit Organization",
+    tier: "Template",
+    description:
+      "Organize exhibits, hearing binders, and supporting documents for immigration or trial hearings. Agent compiles from your fact packet and attachments; attorney verifies index, pagination, and filing compliance.",
+    turnaround: "1–2 business days",
+    skillDoc: "docs/constitution/05-Drafting-SKILL.md",
+    pricing: { minUsd: 500, maxUsd: 1250 },
+  },
+  {
     id: "custom-motion",
-    name: "Custom Motion or Brief",
+    name: "Motion or Short Filing",
     tier: "Custom",
     description:
-      "Novel motion or brief type with no firm template yet (e.g., a first-of-its-kind motion to reopen theory). Setup labor builds the template once; it graduates to Template tier for future matters of the same type.",
-    turnaround: "Scoped after intake — setup + execution",
+      "Standard motions and procedural filings (e.g., motion to reopen, continuance, or short brief). Setup labor may apply for a first-of-its-kind motion type; recurring motion types graduate to Template tier.",
+    turnaround: "1–3 business days",
     pricing: {
       minUsd: 250,
       maxUsd: 450,
-      note: "Motion / Short Filing per Monetization Strategy; setup surcharge applies on first use of a new motion type.",
+      note: "Setup surcharge may apply on first use of a new motion type.",
     },
   },
   {
