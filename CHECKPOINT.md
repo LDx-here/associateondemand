@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-05 (closeout pass: gates green, handoff ready)
+**Last updated:** 2026-07-05 (pass 5: strategic lock, SKU, disclaimer, deploy)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -204,6 +204,20 @@ for next pilot, not a code failure.
 **Deployed:** pass 3 (`ff25481`, `4b96f8a`) live on Fly + Vercel. Pass 4 pricing UI
 committed locally; deploy with `vercel deploy --prod` when ready.
 
+### Autonomous pass log — pass 5 (2026-07-05, strategic lock + day-one SKUs + disclaimer)
+
+**Strategic lock (2026-07-05)** — recorded in [`docs/strategy/README.md`](docs/strategy/README.md):
+
+1. External attorneys/firms may submit; **RMV only verifying attorney** (Phase 0–2).
+2. **RMV-verified deliverables only** year one — associate marketplace **Phase 3+**.
+3. **Jurisdiction-aware disclaimers** on intake; requesting attorney retains filing/client responsibility.
+4. **$99/mo self-serve AI tier** on roadmap — **do not ship** without bar counsel.
+5. **Day-one SKUs:** `aos-discretionary-brief`, `custom-motion`, `hearing-packet`, `research-memo` upsell.
+
+**Shipped:** hearing-packet catalog + launch SKUs; intake disclaimer checkbox; strategy docs under `docs/strategy/`; `npm run test:catalog`.
+
+**Verified & deployed:** pytest (22), test:catalog, next build, smoke-production, smoke-docker-e2e — PASS. Vercel prod → https://aod-next.vercel.app.
+
 ### Optional / external keys (not code blockers)
 
 - **Midpage / Fastcase** citator APIs — env keys enable live calls
@@ -266,26 +280,31 @@ cd services/api && python -m pytest tests/ -q
 cd web && npm run build
 ```
 
+## Strategic lock (2026-07-05)
+
+| # | Decision |
+|---|----------|
+| 1 | Pilot clients: external attorneys/firms submit; **RMV only verifier** until scaled |
+| 2 | Year-one: **RMV-verified deliverables** — marketplace **Phase 3+** |
+| 3 | Disclaimers: **jurisdiction/practice-area dependent** on intake |
+| 4 | $99/mo self-serve AI: roadmap only — **bar counsel gate** |
+| 5 | Day-one SKUs: **`aos-discretionary-brief`**, **`custom-motion`**, **`hearing-packet`**, **`research-memo`** |
+
+Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.md`](STRATEGY.md)
+
+---
+
 ## Last completed
 
-- **Pass 3 (deployed):** draft quality, structured case assessment prompts, deliverable-ready
-  PM routing, Ready for review auto-gate on assignment intake, auth-email runbook
-  (`ff25481`, `4b96f8a`).
-- **Pass 4 (local):** Phase 0 pricing on `/templates` and `/assignments/new`
-  (`deliverable-catalog.ts`, launch SKU badges, quote display).
-- **Closeout gates (2026-07-05):** smoke-production, pytest (22), next build, smoke-docker-e2e
-  — all PASS.
+- **Pass 5 (deployed):** strategic lock recorded; hearing-packet + motion launch SKUs; jurisdiction-aware intake disclaimer; strategy docs consolidated under `docs/strategy/`; production deploy + smoke pass.
+- **Pass 4:** Phase 0 pricing on `/templates` and `/assignments/new`.
+- **Pass 3 (deployed):** draft quality, Ready for review auto-gate (`ff25481`, `4b96f8a`).
 
 ## Next step
 
-1. **Deploy pass 4 pricing UI** — `cd web && vercel deploy --prod` (aliases to
-   https://aod-next.vercel.app).
-2. **Phase 0 B2B overflow launch (ops, not code)** — follow
-   [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md):
-   identify first pilot attorney, quote fee + turnaround off-platform, manual conflict
-   check, then intake at `/assignments/new?deliverable=aos-discretionary-brief`.
-3. **Optional env:** `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` on Vercel for assignment
-   email notifications.
+1. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief` (or `custom-motion`, `hearing-packet`).
+2. **Manual assignment E2E** — attorney login + Airtable PAT: submit assignment → PM dispatch → Ready for review lane (no scripted web E2E in repo).
+3. **Optional env:** `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` on Vercel for assignment email notifications.
 
 ## Blockers
 
@@ -294,9 +313,10 @@ All remaining blockers are **attorney-side** (no code work required):
 | Blocker | Owner | Notes |
 |---------|-------|-------|
 | Pilot attorney queue | La'Dajia | Which friendly external solos / RMV overflow matters first |
-| Bar counsel for B2B overflow model | La'Dajia | Required before self-serve AI tier; recommended before multi-state scale |
-| Primary bar / multi-state disclaimer set | La'Dajia | Provisional default MN; confirm target client states |
-| Supabase custom SMTP (Resend) | La'Dajia | Magic link / password reset — see `docs/runbooks/auth-email-setup.md` |
+| Bar counsel for B2B overflow + $99 self-serve tier | La'Dajia | Required before self-serve AI tier ships (Phase 3+ gate) |
+| Supabase custom SMTP (Resend) | La'Dajia | Magic link / password reset — **password sign-in works**; see `docs/runbooks/auth-email-setup.md` |
+| Assignment notify email on Vercel | La'Dajia | `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` unset — **in-app inbox works** |
+| Live Airtable assignment E2E | La'Dajia | Manual pilot verify — see Phase 0 runbook step 2–3 |
 
 Pre-existing, non-blocking: eslint circular-config crash; template catalog is static config.
 
@@ -307,11 +327,23 @@ cd /Users/ladaj/Developer/AssociateOnDemand
 git pull origin cursor/phase0-foundation
 bash scripts/smoke-production.sh
 cd services/api && .venv/bin/python -m pytest tests/ -q
-cd web && npm run build
-cd web && vercel deploy --prod   # pass 4 pricing UI
+cd web && npm run test:catalog && npm run build
 docker compose up -d --build && bash scripts/smoke-docker-e2e.sh
 cd web && npm run dev -- -p 3003
 ```
+
+## Resume here (attorney return)
+
+1. Open https://aod-next.vercel.app/templates — confirm four **Available now** SKUs with pricing.
+2. Open https://aod-next.vercel.app/assignments/new — confirm disclaimer checkbox required before submit.
+3. Run one live pilot: intake → inbox → export (requires Supabase login + Airtable PAT).
+4. If selling motion/hearing work: use `?deliverable=custom-motion` or `?deliverable=hearing-packet`.
+
+---
+
+## Last completed (archive)
+
+- **Closeout gates (2026-07-05):** smoke-production, pytest (22), next build, smoke-docker-e2e — all PASS (pre-pass-5).
 
 ## Quick links
 
