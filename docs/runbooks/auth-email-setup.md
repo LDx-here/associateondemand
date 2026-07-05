@@ -20,6 +20,25 @@ Confirmed **not** the cause on `aod-next.vercel.app` (checked 2026-07-04):
 
 That narrows it to the Supabase project's own mail configuration.
 
+If the UI shows the nested message:
+
+> Failed to send magic link: Failed to make POST request to
+> `.../auth/v1/magiclink` … Error sending magic link email
+
+…ignore the outer wrapper. Go straight to **Auth Logs** (below) — the `error`
+field on that row is the only line that tells you what to fix.
+
+### Auth Logs decision tree
+
+| Auth Log `error` (or substring) | Meaning | Fix |
+|----------------------------------|---------|-----|
+| `535` / `Authentication Failed` / `Invalid login` | Wrong SMTP password or username | Username must be literal `resend`; password = full Resend API key (`re_…`, Sending access). Regenerate key, paste, Save. |
+| `550` / `sender` / `not verified` / `domain` | Sender not on a verified Resend domain | Resend → Domains → **Verified**; Supabase sender = `name@that-domain.com`. Not `@gmail.com`, not `@supabase.co`. |
+| `rate limit` / `email rate limit exceeded` | Built-in Supabase mailer still active, or limit too low | Enable **Custom SMTP** (Step 2). After Resend works, raise Auth rate limits. |
+| `connection refused` / `timeout` / `dial tcp` | Wrong host/port or network block | Host `smtp.resend.com`, port **465** (SSL). Not 587 unless you know STARTTLS is required. |
+| `Error sending magic link email` only (no SMTP detail) | Custom SMTP off, or Save failed silently | Re-open SMTP Settings — confirm toggle **on**, all fields filled, click **Save**, retry magic link, re-read Auth Logs. |
+| Resend test: `onboarding@resend.dev` | Free tier without verified domain | That sender only delivers to **your Resend account email**. Verify a domain for production sign-in. |
+
 ---
 
 ## Step 1 — Read the real error (2 minutes)

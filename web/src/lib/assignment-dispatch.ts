@@ -6,8 +6,29 @@ export type AssignmentDispatchResult = {
   summary?: string;
   jobId?: string;
   complete?: boolean;
+  /** True when PM returned a reviewable memo/draft (metadata.full_memo). */
+  deliverableReady?: boolean;
+  documentLintPassed?: boolean;
   error?: string;
 };
+
+const BLOCKING_GAP_MARKERS = [
+  "blocker:",
+  "anthropic",
+  "llm unavailable",
+  "llm call failed",
+  "skill file missing",
+  "not wired yet",
+  "not configured",
+];
+
+function hasBlockingGaps(gaps: string[] | undefined): boolean {
+  if (!gaps?.length) return false;
+  return gaps.some((gap) => {
+    const lower = gap.toLowerCase();
+    return BLOCKING_GAP_MARKERS.some((marker) => lower.includes(marker));
+  });
+}
 
 /** Map assignment intake to a PM orchestrator instruction (keyword routing in pm_orchestrator). */
 export function buildAssignmentPmInstruction(
@@ -66,16 +87,28 @@ export async function dispatchAssignmentToPm(
       job_id?: string;
       complete?: boolean;
       detail?: string;
+      gaps?: string[];
+      metadata?: {
+        full_memo?: string;
+        routed_to?: string;
+        document_lint?: { passed?: boolean };
+      };
     };
     if (!resp.ok) {
       return { started: false, error: data.detail ?? `PM dispatch failed (${resp.status})` };
     }
+    const meta = data.metadata;
+    const hasWorkProduct = Boolean(meta?.full_memo?.trim());
+    const deliverableReady = hasWorkProduct && !hasBlockingGaps(data.gaps);
+    const lintMeta = meta?.document_lint;
     return {
       started: true,
-      agent: data.agent ?? data.agent_name ?? "pm_orchestrator",
+      agent: data.agent ?? data.agent_name ?? meta?.routed_to ?? "pm_orchestrator",
       summary: data.summary,
       jobId: data.job_id,
       complete: data.complete ?? true,
+      deliverableReady,
+      documentLintPassed: typeof lintMeta?.passed === "boolean" ? lintMeta.passed : undefined,
     };
   } catch (err) {
     return {

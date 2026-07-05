@@ -56,14 +56,54 @@ def fetch_matter_context(matter_code: str) -> dict[str, Any] | None:
         return None
 
 
+def format_assessment_data(raw: Any) -> str:
+    """Render structured case assessment for agent prompts (Case Assessment tab)."""
+
+    if not raw:
+        return ""
+    data: Any = raw
+    if isinstance(raw, str):
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            return f"- Case assessment (text): {raw[:1500]}"
+    if not isinstance(data, dict):
+        return f"- Case assessment: {str(data)[:1500]}"
+
+    field_labels = (
+        ("courtAgency", "Court/Agency"),
+        ("judgeOfficer", "Judge/Officer"),
+        ("currentStage", "Current stage"),
+        ("filingHistory", "Filing history"),
+        ("claimType", "Claim type"),
+        ("legalStandard", "Legal standard"),
+        ("deadlineRisk", "Deadline risk"),
+        ("overallAssessment", "Overall assessment"),
+        ("areasToStrengthen", "Areas to strengthen"),
+        ("claimElementsNotes", "Claim elements"),
+        ("documentsInFile", "Documents on file"),
+        ("vulnerability", "Vulnerability flags"),
+        ("attorneyReviewNeeded", "Attorney review needed"),
+        ("strategyQuestions", "Strategy questions"),
+    )
+    lines = ["## Case assessment (structured)"]
+    for key, label in field_labels:
+        val = data.get(key)
+        if val:
+            lines.append(f"- {label}: {val}")
+    actions = data.get("immediateActions")
+    if isinstance(actions, list):
+        acts = [str(a).strip() for a in actions if str(a).strip()]
+        if acts:
+            lines.append("- Immediate actions: " + "; ".join(acts))
+    return "\n".join(lines) if len(lines) > 1 else ""
+
+
 def format_matter_context(ctx: dict[str, Any] | None) -> str:
     if not ctx:
         return "No live matter row found in Airtable for this matter_id."
     lines = [f"- {k}: {v}" for k, v in ctx.items() if k != "assessment_data"]
-    assessment = ctx.get("assessment_data")
-    if assessment:
-        if isinstance(assessment, str):
-            lines.append(f"- assessment_data: {assessment[:2000]}")
-        else:
-            lines.append(f"- assessment_data: {json.dumps(assessment)[:2000]}")
+    assessment_block = format_assessment_data(ctx.get("assessment_data"))
+    if assessment_block:
+        lines.append(assessment_block)
     return "\n".join(lines)

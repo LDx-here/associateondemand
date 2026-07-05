@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from app.agents.pm_orchestrator import classify_instruction
-from app.models.agent_result import AgentResult
+from app.agents.pm_orchestrator import _agent_deliverable_ready, classify_instruction
+from app.models.agent_result import AgentResult, Uncertainty
 
 
 def test_classify_research_instruction() -> None:
@@ -51,3 +51,39 @@ def test_agent_result_is_valid_requires_gaps_or_uncertainty_when_incomplete() ->
         complete=True,
     )
     assert suspicious.is_valid() is False
+
+
+def test_deliverable_ready_with_disclosure_gaps() -> None:
+    result = AgentResult(
+        agent="drafting",
+        matter_id="AOD-1001",
+        anchor_facts=["x"],
+        anchor_law=["y"],
+        anchor_strategy=["z"],
+        anchor_risk=["r"],
+        anchor_next=["n"],
+        gaps=["Attorney review required before filing or client communication."],
+        uncertain=[
+            Uncertainty(item="draft", confidence=0.8, reason="LLM draft"),
+        ],
+        summary="Draft complete.",
+        metadata={"full_memo": "MEMORANDUM\n\nDraft body."},
+        complete=False,
+    )
+    assert _agent_deliverable_ready(result, "drafting") is True
+
+
+def test_deliverable_not_ready_without_memo() -> None:
+    result = AgentResult(
+        agent="drafting",
+        matter_id="AOD-1001",
+        anchor_facts=["x"],
+        anchor_law=["y"],
+        anchor_strategy=["z"],
+        anchor_risk=["r"],
+        anchor_next=["n"],
+        gaps=["ANTHROPIC_API_KEY not configured — drafting cannot run LLM path."],
+        summary="blocked",
+        complete=False,
+    )
+    assert _agent_deliverable_ready(result, "drafting") is False

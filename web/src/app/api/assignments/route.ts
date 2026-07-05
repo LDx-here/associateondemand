@@ -117,6 +117,18 @@ export async function POST(req: Request) {
           by: "System",
         });
         if (advanced) inboxItem = advanced;
+
+        if (dispatch.deliverableReady) {
+          const lintNote =
+            dispatch.documentLintPassed === false
+              ? " Document linter flagged issues — fix before export."
+              : "";
+          const reviewed = await updateAssignmentStatus(inboxItem.id, "Ready for review", {
+            note: `Associate draft ready for attorney sign-off (${dispatch.agent ?? "agent"}).${lintNote}`,
+            by: "System",
+          });
+          if (reviewed) inboxItem = reviewed;
+        }
       }
       notify = await notifyNewAssignment({
         matterId,

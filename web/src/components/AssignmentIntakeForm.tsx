@@ -123,7 +123,12 @@ export function AssignmentIntakeForm({
       }
 
       const matterId = data.matterId as string;
-      const dispatch = data.dispatch as { started?: boolean; agent?: string; error?: string } | null;
+      const dispatch = data.dispatch as {
+        started?: boolean;
+        agent?: string;
+        error?: string;
+        deliverableReady?: boolean;
+      } | null;
 
       if (files.length > 0) {
         const initialQueue: QueueItem[] = files.map((f) => ({ name: f.name, status: "pending" }));
@@ -147,11 +152,13 @@ export function AssignmentIntakeForm({
         }
       }
 
-      const dispatchNote = dispatch?.started
-        ? ` PM agent started (${dispatch.agent ?? "orchestrator"}). Check In progress lane.`
-        : dispatch?.error
-          ? " Saved to Submitted lane — agent dispatch will run when API is online."
-          : "";
+      const dispatchNote = dispatch?.deliverableReady
+        ? ` Draft ready for attorney review (${dispatch.agent ?? "agent"}). Check Ready for review lane.`
+        : dispatch?.started
+          ? ` PM agent started (${dispatch.agent ?? "orchestrator"}). Check In progress lane.`
+          : dispatch?.error
+            ? " Saved to Submitted lane — agent dispatch will run when API is online."
+            : "";
       showToast(`Assignment submitted for ${matterId}.${dispatchNote}`, "success");
       router.push("/inbox");
       router.refresh();

@@ -15,7 +15,7 @@ from app.drafting.citation_package import build_citation_package
 from app.drafting.classify import classify_draft_type
 from app.models.agent_result import AgentResult
 from app.services.document_linter import lint_document
-from app.services.matter_context import fetch_matter_context
+from app.services.matter_context import fetch_matter_context, format_assessment_data
 
 _DRAFTING_SKILL = resolve_skill_path("05-Drafting-SKILL.md", "AOD_DRAFTING_SKILL_PATH")
 _CITATION_SKILL = resolve_skill_path("08-Citation-Verification-SKILL.md", "AOD_CITATION_SKILL_PATH")
@@ -38,6 +38,12 @@ def _draft_extra_rules(doc_type: str) -> str:
         )
         rules.append("Use bracketed [FACT NEEDED] placeholders — never invent client facts.")
         rules.append("Never fabricate case quotes or page pinpoints.")
+    rules.extend(
+        [
+            "Voice: write like a careful senior associate — no chatbot filler ('Certainly', 'I'd be happy to'), no AI meta-commentary.",
+            "Lead with substance; use RMV immigration brief tone, not generic assistant prose.",
+        ]
+    )
     return "\n".join(f"- {r}" for r in rules)
 
 
@@ -50,7 +56,13 @@ def _draft_extra_context(doc_type: str, matter_id: str) -> str:
         parts.append("## Citation Verification Skill (mandatory for cited drafts)\n" + citation_skill[:12000])
     ctx = fetch_matter_context(matter_id)
     if ctx and ctx.get("assessment_data"):
-        parts.append("## Case assessment data\nUse assessment_data for factor analysis where present.")
+        assessment_block = format_assessment_data(ctx["assessment_data"])
+        if assessment_block:
+            parts.append(
+                "## Case assessment data\n"
+                "Weave structured assessment fields into factor analysis and argument sections.\n\n"
+                + assessment_block
+            )
     return "\n\n".join(parts)
 
 

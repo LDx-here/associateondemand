@@ -160,6 +160,40 @@ def execute_agent(agent: str, payload: dict[str, Any]) -> AgentResult:
     return run_research(matter_id, instruction, sources=payload.get("sources"))
 
 
+_BLOCKING_GAP_MARKERS = (
+    "blocker:",
+    "anthropic_api_key",
+    "llm unavailable",
+    "llm call failed",
+    "skill file missing",
+    "not wired yet",
+    "not configured",
+)
+
+
+def _has_blocking_gaps(result: AgentResult) -> bool:
+    for gap in result.gaps or []:
+        gl = gap.lower()
+        if any(marker in gl for marker in _BLOCKING_GAP_MARKERS):
+            return True
+    return False
+
+
+def _agent_deliverable_ready(result: AgentResult, target: str) -> bool:
+    """True when the agent produced a reviewable work product (BUILD_SPEC §8/§9).
+
+    Disclosure gaps such as 'Attorney review required' must not block persistence
+    or the Ready for review gate — only hard failures (missing LLM, stub agents).
+    """
+
+    if not result.is_valid() or _has_blocking_gaps(result):
+        return False
+    meta = result.metadata or {}
+    if target in {"research", "drafting", "legal_mapping", "mass_audit"}:
+        return bool(meta.get("full_memo"))
+    return result.complete
+
+
 def _persist_valid_result(result: AgentResult, target: str) -> None:
     """BUILD_SPEC §8/§9 — save agent work product to matter notes when complete."""
 
@@ -194,10 +228,11 @@ def _validate_and_route(
     """
 
     matter_id = result.matter_id or str(payload.get("matter_id") or "") or None
-    valid = result.is_valid()
-    if valid and result.complete:
+    if _agent_deliverable_ready(result, target):
         _persist_valid_result(result, target)
         return
+
+    valid = result.is_valid()
 
     if not valid:
         what_tried = result.summary or f"{target} agent completed without disclosing any gaps or uncertainties."

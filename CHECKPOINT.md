@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-03 (pass 2: auto PM dispatch + notify, deployed)
+**Last updated:** 2026-07-05 (pass 3: draft quality + Ready for review gate)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -142,6 +142,32 @@ research dispatch via Anthropic). Fly API redeployed
 (`flyctl deploy -a associateondemand-api`, both machines healthy) and Vercel
 web redeployed to production (`vercel deploy --prod`, aliased to
 https://aod-next.vercel.app).
+
+### Autonomous pass log — pass 3 (2026-07-05, draft quality + review gate)
+
+- **Deliverable-ready detection** — PM orchestrator no longer treats disclosure
+  gaps ("Attorney review required") as blocking incomplete work when
+  `metadata.full_memo` exists. Drafts/research memos persist to matter Notes
+  again instead of spurious agent-escalation inbox cards.
+- **Structured case assessment in prompts** — `format_assessment_data()` parses
+  the Case Assessment tab JSON into labeled fields (claim type, legal standard,
+  overall assessment, immediate actions) for drafting + all SKILL agents.
+- **Drafting voice rules** — anti-chatbot filler instructions in drafting
+  agent extra_rules; assessment data woven into AOS/discretionary context.
+- **Ready for review auto-gate** — assignment intake auto-advances to
+  **Ready for review** when PM dispatch returns a reviewable work product;
+  intake toast points attorney to the correct inbox lane. Linter failures still
+  advance but note "fix before export."
+- **Auth runbook** — Auth Logs decision tree committed in
+  `docs/runbooks/auth-email-setup.md`.
+
+Verified: `pytest` (22 passed), `next build` green, `scripts/smoke-production.sh` pass.
+
+**Remaining gaps for the next pass:**
+- Deploy Fly API + Vercel for pass 3 code (local tests green; production still on pass 2 deploy)
+- Supabase custom SMTP (Resend) — magic link still attorney-side config
+- Optional: `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` on Vercel
+- Template catalog static config; eslint circular-config crash (pre-existing)
 
 ### Optional / external keys (not code blockers)
 
