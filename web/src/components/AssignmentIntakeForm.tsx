@@ -11,7 +11,13 @@ import {
   type UploadResult,
 } from "@/components/IntakeUploadShared";
 import { useToast } from "@/components/Toast";
-import { DELIVERABLE_CATALOG, deliverableById } from "@/lib/deliverable-catalog";
+import {
+  DELIVERABLE_CATALOG,
+  deliverableById,
+  formatCatalogQuote,
+  isPhase0LaunchSku,
+  PHASE0_LAUNCH_SKU_IDS,
+} from "@/lib/deliverable-catalog";
 import type { AssignmentTier, Matter } from "@/lib/types";
 import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 
@@ -45,7 +51,9 @@ export function AssignmentIntakeForm({
   const [newCaseType, setNewCaseType] = useState("Immigration - Asylum");
   const [newCountry, setNewCountry] = useState("");
 
-  const [deliverableId, setDeliverableId] = useState(initialCatalogHit ? initialCatalogHit.id : CUSTOM_OPTION);
+  const [deliverableId, setDeliverableId] = useState(
+    initialCatalogHit ? initialCatalogHit.id : PHASE0_LAUNCH_SKU_IDS[0],
+  );
   const [customDeliverableName, setCustomDeliverableName] = useState("");
   const [customTier, setCustomTier] = useState<AssignmentTier>("Custom");
 
@@ -267,16 +275,36 @@ export function AssignmentIntakeForm({
             value={deliverableId}
             onChange={(e) => setDeliverableId(e.target.value)}
           >
-            {DELIVERABLE_CATALOG.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name} — {d.tier} tier
-              </option>
-            ))}
+            <optgroup label="Available now">
+              {DELIVERABLE_CATALOG.filter((d) => isPhase0LaunchSku(d.id)).map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name} — {formatCatalogQuote(d)}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="More deliverables (coming soon)">
+              {DELIVERABLE_CATALOG.filter((d) => !isPhase0LaunchSku(d.id)).map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name} — {d.tier} tier
+                </option>
+              ))}
+            </optgroup>
             <option value={CUSTOM_OPTION}>Custom / not listed…</option>
           </select>
         </label>
         {selectedCatalog ? (
-          <p className="text-xs text-slate-500">{selectedCatalog.description}</p>
+          <div className="space-y-1">
+            <p className="text-xs text-slate-500">{selectedCatalog.description}</p>
+            <p className="text-sm font-medium text-slate-800">{formatCatalogQuote(selectedCatalog)}</p>
+            {selectedCatalog.pricing?.note ? (
+              <p className="text-xs text-slate-500">{selectedCatalog.pricing.note}</p>
+            ) : null}
+            {!isPhase0LaunchSku(selectedCatalog.id) ? (
+              <p className="text-xs text-amber-800">
+                Coming soon for external clients — available for internal testing.
+              </p>
+            ) : null}
+          </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm">

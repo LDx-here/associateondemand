@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-05 (pass 3: draft quality + Ready for review gate)
+**Last updated:** 2026-07-05 (closeout pass: gates green, handoff ready)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -171,6 +171,39 @@ post-deploy smoke pass.
 - Optional: `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` on Vercel
 - Template catalog static config; eslint circular-config crash (pre-existing)
 
+### Autonomous pass log — pass 4 (2026-07-05, Phase 0 pricing surfaces)
+
+- **`deliverable-catalog.ts`** — `PHASE0_LAUNCH_SKU_IDS`, `formatPricingRange()`,
+  `formatCatalogQuote()`, `isPhase0LaunchSku()` helpers for client-facing quotes.
+- **`/templates`** — catalog cards show flat-fee range + turnaround (e.g.
+  `$750–$1,500 · 1–2 business days`); launch SKUs badge **Available now**; others
+  **Coming soon** (still linkable for internal use).
+- **`AssignmentIntakeForm`** — optgroups separate launch SKUs from coming-soon
+  catalog entries; selected deliverable shows quote + pricing note; default SKU is
+  `aos-discretionary-brief` when no query param.
+
+Verified: `next build` green (all routes).
+
+### Autonomous pass log — closeout (2026-07-05)
+
+Final verification before handoff:
+
+| Gate | Result |
+|------|--------|
+| `scripts/smoke-production.sh` | PASS (web auth gate, API health, PM research dispatch) |
+| `pytest tests/ -q` | 22 passed |
+| `npm run build` | PASS (37 routes) |
+| `scripts/smoke-docker-e2e.sh` | PASS (compose health, PM dispatch, intake upload) |
+
+**Assignment E2E:** No scripted web assignment→inbox lane test in repo. Unit coverage:
+`test_agents.py` (`_agent_deliverable_ready` → Ready for review auto-gate). Full intake →
+PM dispatch → Ready for review lane was verified manually against live Airtable in pass 1
+(2026-07-02); re-run requires attorney Airtable PAT + Supabase login — **manual verify**
+for next pilot, not a code failure.
+
+**Deployed:** pass 3 (`ff25481`, `4b96f8a`) live on Fly + Vercel. Pass 4 pricing UI
+committed locally; deploy with `vercel deploy --prod` when ready.
+
 ### Optional / external keys (not code blockers)
 
 - **Midpage / Fastcase** citator APIs — env keys enable live calls
@@ -233,31 +266,52 @@ cd services/api && python -m pytest tests/ -q
 cd web && npm run build
 ```
 
-## Commands to resume
+## Last completed
 
-```bash
-cd /Users/ladaj/Developer/AssociateOnDemand
-git pull origin cursor/phase0-foundation
-bash scripts/smoke-production.sh
-docker compose up -d --build
-cd web && npm run dev -- -p 3003
-```
+- **Pass 3 (deployed):** draft quality, structured case assessment prompts, deliverable-ready
+  PM routing, Ready for review auto-gate on assignment intake, auth-email runbook
+  (`ff25481`, `4b96f8a`).
+- **Pass 4 (local):** Phase 0 pricing on `/templates` and `/assignments/new`
+  (`deliverable-catalog.ts`, launch SKU badges, quote display).
+- **Closeout gates (2026-07-05):** smoke-production, pytest (22), next build, smoke-docker-e2e
+  — all PASS.
 
 ## Next step
 
-**Phase 0 B2B overflow launch** — sell first 1–3 paid matters using the existing intake → inbox → export flow with manual off-platform invoicing. Follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md). Launch SKUs: `aos-discretionary-brief` (+ optional `research-memo`). Provisional decisions locked in [`AssociateOnDemand_Implementation_Phasing.md`](AssociateOnDemand_Implementation_Phasing.md) (July 5, 2026 section).
-
-Immediate ops: deploy pass 3 code (Fly + Vercel) if not already live; resolve any **Blocked — needs user** items in phasing doc (pilot attorney queue, bar counsel, multi-state marketing) before scaling beyond pilot clients.
+1. **Deploy pass 4 pricing UI** — `cd web && vercel deploy --prod` (aliases to
+   https://aod-next.vercel.app).
+2. **Phase 0 B2B overflow launch (ops, not code)** — follow
+   [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md):
+   identify first pilot attorney, quote fee + turnaround off-platform, manual conflict
+   check, then intake at `/assignments/new?deliverable=aos-discretionary-brief`.
+3. **Optional env:** `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` on Vercel for assignment
+   email notifications.
 
 ## Blockers
+
+All remaining blockers are **attorney-side** (no code work required):
 
 | Blocker | Owner | Notes |
 |---------|-------|-------|
 | Pilot attorney queue | La'Dajia | Which friendly external solos / RMV overflow matters first |
 | Bar counsel for B2B overflow model | La'Dajia | Required before self-serve AI tier; recommended before multi-state scale |
 | Primary bar / multi-state disclaimer set | La'Dajia | Provisional default MN; confirm target client states |
-| Pass 3 deploy | Agent/dev | Local tests green; production may still be on pass 2 deploy |
 | Supabase custom SMTP (Resend) | La'Dajia | Magic link / password reset — see `docs/runbooks/auth-email-setup.md` |
+
+Pre-existing, non-blocking: eslint circular-config crash; template catalog is static config.
+
+## Commands to resume
+
+```bash
+cd /Users/ladaj/Developer/AssociateOnDemand
+git pull origin cursor/phase0-foundation
+bash scripts/smoke-production.sh
+cd services/api && .venv/bin/python -m pytest tests/ -q
+cd web && npm run build
+cd web && vercel deploy --prod   # pass 4 pricing UI
+docker compose up -d --build && bash scripts/smoke-docker-e2e.sh
+cd web && npm run dev -- -p 3003
+```
 
 ## Quick links
 

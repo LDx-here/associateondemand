@@ -2,7 +2,12 @@ import { FileCheck2, FlaskConical, Hammer } from "lucide-react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
-import { DELIVERABLE_CATALOG, type DeliverableCatalogEntry } from "@/lib/deliverable-catalog";
+import {
+  DELIVERABLE_CATALOG,
+  formatCatalogQuote,
+  isPhase0LaunchSku,
+  type DeliverableCatalogEntry,
+} from "@/lib/deliverable-catalog";
 import type { AssignmentTier } from "@/lib/types";
 import { btnPrimary } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
@@ -37,13 +42,30 @@ const TIER_META: Record<
 const TIER_ORDER: AssignmentTier[] = ["Template", "Research", "Custom"];
 
 function DeliverableCard({ entry }: { entry: DeliverableCatalogEntry }) {
+  const launchSku = isPhase0LaunchSku(entry.id);
   return (
-    <article className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <div>
+    <article
+      className={cn(
+        "flex flex-col gap-3 rounded-lg border bg-white p-4 shadow-sm",
+        launchSku ? "border-emerald-200 ring-1 ring-emerald-600/10" : "border-slate-200 opacity-90",
+      )}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <h3 className="text-sm font-semibold text-slate-900">{entry.name}</h3>
-        <p className="mt-1 text-sm text-slate-600">{entry.description}</p>
+        <span
+          className={cn(
+            "inline-flex shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset",
+            launchSku
+              ? "bg-emerald-50 text-emerald-800 ring-emerald-600/20"
+              : "bg-slate-50 text-slate-600 ring-slate-500/20",
+          )}
+        >
+          {launchSku ? "Available now" : "Coming soon"}
+        </span>
       </div>
-      <p className="text-xs font-medium text-slate-500">Typical turnaround: {entry.turnaround}</p>
+      <p className="text-sm text-slate-600">{entry.description}</p>
+      <p className="text-sm font-medium text-slate-800">{formatCatalogQuote(entry)}</p>
+      {entry.pricing?.note ? <p className="text-xs text-slate-500">{entry.pricing.note}</p> : null}
       <div className="mt-auto flex items-center justify-between gap-2 pt-2">
         {entry.skillDoc ? (
           <span className="text-[11px] text-slate-400">SKILL wired</span>
@@ -65,8 +87,8 @@ export default function TemplateCatalogPage() {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Deliverable catalog</h1>
           <p className="text-sm text-slate-600">
-            Browse template-ready deliverables, research &amp; audit work, and custom builds. Start an
-            assignment directly from any card.
+            Browse deliverables with flat-fee ranges and typical turnaround. Phase 0 launch SKUs are
+            available now; other catalog entries are coming soon. Start an assignment from any card.
           </p>
         </div>
         <Link href="/assignments/new" className={btnPrimary}>
