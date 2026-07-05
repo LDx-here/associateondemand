@@ -1,3 +1,5 @@
+### [2026-07-05] CHECKPOINT: pass 5 strategic lock, day-one SKUs, intake disclaimer, strategy docs, prod deploy
+
 ### [2026-07-05] CHECKPOINT: Closeout pass — all gates green (smoke/pytest/build/docker-e2e), pass 4 pricing committed, handoff ready for B2B pilot launch
 
 ### [2026-07-05] CHECKPOINT: Draft quality pass — structured case assessment prompts, deliverable-ready PM routing, Ready for review auto-gate on assignment intake
