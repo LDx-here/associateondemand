@@ -62,8 +62,8 @@ function parseIsoInText(text: string): string | undefined {
   if (iso) return iso[1];
   const slash = text.match(/\b(\d{1,2})[/.](\d{1,2})[/.](\d{2,4})\b/);
   if (slash) {
-    let m = parseInt(slash[1], 10);
-    let d = parseInt(slash[2], 10);
+    const m = parseInt(slash[1], 10);
+    const d = parseInt(slash[2], 10);
     let y = parseInt(slash[3], 10);
     if (y < 100) y += 2000;
     if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
