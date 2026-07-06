@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Activity, AlertCircle, Briefcase, CalendarClock, Inbox } from "lucide-react";
+import { Activity, AlertCircle, Briefcase, CalendarClock, FilePlus2, Inbox } from "lucide-react";
 
+import { GettingStartedBanner } from "@/components/GettingStartedBanner";
 import { EmptyState } from "@/components/EmptyState";
 import { DashboardCharts } from "@/components/DashboardCharts";
 import { KpiCard } from "@/components/KpiCard";
@@ -22,7 +23,7 @@ import {
   isDemoMode,
 } from "@/lib/data-store";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
-import { linkMatter } from "@/lib/ui-classes";
+import { btnPrimary, linkMatter } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
 
 function daysUntil(value: string | null | undefined, now = new Date()): number | null {
@@ -88,15 +89,26 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-slate-900">{greeting("La'Dajia", now)}</h1>
-        <p className="text-sm text-slate-600">{todayLabel}</p>
-        {demo ? (
-          <p className="mt-1 text-xs text-slate-500">
-            Showing sample data. Connect Airtable in Settings to load live matters.
-          </p>
-        ) : null}
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">{greeting("La'Dajia", now)}</h1>
+          <p className="text-sm text-slate-600">{todayLabel}</p>
+          {demo ? (
+            <p className="mt-1 text-xs text-slate-500">
+              Showing sample data. Connect Airtable in Settings to load live matters.
+            </p>
+          ) : null}
+        </div>
+        <Link
+          href="/assignments/new"
+          className={`${btnPrimary} inline-flex items-center gap-2 whitespace-nowrap`}
+        >
+          <FilePlus2 className="h-4 w-4" aria-hidden />
+          New assignment
+        </Link>
       </header>
+
+      <GettingStartedBanner />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Active matters" value={activeMatters.length} icon={Briefcase} />

@@ -1000,6 +1000,28 @@ export async function listAssessmentTemplatesFromAirtable(): Promise<DocumentRow
   }
 }
 
+export async function listFirmSampleDocumentsFromAirtable(): Promise<DocumentRow[]> {
+  const d = F.documents;
+  const formula = `FIND('firm_sample', {${d.category}})`;
+  try {
+    const records = await airtableListAll<RawFields>(TABLES.documents, { filterByFormula: formula });
+    return records.map((r) => mapDocument(r, "FIRM-TEMPLATES"));
+  } catch {
+    return [];
+  }
+}
+
+export async function countFirmMemoryPatternsFromAirtable(): Promise<number> {
+  const sp = F.strategyPatterns;
+  const formula = `OR({${sp.strategy_used}} = 'firm_memory', FIND('firm_memory', {${sp.fact_pattern}}))`;
+  try {
+    const records = await airtableListAll<RawFields>(TABLES.strategyPatterns, { filterByFormula: formula });
+    return records.length;
+  } catch {
+    return 0;
+  }
+}
+
 export async function registerAssessmentDocumentInAirtable(
   matterCode: string,
   payload: { title: string; category: string; airtableDocumentId?: string },

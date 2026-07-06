@@ -3,8 +3,9 @@ import type { DocumentRow, Matter } from "./types";
 /** Encoded in Documents.category — no schema migration required. */
 export const CASE_ASSESSMENT_CATEGORY = "case_assessment";
 export const ASSESSMENT_TEMPLATE_PREFIX = "assessment_template";
+export const FIRM_SAMPLE_PREFIX = "firm_sample";
 
-export type AssessmentDocumentRole = "case_assessment" | "assessment_template";
+export type AssessmentDocumentRole = "case_assessment" | "assessment_template" | "firm_sample";
 
 export type ParsedDocumentCategory = {
   role: AssessmentDocumentRole | "other";
@@ -26,6 +27,10 @@ export function encodeAssessmentTemplateCategory(practiceArea: string): string {
   return `${ASSESSMENT_TEMPLATE_PREFIX}:${practiceArea}`;
 }
 
+export function encodeFirmSampleCategory(practiceArea: string): string {
+  return `${FIRM_SAMPLE_PREFIX}:${practiceArea}`;
+}
+
 export function parseDocumentCategory(category: string): ParsedDocumentCategory {
   const normalized = (category ?? "").trim();
   if (!normalized) return { role: "other" };
@@ -38,6 +43,12 @@ export function parseDocumentCategory(category: string): ParsedDocumentCategory 
       practiceArea: normalized.slice(ASSESSMENT_TEMPLATE_PREFIX.length + 1),
     };
   }
+  if (normalized.startsWith(`${FIRM_SAMPLE_PREFIX}:`)) {
+    return {
+      role: "firm_sample",
+      practiceArea: normalized.slice(FIRM_SAMPLE_PREFIX.length + 1),
+    };
+  }
   return { role: "other" };
 }
 
@@ -47,6 +58,10 @@ export function isCaseAssessmentDocument(doc: Pick<DocumentRow, "category">): bo
 
 export function isAssessmentTemplateDocument(doc: Pick<DocumentRow, "category">): boolean {
   return parseDocumentCategory(doc.category).role === "assessment_template";
+}
+
+export function isFirmSampleDocument(doc: Pick<DocumentRow, "category">): boolean {
+  return parseDocumentCategory(doc.category).role === "firm_sample";
 }
 
 export function practiceAreaFromCaseType(caseType: string): string {

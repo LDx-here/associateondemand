@@ -10,6 +10,8 @@ import {
   getCaseAssessmentFromAirtable,
   listDocumentsFromAirtable,
   listAssessmentTemplatesFromAirtable,
+  listFirmSampleDocumentsFromAirtable,
+  countFirmMemoryPatternsFromAirtable,
   registerAssessmentDocumentInAirtable,
   listEventsForMatterFromAirtable,
   listInboxItemsFromAirtable,
@@ -48,8 +50,10 @@ import {
 import {
   ASSESSMENT_DOCUMENT_NOTE_TYPE,
   encodeAssessmentTemplateCategory,
+  encodeFirmSampleCategory,
   FIRM_TEMPLATE_MATTER_ID,
   isAssessmentTemplateDocument,
+  isFirmSampleDocument,
 } from "./assessment-documents";
 import type {
   AssignmentStatus,
@@ -654,6 +658,56 @@ export async function saveAssessmentTemplate(payload: {
     if (existingIdx >= 0) seed.documents[existingIdx] = doc;
     await persistSeed();
     return doc;
+  }
+  return registerAssessmentDocumentInAirtable(FIRM_TEMPLATE_MATTER_ID, {
+    title: payload.title,
+    category,
+    airtableDocumentId: payload.airtableDocumentId,
+  });
+}
+
+export type FirmMemoryStatus = {
+  templateCount: number;
+  sampleCount: number;
+  stylePreferenceCount: number;
+  configured: boolean;
+};
+
+export async function listFirmSamples(): Promise<DocumentRow[]> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    return seed.documents.filter(
+      (d) => d.matterId === FIRM_TEMPLATE_MATTER_ID || isFirmSampleDocument(d),
+    );
+  }
+  return listFirmSampleDocumentsFromAirtable();
+}
+
+export async function getFirmMemoryStatus(): Promise<FirmMemoryStatus> {
+  const templates = await listAssessmentTemplates();
+  const samples = await listFirmSamples();
+  const templateCount = templates.length;
+  const sampleCount = samples.length;
+  let stylePreferenceCount = 0;
+  if (!isDemoMode()) {
+    stylePreferenceCount = await countFirmMemoryPatternsFromAirtable();
+  }
+  const configured = templateCount > 0 || sampleCount > 0 || stylePreferenceCount > 0;
+  return { templateCount, sampleCount, stylePreferenceCount, configured };
+}
+
+export async function saveFirmSample(payload: {
+  title: string;
+  practiceArea: string;
+  airtableDocumentId?: string;
+}): Promise<DocumentRow> {
+  const category = encodeFirmSampleCategory(payload.practiceArea);
+  if (isDemoMode()) {
+    return addDocumentDemo(FIRM_TEMPLATE_MATTER_ID, {
+      title: payload.title,
+      category,
+      id: payload.airtableDocumentId,
+    });
   }
   return registerAssessmentDocumentInAirtable(FIRM_TEMPLATE_MATTER_ID, {
     title: payload.title,

@@ -20,7 +20,7 @@ import {
   mergeFactsForDispatch,
   type DraftingFactsPayload,
 } from "@/lib/practice-area-facts";
-import { FirmMemoryBadge } from "@/components/FirmMemoryBadge";
+import { FirmMemoryPrompt } from "@/components/FirmMemoryPrompt";
 import { PracticeAreaFactGuide } from "@/components/PracticeAreaFactGuide";
 import {
   DELIVERABLE_CATALOG,
@@ -29,6 +29,7 @@ import {
   formatPricingRange,
   isPhase0LaunchSku,
   isSampleDiscountEligible,
+  PHASE0_BILLING_NOTE,
   PHASE0_LAUNCH_SKU_IDS,
   sampleDiscountNote,
 } from "@/lib/deliverable-catalog";
@@ -327,7 +328,7 @@ export function AssignmentIntakeForm({
       <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="text-sm font-semibold text-slate-900">2. Deliverable &amp; tier</h2>
-          <FirmMemoryBadge compact />
+          <FirmMemoryPrompt compact />
         </div>
         <label className="block text-sm">
           <span className="text-slate-700">Deliverable type</span>
@@ -365,6 +366,8 @@ export function AssignmentIntakeForm({
             {discountNote ? <p className="text-xs text-violet-800">{discountNote}</p> : null}
             {selectedCatalog.pricing?.note ? (
               <p className="text-xs text-slate-500">{selectedCatalog.pricing.note}</p>
+            ) : isPhase0LaunchSku(selectedCatalog.id) ? (
+              <p className="text-xs text-slate-500">{PHASE0_BILLING_NOTE}</p>
             ) : null}
             {!isPhase0LaunchSku(selectedCatalog.id) ? (
               <p className="text-xs text-amber-800">

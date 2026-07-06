@@ -4,10 +4,12 @@ import type { LucideIcon } from "lucide-react";
 
 import { FirmAssessmentTemplates } from "@/components/FirmAssessmentTemplates";
 import { FirmMemoryBadge } from "@/components/FirmMemoryBadge";
+import { FirmMemorySetup } from "@/components/FirmMemorySetup";
 import {
   DELIVERABLE_CATALOG,
   formatCatalogQuote,
   isPhase0LaunchSku,
+  PHASE0_BILLING_NOTE,
   sampleDiscountNote,
   type DeliverableCatalogEntry,
 } from "@/lib/deliverable-catalog";
@@ -94,16 +96,24 @@ export default function TemplateCatalogPage() {
           <h1 className="text-2xl font-semibold text-slate-900">Deliverable catalog</h1>
           <p className="text-sm text-slate-600">
             Browse deliverables with flat-fee ranges and typical turnaround. Phase 0 launch SKUs are
-            available now; other catalog entries are coming soon. Start an assignment from any card.
+            available now; other catalog entries are coming soon. {PHASE0_BILLING_NOTE}
           </p>
-          <div className="mt-2">
-            <FirmMemoryBadge />
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <FirmMemoryBadge linked />
+            <Link
+              href="#firm-memory"
+              className="text-xs font-medium text-violet-800 underline-offset-2 hover:underline"
+            >
+              Set up Firm Memory →
+            </Link>
           </div>
         </div>
         <Link href="/assignments/new" className={btnPrimary}>
           New assignment
         </Link>
       </header>
+
+      <FirmMemorySetup />
 
       <FirmAssessmentTemplates />
 

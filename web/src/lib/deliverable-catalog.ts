@@ -17,6 +17,10 @@ export type DeliverablePricing = {
   sampleDiscountPercent?: number;
 };
 
+/** Phase 0 billing — no in-app Stripe/checkout until Phase 2. */
+export const PHASE0_BILLING_NOTE =
+  "Quoted flat fee — invoice after delivery (no in-app payment in Phase 0).";
+
 /** Phase 0 B2B overflow launch SKUs — immigration brief, motion, hearing packet, research upsell. */
 export const PHASE0_LAUNCH_SKU_IDS = [
   "aos-discretionary-brief",
@@ -67,7 +71,13 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
       "Adjustment-of-status discretionary factors brief. Upload the completed case assessment on the matter Documents tab (or fill quick facts), then the drafting agent produces a first-pass brief.",
     turnaround: "1-2 business days",
     skillDoc: "docs/constitution/05-Drafting-SKILL.md",
-    pricing: { minUsd: 750, maxUsd: 1500, sampleDiscountEligible: true, sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT },
+    pricing: {
+      minUsd: 750,
+      maxUsd: 1500,
+      note: PHASE0_BILLING_NOTE,
+      sampleDiscountEligible: true,
+      sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT,
+    },
   },
   {
     id: "citation-package",
@@ -86,7 +96,13 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
       "Full legal research memorandum with a multi-source citation table (gov + practice resources, Midpage/Fastcase when keys are configured). MEMORANDUM header, TO/FROM block, and DOCX export.",
     turnaround: "1-3 business days depending on scope",
     skillDoc: "docs/constitution/04-Research-Memo-SKILL.md",
-    pricing: { minUsd: 500, maxUsd: 900, sampleDiscountEligible: true, sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT },
+    pricing: {
+      minUsd: 500,
+      maxUsd: 900,
+      note: PHASE0_BILLING_NOTE,
+      sampleDiscountEligible: true,
+      sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT,
+    },
   },
   {
     id: "mass-audit",
@@ -114,7 +130,13 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
       "Organize exhibits, hearing binders, and supporting documents for immigration or trial hearings. Agent compiles from your fact packet and attachments; attorney verifies index, pagination, and filing compliance.",
     turnaround: "1–2 business days",
     skillDoc: "docs/constitution/05-Drafting-SKILL.md",
-    pricing: { minUsd: 500, maxUsd: 1250, sampleDiscountEligible: true, sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT },
+    pricing: {
+      minUsd: 500,
+      maxUsd: 1250,
+      note: PHASE0_BILLING_NOTE,
+      sampleDiscountEligible: true,
+      sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT,
+    },
   },
   {
     id: "custom-motion",
@@ -126,7 +148,7 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
     pricing: {
       minUsd: 250,
       maxUsd: 450,
-      note: "Setup surcharge may apply on first use of a new motion type.",
+      note: `Setup surcharge may apply on first use of a new motion type. ${PHASE0_BILLING_NOTE}`,
       sampleDiscountEligible: true,
       sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT,
     },

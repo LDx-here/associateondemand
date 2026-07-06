@@ -97,6 +97,29 @@ Optional: set `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` on Vercel so RMV gets
 2. Accept payment via ACH, check, or manual Stripe payment link.
 3. Track payment status in Airtable Note or external spreadsheet until Phase 2 automation.
 
+**Phase 0 invoicing setup (hands-off):** No in-app Stripe yet — use one of these until Phase 2:
+
+| Option | Setup | Phase 0 workflow |
+|--------|--------|------------------|
+| **Stripe Invoicing** | [dashboard.stripe.com](https://dashboard.stripe.com) → Invoicing → create customer + send invoice or **Payment Link** | Email link after deliverable approved; mark paid in Airtable Note |
+| **LawPay** (IOLTA-friendly) | [lawpay.com](https://www.lawpay.com) → trust/IOLTA account if holding client funds; otherwise operating account for flat B2B fees | Send LawPay payment request from dashboard |
+| **Manual** | ACH/check details on your letterhead | No third-party keys needed |
+
+**Phase 2 env vars (Vercel — do not set until integration ships):** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`. Phase 0 = manual invoice from Stripe/LawPay dashboard only.
+
+---
+
+## Consultation booking (`/book`)
+
+Low-volume scheduling for overflow prospects or scope calls:
+
+1. In Google Calendar: **Create** → **Appointment schedule** (or use [Cal.com](https://cal.com)).
+2. Copy the public booking URL.
+3. In Vercel → Project → Settings → Environment Variables, set `NEXT_PUBLIC_BOOKING_URL` to that URL (Production + Preview).
+4. Redeploy. The app route https://aod-next.vercel.app/book embeds the scheduler; sidebar link **Book consultation** appears in the app shell.
+
+If the env var is unset, `/book` shows setup instructions instead of a broken iframe.
+
 ---
 
 ## Checklist before accepting first paid matter

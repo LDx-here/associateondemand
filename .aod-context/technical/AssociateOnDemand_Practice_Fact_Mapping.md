@@ -19,7 +19,22 @@ For each project type, the fact mapping will identify:
 
 ## 3. Practice Area: Immigration Law
 
-### 3.1. Project Type: Asylum Brief Drafting
+### 3.1. Project Type: AOS Discretionary Brief
+
+**Objective**: To draft a persuasive brief supporting adjustment of status with discretionary-factor and waiver analysis (not an asylum persecution brief).
+
+| Fact Category | Specific Facts Required | Supporting Documents / Context |
+| :--- | :--- | :--- |
+| **Client Identity** | Full Name, Date of Birth, Nationality, A-Number | Passport/ID, I-94 |
+| **Qualifying Relative** | Relationship to U.S. citizen or LPR qualifying relative | Birth/marriage certificates, I-130 approval |
+| **Extreme Hardship** | Factors showing extreme hardship to qualifying relative if client removed | Medical records, financial affidavits, country conditions |
+| **Inadmissibility** | Grounds under INA §212(a) triggering waiver need | Prior decisions, criminal records, entry records |
+| **Negative Discretionary Factors** | Criminal history, prior denials, immigration violations | Court records, USCIS notices |
+| **Positive Discretionary Factors** | Family ties, community service, rehabilitation, length of residence | Letters of support, employment records |
+| **Prior Immigration History** | Prior AOS, visa, or removal filings relevant to waiver | Prior applications, EOIR records |
+| **Firm Style** | Preferred formatting, tone, citation style | Firm's Sample Briefs, Style Guide |
+
+### 3.2. Project Type: Asylum Brief Drafting
 
 **Objective**: To draft a persuasive legal brief supporting an asylum claim.
 

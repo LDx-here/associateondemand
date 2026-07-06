@@ -47,12 +47,17 @@ const aosPrompt = formatDraftingFactsForPrompt({
   ...aosFields,
   fields: {
     ...aosFields.fields,
-    persecutionNarrative: "Harassed by police in 2019",
-    protectedGround: "Political opinion",
-    countryConditions: "State Dept report on file",
+    qualifyingRelative: "U.S. citizen spouse — Jane Doe",
+    extremeHardshipFactors: "Spouse has chronic illness; sole caregiver for minor children",
+    inadmissibilityGrounds: "INA §212(a)(9)(B)(i) — unlawful presence",
+    adverseFactors: "Single misdemeanor DUI (2018), completed probation",
+    positiveEquities: "10 years residence, tax compliance, community volunteer",
   },
 });
-assert.match(aosPrompt, /Credibility Assessment/);
-assert.match(aosPrompt, /Country Conditions for Nexus/);
+assert.match(aosPrompt, /Qualifying relative/);
+assert.match(aosPrompt, /Extreme hardship/);
+assert.match(aosPrompt, /212\(a\)/);
+assert.doesNotMatch(aosPrompt, /Protected ground/);
+assert.doesNotMatch(aosPrompt, /Country Conditions for Nexus/);
 
 console.log("verify-practice-area-facts: OK");

@@ -26,6 +26,9 @@ for (const id of PHASE0_LAUNCH_SKU_IDS) {
   if (!entry.pricing) {
     console.error(`FAIL: launch SKU "${id}" should have pricing metadata`);
     failed++;
+  } else if (!entry.pricing.note?.includes("invoice after delivery")) {
+    console.error(`FAIL: launch SKU "${id}" should include Phase 0 billing note`);
+    failed++;
   }
   const quote = formatCatalogQuote(entry);
   if (!quote || quote.length < 3) {

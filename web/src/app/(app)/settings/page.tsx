@@ -82,6 +82,16 @@ export default async function SettingsPage() {
         </Row>
       </SettingsSection>
 
+      <SettingsSection title="Billing (Phase 0)">
+        <Row label="Payment">
+          Quoted flat fee — invoice after delivery. No in-app Stripe or checkout in Phase 0;
+          online payments planned for Phase 2.
+        </Row>
+        <Row label="How to pay">
+          RMV sends an invoice after deliverable approval (ACH, check, or manual payment link).
+        </Row>
+      </SettingsSection>
+
       <SettingsSection title="Privacy and security">
         <Row label="Document handling">{piiTierLabel(piiTier)}</Row>
         <Row label="Account">

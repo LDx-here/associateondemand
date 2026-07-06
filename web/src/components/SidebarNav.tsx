@@ -31,6 +31,7 @@ const NAV_ITEMS: SidebarNavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/matters", label: "Matters", icon: Briefcase },
   { href: "/assignments/new", label: "New assignment", icon: FilePlus2 },
+  { href: "/book", label: "Book consultation", icon: Calendar },
   { href: "/templates", label: "Templates", icon: LayoutTemplate },
   { href: "/contacts", label: "Contacts", icon: Users },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
