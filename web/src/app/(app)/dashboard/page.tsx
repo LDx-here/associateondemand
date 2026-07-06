@@ -1,21 +1,31 @@
 import Link from "next/link";
-import { Activity, AlertCircle, Briefcase, CalendarClock, FilePlus2, Inbox } from "lucide-react";
+import {
+  Activity,
+  Briefcase,
+  CheckCircle2,
+  Clock3,
+  FilePlus2,
+  Inbox,
+  Sparkles,
+} from "lucide-react";
 
 import { GettingStartedBanner } from "@/components/GettingStartedBanner";
 import { EmptyState } from "@/components/EmptyState";
 import { DashboardCharts } from "@/components/DashboardCharts";
 import { KpiCard } from "@/components/KpiCard";
-import { StatusBadge } from "@/components/StatusBadge";
 import {
   filingDeadlinesWithin,
+  firmMemoryCompleteness,
   greeting,
-  overdueTasks,
   inboxToActivityEntries,
+  overflowDashboardMetrics,
+  overflowWelcomeSubtitle,
   recentActivity,
   upcomingDeadlines,
 } from "@/lib/dashboard-aggregates";
 import {
   countUnreadInbox,
+  getFirmMemoryStatus,
   listAllNotes,
   listAllTasks,
   listInboxItems,
@@ -23,6 +33,7 @@ import {
   isDemoMode,
 } from "@/lib/data-store";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
+import { getSupabaseSessionUser } from "@/lib/supabase/server";
 import { btnPrimary, linkMatter } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
 
@@ -40,11 +51,28 @@ export default async function DashboardPage() {
   const demo = isDemoMode();
   const seed = demo ? await getMutableSeed() : null;
 
-  const activeMatters = matters.filter((m) => {
-    const s = m.status.toLowerCase();
-    return s === "active" || s === "open" || (s !== "closed" && s !== "archived");
-  });
-  const overdue = overdueTasks(tasks, now);
+  const session = await getSupabaseSessionUser();
+  const displayName =
+    session?.name?.split(" ")[0] ??
+    session?.email?.split("@")[0] ??
+    "Counsel";
+
+  let inboxItems: Awaited<ReturnType<typeof listInboxItems>> = [];
+  try {
+    inboxItems = await listInboxItems();
+  } catch {
+    inboxItems = seed?.inboxItems ?? [];
+  }
+
+  const overflow = overflowDashboardMetrics(inboxItems, now);
+  let firmMemory = { templateCount: 0, sampleCount: 0, stylePreferenceCount: 0, configured: false };
+  try {
+    firmMemory = await getFirmMemoryStatus();
+  } catch {
+    /* demo or offline */
+  }
+  const firmMemoryPct = firmMemoryCompleteness(firmMemory);
+
   const filingDeadlines14 = filingDeadlinesWithin(tasks, 14, now);
   let inboxUnread = 0;
   try {
@@ -57,7 +85,6 @@ export default async function DashboardPage() {
   const liveNotes = demo ? [] : await listAllNotes();
   let inboxAudit = seed?.auditLog ?? [];
   try {
-    const inboxItems = await listInboxItems();
     inboxAudit = [...inboxAudit, ...inboxToActivityEntries(inboxItems, 7, now)];
   } catch {
     /* keep seed audit log only */
@@ -91,8 +118,11 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{greeting("La'Dajia", now)}</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">{greeting(displayName, now)}</h1>
           <p className="text-sm text-slate-600">{todayLabel}</p>
+          <p className="mt-1 max-w-2xl text-sm text-slate-600">
+            {overflowWelcomeSubtitle(session?.email)}
+          </p>
           {demo ? (
             <p className="mt-1 text-xs text-slate-500">
               Showing sample data. Connect Airtable in Settings to load live matters.
@@ -111,15 +141,71 @@ export default async function DashboardPage() {
       <GettingStartedBanner />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Active matters" value={activeMatters.length} icon={Briefcase} />
-        <KpiCard label="Overdue tasks" value={overdue.length} hint="Past due, not complete" icon={AlertCircle} />
         <KpiCard
-          label="Upcoming deadlines"
-          value={filingDeadlines14}
-          hint="Filing deadlines, next 14 days"
-          icon={CalendarClock}
+          label="Hours saved this month"
+          value={overflow.hoursSavedThisMonth}
+          hint="Estimated from completed overflow deliverables"
+          icon={Clock3}
+          tone="positive"
         />
-        <KpiCard label="PM inbox unread" value={inboxUnread} hint="Awaiting attorney review" icon={Inbox} />
+        <KpiCard
+          label="Deliverables in review"
+          value={overflow.deliverablesInReview}
+          hint="Ready for your sign-off"
+          icon={Inbox}
+          tone={overflow.deliverablesInReview > 0 ? "attention" : "neutral"}
+        />
+        <KpiCard
+          label="Open assignments"
+          value={overflow.openAssignments}
+          hint="Submitted or in progress with RMV"
+          icon={Briefcase}
+          tone="neutral"
+        />
+        <KpiCard
+          label="Firm Memory profile"
+          value={`${firmMemoryPct}%`}
+          hint={
+            firmMemory.configured
+              ? "Style samples on file — overflow work matches your voice"
+              : "Upload samples on Templates to teach your firm's style"
+          }
+          icon={Sparkles}
+          tone={firmMemoryPct >= 66 ? "positive" : "attention"}
+        />
+      </section>
+
+      {!firmMemory.configured ? (
+        <section className="rounded-lg border border-amber-200 bg-amber-50/50 px-4 py-3 text-sm text-amber-950">
+          <strong>Firm Memory:</strong>{" "}
+          <Link href="/templates#firm-memory" className="font-medium underline-offset-2 hover:underline">
+            Set up your firm profile
+          </Link>{" "}
+          so overflow counsel drafts read like your in-house associate.
+        </section>
+      ) : null}
+
+      <section className="grid gap-4 sm:grid-cols-3">
+        <KpiCard
+          label="Active projects"
+          value={overflow.activeProjects}
+          hint="Assignments in your overflow pipeline"
+          icon={Briefcase}
+        />
+        <KpiCard
+          label="Completed this month"
+          value={overflow.completedThisMonth}
+          hint="Approved deliverables — capacity you did not have to draft"
+          icon={CheckCircle2}
+          tone="positive"
+        />
+        <KpiCard
+          label="Inbox items open"
+          value={inboxUnread}
+          hint="Assignments and alerts awaiting action"
+          icon={Inbox}
+          tone={inboxUnread > 0 ? "attention" : "neutral"}
+        />
       </section>
 
       <DashboardCharts statusCounts={statusCounts} caseTypeCounts={caseTypeCounts} />
@@ -127,6 +213,7 @@ export default async function DashboardPage() {
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-4 py-3">
           <h2 className="font-medium text-slate-900">Upcoming deadlines (next 30 days)</h2>
+          <p className="text-xs text-slate-500">Internal matter deadlines — not overflow assignment due dates.</p>
         </div>
         <table className="min-w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
@@ -144,9 +231,9 @@ export default async function DashboardPage() {
               <tr>
                 <td colSpan={6} className="px-4 py-2">
                   <EmptyState
-                    icon={CalendarClock}
-                    title="No deadlines yet."
-                    description="Deadlines from tasks will appear here when they are due in the next 30 days."
+                    icon={Clock3}
+                    title="No deadlines in the next 30 days."
+                    description="Matter task deadlines will appear here when scheduled."
                   />
                 </td>
               </tr>
@@ -158,7 +245,7 @@ export default async function DashboardPage() {
                   <tr
                     key={t.id}
                     className={`border-t border-slate-100 hover:bg-slate-50 ${
-                      filing ? "border-l-4 border-l-rose-500 font-semibold" : ""
+                      filing ? "border-l-4 border-l-amber-400" : ""
                     }`}
                   >
                     <td className="px-4 py-2">
@@ -179,65 +266,23 @@ export default async function DashboardPage() {
             )}
           </tbody>
         </table>
-      </section>
-
-      <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 px-4 py-3">
-          <h2 className="font-medium text-slate-900">Overdue tasks</h2>
-        </div>
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
-            <tr>
-              <th className="px-4 py-2">Matter</th>
-              <th className="px-4 py-2">Description</th>
-              <th className="px-4 py-2">Due</th>
-              <th className="px-4 py-2">Days late</th>
-              <th className="px-4 py-2">Priority</th>
-              <th className="px-4 py-2">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {overdue.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-sm text-slate-500">
-                  No overdue tasks. You are caught up.
-                </td>
-              </tr>
-            ) : (
-              overdue.map((t) => {
-                const d = daysUntil(t.dueDate, now);
-                return (
-                  <tr key={t.id} className="border-t border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-2">
-                      <Link className={linkMatter} href={`/matters/${t.matterId}`}>
-                        {t.matterId}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-2">{t.description}</td>
-                    <td className="px-4 py-2 tabular-nums">{formatDate(t.dueDate)}</td>
-                    <td className="px-4 py-2 text-rose-700 tabular-nums">{d === null ? "—" : Math.abs(d)}</td>
-                    <td className="px-4 py-2">{t.priority}</td>
-                    <td className="px-4 py-2">
-                      <StatusBadge status={t.status} />
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+        {filingDeadlines14 > 0 ? (
+          <p className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
+            {filingDeadlines14} filing deadline{filingDeadlines14 === 1 ? "" : "s"} in the next 14 days.
+          </p>
+        ) : null}
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-4 py-3">
           <h2 className="font-medium text-slate-900">Recent activity</h2>
-          <p className="text-xs text-slate-500">Last 7 days across notes, completed tasks, and agent actions.</p>
+          <p className="text-xs text-slate-500">Last 7 days — notes, completed tasks, and overflow workflow.</p>
         </div>
         {activity.length === 0 ? (
           <EmptyState
             icon={Activity}
             title="No recent activity yet."
-            description="Notes, completed tasks, and agent actions from the last week will show here."
+            description="Submit an assignment or upload a case assessment to get started."
           />
         ) : (
           <ol className="divide-y divide-slate-100">

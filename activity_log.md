@@ -104,7 +104,10 @@
 
 - **2026-07-06:** Restored CI lint as blocking gate; added /book route, dashboard New assignment CTA, Phase 0 invoicing/booking runbook notes; deployed Vercel prod (964d99c).
 
-- **2026-07-06 (pass 13):** Fixed AOS discretionary brief intake (waiver/equities not asylum); Firm Memory setup on `/templates#firm-memory`; Phase 0 billing honesty; overflow counsel user journey doc + dashboard banner; deployed Fly + Vercel.
+- **2026-07-06 (pass 14):** Master Roadmap Phase 1 — integrated strategy docs, Site Reviewer Agent, nav streamlining, dashboard relief KPIs, context-aware Associate panel; deployed Fly + Vercel.
+- **Files Affected:** `.aod-context/`, `SidebarNav.tsx`, `dashboard/page.tsx`, `CommandPanel.tsx`, `GettingStartedBanner.tsx`, `KpiCard.tsx`, `dashboard-aggregates.ts`, `AppShell.tsx`, `inbox/page.tsx`, `docs/runbooks/site-reviewer-agent.md`, `.cursor/rules/site-reviewer.mdc`, `CHECKPOINT.md`
+- **Command Executed:** `pytest`, `npm run build`, `scripts/smoke-production.sh`, `flyctl deploy`, `vercel deploy --prod`
+- **Reason/Context:** Strategy partner product-completion package; execute Master Implementation Roadmap Phase 1 UX directives.
 - **Files Affected:** `practice-area-facts.ts`, `deliverable-catalog.ts`, `FirmMemorySetup.tsx`, `FirmMemoryPrompt.tsx`, `GettingStartedBanner.tsx`, `templates/page.tsx`, `settings/page.tsx`, `api/firm-memory`, `api/firm-samples`, `docs/runbooks/overflow-counsel-user-journey.md`, `CHECKPOINT.md`
 - **Command Executed:** `pytest`, `npm run test:catalog`, `test:facts`, `test:assessment-docs`, `npm run build`, `scripts/smoke-production.sh`, `flyctl deploy`, `vercel deploy --prod`
 - **Reason/Context:** User feedback on Stripe honesty, Firm Memory entry point, AOS fact mapping, and overflow counsel user journey clarity.

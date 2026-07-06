@@ -20,10 +20,10 @@ export default async function InboxPage() {
     <div className="space-y-8">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">PM Inbox</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">Inbox</h1>
           <p className="text-sm text-slate-600">
-            Assignment Kanban tracks deliverables from intake through sign-off. Agent alerts below surface
-            gaps that need a workflow action — not a comment thread.
+            Track overflow deliverables from submission through RMV verification and your sign-off. Agent
+            alerts below surface gaps that need a workflow action — not a comment thread.
           </p>
         </div>
         <Link href="/assignments/new" className={btnPrimary}>

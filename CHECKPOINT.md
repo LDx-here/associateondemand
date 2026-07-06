@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-06 (EDT)  
+**Last updated:** 2026-07-06 (EDT) — pass 14  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -202,6 +202,29 @@ PM dispatch → Ready for review lane was verified manually against live Airtabl
 for next pilot, not a code failure.
 
 **Deployed:** pass 3 (`ff25481`, `4b96f8a`), pass 5, **pass 6**, **pass 7**, **pass 8**, **pass 9**, and **pass 10** (2026-07-06) live on Fly + Vercel.
+
+### Autonomous pass log — pass 14 (2026-07-06, Master Roadmap Phase 1 UX)
+
+Strategy partner product-completion package integrated; Site Reviewer Agent established; Phase 1 roadmap executed.
+
+- **`.aod-context/`** — Master Implementation Roadmap → `strategy/`; Site Reviewer Instructions → `agent/`; README updated (Deep UX Audit noted pending).
+- **Site Reviewer Agent** — `docs/runbooks/site-reviewer-agent.md` + `.cursor/rules/site-reviewer.mdc` (checklist: relief messaging, nav, Firm Memory, no false Stripe, overflow journey).
+- **Navigation** — primary: Dashboard, New assignment, Inbox, Matters, Templates; secondary collapsed under “More tools”; Inbox renamed from PM Inbox.
+- **Dashboard relief reframe** — Hours saved, Deliverables in review, Open assignments, Firm Memory %; removed overdue KPI/table; calmer amber/green tones; session-aware welcome.
+- **Getting Started** — single 4-step card (Firm Memory → Assignment → Assessment → Review).
+- **Associate / Command panel** — matter title + deliverable status; case-type suggested prompts; “What would you like RMV to work on?”
+- **Messaging** — AppShell tagline “Overflow counsel · capacity relief”; inbox copy overflow-focused.
+
+Verified: `pytest` (30 passed), `next build`, `scripts/smoke-production.sh` PASS.
+
+**Deployed 2026-07-06:** pass 14 — Fly API + Vercel prod.
+
+**Deferred (roadmap):**
+- Phase 2 — chat-centric Intelligent Intake + Strong Reader prefill
+- Phase 3 — Firm Memory depth / style QC
+- Phase 4 — Stripe + client portal
+- Deep UX Audit standalone doc (now in `.aod-context/strategy/`)
+- Full onboarding wizard (interactive multi-step vs 4-step card)
 
 ### Autonomous pass log — pass 11 (2026-07-06, B2B Overflow Counsel pivot)
 
@@ -413,6 +436,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 14 (deployed 2026-07-06):** Master Roadmap Phase 1 — nav streamlining, dashboard relief metrics, context-aware Associate panel, Site Reviewer Agent + strategy docs in `.aod-context/`.
 - **Pass 13 (deployed 2026-07-06):** AOS intake schema fix, Firm Memory setup on `/templates#firm-memory`, Phase 0 billing honesty (no Stripe UI), overflow counsel user journey doc + dashboard banner.
 - **Pass 12 (deployed 2026-07-06):** assessment-as-document UX — Documents tab upload path, firm templates on `/templates`, OCR feeds agent prompts; Assessment tab removed.
 - **Pass 11 (deployed 2026-07-06):** B2B Overflow Counsel pivot — `.aod-context/` integration, intelligent intake v2 (deliverable-aware facts), Firm Memory v1, sample discount on intake.
@@ -427,9 +451,10 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Manual verify pass 13** — `/templates#firm-memory` setup; `/assignments/new?deliverable=aos-discretionary-brief` AOS fields; `/settings` billing copy; dashboard Getting started banner.
-2. **Manual verify pass 12** — on `/matters/AOD-1001` → **Documents** tab → **Upload case assessment** with any PDF; confirm chip + extracted facts; submit assignment and verify draft uses OCR block.
+1. **Manual verify pass 14** — dashboard relief KPIs; sidebar primary vs More tools; Associate panel on `/matters/AOD-1001`; Getting Started 4-step card; Inbox label (not PM Inbox).
+2. **Site Reviewer cycle** — run checklist in `docs/runbooks/site-reviewer-agent.md` after next UI change.
 3. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md) and [`docs/runbooks/overflow-counsel-user-journey.md`](docs/runbooks/overflow-counsel-user-journey.md): first pilot attorney, off-platform quote + conflict check.
+4. **Roadmap Phase 2** — Intelligent Intake Engine (chat-centric + Strong Reader prefill) per `.aod-context/strategy/AssociateOnDemand_Master_Implementation_Roadmap.md` §4.
 
 ## Blockers
 

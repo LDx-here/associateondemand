@@ -1,6 +1,9 @@
 import type { AuditLogEntry, Matter, Note, Task } from "./types";
 import type { InboxItem } from "./airtable/queries";
 
+/** Rough hours saved per approved overflow deliverable (capacity relief metric). */
+const HOURS_SAVED_PER_DELIVERABLE = 4;
+
 export function overdueTasks(tasks: Task[], today = new Date()): Task[] {
   return tasks.filter((t) => {
     if (t.status === "Done" || !t.dueDate) return false;
@@ -54,6 +57,56 @@ export function greeting(name = "La'Dajia", now = new Date()): string {
   if (hour < 12) return `Good morning, ${name}`;
   if (hour < 17) return `Good afternoon, ${name}`;
   return `Good evening, ${name}`;
+}
+
+/** Overflow-counsel dashboard KPIs — relief framing (Master Roadmap Phase 1). */
+export function overflowDashboardMetrics(items: InboxItem[], now = new Date()) {
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const assignments = items.filter((item) => item.kind === "assignment");
+
+  const approvedThisMonth = assignments.filter((item) => {
+    if (item.status !== "Approved") return false;
+    const resolvedAt = item.resolvedAt ?? item.createdAt;
+    if (!resolvedAt) return false;
+    return new Date(resolvedAt) >= monthStart;
+  });
+
+  const deliverablesInReview = assignments.filter((item) => item.status === "Ready for review").length;
+  const openAssignments = assignments.filter((item) =>
+    ["Submitted", "In progress", "Returned"].includes(item.status),
+  ).length;
+
+  return {
+    hoursSavedThisMonth: approvedThisMonth.length * HOURS_SAVED_PER_DELIVERABLE,
+    deliverablesInReview,
+    openAssignments,
+    completedThisMonth: approvedThisMonth.length,
+    activeProjects: assignments.filter((item) =>
+      ["Submitted", "In progress", "Ready for review", "Returned"].includes(item.status),
+    ).length,
+  };
+}
+
+/** Firm Memory profile completeness (0–100) for dashboard CTA. */
+export function firmMemoryCompleteness(status: {
+  templateCount: number;
+  sampleCount: number;
+  stylePreferenceCount: number;
+}): number {
+  let score = 0;
+  if (status.templateCount > 0) score += 34;
+  if (status.sampleCount > 0) score += 33;
+  if (status.stylePreferenceCount > 0) score += 33;
+  return Math.min(100, score);
+}
+
+/** Subtitle for overflow partner vs RMV internal (email-domain heuristic). */
+export function overflowWelcomeSubtitle(email?: string | null): string {
+  const domain = email?.split("@")[1]?.toLowerCase() ?? "";
+  if (domain.includes("recovermyvalue") || domain.includes("rmv")) {
+    return "Your overflow counsel queue — verified deliverables for partner firms.";
+  }
+  return "Capacity relief from verified overflow counsel — submit assignments, review deliverables, sign off.";
 }
 
 /** Map PM Inbox rows into recent-activity agent entries (BUILD_SPEC §7.1). */

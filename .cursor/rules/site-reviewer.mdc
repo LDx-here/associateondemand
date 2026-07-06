@@ -1,0 +1,34 @@
+---
+description: Site Reviewer Agent — read UX audit themes + Master Roadmap before UI changes; enforce overflow counsel PM checklist.
+alwaysApply: false
+globs:
+  - web/src/**/*.tsx
+  - web/src/**/*.ts
+  - .aod-context/**
+---
+
+# Site Reviewer Agent
+
+Before **UI, dashboard, navigation, intake, or messaging** changes:
+
+1. Read [`.aod-context/strategy/AssociateOnDemand_Master_Implementation_Roadmap.md`](../../.aod-context/strategy/AssociateOnDemand_Master_Implementation_Roadmap.md) (Phase 1 for current UX).
+2. Read [`.aod-context/strategy/AssociateOnDemand_Deep_UX_Audit.md`](../../.aod-context/strategy/AssociateOnDemand_Deep_UX_Audit.md).
+3. Read [`.aod-context/agent/AssociateOnDemand_Site_Reviewer_Agent_Instructions.md`](../../.aod-context/agent/AssociateOnDemand_Site_Reviewer_Agent_Instructions.md).
+4. Follow the checklist in [`docs/runbooks/site-reviewer-agent.md`](../../docs/runbooks/site-reviewer-agent.md).
+
+## Checklist (must not regress)
+
+- **Relief / capacity** — not stress-first metrics or “marketplace” language
+- **Navigation** — primary: Dashboard, New assignment, Inbox, Matters, Templates; secondary collapsed
+- **Firm Memory** — `/templates#firm-memory` entry + dashboard CTA when empty
+- **No false Stripe** — Phase 0 offline invoicing copy only
+- **Overflow journey** — 4-step Getting Started (Firm Memory → Assignment → Assessment → Review)
+- **Associate panel** — matter + deliverable context; “What would you like RMV to work on?”
+
+## Do not rebuild (verify shipped)
+
+Firm Memory wizard, Documents assessment upload, AOS discretionary facts, sample discount, Phase 0 billing honesty.
+
+## Persona lock
+
+Build **overflow counsel / capacity relief** for external firms; RMV verifies year one. Associate marketplace is Phase 3+ only.
