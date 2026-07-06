@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-05 (pass 6: editable agent output + skill creation)
+**Last updated:** 2026-07-06 (pass 7: assignment-lifecycle hardening + CI lint fixed)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -212,6 +212,74 @@ committed locally; deploy with `vercel deploy --prod` when ready.
 
 Verified: `pytest` (26 passed), `next build` (40 routes incl. agent-output, notes PATCH, skills).
 
+### Autonomous pass log — pass 7 (2026-07-06, scheduled cron pass: assignment lifecycle + CI green)
+
+Ran the Mon/Thu Cursor Automation per `docs/runbooks/autonomous-agent-pass.md` on
+branch `cursor/assignment-intake-workflow-4974` (base `cursor/phase0-foundation`).
+Re-verified the three priority surfaces (assignment intake, inbox review workflow,
+template catalog — all shipped pass 1, 2026-07-02) end to end, then closed two
+concrete gaps found during the pass:
+
+- **DRY'd the assignment state machine** — `lib/airtable/queries.ts` and
+  `lib/demo-store-mutable.ts` each kept their own copy of the
+  `Submitted → In progress → Ready for review → Returned/Approved`
+  `ASSIGNMENT_TRANSITIONS` table. Extracted to `lib/assignment-lifecycle.ts` as
+  the single source of truth for both stores.
+- **Closed the "no scripted assignment→inbox lane test" gap** (flagged in the
+  closeout pass and pass-4/5 remaining-gaps notes) — added
+  `scripts/verify-assignment-lifecycle.mjs` (`npm run test:assignment-lifecycle`,
+  bundled into a new `npm test`): happy-path lane order, the Returned → In
+  progress "Resume work" loop, all seven illegal transitions the
+  `/api/inbox/[itemId]/status` route must 409 on, the Approved terminal-state
+  invariant, and a catalog/tier cross-check. No live Airtable or network access
+  required.
+- **Fixed the eslint flat-config crash that had failed every CI run since early
+  July** (`TypeError: Converting circular structure to JSON` — `FlatCompat`
+  re-wrapping `eslint-plugin-react`'s legacy config introduced a self-reference
+  under ESLint 9.39). Switched `eslint.config.mjs` to import
+  `eslint-config-next/core-web-vitals` + `eslint-config-next/typescript`
+  directly — both are real flat-config arrays in `eslint-config-next@16`, no
+  compat shim needed. This unmasked 49 real lint errors, all fixed:
+  - Renamed `useDemoMode` → `isDemoMode` (`lib/airtable/client.ts`, ~20 call
+    sites) — it's a plain env-var check, not a hook, and the `use` prefix was
+    tripping `react-hooks/rules-of-hooks` everywhere it was called from
+    server components/API routes.
+  - `AgentResultPanel` / `EditableOutputMemo` each had a `useEffect` that only
+    copied an incoming prop into local editable state — replaced with the
+    React-recommended "adjust state during render when a prop changes"
+    pattern to fix `react-hooks/set-state-in-effect`.
+  - Two `prefer-const` fixes in `lib/task-detection.ts`.
+  - `npm run lint` now exits 0 (6 harmless pre-existing warnings only, e.g.
+    TanStack Table memoization notice, a couple of unused-var warnings).
+    **CI is fully green for the first time in weeks** — verified via
+    `gh run view` on the pushed branch (`api` + `web` jobs both ✓).
+
+**Verified:** `pytest` (26 passed), `npm run test:catalog` + new
+`npm run test:assignment-lifecycle`, `npm run lint` (0 errors), `npm run build`
+(all 40 routes), `scripts/smoke-production.sh` (web auth gate, API health, PM
+research dispatch via Anthropic — ran 3x during this pass, passed 2x; one run
+hit a transient ~85s timeout on the Anthropic-backed PM dispatch call under
+back-to-back load, not a code regression, confirmed by an immediate clean
+re-run).
+
+**Deploy:** **not executed this pass** — this Cloud Agent sandbox has no
+`flyctl`/`vercel` CLIs and no `FLY_API_TOKEN`/`VERCEL_TOKEN` in its
+environment, so `flyctl deploy -a associateondemand-api` and
+`vercel deploy --prod` from the end-of-pass checklist could not run here.
+This pass only touched `web/src/lib`, `web/src/components`,
+`web/eslint.config.mjs`, and test scripts — no API changes — so the Fly
+service needs no redeploy for this pass's changes to take effect; the web
+changes need `vercel deploy --prod` (or a merge to `cursor/phase0-foundation`
+picked up by whatever normally triggers the Vercel deploy) from a session with
+Vercel credentials before attorneys see them live. Everything is committed and
+pushed to `cursor/assignment-intake-workflow-4974`.
+
+**Remaining gaps for the next pass:**
+- Deploy pass 7 to Vercel (web-only; no Fly changes)
+- Template catalog is still a static config, not read from Airtable — fine for now
+- Live Airtable assignment E2E still needs an attorney session (Supabase login + Airtable PAT) — see `docs/runbooks/phase0-b2b-overflow-launch.md`
+- 6 pre-existing lint warnings (TanStack Table incompatible-library notice, a few unused vars/props, one missing-dep) — non-blocking, left as-is to keep this pass's diff focused
+
 ### Autonomous pass log — pass 5 (2026-07-05, strategic lock + day-one SKUs + disclaimer)
 
 **Strategic lock (2026-07-05)** — recorded in [`docs/strategy/README.md`](docs/strategy/README.md):
@@ -304,6 +372,7 @@ Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.m
 
 ## Last completed
 
+- **Pass 7 (2026-07-06, pushed to `cursor/assignment-intake-workflow-4974`, not yet deployed):** DRY'd assignment lifecycle into `lib/assignment-lifecycle.ts`; added scripted `npm run test:assignment-lifecycle`; fixed the eslint flat-config crash that had failed CI for weeks + all 49 real lint errors it was masking (`useDemoMode` → `isDemoMode` rename, two `setState`-in-effect fixes, two `prefer-const` fixes). CI (`api` + `web`) green for the first time in weeks.
 - **Pass 6:** bidirectional agent output editing (Notes tab + Command panel) + Save as skill → Strategy Patterns.
 - **Pass 5 (deployed):** strategic lock recorded; hearing-packet + motion launch SKUs; jurisdiction-aware intake disclaimer; strategy docs consolidated under `docs/strategy/`; production deploy + smoke pass.
 - **Pass 4:** Phase 0 pricing on `/templates` and `/assignments/new`.
@@ -311,9 +380,10 @@ Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.m
 
 ## Next step
 
-1. **Deploy pass 6** — `flyctl deploy` + `vercel deploy --prod`; manual verify: run agent on matter → Edit output → Save → confirm Notes tab; Save as skill → check Airtable Strategy Patterns.
-2. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief` (or `custom-motion`, `hearing-packet`).
-3. **Manual assignment E2E** — attorney login + Airtable PAT: submit assignment → PM dispatch → Ready for review lane (no scripted web E2E in repo).
+1. **Merge/deploy pass 7** — merge `cursor/assignment-intake-workflow-4974` into `cursor/phase0-foundation`, then `vercel deploy --prod` (web-only change this pass; no Fly redeploy needed). Requires a session with Vercel credentials — not available in the Cloud Agent sandbox that produced this pass.
+2. **Deploy pass 6** (still outstanding if not already done) — `flyctl deploy` + `vercel deploy --prod`; manual verify: run agent on matter → Edit output → Save → confirm Notes tab; Save as skill → check Airtable Strategy Patterns.
+3. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief` (or `custom-motion`, `hearing-packet`).
+4. **Manual assignment E2E** — attorney login + Airtable PAT: submit assignment → PM dispatch → Ready for review lane (state-machine logic now has scripted coverage via `npm run test:assignment-lifecycle`; the live Airtable round-trip still needs a manual pilot run).
 
 ## Blockers
 
@@ -326,8 +396,9 @@ All remaining blockers are **attorney-side** (no code work required):
 | Supabase custom SMTP (Resend) | La'Dajia | Magic link / password reset — **password sign-in works**; see `docs/runbooks/auth-email-setup.md` |
 | Assignment notify email on Vercel | La'Dajia | `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` unset — **in-app inbox works** |
 | Live Airtable assignment E2E | La'Dajia | Manual pilot verify — see Phase 0 runbook step 2–3 |
+| Vercel deploy of pass 7 | La'Dajia | Cloud Agent sandbox has no `vercel`/`flyctl` CLI or `VERCEL_TOKEN`/`FLY_API_TOKEN` — code is pushed and CI-green on `cursor/assignment-intake-workflow-4974`, needs `vercel deploy --prod` from a session with credentials |
 
-Pre-existing, non-blocking: eslint circular-config crash; template catalog is static config.
+Pre-existing, non-blocking: template catalog is static config. (eslint circular-config crash **fixed in pass 7** — `npm run lint` now exits 0.)
 
 ## Commands to resume
 
