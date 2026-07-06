@@ -1,6 +1,7 @@
 import { readFile, writeFile } from "fs/promises";
 import path from "path";
 
+import { isValidAssignmentTransition } from "./assignment-lifecycle";
 import type { AssignmentStatus, AssignmentTier, DevSeed, InboxItem, LegalElementRow, Note, Task } from "./types";
 
 let cache: DevSeed | null = null;
@@ -96,14 +97,6 @@ export async function updateLegalElement(
   return row;
 }
 
-const ASSIGNMENT_TRANSITIONS: Record<AssignmentStatus, AssignmentStatus[]> = {
-  Submitted: ["In progress"],
-  "In progress": ["Ready for review"],
-  "Ready for review": ["Approved", "Returned"],
-  Returned: ["In progress"],
-  Approved: [],
-};
-
 export async function listInboxItemsDemo(): Promise<InboxItem[]> {
   const seed = await getMutableSeed();
   return [...(seed.inboxItems ?? [])].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
@@ -162,8 +155,7 @@ export async function updateAssignmentStatusDemo(
   const seed = await getMutableSeed();
   const item = (seed.inboxItems ?? []).find((i) => i.id === itemId);
   if (!item) return null;
-  const allowed = ASSIGNMENT_TRANSITIONS[item.status as AssignmentStatus];
-  if (!Array.isArray(allowed) || !allowed.includes(nextStatus)) {
+  if (!isValidAssignmentTransition(item.status, nextStatus)) {
     throw new Error(`Cannot move assignment from "${item.status}" to "${nextStatus}"`);
   }
   const now = new Date().toISOString();

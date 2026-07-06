@@ -19,6 +19,7 @@ import {
   useDemoMode,
 } from "./client";
 import { SPEC_FIELDS as F, TABLES } from "./fields";
+import { isValidAssignmentTransition } from "../assignment-lifecycle";
 import { emptyCaseAssessment, parseCaseAssessment, serializeCaseAssessment } from "../case-assessment";
 import type {
   AssignmentStatus,
@@ -701,18 +702,7 @@ export async function createAssignmentInAirtable(payload: {
   return mapInbox(rec);
 }
 
-const ASSIGNMENT_TRANSITIONS: Record<AssignmentStatus, AssignmentStatus[]> = {
-  Submitted: ["In progress"],
-  "In progress": ["Ready for review"],
-  "Ready for review": ["Approved", "Returned"],
-  Returned: ["In progress"],
-  Approved: [],
-};
-
-export function isValidAssignmentTransition(from: string, to: AssignmentStatus): boolean {
-  const allowed = ASSIGNMENT_TRANSITIONS[from as AssignmentStatus];
-  return Array.isArray(allowed) && allowed.includes(to);
-}
+export { isValidAssignmentTransition } from "../assignment-lifecycle";
 
 export async function updateAssignmentStatusInAirtable(
   recordId: string,
