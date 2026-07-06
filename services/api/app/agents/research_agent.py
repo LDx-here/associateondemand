@@ -153,7 +153,7 @@ def _build_llm_user_prompt(
             f"Research question: {query}",
             connector_note,
             "## Live matter context (Airtable)",
-            format_matter_context(matter_ctx),
+            format_matter_context(matter_ctx, matter_code=matter_id),
             "## Firm rules (excerpt)",
             firm_rules[:1500] or "(none loaded)",
             "## Constitution pack (excerpt)",

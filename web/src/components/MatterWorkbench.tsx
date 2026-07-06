@@ -34,6 +34,7 @@ import { MatterAssignmentReview } from "./MatterAssignmentReview";
 import { MatterAgentAlertReview } from "./MatterAgentAlertReview";
 import { MATTER_REVIEW_REFRESH_EVENT } from "@/lib/matter-review-events";
 import { CaseAssessmentEditor } from "./CaseAssessmentEditor";
+import { DraftingFactsCompletenessChip, PracticeAreaFactGuide } from "./PracticeAreaFactGuide";
 import { MatterDeadlineForm } from "./MatterDeadlineForm";
 import { MatterEventsPanel } from "./MatterEventsPanel";
 import { NoteComposer } from "./NoteComposer";
@@ -216,6 +217,11 @@ export function MatterWorkbench({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <DraftingFactsCompletenessChip
+              matterId={matterHeader.matterId}
+              caseType={matterHeader.caseType}
+              onCompleteFacts={() => setTab("Assessment")}
+            />
             <Link href={`/assignments/new?matterId=${matterHeader.matterId}`} className={btnSecondary}>
               New assignment
             </Link>
@@ -274,6 +280,8 @@ export function MatterWorkbench({
         refreshKey={reviewRefreshKey}
         onAssignmentUpdated={refresh}
         onViewAgentNote={() => setTab("Notes")}
+        caseType={matterHeader.caseType}
+        onCompleteFacts={() => setTab("Assessment")}
       />
 
       <nav className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
@@ -293,6 +301,12 @@ export function MatterWorkbench({
 
       {tab === "Assessment" ? (
         <div className="space-y-4">
+          <PracticeAreaFactGuide
+            matterId={matter.matterId}
+            caseType={matterHeader.caseType}
+            mode="workbench"
+            onSaved={refresh}
+          />
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
             <div>
               <p className="font-semibold text-sky-900">AOS discretionary factors workbook</p>

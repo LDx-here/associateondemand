@@ -23,6 +23,23 @@ _MATTER_FIELDS = (
     "assessment_data",
 )
 
+_IMMIGRATION_FIELD_LABELS = (
+    ("clientStatus", "Current immigration status"),
+    ("reliefSought", "Relief sought"),
+    ("entryDate", "Date of entry"),
+    ("priorityDate", "Priority date"),
+    ("adverseFactors", "Adverse factors"),
+    ("supportingDocs", "Supporting documents"),
+)
+
+_PI_FIELD_LABELS = (
+    ("incidentDate", "Date of incident"),
+    ("liabilityTheory", "Liability theory"),
+    ("injuries", "Injuries"),
+    ("treatmentSummary", "Treatment"),
+    ("damagesSketch", "Damages overview"),
+)
+
 
 def fetch_matter_context(matter_code: str) -> dict[str, Any] | None:
     """Return a compact matter dict for LLM context, or None if not found."""
@@ -99,11 +116,65 @@ def format_assessment_data(raw: Any) -> str:
     return "\n".join(lines) if len(lines) > 1 else ""
 
 
-def format_matter_context(ctx: dict[str, Any] | None) -> str:
+def format_drafting_facts(raw: Any) -> str:
+    """Render structured drafting facts from Notes (type Facts) for agent prompts."""
+
+    if not raw:
+        return ""
+    data: Any = raw
+    if isinstance(raw, str):
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            return ""
+    if not isinstance(data, dict) or data.get("v") != 1:
+        return ""
+
+    area = str(data.get("practiceArea") or "")
+    fields = data.get("fields") if isinstance(data.get("fields"), dict) else {}
+    labels = _IMMIGRATION_FIELD_LABELS if area == "immigration" else _PI_FIELD_LABELS
+    lines = ["## Structured facts for drafting"]
+    case_type = data.get("caseType")
+    if case_type:
+        lines.append(f"- Practice area: {case_type}")
+    for key, label in labels:
+        val = fields.get(key)
+        if not val:
+            continue
+        if isinstance(val, list):
+            joined = "; ".join(str(v).strip() for v in val if str(v).strip())
+            if joined:
+                lines.append(f"- {label}: {joined}")
+        elif str(val).strip():
+            lines.append(f"- {label}: {str(val).strip()}")
+    extra = data.get("additionalNotes")
+    if extra and str(extra).strip():
+        lines.append(f"- Additional notes: {str(extra).strip()}")
+    return "\n".join(lines) if len(lines) > 1 else ""
+
+
+def fetch_drafting_facts(matter_code: str) -> dict[str, Any] | None:
+    """Load structured drafting facts note for a matter."""
+
+    if not at.is_configured() or not matter_code:
+        return None
+    try:
+        return at.fetch_latest_drafting_facts(matter_code)
+    except Exception:
+        LOGGER.exception("drafting facts fetch failed")
+        return None
+
+
+def format_matter_context(ctx: dict[str, Any] | None, *, matter_code: str | None = None) -> str:
     if not ctx:
         return "No live matter row found in Airtable for this matter_id."
     lines = [f"- {k}: {v}" for k, v in ctx.items() if k != "assessment_data"]
     assessment_block = format_assessment_data(ctx.get("assessment_data"))
     if assessment_block:
         lines.append(assessment_block)
+    code = matter_code or str(ctx.get("matter_id") or "")
+    drafting = fetch_drafting_facts(code) if code else None
+    drafting_block = format_drafting_facts(drafting)
+    if drafting_block:
+        lines.append(drafting_block)
     return "\n".join(lines)

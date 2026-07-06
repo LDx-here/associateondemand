@@ -513,6 +513,63 @@ def update_matter_note(
     return _patch_record(TABLE_NOTES, note_id, fields)
 
 
+def list_matter_notes(matter_code: str, *, max_records: int = 50) -> list[dict[str, Any]]:
+    """Return Notes rows linked to a matter code (human-readable matter_id)."""
+
+    if not is_configured() or not matter_code:
+        return []
+    safe = matter_code.replace("'", "\\'")
+    formula = f"FIND('{safe}', ARRAYJOIN({{{FIELDS_NOTES['matter_id']}}}))"
+    params: dict[str, str] = {
+        "filterByFormula": formula,
+        "pageSize": str(min(max_records, 100)),
+    }
+    rows: list[dict[str, Any]] = []
+    offset: str | None = None
+    try:
+        with _client() as client:
+            while len(rows) < max_records:
+                if offset:
+                    params["offset"] = offset
+                resp = client.get(_base_url(TABLE_NOTES), params=params)
+                if resp.status_code >= 400:
+                    LOGGER.warning("airtable list notes failed: %s", resp.status_code)
+                    break
+                data = resp.json()
+                for rec in data.get("records") or []:
+                    fields = rec.get("fields") or {}
+                    fields["_record_id"] = rec.get("id")
+                    rows.append(fields)
+                    if len(rows) >= max_records:
+                        break
+                offset = data.get("offset")
+                if not offset:
+                    break
+    except httpx.HTTPError:
+        LOGGER.exception("airtable list notes network error")
+    return rows
+
+
+def fetch_latest_drafting_facts(matter_code: str) -> dict[str, Any] | None:
+    """Parse the newest Facts-type note JSON blob for agent prompts."""
+
+    notes = list_matter_notes(matter_code, max_records=100)
+    fact_notes = [n for n in notes if str(n.get(FIELDS_NOTES["type"]) or "") == "Facts"]
+    if not fact_notes:
+        return None
+    fact_notes.sort(key=lambda n: str(n.get(FIELDS_NOTES["created_at"]) or ""), reverse=True)
+    raw = fact_notes[0].get(FIELDS_NOTES["content"])
+    if not raw or not isinstance(raw, str):
+        return None
+    try:
+        data = json.loads(raw.strip())
+    except json.JSONDecodeError:
+        return None
+    if isinstance(data, dict) and data.get("v") == 1:
+        return data
+    return None
+
+
 def create_strategy_pattern(
     *,
     fact_pattern: str,

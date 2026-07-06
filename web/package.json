@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:airtable": "node scripts/smoke-airtable.mjs",
-    "test:catalog": "tsx scripts/verify-deliverable-catalog.mjs"
+    "test:catalog": "tsx scripts/verify-deliverable-catalog.mjs",
+    "test:facts": "tsx scripts/verify-practice-area-facts.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

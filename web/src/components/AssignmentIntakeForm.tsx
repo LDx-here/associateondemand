@@ -16,6 +16,12 @@ import {
   intakeDisclaimerCheckboxLabel,
 } from "@/lib/intake-disclaimer";
 import {
+  isDraftingFactsCompleteEnough,
+  mergeFactsForDispatch,
+  type DraftingFactsPayload,
+} from "@/lib/practice-area-facts";
+import { PracticeAreaFactGuide } from "@/components/PracticeAreaFactGuide";
+import {
   DELIVERABLE_CATALOG,
   deliverableById,
   formatCatalogQuote,
@@ -62,6 +68,7 @@ export function AssignmentIntakeForm({
   const [customTier, setCustomTier] = useState<AssignmentTier>("Custom");
 
   const [facts, setFacts] = useState("");
+  const [structuredFacts, setStructuredFacts] = useState<DraftingFactsPayload | null>(null);
   const [priority, setPriority] = useState("Medium");
   const [dueDate, setDueDate] = useState("");
 
@@ -101,6 +108,14 @@ export function AssignmentIntakeForm({
     [disclaimerContext],
   );
 
+  const activeCaseType =
+    matterMode === "new" ? newCaseType : existingMatter?.caseType ?? "Immigration - Other";
+
+  const mergedFactsPreview = useMemo(
+    () => mergeFactsForDispatch(structuredFacts, facts),
+    [structuredFacts, facts],
+  );
+
   function validate(): Record<string, string> {
     const errors: Record<string, string> = {};
     if (matterMode === "existing" && !existingMatterId.trim()) {
@@ -112,10 +127,9 @@ export function AssignmentIntakeForm({
     if (deliverableId === CUSTOM_OPTION && !customDeliverableName.trim()) {
       errors.deliverable = "Name the custom deliverable.";
     }
-    if (!facts.trim()) {
-      errors.facts = "Facts are required so the associate can start work.";
-    } else if (facts.trim().length < MIN_FACTS_LENGTH) {
-      errors.facts = `Add a bit more detail (at least ${MIN_FACTS_LENGTH} characters).`;
+    if (!isDraftingFactsCompleteEnough(structuredFacts, facts, MIN_FACTS_LENGTH)) {
+      errors.facts =
+        "Complete the guided checklist (at least 3 key items) or add a freeform summary (20+ characters).";
     }
     if (files.length > 0 && tierRequiresManualApproval() && !manualApproved) {
       errors.files = "Check the tier 0 manual approval box before attaching files.";
@@ -146,7 +160,8 @@ export function AssignmentIntakeForm({
               : undefined,
           deliverableType,
           tier,
-          facts: facts.trim(),
+          facts: mergedFactsPreview,
+          structuredFacts: structuredFacts ?? undefined,
           priority,
           dueDate: dueDate || null,
         }),
@@ -362,18 +377,18 @@ export function AssignmentIntakeForm({
       </section>
 
       <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">3. Facts</h2>
-        <label className="block text-sm">
-          <span className="text-slate-700">What does the associate need to know?</span>
-          <textarea
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
-            rows={6}
-            placeholder="Procedural posture, key facts, deadlines, and what the deliverable needs to accomplish. No client names — refer to the matter ID."
-            value={facts}
-            onChange={(e) => setFacts(e.target.value)}
-          />
-          <span className="mt-1 block text-xs text-slate-400">{facts.trim().length} characters</span>
-        </label>
+        <h2 className="text-sm font-semibold text-slate-900">3. Facts for drafting</h2>
+        <p className="text-xs text-slate-500">
+          Answer the practice-area questions first — they flow into the associate&apos;s draft prompt automatically.
+        </p>
+        <PracticeAreaFactGuide
+          mode="intake"
+          caseType={activeCaseType}
+          freeformFacts={facts}
+          onFreeformChange={setFacts}
+          onChange={setStructuredFacts}
+          compact
+        />
         {fieldErrors.facts ? <p className="text-sm text-rose-700">{fieldErrors.facts}</p> : null}
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">

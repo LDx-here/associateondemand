@@ -75,7 +75,7 @@ def build_user_prompt(
         f"Matter ID: {matter_id}",
         f"Instruction: {instruction}",
         "## Live matter context (Airtable)",
-        format_matter_context(matter_ctx),
+        format_matter_context(matter_ctx, matter_code=matter_id),
     ]
     if extra_context.strip():
         parts.extend(["## Additional context", extra_context.strip()])

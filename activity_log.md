@@ -1,3 +1,5 @@
+### [2026-07-06] CHECKPOINT: pass 10 practice-area fact intake — Immigration/PI guided checklists, Facts notes → agent prompts, completeness indicator on matter + intake; Fly + Vercel prod; smoke pass
+
 ### [2026-07-06] CHECKPOINT: pass 9 unified command + matter review — inline agent alerts, deliverable-ready gate, cross-panel refresh; Fly + Vercel prod; smoke pass
 
 ### [2026-07-06] CHECKPOINT: pass 6 deployed to Fly + Vercel production; smoke-production PASS

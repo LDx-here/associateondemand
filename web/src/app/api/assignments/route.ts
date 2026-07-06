@@ -7,9 +7,11 @@ import {
   createNoteForMatter,
   createTaskForMatter,
   getMatterByCode,
+  saveDraftingFactsForMatter,
   updateAssignmentStatus,
-  useDemoMode,
+  isDemoMode,
 } from "@/lib/data-store";
+import { mergeFactsForDispatch, type DraftingFactsPayload } from "@/lib/practice-area-facts";
 import { notifyNewAssignment } from "@/lib/notify-assignment";
 import type { AssignmentTier } from "@/lib/types";
 
@@ -22,6 +24,7 @@ type AssignmentRequest = {
   deliverableType?: string;
   tier?: string;
   facts?: string;
+  structuredFacts?: DraftingFactsPayload;
   priority?: string;
   dueDate?: string | null;
 };
@@ -42,7 +45,9 @@ export async function POST(req: Request) {
 
   const deliverableType = (body.deliverableType ?? "").trim();
   const tier = body.tier as AssignmentTier | undefined;
-  const facts = (body.facts ?? "").trim();
+  const rawFacts = (body.facts ?? "").trim();
+  const structuredFacts = body.structuredFacts;
+  const facts = rawFacts || mergeFactsForDispatch(structuredFacts, "");
 
   const errors: string[] = [];
   if (!deliverableType) errors.push("Deliverable type is required.");
@@ -90,9 +95,13 @@ export async function POST(req: Request) {
       isFilingDeadline: false,
     });
 
+    if (structuredFacts?.v === 1) {
+      await saveDraftingFactsForMatter(matterId, structuredFacts);
+    }
+
     await createNoteForMatter(
       matterId,
-      `Assignment intake — ${deliverableType} (${tier} tier). Facts: ${facts}`,
+      `Assignment intake — ${deliverableType} (${tier} tier). Facts: ${facts.slice(0, 4000)}`,
       "Attorney",
     );
 
@@ -109,7 +118,7 @@ export async function POST(req: Request) {
     let dispatch = null as Awaited<ReturnType<typeof dispatchAssignmentToPm>> | null;
     let notify = null as Awaited<ReturnType<typeof notifyNewAssignment>> | null;
 
-    if (!useDemoMode()) {
+    if (!isDemoMode()) {
       dispatch = await dispatchAssignmentToPm(matterId, deliverableType, tier as AssignmentTier, facts);
       if (dispatch.started) {
         const advanced = await updateAssignmentStatus(inboxItem.id, "In progress", {

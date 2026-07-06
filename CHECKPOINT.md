@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-06 (pass 9 deployed — unified command + matter review)
+**Last updated:** 2026-07-06 (pass 10 deployed — practice-area fact intake + drafting fluency)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -201,7 +201,24 @@ PM dispatch → Ready for review lane was verified manually against live Airtabl
 (2026-07-02); re-run requires attorney Airtable PAT + Supabase login — **manual verify**
 for next pilot, not a code failure.
 
-**Deployed:** pass 3 (`ff25481`, `4b96f8a`), pass 5, **pass 6**, **pass 7**, **pass 8**, and **pass 9** (2026-07-06) live on Fly + Vercel.
+**Deployed:** pass 3 (`ff25481`, `4b96f8a`), pass 5, **pass 6**, **pass 7**, **pass 8**, **pass 9**, and **pass 10** (2026-07-06) live on Fly + Vercel.
+
+### Autonomous pass log — pass 10 (2026-07-06, practice-area workflow fluency)
+
+- **Practice-area fact guides** — Immigration (priority) and Personal Injury checklists with progressive disclosure by case type; generic fallback stays freeform-only.
+- **`PracticeAreaFactGuide`** on `/assignments/new` (intake) and matter workbench **Assessment** tab — structured JSON saved to Notes (`type: Facts`).
+- **Completeness indicator** — `4/6 key facts captured` bar + amber **Complete facts before drafting →** chip on matter header, Deliverable review panel, and intake validation.
+- **Agent wiring** — `format_drafting_facts()` in Fly API merges structured facts into all SKILL agent prompts (alongside Case Assessment); assignment intake merges structured + freeform for PM dispatch.
+- **API** — `GET/PUT /api/matters/[matterId]/drafting-facts`.
+
+Verified: `pytest` (28 passed), `npm run test:facts`, `next build` (42 routes incl. drafting-facts), `scripts/smoke-production.sh` PASS.
+
+**Pilot E2E (manual, demo-mode exercisable):**
+1. Open `/matters/AOD-1001` → **Assessment** tab → fill Immigration checklist → **Save facts for drafting** → completeness chip turns green.
+2. Open `/assignments/new?matterId=AOD-1001&deliverable=aos-discretionary-brief` → guided fields prefilled from saved facts → submit → agent dispatch includes structured block.
+3. On matter with incomplete facts, **Deliverable review** shows **Complete facts before drafting (2/5) →** — click jumps to Assessment tab.
+
+**Deployed 2026-07-06:** pass 10 — Fly API + Vercel prod; post-deploy smoke pass.
 
 ### Autonomous pass log — pass 9 (2026-07-06, unified command + matter review)
 
@@ -341,6 +358,7 @@ Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.m
 
 ## Last completed
 
+- **Pass 10 (deployed 2026-07-06):** practice-area guided fact intake — Immigration/PI checklists, completeness indicator, Facts notes → agent prompts, matter workbench + assignment intake integration.
 - **Pass 9 (deployed 2026-07-06):** unified Command panel + matter review — inline agent alert actions, deliverable-ready gate, cross-panel refresh without page reload.
 - **Pass 8 (deployed 2026-07-06):** matter workbench inline deliverable review — approve/request revision on matter page without visiting `/inbox`.
 - **Pass 7 (deployed 2026-07-06):** inbox agent alerts use workflow actions (not Accept/Reject comment UI); assignment board labels polished; resolve API resumes on guidance.
@@ -351,9 +369,9 @@ Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.m
 
 ## Next step
 
-1. **Manual verify pass 9** — on `/matters/AOD-1001` resolve agent alert inline; run Associate `pm:research` and confirm matter panels refresh.
-2. **Manual verify pass 8** — open matter with Ready-for-review assignment (e.g. AOD-1003 in demo); approve inline and confirm inbox lane updates.
-3. **Manual verify pass 6 (ops)** — run agent on matter → Edit output → Save → confirm Notes tab; Save as skill → check Airtable Strategy Patterns.
+1. **Manual verify pass 10** — on `/matters/AOD-1001` fill Immigration fact checklist, save, submit assignment, confirm draft prompt includes structured facts.
+2. **Manual verify pass 9** — on `/matters/AOD-1001` resolve agent alert inline; run Associate `pm:research` and confirm matter panels refresh.
+3. **Manual verify pass 8** — open matter with Ready-for-review assignment (e.g. AOD-1003 in demo); approve inline and confirm inbox lane updates.
 4. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief`.
 
 ## Blockers
@@ -377,7 +395,7 @@ cd /Users/ladaj/Developer/AssociateOnDemand
 git pull origin cursor/phase0-foundation
 bash scripts/smoke-production.sh
 cd services/api && .venv/bin/python -m pytest tests/ -q
-cd web && npm run test:catalog && npm run build
+cd web && npm run test:catalog && npm run test:facts && npm run build
 docker compose up -d --build && bash scripts/smoke-docker-e2e.sh
 cd web && npm run dev -- -p 3003
 ```

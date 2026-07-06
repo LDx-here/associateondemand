@@ -16,7 +16,7 @@ import {
   airtableGetRecord,
   airtableListAll,
   airtablePatch,
-  useDemoMode,
+  isDemoMode,
 } from "./client";
 import { SPEC_FIELDS as F, TABLES } from "./fields";
 import { emptyCaseAssessment, parseCaseAssessment, serializeCaseAssessment } from "../case-assessment";
@@ -403,6 +403,15 @@ export async function findLatestAgentNoteForMatter(matterCode: string): Promise<
     .filter((note) => note.type === "Agent")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return agentNotes[0] ?? null;
+}
+
+/** Latest structured drafting-facts note (type Facts, JSON body). */
+export async function findLatestDraftingFactsNoteForMatter(matterCode: string): Promise<Note | null> {
+  const notes = await listNotesForMatterFromAirtable(matterCode);
+  const factNotes = notes
+    .filter((note) => note.type === "Facts")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return factNotes[0] ?? null;
 }
 
 export async function listLegalElementsFromAirtable(matterCode: string): Promise<LegalElementRow[]> {
@@ -962,4 +971,4 @@ export async function createInboxItemInAirtable(payload: {
   return mapInbox(rec);
 }
 
-export { useDemoMode };
+export { isDemoMode };

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useToast } from "@/components/Toast";
+import { DraftingFactsCompletenessChip } from "@/components/PracticeAreaFactGuide";
 import type { AssignmentStatus, AssignmentTier, InboxItem, Note } from "@/lib/types";
 import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
@@ -100,6 +101,8 @@ type Props = {
   refreshKey?: number;
   onAssignmentUpdated?: () => void;
   onViewAgentNote?: () => void;
+  caseType?: string;
+  onCompleteFacts?: () => void;
 };
 
 export function MatterAssignmentReview({
@@ -110,6 +113,8 @@ export function MatterAssignmentReview({
   refreshKey = 0,
   onAssignmentUpdated,
   onViewAgentNote,
+  caseType = "",
+  onCompleteFacts,
 }: Props) {
   const { showToast } = useToast();
   const [assignments, setAssignments] = useState(initialAssignments);
@@ -235,6 +240,14 @@ export function MatterAssignmentReview({
             <ExternalLink className="h-3 w-3" aria-hidden />
           </Link>
         </div>
+
+        {caseType ? (
+          <DraftingFactsCompletenessChip
+            matterId={matterId}
+            caseType={caseType}
+            onCompleteFacts={onCompleteFacts}
+          />
+        ) : null}
 
         {openAssignments.map((item) => {
           const status = item.status as AssignmentStatus;
