@@ -230,6 +230,9 @@ def _validate_and_route(
     matter_id = result.matter_id or str(payload.get("matter_id") or "") or None
     if _agent_deliverable_ready(result, target):
         _persist_valid_result(result, target)
+        meta = result.metadata or {}
+        meta["deliverable_ready"] = True
+        result.metadata = meta
         return
 
     valid = result.is_valid()
@@ -252,7 +255,7 @@ def _validate_and_route(
         )
         reason = "incomplete_with_gaps"
 
-    enqueue_inbox_review(
+    inbox_item = enqueue_inbox_review(
         matter_id,
         target,
         what_tried=what_tried,
@@ -260,6 +263,11 @@ def _validate_and_route(
         options=["Approve", "Reject", "Modify", "Defer"],
         reason=reason,
     )
+    airtable_id = inbox_item.get("airtable_id")
+    if airtable_id:
+        meta = result.metadata or {}
+        meta["inbox_item_id"] = airtable_id
+        result.metadata = meta
 
     if matter_id and result.gap_questions:
         for gap in result.gap_questions[:3]:

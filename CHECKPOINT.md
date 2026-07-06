@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-06 (pass 8 deployed — matter workbench review drawer)
+**Last updated:** 2026-07-06 (pass 9 deployed — unified command + matter review)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -201,7 +201,24 @@ PM dispatch → Ready for review lane was verified manually against live Airtabl
 (2026-07-02); re-run requires attorney Airtable PAT + Supabase login — **manual verify**
 for next pilot, not a code failure.
 
-**Deployed:** pass 3 (`ff25481`, `4b96f8a`), pass 5, **pass 6**, **pass 7**, and **pass 8** (2026-07-06) live on Fly + Vercel.
+**Deployed:** pass 3 (`ff25481`, `4b96f8a`), pass 5, **pass 6**, **pass 7**, **pass 8**, and **pass 9** (2026-07-06) live on Fly + Vercel.
+
+### Autonomous pass log — pass 9 (2026-07-06, unified command + matter review)
+
+- **Command panel on matter** — gap/escalation and deliverable-ready results show inline review (Resume agent, Provide guidance, Defer, Dismiss; Mark ready for review) instead of orphan "Open agent alert in inbox →" links.
+- **Matter page** — new **Agent alerts** panel above Deliverable review; pending flags for the matter resolve inline with same workflow as `/inbox`.
+- **Refresh linkage** — Command panel agent runs emit `aod:matter-review-refresh`; matter workbench reloads assignments + alerts without full page reload.
+- **Editable output** — after save in Command panel, status-aware **Mark ready for review** when a linked In progress assignment exists.
+- **API** — `GET /api/matters/[matterId]/agent-alerts`; PM dispatch returns `inbox_item_id` + `deliverable_ready` in metadata.
+
+Verified: `pytest` (26 passed), `next build` green (41 routes incl. agent-alerts), `scripts/smoke-production.sh` PASS, `scripts/smoke-docker-e2e.sh` PASS.
+
+**Pilot E2E (manual, demo-mode exercisable):**
+1. Open `/matters/AOD-1001` in demo — **Agent alerts** shows pending Research alert; resolve inline.
+2. Open `/matters/AOD-1003` — **Deliverable review** shows Ready-for-review AOS brief; approve inline.
+3. On any matter, run `pm:research …` in Associate panel — inline alert or deliverable-ready banner appears; matter panels refresh.
+
+**Deployed 2026-07-06:** pass 9 — Fly API + Vercel prod; post-deploy smoke pass.
 
 ### Autonomous pass log — pass 8 (2026-07-06, matter workbench review drawer)
 
@@ -324,6 +341,7 @@ Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.m
 
 ## Last completed
 
+- **Pass 9 (deployed 2026-07-06):** unified Command panel + matter review — inline agent alert actions, deliverable-ready gate, cross-panel refresh without page reload.
 - **Pass 8 (deployed 2026-07-06):** matter workbench inline deliverable review — approve/request revision on matter page without visiting `/inbox`.
 - **Pass 7 (deployed 2026-07-06):** inbox agent alerts use workflow actions (not Accept/Reject comment UI); assignment board labels polished; resolve API resumes on guidance.
 - **Pass 6 (deployed 2026-07-06):** bidirectional agent output editing (Notes tab + Command panel) + Save as skill → Strategy Patterns; Fly + Vercel prod + smoke pass.
@@ -333,9 +351,10 @@ Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.m
 
 ## Next step
 
-1. **Manual verify pass 8** — open matter with Ready-for-review assignment (e.g. AOD-1003 in demo); approve inline and confirm inbox lane updates.
-2. **Manual verify pass 6 (ops)** — run agent on matter → Edit output → Save → confirm Notes tab; Save as skill → check Airtable Strategy Patterns.
-3. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief`.
+1. **Manual verify pass 9** — on `/matters/AOD-1001` resolve agent alert inline; run Associate `pm:research` and confirm matter panels refresh.
+2. **Manual verify pass 8** — open matter with Ready-for-review assignment (e.g. AOD-1003 in demo); approve inline and confirm inbox lane updates.
+3. **Manual verify pass 6 (ops)** — run agent on matter → Edit output → Save → confirm Notes tab; Save as skill → check Airtable Strategy Patterns.
+4. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief`.
 
 ## Blockers
 

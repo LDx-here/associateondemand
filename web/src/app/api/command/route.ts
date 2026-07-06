@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 import {
   createNoteForMatter,
   getMatterByCode,
+  listAgentAlertsForMatter,
   listAllTasks,
+  listAssignmentsForMatter,
   listLegalElements,
   listMatters,
   listNotesForMatter,
@@ -31,6 +33,8 @@ type AgentDispatchResult = {
     manual_flags?: string[];
     full_memo?: string;
     airtable_note_id?: string;
+    inbox_item_id?: string;
+    deliverable_ready?: boolean;
     routed_to?: string;
     draft_type?: string;
     citation_verification_summary?: string;
@@ -209,6 +213,24 @@ async function tasksDueThisWeek() {
   return { type: "tasks_due" as const, label: "Due this week", tasks: hits };
 }
 
+const BLOCKING_GAP_MARKERS = [
+  "blocker:",
+  "anthropic",
+  "llm unavailable",
+  "llm call failed",
+  "skill file missing",
+  "not wired yet",
+  "not configured",
+];
+
+function hasBlockingGaps(gaps: string[] | undefined): boolean {
+  if (!gaps?.length) return false;
+  return gaps.some((gap) => {
+    const lower = gap.toLowerCase();
+    return BLOCKING_GAP_MARKERS.some((marker) => lower.includes(marker));
+  });
+}
+
 async function dispatchToPm(matterId: string, instruction: string) {
   try {
     const resp = await fetch(`${API}/agents/pm/dispatch`, {
@@ -301,6 +323,37 @@ async function dispatchToPm(matterId: string, instruction: string) {
     if (lintMeta?.issues?.length) {
       payload.documentLintIssues = lintMeta.issues;
     }
+
+    const hasWorkProduct = Boolean(fullMemo?.trim());
+    const deliverableReady =
+      Boolean(data.metadata?.deliverable_ready) ||
+      (hasWorkProduct && !hasBlockingGaps(gapStrings) && (data.complete ?? true));
+    if (deliverableReady) payload.deliverableReady = true;
+
+    const inboxItemId =
+      typeof data.metadata?.inbox_item_id === "string" ? data.metadata.inbox_item_id : undefined;
+    const needsAlert =
+      (gapStrings?.length ?? 0) > 0 ||
+      (manualFlags?.length ?? 0) > 0 ||
+      data.complete === false;
+    if (inboxItemId) {
+      payload.inboxItemId = inboxItemId;
+    } else if (needsAlert) {
+      const alerts = await listAgentAlertsForMatter(matterId);
+      const pending = alerts.find((a) => a.status === "Pending");
+      if (pending) payload.inboxItemId = pending.id;
+    }
+
+    if (deliverableReady) {
+      const assignments = await listAssignmentsForMatter(matterId);
+      const inProgress = assignments.find((a) => a.status === "In progress");
+      if (inProgress) payload.assignmentId = inProgress.id;
+    }
+
+    if (needsAlert && !inboxItemId) {
+      payload.alertOptions = ["Approve", "Reject", "Modify", "Defer"];
+    }
+
     return NextResponse.json(payload);
   } catch {
     return NextResponse.json({

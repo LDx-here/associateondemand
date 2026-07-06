@@ -3,16 +3,25 @@
 import Link from "next/link";
 
 import type { CommandResult } from "@/lib/agent-dispatch";
+import { AgentAlertInline, inboxItemFromAgentResult } from "@/components/AgentAlertInline";
 import { AgentResultPanel } from "@/components/AgentResultPanel";
+import { DeliverableReadyInline } from "@/components/DeliverableReadyInline";
 import { linkMatter } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
 
 export function CommandResultView({
   result,
   compact = false,
+  contextMatter,
+  demoMode = false,
+  onReviewUpdated,
 }: {
   result: CommandResult;
   compact?: boolean;
+  /** When set, inline review actions replace orphan inbox links on matter pages. */
+  contextMatter?: string | null;
+  demoMode?: boolean;
+  onReviewUpdated?: () => void;
 }) {
   if (result.type === "message") {
     return <p className="text-xs text-slate-600">{result.message}</p>;
@@ -83,10 +92,15 @@ export function CommandResultView({
   }
 
   if (result.type === "agent") {
-    const needsInbox =
+    const onMatterPage = Boolean(contextMatter && result.matterId === contextMatter);
+    const needsAlert =
       (result.gaps?.length ?? 0) > 0 ||
       (result.manualFlags?.length ?? 0) > 0 ||
       result.complete === false;
+    const alertItem = inboxItemFromAgentResult(result);
+    const showInlineAlert = onMatterPage && needsAlert && alertItem;
+    const showDeliverableReady = onMatterPage && result.deliverableReady && !needsAlert;
+
     return (
       <div className="space-y-2">
         {result.agent ? (
@@ -96,18 +110,55 @@ export function CommandResultView({
               <>
                 {" "}
                 ·{" "}
-                <Link className={linkMatter} href={`/matters/${result.matterId}`}>
-                  {result.matterId}
-                </Link>
+                {onMatterPage ? (
+                  <span className="font-medium text-slate-800">{result.matterId}</span>
+                ) : (
+                  <Link className={linkMatter} href={`/matters/${result.matterId}`}>
+                    {result.matterId}
+                  </Link>
+                )}
               </>
             ) : null}
           </p>
         ) : null}
-        <AgentResultPanel result={result} variant={compact ? "compact" : "full"} />
-        {needsInbox ? (
+        <AgentResultPanel
+          result={result}
+          variant={compact ? "compact" : "full"}
+          assignmentId={result.assignmentId}
+          matterContext={onMatterPage}
+          demoMode={demoMode}
+          onReviewUpdated={onReviewUpdated}
+        />
+        {showInlineAlert ? (
+          <AgentAlertInline
+            item={alertItem}
+            compact
+            demoMode={demoMode}
+            onResolved={onReviewUpdated}
+          />
+        ) : null}
+        {showDeliverableReady ? (
+          <DeliverableReadyInline
+            matterId={result.matterId}
+            assignmentId={result.assignmentId}
+            compact
+            demoMode={demoMode}
+            onAdvanced={onReviewUpdated}
+          />
+        ) : null}
+        {needsAlert && !onMatterPage ? (
           <Link className={`text-xs ${linkMatter}`} href="/inbox">
             Open agent alert in inbox →
           </Link>
+        ) : null}
+        {needsAlert && onMatterPage && !alertItem ? (
+          <p className="text-[10px] text-slate-500">
+            Alert created — refresh the matter page or check{" "}
+            <Link href="/inbox" className={linkMatter}>
+              inbox
+            </Link>{" "}
+            if actions do not appear.
+          </p>
         ) : null}
       </div>
     );

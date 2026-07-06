@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import type { AgentCommandResult } from "@/lib/agent-dispatch";
+import { DeliverableReadyInline } from "@/components/DeliverableReadyInline";
 import { EditableOutputMemo } from "@/components/EditableOutputMemo";
 import { btnSecondary, linkMatter } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
@@ -15,10 +16,18 @@ export function AgentResultPanel({
   result,
   variant = "full",
   className,
+  assignmentId,
+  matterContext = false,
+  demoMode = false,
+  onReviewUpdated,
 }: {
   result: AgentCommandResult;
   variant?: Variant;
   className?: string;
+  assignmentId?: string;
+  matterContext?: boolean;
+  demoMode?: boolean;
+  onReviewUpdated?: () => void;
 }) {
   const [memoOpen, setMemoOpen] = useState(false);
   const [copyDone, setCopyDone] = useState(false);
@@ -27,6 +36,7 @@ export function AgentResultPanel({
   const [exportError, setExportError] = useState<string | null>(null);
   const [memoContent, setMemoContent] = useState(result.fullMemo?.trim() ?? "");
   const [memoNoteId, setMemoNoteId] = useState(result.noteId);
+  const [showPostSaveAction, setShowPostSaveAction] = useState(false);
 
   useEffect(() => {
     setMemoContent(result.fullMemo?.trim() ?? "");
@@ -250,6 +260,22 @@ export function AgentResultPanel({
               onSaved={({ content, noteId }) => {
                 setMemoContent(content);
                 if (noteId) setMemoNoteId(noteId);
+                if (matterContext && (result.deliverableReady || assignmentId)) {
+                  setShowPostSaveAction(true);
+                }
+                onReviewUpdated?.();
+              }}
+            />
+          ) : null}
+          {showPostSaveAction && matterContext && result.matterId ? (
+            <DeliverableReadyInline
+              matterId={result.matterId}
+              assignmentId={assignmentId}
+              compact
+              demoMode={demoMode}
+              onAdvanced={() => {
+                setShowPostSaveAction(false);
+                onReviewUpdated?.();
               }}
             />
           ) : null}
@@ -336,7 +362,7 @@ export function AgentResultPanel({
         </div>
       ) : null}
 
-      {result.matterId ? (
+      {result.matterId && !matterContext ? (
         <div className="mt-1 flex justify-between text-[0.7rem] text-slate-500">
           <p>
             {result.complete ? "Agent run complete" : "Agent run needs review"}
@@ -346,6 +372,11 @@ export function AgentResultPanel({
             Open matter
           </Link>
         </div>
+      ) : result.matterId && matterContext ? (
+        <p className="mt-1 text-[0.7rem] text-slate-500">
+          {result.complete ? "Agent run complete" : "Agent run needs review"}
+          {result.jobId ? ` · job ${result.jobId}` : ""}
+        </p>
       ) : null}
     </div>
   );

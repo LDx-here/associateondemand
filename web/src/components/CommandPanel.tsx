@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CommandResultView } from "@/components/CommandResultView";
 import { COMMAND_PREFILL_EVENT } from "@/lib/case-assessment";
 import type { CommandResult } from "@/lib/agent-dispatch";
+import { emitMatterReviewRefresh } from "@/lib/matter-review-events";
 import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 
 const QUICK_ACTIONS = [
@@ -35,7 +36,7 @@ function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
-export function CommandPanel() {
+export function CommandPanel({ demoMode = false }: { demoMode?: boolean }) {
   const pathname = usePathname();
   const contextMatter = useMemo(() => matterFromPath(pathname), [pathname]);
   const [open, setOpen] = useState(true);
@@ -93,6 +94,9 @@ export function CommandPanel() {
         { id: `${Date.now()}`, query: q, result, at: new Date().toISOString() },
         ...prev,
       ].slice(0, 20));
+      if (result.type === "agent" && contextMatter && result.matterId === contextMatter) {
+        emitMatterReviewRefresh(contextMatter);
+      }
       setQuery("");
     } finally {
       setLoading(false);
@@ -174,7 +178,15 @@ export function CommandPanel() {
                 <p className="text-[10px] text-slate-400">{formatTime(entry.at)}</p>
                 <p className="text-xs font-medium text-slate-800">{entry.query}</p>
                 <div className="mt-2">
-                  <CommandResultView result={entry.result} compact />
+                  <CommandResultView
+                    result={entry.result}
+                    compact
+                    contextMatter={contextMatter}
+                    demoMode={demoMode}
+                    onReviewUpdated={() => {
+                      if (contextMatter) emitMatterReviewRefresh(contextMatter);
+                    }}
+                  />
                 </div>
               </article>
             ))

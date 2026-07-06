@@ -53,7 +53,7 @@ export async function AppShell({
           </aside>
           <div className="flex min-w-0 flex-1 overflow-hidden">
             <main className="flex-1 overflow-y-auto px-6 py-8">{children}</main>
-            <CommandPanel />
+            <CommandPanel demoMode={demoMode} />
           </div>
         </div>
       </div>

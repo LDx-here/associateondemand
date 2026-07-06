@@ -9,7 +9,7 @@ import {
   ScrollText,
 } from "lucide-react";
 import Link from "next/link";
-import { Fragment, useCallback, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/EmptyState";
 import type {
@@ -31,6 +31,8 @@ import { prefillCommandPanel } from "@/lib/case-assessment";
 import { AddTaskForm } from "./AddTaskForm";
 import { EditableOutputMemo } from "./EditableOutputMemo";
 import { MatterAssignmentReview } from "./MatterAssignmentReview";
+import { MatterAgentAlertReview } from "./MatterAgentAlertReview";
+import { MATTER_REVIEW_REFRESH_EVENT } from "@/lib/matter-review-events";
 import { CaseAssessmentEditor } from "./CaseAssessmentEditor";
 import { MatterDeadlineForm } from "./MatterDeadlineForm";
 import { MatterEventsPanel } from "./MatterEventsPanel";
@@ -74,6 +76,7 @@ export function MatterWorkbench({
   initialAssessment,
   initialEvents = [],
   initialAssignments = [],
+  initialAgentAlerts = [],
   demoMode = false,
 }: {
   matter: Matter;
@@ -85,6 +88,7 @@ export function MatterWorkbench({
   initialAssessment: CaseAssessment;
   initialEvents?: CalendarEvent[];
   initialAssignments?: InboxItem[];
+  initialAgentAlerts?: InboxItem[];
   demoMode?: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("Assessment");
@@ -98,6 +102,9 @@ export function MatterWorkbench({
   const [events] = useState(initialEvents);
   const [deadline, setDeadline] = useState(matter.nextDeadline);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
+  const [assignments, setAssignments] = useState(initialAssignments);
+  const [agentAlerts, setAgentAlerts] = useState(initialAgentAlerts);
   const [dispatchedActions, setDispatchedActions] = useState<Record<string, boolean>>({});
   const [lastAgentResult, setLastAgentResult] = useState<AgentCommandResult | null>(null);
   const [timelineKinds, setTimelineKinds] = useState<Set<TimelineEntry["kind"]>>(
@@ -108,22 +115,38 @@ export function MatterWorkbench({
   const [newElementName, setNewElementName] = useState("");
 
   const refresh = useCallback(async () => {
-    const [t, n, tl, el, m, docs] = await Promise.all([
+    const [t, n, tl, el, m, docs, asgn, alerts] = await Promise.all([
       fetch(`/api/matters/${matter.matterId}/tasks`).then((r) => r.json()),
       fetch(`/api/matters/${matter.matterId}/notes`).then((r) => r.json()),
       fetch(`/api/matters/${matter.matterId}/timeline`).then((r) => r.json()),
       fetch(`/api/matters/${matter.matterId}/legal-elements`).then((r) => r.json()),
       fetch(`/api/matters/${matter.matterId}`).then((r) => r.json()),
       fetch(`/api/matters/${matter.matterId}/documents`).then((r) => r.json()),
+      fetch(`/api/matters/${matter.matterId}/assignments`).then((r) => r.json()),
+      fetch(`/api/matters/${matter.matterId}/agent-alerts`).then((r) => r.json()),
     ]);
     setTasks(t.tasks);
     setNotes(n.notes);
     setTimeline(tl.timeline);
     setElements(el.rows);
     setDocuments(docs.documents ?? []);
+    if (asgn.assignments) setAssignments(asgn.assignments);
+    if (alerts.alerts) setAgentAlerts(alerts.alerts);
     if (m.matter?.nextDeadline !== undefined) setDeadline(m.matter.nextDeadline);
     setRefreshKey((k) => k + 1);
+    setReviewRefreshKey((k) => k + 1);
   }, [matter.matterId]);
+
+  useEffect(() => {
+    function onReviewRefresh(event: Event) {
+      const detail = (event as CustomEvent<{ matterId?: string }>).detail;
+      if (detail?.matterId === matter.matterId) {
+        void refresh();
+      }
+    }
+    window.addEventListener(MATTER_REVIEW_REFRESH_EVENT, onReviewRefresh);
+    return () => window.removeEventListener(MATTER_REVIEW_REFRESH_EVENT, onReviewRefresh);
+  }, [matter.matterId, refresh]);
 
   async function saveElement(id: string) {
     const row = elements.find((r) => r.id === id);
@@ -235,11 +258,20 @@ export function MatterWorkbench({
         ) : null}
       </header>
 
+      <MatterAgentAlertReview
+        matterId={matter.matterId}
+        initialAlerts={agentAlerts}
+        demoMode={demoMode}
+        refreshKey={reviewRefreshKey}
+        onResolved={refresh}
+      />
+
       <MatterAssignmentReview
         matterId={matter.matterId}
-        initialAssignments={initialAssignments}
+        initialAssignments={assignments}
         notes={notes}
         demoMode={demoMode}
+        refreshKey={reviewRefreshKey}
         onAssignmentUpdated={refresh}
         onViewAgentNote={() => setTab("Notes")}
       />

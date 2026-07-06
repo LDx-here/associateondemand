@@ -417,6 +417,14 @@ export async function listAssignmentsForMatter(matterId: string): Promise<InboxI
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 
+/** Agent-flag PM Inbox rows (gaps, MANUAL FLAG) linked to a matter code. */
+export async function listAgentAlertsForMatter(matterId: string): Promise<InboxItem[]> {
+  const items = await listInboxItems();
+  return items
+    .filter((item) => item.kind !== "assignment" && item.matterId === matterId)
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
 export async function buildTimeline(matterId: string): Promise<TimelineEntry[]> {
   const seed = useDemoMode() ? await loadDemoSeed() : null;
   const entries: TimelineEntry[] = [];

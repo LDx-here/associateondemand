@@ -2,7 +2,7 @@
 
 import { CheckCircle2, ClipboardList, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useToast } from "@/components/Toast";
 import type { AssignmentStatus, AssignmentTier, InboxItem, Note } from "@/lib/types";
@@ -97,6 +97,7 @@ type Props = {
   initialAssignments: InboxItem[];
   notes: Note[];
   demoMode?: boolean;
+  refreshKey?: number;
   onAssignmentUpdated?: () => void;
   onViewAgentNote?: () => void;
 };
@@ -106,6 +107,7 @@ export function MatterAssignmentReview({
   initialAssignments,
   notes,
   demoMode = false,
+  refreshKey = 0,
   onAssignmentUpdated,
   onViewAgentNote,
 }: Props) {
@@ -136,6 +138,10 @@ export function MatterAssignmentReview({
     }
     onAssignmentUpdated?.();
   }, [matterId, onAssignmentUpdated]);
+
+  useEffect(() => {
+    setAssignments(initialAssignments);
+  }, [initialAssignments, refreshKey]);
 
   async function transition(item: InboxItem, nextStatus: AssignmentStatus, transitionNote?: string) {
     setBusyId(item.id);

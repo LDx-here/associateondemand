@@ -34,6 +34,14 @@ export type AgentCommandResult = {
   citationVerification?: string;
   documentLintPassed?: boolean;
   documentLintIssues?: string[];
+  /** PM Inbox row id when agent paused with gaps / escalation. */
+  inboxItemId?: string;
+  /** True when agent produced a reviewable memo/draft. */
+  deliverableReady?: boolean;
+  /** Assignment inbox row id when deliverable can advance to Ready for review. */
+  assignmentId?: string;
+  /** Options surfaced on the agent alert card (Approve/Modify/Defer). */
+  alertOptions?: string[];
 };
 
 export type BriefingCommandResult = {
