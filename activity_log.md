@@ -72,3 +72,10 @@
 - **Files Affected:** `services/api/**`, `docker-compose.yml`, `.env.example`, `web/src/**`, `docs/constitution/**`, `LEGAL_BOUNDARIES.md`, `activity_log.md`, `FILE-MAP.md`, `README.md`
 - **Command Executed:** (Cursor agent authoring + file writes)
 - **Reason/Context:** Close Phase 0 gap vs authored plan — establish runnable foundation before Airtable work.
+
+## 2026-07-06 — Pass 7: inbox workflow UX (agent alerts)
+
+- **Details:** Replaced comment-style Approve/Reject on PM Inbox agent escalations with workflow actions (Resume agent, Provide guidance, Defer, Dismiss); assignment board relabeled; resolve API resumes PM on guidance; deployed Fly + Vercel.
+- **Files Affected:** `web/src/components/InboxBoard.tsx`, `web/src/lib/inbox-alert-actions.ts`, `web/src/components/AssignmentBoard.tsx`, `web/src/app/(app)/inbox/page.tsx`, `web/src/app/api/inbox/[itemId]/resolve/route.ts`, `CHECKPOINT.md`
+- **Command Executed:** `pytest tests/ -q`, `npm run build`, `flyctl deploy`, `vercel deploy --prod`, `scripts/smoke-production.sh`
+- **Reason/Context:** Attorney feedback — inbox felt static/incomplete with orphan accept/reject comment UX instead of integrated workflow actions.

@@ -106,7 +106,7 @@ export function CommandResultView({
         <AgentResultPanel result={result} variant={compact ? "compact" : "full"} />
         {needsInbox ? (
           <Link className={`text-xs ${linkMatter}`} href="/inbox">
-            Review in PM Inbox →
+            Open agent alert in inbox →
           </Link>
         ) : null}
       </div>

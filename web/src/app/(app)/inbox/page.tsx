@@ -22,8 +22,8 @@ export default async function InboxPage() {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">PM Inbox</h1>
           <p className="text-sm text-slate-600">
-            Assignments move Submitted → In progress → Ready for review → Returned / Approved. Agent
-            escalations below need a quick approve, reject, or resolution note.
+            Assignment Kanban tracks deliverables from intake through sign-off. Agent alerts below surface
+            gaps that need a workflow action — not a comment thread.
           </p>
         </div>
         <Link href="/assignments/new" className={btnPrimary}>
@@ -40,9 +40,10 @@ export default async function InboxPage() {
 
       <section className="space-y-4 border-t border-slate-200 pt-6">
         <div>
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agent escalations</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agent alerts</h2>
           <p className="text-xs text-slate-500">
-            Items an agent routed here because it hit a gap, low-confidence extraction, or MANUAL FLAG.
+            When an agent hits a gap, low-confidence extraction, or MANUAL FLAG, it opens an alert here.
+            Pick a workflow action to resume, guide, defer, or dismiss.
           </p>
         </div>
         <InboxBoard pending={pending} resolved={resolved} demoMode={demo} />

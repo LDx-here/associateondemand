@@ -204,17 +204,17 @@ export function AssignmentBoard({
                               type="button"
                               disabled={busy || demoMode}
                               className={cn(btnPrimary, "text-xs")}
-                              onClick={() => openModal(item, "Approved", "Approve assignment", false)}
+                              onClick={() => openModal(item, "Approved", "Approve deliverable", false)}
                             >
-                              Approve
+                              Approve deliverable
                             </button>
                             <button
                               type="button"
                               disabled={busy || demoMode}
                               className={cn(btnSecondary, "text-xs")}
-                              onClick={() => openModal(item, "Returned", "Return for revisions", true)}
+                              onClick={() => openModal(item, "Returned", "Request revision", true)}
                             >
-                              Return
+                              Request revision
                             </button>
                           </>
                         ) : null}

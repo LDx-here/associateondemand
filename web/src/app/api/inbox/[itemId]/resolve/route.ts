@@ -83,7 +83,15 @@ export async function POST(req: Request, ctx: Ctx) {
 
     const option = (body.option ?? resolution).trim().toLowerCase();
     let pmResume: Awaited<ReturnType<typeof resumePmAfterApprove>> | undefined;
-    if (status === "Resolved" && option.startsWith("approve")) {
+    const shouldResume =
+      status === "Resolved" &&
+      (option.startsWith("approve") ||
+        option.startsWith("accept") ||
+        option.startsWith("modify") ||
+        option.startsWith("revise") ||
+        option.startsWith("guidance") ||
+        option.startsWith("return"));
+    if (shouldResume) {
       pmResume = await resumePmAfterApprove(item, resolution);
     }
 

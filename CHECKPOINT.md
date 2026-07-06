@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-06 (pass 6 deployed to production — Fly + Vercel)
+**Last updated:** 2026-07-06 (pass 7 deployed — inbox workflow UX)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -201,7 +201,17 @@ PM dispatch → Ready for review lane was verified manually against live Airtabl
 (2026-07-02); re-run requires attorney Airtable PAT + Supabase login — **manual verify**
 for next pilot, not a code failure.
 
-**Deployed:** pass 3 (`ff25481`, `4b96f8a`), pass 5, and **pass 6** (2026-07-06) live on Fly + Vercel. Pass 4 pricing UI committed locally; deploy with `vercel deploy --prod` when ready.
+**Deployed:** pass 3 (`ff25481`, `4b96f8a`), pass 5, **pass 6**, and **pass 7** (2026-07-06) live on Fly + Vercel.
+
+### Autonomous pass log — pass 7 (2026-07-06, inbox workflow UX)
+
+- **Agent alerts** — replaced comment-style Approve/Reject/Modify/Defer with workflow actions (Resume agent, Provide guidance, Defer to later, Dismiss alert). Alert cards + collapsible history; success toasts on resolve.
+- **Assignment board** — review actions relabeled Approve deliverable / Request revision.
+- **Resolve API** — PM dispatch resume on Modify/guidance paths, not only Approve.
+
+Verified: `pytest` (26 passed), `next build` green.
+
+**Deployed 2026-07-06:** pass 7 — Fly API + Vercel prod; post-deploy smoke pass.
 
 ### Autonomous pass log — pass 6 (2026-07-05, editable output + skill creation)
 
@@ -305,6 +315,7 @@ Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.m
 
 ## Last completed
 
+- **Pass 7 (deployed 2026-07-06):** inbox agent alerts use workflow actions (not Accept/Reject comment UI); assignment board labels polished; resolve API resumes on guidance.
 - **Pass 6 (deployed 2026-07-06):** bidirectional agent output editing (Notes tab + Command panel) + Save as skill → Strategy Patterns; Fly + Vercel prod + smoke pass.
 - **Pass 5 (deployed):** strategic lock recorded; hearing-packet + motion launch SKUs; jurisdiction-aware intake disclaimer; strategy docs consolidated under `docs/strategy/`; production deploy + smoke pass.
 - **Pass 4:** Phase 0 pricing on `/templates` and `/assignments/new`.
@@ -312,9 +323,9 @@ Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.m
 
 ## Next step
 
-1. **Manual verify pass 6 (ops)** — run agent on matter → Edit output → Save → confirm Notes tab; Save as skill → check Airtable Strategy Patterns.
-2. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief` (or `custom-motion`, `hearing-packet`).
-3. **Manual assignment E2E** — attorney login + Airtable PAT: submit assignment → PM dispatch → Ready for review lane (no scripted web E2E in repo).
+1. **Matter workbench review drawer** — surface Ready-for-review assignments inline on matter page (not only `/inbox` Kanban).
+2. **Manual verify pass 6 (ops)** — run agent on matter → Edit output → Save → confirm Notes tab; Save as skill → check Airtable Strategy Patterns.
+3. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief`.
 
 ## Blockers
 
