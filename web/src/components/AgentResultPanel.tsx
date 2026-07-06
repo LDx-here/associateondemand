@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import type { AgentCommandResult } from "@/lib/agent-dispatch";
-import { DeliverableReadyInline } from "@/components/DeliverableReadyInline";
-import { EditableOutputMemo } from "@/components/EditableOutputMemo";
+import { AgentResultMemoSection } from "@/components/AgentResultMemoSection";
 import { btnSecondary, linkMatter } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
@@ -29,27 +28,18 @@ export function AgentResultPanel({
   demoMode?: boolean;
   onReviewUpdated?: () => void;
 }) {
-  const [memoOpen, setMemoOpen] = useState(false);
-  const [copyDone, setCopyDone] = useState(false);
-  const [downloadBusy, setDownloadBusy] = useState(false);
   const [citationBusy, setCitationBusy] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-  const [memoContent, setMemoContent] = useState(result.fullMemo?.trim() ?? "");
-  const [memoNoteId, setMemoNoteId] = useState(result.noteId);
-  const [showPostSaveAction, setShowPostSaveAction] = useState(false);
 
-  useEffect(() => {
-    setMemoContent(result.fullMemo?.trim() ?? "");
-    setMemoNoteId(result.noteId);
-  }, [result.fullMemo, result.noteId]);
+  const fullMemo = result.fullMemo?.trim() ?? "";
+  const hasFullMemo = Boolean(fullMemo);
+  const memoSyncKey = `${fullMemo}::${result.noteId ?? ""}`;
 
   const hasGaps = (result.gaps ?? []).length > 0;
   const hasUncertainties = (result.uncertainties ?? []).length > 0;
   const hasManualFlags = (result.manualFlags ?? []).length > 0;
   const hasSources = (result.sources ?? []).length > 0;
   const hasNextSteps = (result.nextSteps ?? []).length > 0;
-  const fullMemo = memoContent.trim();
-  const hasFullMemo = Boolean(fullMemo);
 
   const statusLabel = hasManualFlags
     ? "Manual review required"
@@ -58,67 +48,6 @@ export function AgentResultPanel({
       : "Needs review";
 
   const showSummary = Boolean(result.summary);
-
-  async function copyFullMemo() {
-    if (!fullMemo) return;
-    try {
-      await navigator.clipboard.writeText(fullMemo);
-      setCopyDone(true);
-      window.setTimeout(() => setCopyDone(false), 2000);
-    } catch {
-      // Clipboard may be denied; no noisy logging.
-    }
-  }
-
-  async function downloadMemoFile() {
-    if (!fullMemo || !result.matterId) return;
-    setDownloadBusy(true);
-    setExportError(null);
-    try {
-      const isAosBrief = result.draftType === "aos_discretionary_brief";
-      const endpoint = isAosBrief ? "/api/drafting/aos-brief-export" : "/api/research/memo-export";
-      const payload = isAosBrief
-        ? { matterId: result.matterId, memo: fullMemo, format: "docx" }
-        : { matterId: result.matterId, memo: fullMemo, format: "docx" };
-      const r = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!r.ok) {
-        let message = `Export failed (${r.status})`;
-        try {
-          const err = (await r.json()) as { error?: string; issues?: string[] };
-          if (err.issues?.length) {
-            message = `${err.error ?? "Document linter failed"}: ${err.issues.join("; ")}`;
-          } else if (err.error) {
-            message = err.error;
-          }
-        } catch {
-          message = (await r.text()) || message;
-        }
-        setExportError(message);
-        return;
-      }
-      const blob = await r.blob();
-      const dispo = r.headers.get("Content-Disposition");
-      let filename = `${result.matterId}_research_memo.docx`;
-      if (dispo) {
-        const m = /filename="([^"]+)"/.exec(dispo);
-        if (m?.[1]) filename = m[1];
-      } else if (blob.type === "text/plain" || blob.type.startsWith("text/")) {
-        filename = `${result.matterId}_research_memo.txt`;
-      }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    } finally {
-      setDownloadBusy(false);
-    }
-  }
 
   async function downloadCitationPackage() {
     if (!fullMemo || !result.matterId) return;
@@ -226,60 +155,14 @@ export function AgentResultPanel({
       ) : null}
 
       {hasFullMemo ? (
-        <div className="space-y-1">
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="text-left text-[0.65rem] font-semibold uppercase tracking-wide text-sky-800 underline-offset-2 hover:underline"
-              onClick={() => setMemoOpen((o) => !o)}
-              aria-expanded={memoOpen}
-            >
-              {memoOpen ? "Hide full memo" : "View full memo"}
-            </button>
-            <button type="button" className={cn(btnSecondary, "py-0.5 px-2 text-[0.65rem]")} onClick={() => void copyFullMemo()}>
-              {copyDone ? "Copied" : "Copy full memo"}
-            </button>
-            {result.matterId ? (
-              <button
-                type="button"
-                className={cn(btnSecondary, "py-0.5 px-2 text-[0.65rem]")}
-                disabled={downloadBusy}
-                onClick={() => void downloadMemoFile()}
-              >
-                {downloadBusy ? "Downloading…" : "Download memo"}
-              </button>
-            ) : null}
-          </div>
-          {memoOpen ? (
-            <EditableOutputMemo
-              content={fullMemo}
-              matterId={result.matterId}
-              agent={result.agent}
-              noteId={memoNoteId}
-              compact
-              onSaved={({ content, noteId }) => {
-                setMemoContent(content);
-                if (noteId) setMemoNoteId(noteId);
-                if (matterContext && (result.deliverableReady || assignmentId)) {
-                  setShowPostSaveAction(true);
-                }
-                onReviewUpdated?.();
-              }}
-            />
-          ) : null}
-          {showPostSaveAction && matterContext && result.matterId ? (
-            <DeliverableReadyInline
-              matterId={result.matterId}
-              assignmentId={assignmentId}
-              compact
-              demoMode={demoMode}
-              onAdvanced={() => {
-                setShowPostSaveAction(false);
-                onReviewUpdated?.();
-              }}
-            />
-          ) : null}
-        </div>
+        <AgentResultMemoSection
+          key={memoSyncKey}
+          result={result}
+          assignmentId={assignmentId}
+          matterContext={matterContext}
+          demoMode={demoMode}
+          onReviewUpdated={onReviewUpdated}
+        />
       ) : null}
 
       {hasNextSteps ? (

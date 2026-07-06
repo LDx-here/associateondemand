@@ -36,8 +36,18 @@ export function FirmAssessmentTemplates() {
   }, []);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    let cancelled = false;
+    void fetch("/api/assessment-templates")
+      .then((resp) => resp.json())
+      .then((data: { templates?: DocumentRow[] }) => {
+        if (cancelled) return;
+        setTemplates(data.templates ?? []);
+        setLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function onUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

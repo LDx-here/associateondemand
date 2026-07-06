@@ -2,7 +2,7 @@
 
 import { CheckCircle2, ClipboardList, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { useToast } from "@/components/Toast";
 import { DraftingFactsCompletenessChip } from "@/components/PracticeAreaFactGuide";
@@ -116,6 +116,32 @@ export function MatterAssignmentReview({
   caseType = "",
   onCompleteFacts,
 }: Props) {
+  const syncKey = `${refreshKey}::${initialAssignments.map((a) => a.id).join(",")}`;
+  return (
+    <MatterAssignmentReviewInner
+      key={syncKey}
+      matterId={matterId}
+      initialAssignments={initialAssignments}
+      notes={notes}
+      demoMode={demoMode}
+      onAssignmentUpdated={onAssignmentUpdated}
+      onViewAgentNote={onViewAgentNote}
+      caseType={caseType}
+      onCompleteFacts={onCompleteFacts}
+    />
+  );
+}
+
+function MatterAssignmentReviewInner({
+  matterId,
+  initialAssignments,
+  notes,
+  demoMode = false,
+  onAssignmentUpdated,
+  onViewAgentNote,
+  caseType = "",
+  onCompleteFacts,
+}: Omit<Props, "refreshKey">) {
   const { showToast } = useToast();
   const [assignments, setAssignments] = useState(initialAssignments);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -143,10 +169,6 @@ export function MatterAssignmentReview({
     }
     onAssignmentUpdated?.();
   }, [matterId, onAssignmentUpdated]);
-
-  useEffect(() => {
-    setAssignments(initialAssignments);
-  }, [initialAssignments, refreshKey]);
 
   async function transition(item: InboxItem, nextStatus: AssignmentStatus, transitionNote?: string) {
     setBusyId(item.id);

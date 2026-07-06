@@ -115,6 +115,16 @@ export function PracticeAreaFactGuide({
   );
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(mode === "intake");
+  const intakeSyncKey =
+    mode === "intake" ? `${matterId ?? "draft"}::${caseType}::${deliverableId ?? ""}` : "";
+  const [lastIntakeKey, setLastIntakeKey] = useState(intakeSyncKey);
+
+  if (mode === "intake" && intakeSyncKey !== lastIntakeKey) {
+    setLastIntakeKey(intakeSyncKey);
+    const next = emptyDraftingFacts(matterId ?? "draft", caseType, deliverableId);
+    setPayload(next);
+    onChange?.(next);
+  }
 
   const activeDeliverableId = deliverableId ?? payload.deliverableId;
   const defs = useMemo(
@@ -164,18 +174,6 @@ export function PracticeAreaFactGuide({
       cancelled = true;
     };
   }, [matterId, caseType, deliverableId, mode, onChange]);
-
-  useEffect(() => {
-    if (mode !== "intake") return;
-    const next = emptyDraftingFacts(matterId ?? "draft", caseType, deliverableId);
-    if (
-      next.practiceArea !== payload.practiceArea ||
-      payload.caseType !== caseType ||
-      payload.deliverableId !== deliverableId
-    ) {
-      patchPayload(() => next);
-    }
-  }, [caseType, matterId, deliverableId, mode, payload.practiceArea, payload.caseType, payload.deliverableId, patchPayload]);
 
   async function save() {
     if (!matterId) return;

@@ -21,10 +21,7 @@ export function AssessmentOnFileChip({
   const assessmentDoc = findCaseAssessmentDocument(documents);
 
   useEffect(() => {
-    if (!assessmentDoc) {
-      setHasOcr(false);
-      return;
-    }
+    if (!assessmentDoc) return;
     void fetch(`/api/matters/${matterId}/case-assessment-document`)
       .then((r) => r.json())
       .then((data: { payload?: AssessmentOcrPayload | null }) => {

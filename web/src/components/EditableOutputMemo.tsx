@@ -9,16 +9,7 @@ import { cn } from "@/lib/utils";
 
 type SaveMode = "agent-output" | "note";
 
-export function EditableOutputMemo({
-  content,
-  matterId,
-  agent,
-  noteId,
-  saveMode = "agent-output",
-  className,
-  compact = false,
-  onSaved,
-}: {
+type EditableOutputMemoProps = {
   content: string;
   matterId?: string;
   agent?: string;
@@ -27,7 +18,18 @@ export function EditableOutputMemo({
   className?: string;
   compact?: boolean;
   onSaved?: (saved: { content: string; noteId?: string }) => void;
-}) {
+};
+
+function EditableOutputMemoInner({
+  content,
+  matterId,
+  agent,
+  noteId,
+  saveMode = "agent-output",
+  className,
+  compact = false,
+  onSaved,
+}: EditableOutputMemoProps) {
   const { showToast } = useToast();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(content);
@@ -37,15 +39,6 @@ export function EditableOutputMemo({
   const [skillOpen, setSkillOpen] = useState(false);
   const [firmMemoryOpen, setFirmMemoryOpen] = useState(false);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    setDraft(content);
-    setSavedContent(content);
-  }, [content]);
-
-  useEffect(() => {
-    setPersistedNoteId(noteId);
-  }, [noteId]);
 
   const dirty = draft.trim() !== savedContent.trim();
   const canPersist = Boolean(matterId) && dirty;
@@ -204,4 +197,9 @@ export function EditableOutputMemo({
       />
     </>
   );
+}
+
+export function EditableOutputMemo(props: EditableOutputMemoProps) {
+  const syncKey = `${props.content}::${props.noteId ?? ""}`;
+  return <EditableOutputMemoInner key={syncKey} {...props} />;
 }

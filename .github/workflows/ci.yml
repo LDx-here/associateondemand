@@ -34,11 +34,5 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
+      - run: npm run lint
       - run: npm run build
-      # Lint is advisory, not a merge gate — `next build` is the quality gate.
-      # A new opinionated rule (react-hooks/set-state-in-effect) plus mislabeled
-      # helpers surface errors that would otherwise fail every push and email a
-      # "Run failed" notification. Keep the output visible without failing CI.
-      - name: Lint (non-blocking)
-        continue-on-error: true
-        run: npm run lint

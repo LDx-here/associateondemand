@@ -2,7 +2,7 @@
 
 import { Bot } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { AgentAlertInline } from "@/components/AgentAlertInline";
 import type { InboxItem } from "@/lib/types";
@@ -16,11 +16,10 @@ type Props = {
   onResolved?: () => void;
 };
 
-export function MatterAgentAlertReview({
+function MatterAgentAlertReviewInner({
   matterId,
   initialAlerts,
   demoMode = false,
-  refreshKey = 0,
   onResolved,
 }: Props) {
   const [alerts, setAlerts] = useState(initialAlerts);
@@ -32,10 +31,6 @@ export function MatterAgentAlertReview({
       setAlerts(data.alerts);
     }
   }, [matterId]);
-
-  useEffect(() => {
-    setAlerts(initialAlerts);
-  }, [initialAlerts, refreshKey]);
 
   const pending = alerts.filter((a) => a.status === "Pending");
   if (pending.length === 0) return null;
@@ -70,4 +65,9 @@ export function MatterAgentAlertReview({
       ))}
     </section>
   );
+}
+
+export function MatterAgentAlertReview(props: Props) {
+  const syncKey = `${props.refreshKey ?? 0}::${props.initialAlerts.map((a) => a.id).join(",")}`;
+  return <MatterAgentAlertReviewInner key={syncKey} {...props} />;
 }
