@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-05 (pass 5: strategic lock, SKU, disclaimer, deploy)
+**Last updated:** 2026-07-05 (pass 6: editable agent output + skill creation)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -204,6 +204,14 @@ for next pilot, not a code failure.
 **Deployed:** pass 3 (`ff25481`, `4b96f8a`) live on Fly + Vercel. Pass 4 pricing UI
 committed locally; deploy with `vercel deploy --prod` when ready.
 
+### Autonomous pass log — pass 6 (2026-07-05, editable output + skill creation)
+
+- **Editable agent output** — `EditableOutputMemo` on Associate panel full memo + matter Notes tab (type Agent). Saves via `POST /api/matters/[id]/agent-output` or `PATCH /api/matters/[id]/notes/[noteId]` → Airtable Notes. Debounced autosave (2.5s) + toast feedback.
+- **Save as skill** — modal after attorney edits; `POST /api/skills` writes Strategy Patterns + Corrections rows (Claude-Skills-style: name, when-to-use, exemplar body). Fly API mirrors: `PATCH /agents/notes/{id}`, `POST /agents/skills`.
+- **Command panel** — forwards `metadata.airtable_note_id` as `noteId` so edits target the PM-persisted note.
+
+Verified: `pytest` (26 passed), `next build` (40 routes incl. agent-output, notes PATCH, skills).
+
 ### Autonomous pass log — pass 5 (2026-07-05, strategic lock + day-one SKUs + disclaimer)
 
 **Strategic lock (2026-07-05)** — recorded in [`docs/strategy/README.md`](docs/strategy/README.md):
@@ -296,15 +304,16 @@ Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.m
 
 ## Last completed
 
+- **Pass 6:** bidirectional agent output editing (Notes tab + Command panel) + Save as skill → Strategy Patterns.
 - **Pass 5 (deployed):** strategic lock recorded; hearing-packet + motion launch SKUs; jurisdiction-aware intake disclaimer; strategy docs consolidated under `docs/strategy/`; production deploy + smoke pass.
 - **Pass 4:** Phase 0 pricing on `/templates` and `/assignments/new`.
 - **Pass 3 (deployed):** draft quality, Ready for review auto-gate (`ff25481`, `4b96f8a`).
 
 ## Next step
 
-1. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief` (or `custom-motion`, `hearing-packet`).
-2. **Manual assignment E2E** — attorney login + Airtable PAT: submit assignment → PM dispatch → Ready for review lane (no scripted web E2E in repo).
-3. **Optional env:** `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` on Vercel for assignment email notifications.
+1. **Deploy pass 6** — `flyctl deploy` + `vercel deploy --prod`; manual verify: run agent on matter → Edit output → Save → confirm Notes tab; Save as skill → check Airtable Strategy Patterns.
+2. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief` (or `custom-motion`, `hearing-packet`).
+3. **Manual assignment E2E** — attorney login + Airtable PAT: submit assignment → PM dispatch → Ready for review lane (no scripted web E2E in repo).
 
 ## Blockers
 
