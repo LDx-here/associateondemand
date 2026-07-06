@@ -14,6 +14,12 @@ This document outlines the refined monetization and growth strategies for the As
 
 The primary monetization model for the Associate Services Marketplace will be a **transaction-based fee structure**, complemented by potential premium services and a tiered approach.
 
+### 2.0. Fee-Collecting Entity and Compliance Conditions
+
+All marketplace fees are collected by **Recover My Value, LLC (RMV)** — a **lawyer-owned law firm** operating AssociateOnDemand. Because RMV's principal (La'Dajia) is a **licensed attorney**, payments between RMV and freelance attorneys are a **lawyer-to-lawyer** arrangement, **not** fee-sharing with a non-lawyer (the MN RPC 5.4 / ORC 4705.07 concern that drives the B2B overflow model). The marketplace therefore operates inside the existing RMV law-firm brand, not through a separate non-lawyer intermediary.
+
+**Remaining compliance conditions (being lawyer-owned does not auto-satisfy these):** When RMV collects a fee and pays a *different* firm's freelance attorney — or splits with the requesting firm — the division must still satisfy **ABA / MN RPC 1.5(e)**: (1) division proportional to services performed **or** each lawyer assumes joint responsibility; (2) the client gives **informed written consent**, including each lawyer's share; and (3) the **total fee is reasonable**. A percentage commission can also implicate the **lawyer-referral-service** rules (Rule 7.2(b)). **Bar-counsel sign-off is recommended** before launch to confirm the fee mechanism, consent flow, and referral characterization.
+
 ### 2.1. Transaction Fee (Commission)
 
 *   **Model**: AssociateOnDemand will charge a commission on each successfully completed associate service project. This is a standard and proven model in legal marketplaces [1].
@@ -35,6 +41,15 @@ Beyond the core transaction fee, additional revenue can be generated through pre
 
 *   **Basic Access**: Standard transaction fees for all projects.
 *   **Premium Subscription**: Firms pay a monthly or annual fee for benefits such as reduced transaction fees, access to enhanced analytics, dedicated account management, or priority support.
+
+### 2.4. Verification & Compliance Costs (Unit Economics)
+
+Every activated freelance attorney must clear bar verification and a background check (see the [schema](AssociateOnDemand_Associate_Services_Airtable_Schema.md) and [workflow](AssociateOnDemand_Associate_Services_Workflow.md) verification gates). These carry real per-attorney cost that must be modeled into unit economics:
+
+*   **Background-check vendor:** ~**$15–$60+ per attorney** via a provider such as **Checkr, Sterling, or Certn** (price varies by county/federal scope and recurring re-checks). This is a per-onboarding cost, amortized across the projects that attorney completes.
+*   **FCRA obligations:** Using a consumer-reporting vendor triggers **FCRA consent + adverse-action handling** (written authorization before the check; pre-adverse and adverse-action notices if a result is used to reject an attorney). Budget process/ops time, not just vendor fees.
+*   **PII storage:** Background-check results and bar records are sensitive PII and must be stored per [`LEGAL_BOUNDARIES.md`](../../LEGAL_BOUNDARIES.md) data-handling rules (secure, access-limited, anonymized where it traverses OCR/LLM stacks).
+*   **Bar verification:** **Manual bar-status lookups are free / low-cost** on state bar websites for the initial cohort; automated verification (vendor API or bulk lookups) is a later optimization as volume grows.
 
 ## 3. Growth Strategy: Expanding Reach and Adoption
 

@@ -55,6 +55,14 @@ This table will store profiles of freelance attorneys available for associate se
 | Bio / Experience | Long Text | Brief professional biography and relevant experience. |
 | Linked Projects | Linked Record | Link to the `Projects` table. |
 | Hourly Rate (Optional) | Currency | If offering hourly services, their standard rate. |
+| Bar State | Single/Multiple Select | Jurisdiction(s) where the `Bar Number` is verified (e.g., "MN," "OH," "CA"). |
+| Bar Status | Single Select | e.g., "Active / Good Standing," "Suspended," "Inactive," "Unverified" (default: "Unverified"). |
+| Bar Verified Date | Date | Date the bar status was last confirmed against the state bar. |
+| Background Check Status | Single Select | e.g., "Not Started," "Pending," "Clear," "Flagged," "Failed" (default: "Not Started"). |
+| Background Check Date | Date | Date the background check result was recorded. |
+| Verified | Checkbox / Formula | **Master gate.** `true` only when `Bar Status` = "Active / Good Standing" **AND** `Background Check Status` = "Clear" **AND** today is on/before `Verification Expiry`. Defaults `false`. |
+| Verification Expiry | Date | Date the current verification lapses (drives annual re-verification). |
+| Verification Notes | Long Text | Reviewer notes: source of bar lookup, background-check vendor/reference, flag resolution, etc. |
 
 ### 2.3. Project Applications Table
 
@@ -68,6 +76,26 @@ This table tracks applications by freelance attorneys to open projects.
 | Application Date | Date/Time | When the attorney applied. |
 | Status | Single Select | e.g., "Applied," "Reviewed," "Selected," "Rejected." |
 | Cover Letter / Message | Long Text | Message from the attorney to the requesting firm. |
+
+### 2.4. Requesting-Firm Attorney Verification (Contacts)
+
+Requesting-firm attorneys are **also bar-verified** before they can post projects — a firm buying associate work must itself be a licensed attorney in good standing (this supports the Rule 1.5(e) consent chain and confirms the arrangement stays lawyer-to-lawyer). Add these fields to the existing `Contacts` table for records where `Role` = "Requesting Firm" (or split into a dedicated `Firm Attorneys` view if `Contacts` also holds non-attorney client contacts):
+
+| Field Name | Field Type | Description |
+| :--- | :--- | :--- |
+| Bar Number | Single Line Text | State Bar number of the requesting attorney. |
+| Bar State | Single/Multiple Select | Jurisdiction(s) where the bar number is verified. |
+| Bar Status | Single Select | e.g., "Active / Good Standing," "Suspended," "Inactive," "Unverified" (default: "Unverified"). |
+| Verified | Checkbox / Formula | `true` only when `Bar Status` = "Active / Good Standing." Defaults `false`; project posting is gated on `true`. |
+
+*(Optional parity fields — `Bar Verified Date`, `Verification Notes` — may mirror the Freelance Attorneys table if the same review lane handles both sides.)*
+
+### 2.5. Verification Gating
+
+*   **Default deny:** Every freelance (and requesting-firm) attorney record is created with `Verified = false`, `Bar Status = "Unverified"`, and `Background Check Status = "Not Started"`.
+*   **Feed filter:** The smart-matching engine and freelance project feed **MUST** filter to `Verified = true`. Unverified attorneys never see project matches and cannot apply.
+*   **Manual review lane:** A dedicated Airtable view (e.g., "Pending Verification") holds all `Verified = false` attorneys for a human reviewer to confirm bar status, order/record the background check, set `Verification Expiry`, and flip the gate.
+*   **Annual re-verification:** A scheduled automation (Zapier/Make) flips `Verified = false` when `Verification Expiry` passes, returning the attorney to the review lane until re-confirmed — no attorney stays active on a stale check.
 
 ## 3. Integration with Existing Tables
 

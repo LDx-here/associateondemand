@@ -141,9 +141,21 @@ Production firm OS is live: assignment intake (`/assignments/new`), PM Inbox Kan
 | **Phase 0** | Now – first paid matter (~2–4 weeks) | Sell **`aos-discretionary-brief`**, **`custom-motion`**, **`hearing-packet`** (+ **`research-memo`** upsell) via intake → inbox → export; RMV signs all work; jurisdiction-aware disclaimer on submit; manual conflict check; off-platform invoice | 1–3 pilot clients (external solos ± RMV overflow); validate unit economics |
 | **Phase 1** | +4–8 weeks after first payment | Assignment email notify; expand sales; gross margin tracking | 5–10 clients; repeatable sales one-pager |
 | **Phase 2** | +2–3 months after Phase 1 stable | Stripe deposit/checkout; limited-scope engagement letter template; conflict-check checklist UX | Predictable cash collection |
-| **Phase 3** | +6–12 months | Chat-enhanced intake; **contract-associate marketplace** (Associate Services docs); retainer/credits; bar-counsel-reviewed self-serve tier *if approved* | Marketplace scale; MRR from retainers |
+| **Phase 3** | +6–12 months | Chat-enhanced intake; **Associate Services Marketplace** (matching engine, freelance attorney profiles, bar + background-check **verification**, project applications, **escrow**, ratings) — see below; retainer/credits; bar-counsel-reviewed self-serve tier *if approved* | Marketplace scale; MRR from retainers |
 
 **Timeline assumptions:** Phase 0 can start immediately with no code blockers. Phase 1 is mostly UI/config (1–2 dev passes). Phase 2 depends on bar/ops sign-off and Stripe. Phase 3 depends on contractor legal design and chat MVP validation.
+
+### Phase 3 — Associate Services Marketplace (detail)
+
+The marketplace graduates the contract-associate track (CHECKPOINT "Later: contractor roles, payout/assignment routing") into a LawClerk/Docketly-style lawyer-to-lawyer platform. Reference docs: [`AssociateOnDemand_ Associate Services Marketplace Strategic Plan.md`](../../AssociateOnDemand_%20Associate%20Services%20Marketplace%20Strategic%20Plan.md), [workflow](AssociateOnDemand_Associate_Services_Workflow.md), [schema](AssociateOnDemand_Associate_Services_Airtable_Schema.md), [monetization](AssociateOnDemand_Associate_Services_Monetization_Strategy.md).
+
+**Scope:** smart matching engine · freelance attorney profiles · bar + background-check **verification gate** (default-deny; annual re-verification) · project applications · **escrow**/payment release · ratings & reviews.
+
+**Dependencies (all must land first):**
+
+*   **Bar-counsel sign-off** on the fee-division / supervision / lawyer-referral structure — RMV collects fees as a lawyer-owned firm, but Rule 1.5(e) (proportional-or-joint-responsibility + client written consent + reasonable total fee) and Rule 7.2(b) referral characterization must be cleared. See [`LEGAL_BOUNDARIES.md`](../../LEGAL_BOUNDARIES.md).
+*   **In-app payments (Phase 2)** — Stripe/escrow rails and trust-accounting (IOLTA) handling must exist before funds move between firms.
+*   **Multi-role auth** — freelance-attorney vs. requesting-firm vs. RMV-verifier roles/permissions (CHECKPOINT: contractor roles are "Later").
 
 ---
 

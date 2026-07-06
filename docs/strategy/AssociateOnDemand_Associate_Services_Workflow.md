@@ -51,13 +51,21 @@ This document outlines the end-to-end workflow for the AssociateOnDemand Associa
 2.  **Jurisdiction, Practice Area & Skills Selection**: Attorneys specify the states/counties they are licensed in, their practice areas, and specific skills (e.g., "Legal Research," "Brief Drafting," "Contract Drafting," "Document Review").
 3.  **Availability**: Attorneys can set their availability (e.g., block out dates, indicate full-time/part-time).
 
-### 3.2. Browsing & Applying for Projects
+### 3.2. Verification Gate (Bar + Background Check)
 
-1.  **Project Feed**: Qualified freelance attorneys receive real-time notifications (email, in-app) for new projects matching their specified jurisdictions, practice areas, and skills.
+**A freelance attorney cannot browse matches or apply until verified.** After registration, the attorney record is created with `Verified = false` and is held in the manual review lane:
+
+1.  **Bar Verification**: A reviewer confirms the attorney's `Bar Number` and `Bar State` against the state bar and sets `Bar Status` (e.g., "Active / Good Standing"). Attorneys with suspended/inactive/unverified status cannot proceed.
+2.  **Background Check**: A background check is ordered and its result recorded in `Background Check Status` ("Clear" required to pass). FCRA consent is collected before the check runs.
+3.  **Gate Flip**: When `Bar Status` = "Active / Good Standing" **and** `Background Check Status` = "Clear," the reviewer sets `Verification Expiry` and the `Verified` gate becomes `true`. Only then does the attorney enter the project feed. Verification lapses at `Verification Expiry` (annual re-verification), which flips `Verified = false` and returns the attorney to this gate.
+
+### 3.3. Browsing & Applying for Projects
+
+1.  **Project Feed**: **Verified** freelance attorneys receive real-time notifications (email, in-app) for new projects matching their specified jurisdictions, practice areas, and skills. The feed is filtered to `Verified = true` — unverified attorneys see no matches.
 2.  **Review Project**: Attorneys can view detailed project information, including type, description, deadline, and proposed fee.
 3.  **Apply for Project**: Attorneys submit an application, which includes a cover letter/message, to the `Project Applications` table. They can also indicate if they are willing to accept a lower fee or suggest an alternative approach.
 
-### 3.3. Completing Project & Submitting Deliverables
+### 3.4. Completing Project & Submitting Deliverables
 
 1.  **Access Project Details**: Upon assignment, the attorney gains secure access to shared case documents and detailed project instructions.
 2.  **Conduct Work**: The attorney performs the assigned task (e.g., drafts a brief, conducts legal research).
