@@ -5,6 +5,7 @@ import {
   createNoteInAirtable,
   createTaskInAirtable,
   findLatestAgentNoteForMatter,
+  findLatestAssessmentOcrNoteForMatter,
   findLatestDraftingFactsNoteForMatter,
   getCaseAssessmentFromAirtable,
   listDocumentsFromAirtable,
@@ -294,6 +295,7 @@ export async function createNoteForMatter(
       type,
     };
     seed.notes.push(note);
+    await persistSeed();
     return note;
   }
   return createNoteInAirtable(matterId, content, author, type);
@@ -604,4 +606,69 @@ export async function buildTimeline(matterId: string): Promise<TimelineEntry[]> 
   }
 
   return entries.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
+}
+
+export async function registerAssessmentDocument(
+  matterId: string,
+  payload: { title: string; category: string; airtableDocumentId?: string; ocrStatus?: string },
+): Promise<DocumentRow> {
+  if (isDemoMode()) {
+    return addDocumentDemo(matterId, {
+      title: payload.title,
+      category: payload.category,
+      ocrStatus: payload.ocrStatus,
+      id: payload.airtableDocumentId,
+    });
+  }
+  return registerAssessmentDocumentInAirtable(matterId, payload);
+}
+
+export async function listAssessmentTemplates(): Promise<DocumentRow[]> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    return seed.documents.filter(
+      (d) => d.matterId === FIRM_TEMPLATE_MATTER_ID || isAssessmentTemplateDocument(d),
+    );
+  }
+  return listAssessmentTemplatesFromAirtable();
+}
+
+export async function saveAssessmentTemplate(payload: {
+  title: string;
+  practiceArea: string;
+  airtableDocumentId?: string;
+}): Promise<DocumentRow> {
+  const category = encodeAssessmentTemplateCategory(payload.practiceArea);
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const existingIdx = seed.documents.findIndex(
+      (d) =>
+        (d.matterId === FIRM_TEMPLATE_MATTER_ID || isAssessmentTemplateDocument(d)) &&
+        d.category === category,
+    );
+    const doc = await addDocumentDemo(FIRM_TEMPLATE_MATTER_ID, {
+      title: payload.title,
+      category,
+      id: payload.airtableDocumentId,
+    });
+    if (existingIdx >= 0) seed.documents[existingIdx] = doc;
+    await persistSeed();
+    return doc;
+  }
+  return registerAssessmentDocumentInAirtable(FIRM_TEMPLATE_MATTER_ID, {
+    title: payload.title,
+    category,
+    airtableDocumentId: payload.airtableDocumentId,
+  });
+}
+
+export async function getAssessmentOcrNote(matterId: string): Promise<Note | null> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const matches = seed.notes
+      .filter((n) => n.matterId === matterId && n.type === ASSESSMENT_DOCUMENT_NOTE_TYPE)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return matches[0] ?? null;
+  }
+  return findLatestAssessmentOcrNoteForMatter(matterId);
 }

@@ -4,7 +4,6 @@ import {
   Calendar,
   ClipboardList,
   FileText,
-  Gavel,
   MessageSquare,
   ScrollText,
 } from "lucide-react";
@@ -14,7 +13,6 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import type {
   CalendarEvent,
-  CaseAssessment,
   DocumentRow,
   LegalElementRow,
   Matter,
@@ -25,47 +23,32 @@ import type {
 } from "@/lib/types";
 import { btnPrimary, btnSecondary, tabActive, tabInactive } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
-import type { AgentCommandResult } from "@/lib/agent-dispatch";
-import { dispatchAgentCommand } from "@/lib/agent-dispatch";
-import { prefillCommandPanel } from "@/lib/case-assessment";
 import { AddTaskForm } from "./AddTaskForm";
 import { EditableOutputMemo } from "./EditableOutputMemo";
 import { MatterAssignmentReview } from "./MatterAssignmentReview";
 import { MatterAgentAlertReview } from "./MatterAgentAlertReview";
 import { MATTER_REVIEW_REFRESH_EVENT } from "@/lib/matter-review-events";
-import { CaseAssessmentEditor } from "./CaseAssessmentEditor";
-import { DraftingFactsCompletenessChip, PracticeAreaFactGuide } from "./PracticeAreaFactGuide";
-import { MatterDeadlineForm } from "./MatterDeadlineForm";
+import { CaseAssessmentPanel } from "./CaseAssessmentPanel";
+import { AssessmentOnFileChip } from "./AssessmentOnFileChip";
+import { DraftingFactsCompletenessChip } from "./PracticeAreaFactGuide";
 import { MatterEventsPanel } from "./MatterEventsPanel";
 import { NoteComposer } from "./NoteComposer";
 import { StatusBadge } from "./StatusBadge";
 import { MatterDocumentUpload } from "./MatterDocumentUpload";
 import { MatterHeaderEditModal } from "./MatterHeaderEditModal";
 import { TaskList } from "./TaskList";
-import { AgentResultPanel } from "./AgentResultPanel";
 
-// BUILD_SPEC §7.3 tab order. Assessment is the default first tab.
+// BUILD_SPEC §7.3 tab order — assessment is a document on Documents, not a separate tab.
 const tabs = [
-  "Assessment",
+  "Documents",
   "Timeline",
   "Notes",
   "Tasks",
-  "Documents",
   "Legal Elements",
   "Events",
 ] as const;
 
 type Tab = (typeof tabs)[number];
-
-function assessmentBadge(value: string): string {
-  const v = value.trim().toLowerCase();
-  if (v.startsWith("strong")) return "bg-emerald-100 text-emerald-900 ring-emerald-200";
-  if (v.startsWith("moderate")) return "bg-amber-100 text-amber-900 ring-amber-200";
-  if (v.startsWith("weak")) return "bg-rose-100 text-rose-900 ring-rose-200";
-  if (v.startsWith("at risk")) return "bg-rose-200 text-rose-950 ring-rose-300 font-semibold";
-  if (v.startsWith("not applicable")) return "bg-slate-100 text-slate-600 ring-slate-200";
-  return "bg-slate-100 text-slate-700 ring-slate-200";
-}
 
 export function MatterWorkbench({
   matter,
@@ -74,7 +57,6 @@ export function MatterWorkbench({
   initialElements,
   initialTimeline,
   initialDocuments,
-  initialAssessment,
   initialEvents = [],
   initialAssignments = [],
   initialAgentAlerts = [],
@@ -86,13 +68,12 @@ export function MatterWorkbench({
   initialElements: LegalElementRow[];
   initialTimeline: TimelineEntry[];
   initialDocuments: DocumentRow[];
-  initialAssessment: CaseAssessment;
   initialEvents?: CalendarEvent[];
   initialAssignments?: InboxItem[];
   initialAgentAlerts?: InboxItem[];
   demoMode?: boolean;
 }) {
-  const [tab, setTab] = useState<Tab>("Assessment");
+  const [tab, setTab] = useState<Tab>("Documents");
   const [matterHeader, setMatterHeader] = useState(matter);
   const [editOpen, setEditOpen] = useState(false);
   const [tasks, setTasks] = useState(initialTasks);
@@ -106,14 +87,20 @@ export function MatterWorkbench({
   const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
   const [assignments, setAssignments] = useState(initialAssignments);
   const [agentAlerts, setAgentAlerts] = useState(initialAgentAlerts);
-  const [dispatchedActions, setDispatchedActions] = useState<Record<string, boolean>>({});
-  const [lastAgentResult, setLastAgentResult] = useState<AgentCommandResult | null>(null);
   const [timelineKinds, setTimelineKinds] = useState<Set<TimelineEntry["kind"]>>(
     () => new Set(["note", "task_created", "task_completed", "document", "event", "agent"]),
   );
   const [expandedTimelineId, setExpandedTimelineId] = useState<string | null>(null);
   const [expandedElementId, setExpandedElementId] = useState<string | null>(null);
+  const [firmTemplates, setFirmTemplates] = useState<DocumentRow[]>([]);
   const [newElementName, setNewElementName] = useState("");
+
+  useEffect(() => {
+    void fetch("/api/assessment-templates")
+      .then((r) => r.json())
+      .then((data: { templates?: DocumentRow[] }) => setFirmTemplates(data.templates ?? []))
+      .catch(() => setFirmTemplates([]));
+  }, [refreshKey]);
 
   const refresh = useCallback(async () => {
     const [t, n, tl, el, m, docs, asgn, alerts] = await Promise.all([
@@ -189,21 +176,6 @@ export function MatterWorkbench({
     });
   }
 
-  async function dispatchNextAction(rowId: string, actionText: string) {
-    if (!actionText.trim()) return;
-    if (!window.confirm(`Dispatch this action to PM?\n\n${actionText}`)) return;
-    setDispatchedActions((prev) => ({ ...prev, [rowId]: true }));
-    prefillCommandPanel(`pm: ${actionText}`, true);
-    try {
-      const result = await dispatchAgentCommand(`pm: ${actionText}`, matter.matterId);
-      if (result.type === "agent") {
-        setLastAgentResult(result);
-      }
-    } catch {
-      // Command panel shows offline stub from API route
-    }
-  }
-
   return (
     <div className="space-y-4">
       <header className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -217,10 +189,15 @@ export function MatterWorkbench({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <AssessmentOnFileChip
+              matterId={matterHeader.matterId}
+              documents={documents}
+              onUploadAssessment={() => setTab("Documents")}
+            />
             <DraftingFactsCompletenessChip
               matterId={matterHeader.matterId}
               caseType={matterHeader.caseType}
-              onCompleteFacts={() => setTab("Assessment")}
+              onCompleteFacts={() => setTab("Documents")}
             />
             <Link href={`/assignments/new?matterId=${matterHeader.matterId}`} className={btnSecondary}>
               New assignment
@@ -281,7 +258,7 @@ export function MatterWorkbench({
         onAssignmentUpdated={refresh}
         onViewAgentNote={() => setTab("Notes")}
         caseType={matterHeader.caseType}
-        onCompleteFacts={() => setTab("Assessment")}
+        onCompleteFacts={() => setTab("Documents")}
       />
 
       <nav className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
@@ -299,120 +276,53 @@ export function MatterWorkbench({
         ))}
       </nav>
 
-      {tab === "Assessment" ? (
+      {tab === "Documents" ? (
         <div className="space-y-4">
-          <PracticeAreaFactGuide
-            matterId={matter.matterId}
-            caseType={matterHeader.caseType}
-            mode="workbench"
-            onSaved={refresh}
+          <CaseAssessmentPanel
+            matter={matterHeader}
+            documents={documents}
+            firmTemplates={firmTemplates}
+            onUpdated={refresh}
           />
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
-            <div>
-              <p className="font-semibold text-sky-900">AOS discretionary factors workbook</p>
-              <p className="mt-0.5 text-xs text-sky-900">
-                Case Intake → Brief Development Matrix → Case Theme → Legal Framework. Complete in Excel,
-                then draft with{" "}
-                <code className="rounded bg-sky-100 px-1">draft aos discretionary brief</code> in the
-                Associate panel.
-              </p>
-            </div>
-            <a
-              className={btnSecondary}
-              download
-              href="/templates/AOS_Discretionary_Factors_Case_Assessment_Tool.xlsx"
-            >
-              Download .xlsx
-            </a>
-          </div>
-          <CaseAssessmentEditor matterId={matter.matterId} initial={initialAssessment} />
-          <MatterDeadlineForm matterId={matter.matterId} initialDeadline={deadline} onUpdated={refresh} />
-          <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 px-4 py-3">
-              <h2 className="font-medium text-slate-900">Legal element pathway matrix</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Extend pathway rows below. Structured posture, deadlines, and overall notes stay in Case assessment sections above.
-              </p>
-            </div>
+          <MatterDocumentUpload matterId={matter.matterId} onUploaded={refresh} />
+          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                 <tr>
-                  <th className="px-3 py-2">Element / Pathway</th>
-                  <th className="px-3 py-2">Assessment</th>
-                  <th className="px-3 py-2">Key gap</th>
-                  <th className="px-3 py-2">Next action</th>
+                  <th className="px-4 py-3">Title</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">OCR</th>
+                  <th className="px-4 py-3">PII tier</th>
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">Uploaded</th>
                 </tr>
               </thead>
               <tbody>
-                {elements.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="p-0">
-                      <EmptyState
-                        icon={Gavel}
-                        title="No legal elements yet."
-                        description="Map elements in the Legal Elements tab or import from your case assessment."
-                      />
-                    </td>
-                  </tr>
+                {documents.length ? (
+                  documents.map((doc) => (
+                    <tr key={doc.id} className="border-t border-slate-100">
+                      <td className="px-4 py-3 font-medium">{doc.title}</td>
+                      <td className="px-4 py-3">{doc.category || "—"}</td>
+                      <td className="px-4 py-3">{doc.ocrStatus || "—"}</td>
+                      <td className="px-4 py-3">{doc.piiTier ?? "—"}</td>
+                      <td className="px-4 py-3">{doc.fileType || "—"}</td>
+                      <td className="px-4 py-3 tabular-nums">{formatDate(doc.uploadedAt)}</td>
+                    </tr>
+                  ))
                 ) : (
-                  elements.map((row) => {
-                    const dispatched = dispatchedActions[row.id];
-                    return (
-                      <tr key={row.id} className="border-t border-slate-100 align-top">
-                        <td className="px-3 py-2 font-medium">{row.element}</td>
-                        <td className="px-3 py-2">
-                          <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-xs ring-1 ${assessmentBadge(row.assessment)}`}
-                          >
-                            {row.assessment || "Unknown"}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-slate-700">{row.keyGap || "—"}</td>
-                        <td className="px-3 py-2">
-                          <div className="flex flex-col gap-1">
-                            <p className="text-slate-800">{row.nextAction || "—"}</p>
-                            {row.nextAction.trim() ? (
-                              <button
-                                type="button"
-                                disabled={dispatched}
-                                onClick={() => dispatchNextAction(row.id, row.nextAction.trim())}
-                                className={`self-start rounded-md px-2 py-1 text-xs font-medium ring-1 ${
-                                  dispatched
-                                    ? "bg-slate-100 text-slate-400 ring-slate-200"
-                                    : `${btnPrimary} ring-slate-800`
-                                }`}
-                              >
-                                {dispatched ? "Dispatched" : "Dispatch"}
-                              </button>
-                            ) : null}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-          {lastAgentResult ? (
-            <div className="fixed bottom-4 right-4 z-20 w-full max-w-sm sm:max-w-md">
-              <div className="rounded-lg border border-slate-300 bg-white/95 p-3 shadow-lg backdrop-blur">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Latest PM / research dispatch
-                  </p>
-                  <button
-                    type="button"
-                    className="text-[0.7rem] text-slate-500 hover:text-slate-700"
-                    onClick={() => setLastAgentResult(null)}
-                  >
-                    Dismiss
-                  </button>
-                </div>
-                <AgentResultPanel result={lastAgentResult} variant="compact" />
-              </div>
-            </div>
-          ) : null}
+                  <tr>
+                    <td colSpan={6} className="p-0">
+                    <EmptyState
+                      icon={FileText}
+                      title="No other documents yet."
+                      description="Upload supporting files below, or start with a case assessment scan above."
+                    />
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
         </div>
       ) : null}
 
@@ -529,50 +439,6 @@ export function MatterWorkbench({
         </div>
       ) : null}
 
-      {tab === "Documents" ? (
-        <div className="space-y-4">
-          <MatterDocumentUpload matterId={matter.matterId} onUploaded={refresh} />
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-                <tr>
-                  <th className="px-4 py-3">Title</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3">OCR</th>
-                  <th className="px-4 py-3">PII tier</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Uploaded</th>
-                </tr>
-              </thead>
-              <tbody>
-                {documents.length ? (
-                  documents.map((doc) => (
-                    <tr key={doc.id} className="border-t border-slate-100">
-                      <td className="px-4 py-3 font-medium">{doc.title}</td>
-                      <td className="px-4 py-3">{doc.category || "—"}</td>
-                      <td className="px-4 py-3">{doc.ocrStatus || "—"}</td>
-                      <td className="px-4 py-3">{doc.piiTier ?? "—"}</td>
-                      <td className="px-4 py-3">{doc.fileType || "—"}</td>
-                      <td className="px-4 py-3 tabular-nums">{formatDate(doc.uploadedAt)}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="p-0">
-                    <EmptyState
-                      icon={FileText}
-                      title="No documents yet."
-                      description="Upload files from the Intake tab to attach them to this matter."
-                    />
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        </div>
-      ) : null}
-
       {tab === "Legal Elements" ? (
         <div className="space-y-3">
           <div className="flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
@@ -682,7 +548,7 @@ export function MatterWorkbench({
                     <EmptyState
                       icon={ClipboardList}
                       title="No legal elements yet."
-                      description="Edit assessments inline here or start from the Assessment tab."
+                      description="Edit assessments inline here or upload a case assessment on the Documents tab."
                     />
                   </td>
                 </tr>

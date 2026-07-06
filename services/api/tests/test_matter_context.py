@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import json
 
-from app.services.matter_context import format_assessment_data, format_drafting_facts
+from app.services.matter_context import (
+    format_assessment_data,
+    format_assessment_document,
+    format_drafting_facts,
+)
 
 
 def test_format_assessment_data_structured_json() -> None:
@@ -50,3 +54,22 @@ def test_format_drafting_facts_immigration() -> None:
 def test_format_drafting_facts_empty() -> None:
     assert format_drafting_facts(None) == ""
     assert format_drafting_facts({"v": 2}) == ""
+
+
+def test_format_assessment_document_uploaded_scan() -> None:
+    raw = {
+        "v": 1,
+        "documentId": "doc-1",
+        "title": "client-assessment.pdf",
+        "ocrText": "Relief sought: adjustment of status. Entry: 2019.",
+        "facts": [{"fact_type": "relief", "value": "AOS", "confidence": 0.8}],
+    }
+    text = format_assessment_document(raw)
+    assert "Case assessment document (uploaded scan)" in text
+    assert "client-assessment.pdf" in text
+    assert "relief: AOS" in text
+
+
+def test_format_assessment_document_empty() -> None:
+    assert format_assessment_document(None) == ""
+    assert format_assessment_document({"v": 2}) == ""

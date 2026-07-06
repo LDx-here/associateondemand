@@ -49,6 +49,7 @@ export function tierRequiresManualApproval(): boolean {
 
 export type UploadResult = {
   document_id?: string;
+  airtable_document_id?: string;
   filename?: string;
   ocr_method?: string;
   processing_status?: string;
@@ -68,6 +69,7 @@ export async function uploadDocument(
   file: File,
   manualApproved: boolean,
   endpoint: "single" | "batch" = "single",
+  options?: { documentCategory?: string },
 ): Promise<UploadResult> {
   const fd = new FormData();
   fd.set("matter_id", matterId);
@@ -75,6 +77,9 @@ export async function uploadDocument(
     fd.set("file", file);
   } else {
     fd.append("files", file);
+  }
+  if (options?.documentCategory) {
+    fd.set("document_category", options.documentCategory);
   }
   if (manualApproved) {
     fd.set("manual_review_approved", "true");

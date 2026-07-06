@@ -214,6 +214,25 @@ Verified: `pytest`, `npm run test:facts`, `next build`, `scripts/smoke-productio
 
 **Deployed 2026-07-06:** pass 11 — Fly API + Vercel prod.
 
+### Autonomous pass log — pass 12 (2026-07-06, assessment-as-document UX)
+
+User feedback: attorneys could not find the **Assessment** tab and expect assessment as a **scanned document**, not a web checklist.
+
+- **Removed Assessment tab** — matter workbench defaults to **Documents**; case assessment is an uploaded scan.
+- **Case assessment panel** — Documents tab: **Upload case assessment** (PDF/photo) → OCR → Assessment Document note → agent prompts; chip **Assessment on file — feeds drafts**.
+- **Firm assessment templates** — `/templates#firm-assessment-templates`: upload blank form once per practice area (`assessment_template:*` in Documents.category).
+- **Optional quick facts** — collapsed **Or fill quick facts below** on Documents tab; assignment intake checklist unchanged.
+- **Agent wiring** — `format_assessment_document()` merges uploaded scan OCR + extracted fields into matter context.
+
+Verified: `pytest` (30 passed), `npm run test:assessment-docs`, `next build` (44 routes), `scripts/smoke-production.sh` PASS.
+
+**Pilot E2E (manual):**
+1. `/matters/AOD-1001` → **Documents** tab → **Upload case assessment** (any PDF) → green chip.
+2. **View extracted facts** → OCR text/fields visible.
+3. `/templates` → **Firm assessment templates** → upload Immigration blank form.
+
+**Deployed 2026-07-06:** pass 12 — Fly API + Vercel prod.
+
 ### Autonomous pass log — pass 10 (2026-07-06, practice-area workflow fluency)
 
 - **Practice-area fact guides** — Immigration (priority) and Personal Injury checklists with progressive disclosure by case type; generic fallback stays freeform-only.
@@ -380,6 +399,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 12 (deployed 2026-07-06):** assessment-as-document UX — Documents tab upload path, firm templates on `/templates`, OCR feeds agent prompts; Assessment tab removed.
 - **Pass 11 (deployed 2026-07-06):** B2B Overflow Counsel pivot — `.aod-context/` integration, intelligent intake v2 (deliverable-aware facts), Firm Memory v1, sample discount on intake.
 - **Pass 10 (deployed 2026-07-06):** practice-area guided fact intake — Immigration/PI checklists, completeness indicator, Facts notes → agent prompts, matter workbench + assignment intake integration.
 - **Pass 9 (deployed 2026-07-06):** unified Command panel + matter review — inline agent alert actions, deliverable-ready gate, cross-panel refresh without page reload.
@@ -392,9 +412,9 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Manual verify pass 11** — open `/assignments/new?deliverable=aos-discretionary-brief` → confirm deliverable-specific fact prompts with "Feeds: …" helper text; test sample discount checkbox + upload.
-2. **Manual verify Firm Memory** — edit agent output on a matter → **Save to Firm Memory** → confirm Strategy Patterns row in Airtable (demo mode shows 503).
-3. **Manual verify pass 10** — on `/matters/AOD-1001` fill Immigration fact checklist, save, submit assignment, confirm draft prompt includes structured facts.
+1. **Manual verify pass 12** — on `/matters/AOD-1001` → **Documents** tab → **Upload case assessment** with any PDF; confirm chip + extracted facts; submit assignment and verify draft uses OCR block.
+2. **Manual verify pass 11** — open `/assignments/new?deliverable=aos-discretionary-brief` → confirm deliverable-specific fact prompts with "Feeds: …" helper text; test sample discount checkbox + upload.
+3. **Manual verify Firm Memory** — edit agent output on a matter → **Save to Firm Memory** → confirm Strategy Patterns row in Airtable (demo mode shows 503).
 4. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief`.
 
 ## Blockers
@@ -418,7 +438,7 @@ cd /Users/ladaj/Developer/AssociateOnDemand
 git pull origin cursor/phase0-foundation
 bash scripts/smoke-production.sh
 cd services/api && .venv/bin/python -m pytest tests/ -q
-cd web && npm run test:catalog && npm run test:facts && npm run build
+cd web && npm run test:catalog && npm run test:facts && npm run test:assessment-docs && npm run build
 docker compose up -d --build && bash scripts/smoke-docker-e2e.sh
 cd web && npm run dev -- -p 3003
 ```

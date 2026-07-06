@@ -1005,7 +1005,6 @@ export async function registerAssessmentDocumentInAirtable(
   payload: { title: string; category: string; airtableDocumentId?: string },
 ): Promise<DocumentRow> {
   const resolved = await resolveMatterRecordId(matterCode);
-  if (!resolved) throw new Error(`Matter not found: ${matterCode}`);
   const d = F.documents;
   if (payload.airtableDocumentId) {
     await airtablePatch(TABLES.documents, payload.airtableDocumentId, {
@@ -1014,21 +1013,24 @@ export async function registerAssessmentDocumentInAirtable(
     });
     return {
       id: payload.airtableDocumentId,
-      matterId: resolved.matterId,
+      matterId: resolved?.matterId ?? matterCode,
       title: payload.title,
       category: payload.category,
       uploadedAt: new Date().toISOString(),
     };
   }
-  const rec = await airtableCreate(TABLES.documents, {
+  const fields: RawFields = {
     [d.title]: payload.title.slice(0, 240),
     [d.category]: payload.category,
-    [d.matter_id]: [resolved.recordId],
     [d.created_at]: new Date().toISOString(),
     [d.uploaded_by]: "Attorney",
     [d.ocr_status]: "processed",
-  });
-  return mapDocument(rec, resolved.matterId);
+  };
+  if (resolved) {
+    fields[d.matter_id] = [resolved.recordId];
+  }
+  const rec = await airtableCreate(TABLES.documents, fields);
+  return mapDocument(rec, resolved?.matterId ?? matterCode);
 }
 
 export async function findLatestAssessmentOcrNoteForMatter(matterCode: string): Promise<Note | null> {

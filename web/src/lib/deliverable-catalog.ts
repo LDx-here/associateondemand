@@ -64,7 +64,7 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
     name: "AOS Discretionary Brief",
     tier: "Template",
     description:
-      "Adjustment-of-status discretionary factors brief. Complete the AOS Discretionary Factors workbook, then the drafting agent produces a first-pass brief from the Case Assessment tab.",
+      "Adjustment-of-status discretionary factors brief. Upload the completed case assessment on the matter Documents tab (or fill quick facts), then the drafting agent produces a first-pass brief.",
     turnaround: "1-2 business days",
     skillDoc: "docs/constitution/05-Drafting-SKILL.md",
     pricing: { minUsd: 750, maxUsd: 1500, sampleDiscountEligible: true, sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT },

@@ -116,6 +116,39 @@ def format_assessment_data(raw: Any) -> str:
     return "\n".join(lines) if len(lines) > 1 else ""
 
 
+def format_assessment_document(raw: Any) -> str:
+    """Render uploaded case assessment scan OCR + extracted fields for agent prompts."""
+
+    if not raw:
+        return ""
+    data: Any = raw
+    if isinstance(raw, str):
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            return f"## Case assessment document (uploaded scan)\n- OCR text:\n{raw[:3000]}"
+    if not isinstance(data, dict) or data.get("v") != 1:
+        return ""
+
+    lines = ["## Case assessment document (uploaded scan)"]
+    title = data.get("title")
+    if title:
+        lines.append(f"- Document: {title}")
+    ocr = data.get("ocrText")
+    if ocr and str(ocr).strip():
+        lines.append(f"- OCR text:\n{str(ocr).strip()[:3000]}")
+    facts = data.get("facts")
+    if isinstance(facts, list) and facts:
+        lines.append("- Extracted fields:")
+        for fact in facts[:24]:
+            if not isinstance(fact, dict):
+                continue
+            val = str(fact.get("value") or "").strip()
+            if val:
+                lines.append(f"  - {fact.get('fact_type', 'fact')}: {val}")
+    return "\n".join(lines) if len(lines) > 1 else ""
+
+
 def format_drafting_facts(raw: Any) -> str:
     """Render structured drafting facts from Notes (type Facts) for agent prompts."""
 
@@ -165,6 +198,32 @@ def fetch_drafting_facts(matter_code: str) -> dict[str, Any] | None:
         return None
 
 
+def fetch_latest_assessment_document(matter_code: str) -> dict[str, Any] | None:
+    """Parse the newest Assessment Document note JSON for agent prompts."""
+
+    if not at.is_configured() or not matter_code:
+        return None
+    try:
+        notes = at.list_matter_notes(matter_code, max_records=100)
+        matches = [
+            n
+            for n in notes
+            if str(n.get(at.FIELDS_NOTES["type"]) or "") == "Assessment Document"
+        ]
+        if not matches:
+            return None
+        matches.sort(key=lambda n: str(n.get(at.FIELDS_NOTES["created_at"]) or ""), reverse=True)
+        raw = matches[0].get(at.FIELDS_NOTES["content"])
+        if not raw or not isinstance(raw, str):
+            return None
+        data = json.loads(raw.strip())
+        if isinstance(data, dict) and data.get("v") == 1:
+            return data
+    except Exception:
+        LOGGER.exception("assessment document fetch failed")
+    return None
+
+
 def format_matter_context(ctx: dict[str, Any] | None, *, matter_code: str | None = None) -> str:
     if not ctx:
         return "No live matter row found in Airtable for this matter_id."
@@ -177,4 +236,8 @@ def format_matter_context(ctx: dict[str, Any] | None, *, matter_code: str | None
     drafting_block = format_drafting_facts(drafting)
     if drafting_block:
         lines.append(drafting_block)
+    assessment_doc = fetch_latest_assessment_document(code) if code else None
+    assessment_doc_block = format_assessment_document(assessment_doc)
+    if assessment_doc_block:
+        lines.append(assessment_doc_block)
     return "\n".join(lines)

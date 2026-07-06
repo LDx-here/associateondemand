@@ -356,7 +356,7 @@ export function DraftingFactsCompletenessChip({
       onClick={onCompleteFacts}
       className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100"
     >
-      Complete facts before drafting ({completeness.filled}/{completeness.total}) →
+      Complete facts on Documents tab ({completeness.filled}/{completeness.total}) →
     </button>
   );
 }

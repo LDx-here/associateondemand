@@ -18,6 +18,24 @@ from app.services import airtable as at
 from app.services.presidio_gate import current_tier
 
 
+def _assessment_ocr_note_payload(
+    filename: str,
+    ocr_text: str,
+    facts: list[dict[str, Any]],
+) -> str:
+    import json
+
+    payload = {
+        "v": 1,
+        "documentId": filename,
+        "title": filename,
+        "ocrText": ocr_text[:3000],
+        "facts": facts[:24],
+        "uploadedAt": None,
+    }
+    return json.dumps(payload)
+
+
 def process_uploaded_document(
     db: Session,
     *,
@@ -25,6 +43,7 @@ def process_uploaded_document(
     filename: str,
     stored_path: Path,
     mime_type: str | None = None,
+    document_category: str | None = None,
 ) -> dict[str, Any]:
     """Run OCR pipeline, agents, persist Document + ExtractedFact rows."""
 
@@ -82,12 +101,20 @@ def process_uploaded_document(
     airtable_doc = at.create_document(
         matter_code=external_id,
         title=filename,
-        category=str(cat.get("category") or "uncategorized"),
+        category=str(document_category or cat.get("category") or "uncategorized"),
         ocr_status=ocr.processing_status,
         pii_tier=str(current_tier()),
         file_type=(mime_type or Path(filename).suffix or "")[:80],
         file_path=str(stored_path),
     )
+
+    if document_category == "case_assessment" and ocr_text:
+        at.create_matter_note(
+            matter_code=external_id,
+            content=_assessment_ocr_note_payload(filename, ocr_text, facts_payload),
+            author="Strong Reader",
+            note_type="Assessment Document",
+        )
 
     return {
         "document_id": doc_id,

@@ -1,3 +1,7 @@
+### [2026-07-06] CHECKPOINT: pass 12 assessment-as-document — Documents tab upload path, firm templates on /templates, OCR feeds agent prompts; Assessment tab removed; Fly + Vercel prod; smoke pass
+
+### [2026-07-06] CHECKPOINT: pass 11 assessment-as-document — Documents tab upload path, firm templates on /templates, OCR feeds agent prompts; Assessment tab removed; Fly + Vercel prod; smoke pass
+
 ### [2026-07-06] CHECKPOINT: pass 10 practice-area fact intake — Immigration/PI guided checklists, Facts notes → agent prompts, completeness indicator on matter + intake; Fly + Vercel prod; smoke pass
 
 ### [2026-07-06] CHECKPOINT: pass 9 unified command + matter review — inline agent alerts, deliverable-ready gate, cross-panel refresh; Fly + Vercel prod; smoke pass

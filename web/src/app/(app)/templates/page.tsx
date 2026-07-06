@@ -2,6 +2,7 @@ import { FileCheck2, FlaskConical, Hammer } from "lucide-react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
+import { FirmAssessmentTemplates } from "@/components/FirmAssessmentTemplates";
 import { FirmMemoryBadge } from "@/components/FirmMemoryBadge";
 import {
   DELIVERABLE_CATALOG,
@@ -103,6 +104,8 @@ export default function TemplateCatalogPage() {
           New assignment
         </Link>
       </header>
+
+      <FirmAssessmentTemplates />
 
       {TIER_ORDER.map((tier) => {
         const meta = TIER_META[tier];

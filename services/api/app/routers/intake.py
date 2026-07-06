@@ -48,6 +48,7 @@ async def _process_single(
     settings: Settings,
     db: Session,
     manual_review_approved: bool,
+    document_category: str | None = None,
 ) -> dict[str, Any]:
     require_strong_reader(manual_review_approved=manual_review_approved)
 
@@ -65,6 +66,7 @@ async def _process_single(
         filename=safe_name,
         stored_path=dest,
         mime_type=file.content_type,
+        document_category=document_category,
     )
     result["tier_gate"] = {"manual_review_approved": manual_review_approved}
     return result
@@ -75,6 +77,7 @@ async def upload_document(
     matter_id: str = Form(...),
     file: UploadFile = File(...),
     manual_review_approved: str | None = Form(default=None),
+    document_category: str | None = Form(default=None),
     x_manual_review_approved: str | None = Header(default=None, alias="X-Manual-Review-Approved"),
     settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
@@ -86,6 +89,7 @@ async def upload_document(
         settings=settings,
         db=db,
         manual_review_approved=approved,
+        document_category=document_category,
     )
 
 
@@ -94,6 +98,7 @@ async def batch_upload(
     matter_id: str = Form(...),
     files: list[UploadFile] = File(...),
     manual_review_approved: str | None = Form(default=None),
+    document_category: str | None = Form(default=None),
     x_manual_review_approved: str | None = Header(default=None, alias="X-Manual-Review-Approved"),
     settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
@@ -111,6 +116,7 @@ async def batch_upload(
                     settings=settings,
                     db=db,
                     manual_review_approved=approved,
+                    document_category=document_category,
                 )
             )
         except Exception as exc:

@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { MatterWorkbench } from "@/components/MatterWorkbench";
 import {
   buildTimeline,
-  getCaseAssessment,
   getMatterByCode,
   listAgentAlertsForMatter,
   listAssignmentsForMatter,
@@ -22,14 +21,13 @@ export default async function MatterDetailPage({ params }: Props) {
   const matter = await getMatterByCode(id);
   if (!matter) notFound();
 
-  const [tasks, notes, elements, timeline, documents, assessment, events, assignments, agentAlerts] =
+  const [tasks, notes, elements, timeline, documents, events, assignments, agentAlerts] =
     await Promise.all([
     listTasksForMatter(matter.matterId),
     listNotesForMatter(matter.matterId),
     listLegalElements(matter.matterId),
     buildTimeline(matter.matterId),
     listDocumentsForMatter(matter.matterId),
-    getCaseAssessment(matter.matterId),
     listEventsForMatter(matter.matterId),
     listAssignmentsForMatter(matter.matterId),
     listAgentAlertsForMatter(matter.matterId),
@@ -46,7 +44,6 @@ export default async function MatterDetailPage({ params }: Props) {
       initialElements={elements}
       initialTimeline={timeline}
       initialDocuments={documents}
-      initialAssessment={assessment}
       initialEvents={events}
       initialAssignments={assignments}
       initialAgentAlerts={agentAlerts}
