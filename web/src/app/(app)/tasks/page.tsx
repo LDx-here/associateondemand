@@ -1,7 +1,7 @@
 import {
   listAllTasks,
   listMatters,
-  useDemoMode,
+  isDemoMode,
 } from "@/lib/data-store";
 import { GlobalTaskList } from "@/components/GlobalTaskList";
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function GlobalTasksPage() {
   const [tasks, matters] = await Promise.all([listAllTasks(), listMatters()]);
-  const demo = useDemoMode();
+  const demo = isDemoMode();
   return (
     <div className="space-y-6">
       <header>

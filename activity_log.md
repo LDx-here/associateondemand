@@ -1,3 +1,5 @@
+### [2026-07-06] CHECKPOINT: pass 7 scheduled cron pass — DRY'd assignment lifecycle, scripted intake->inbox test, fixed CI-breaking eslint crash (49 real lint errors resolved, CI green)
+
 ### [2026-07-05] CHECKPOINT: pass 6 editable agent output + Save as skill (Strategy Patterns) — Notes tab, Command panel, new API routes
 
 ### [2026-07-05] CHECKPOINT: pass 5 strategic lock, day-one SKUs, intake disclaimer, strategy docs, prod deploy

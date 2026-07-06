@@ -1,5 +1,5 @@
 import { AssignmentIntakeForm } from "@/components/AssignmentIntakeForm";
-import { listMatters, useDemoMode } from "@/lib/data-store";
+import { listMatters, isDemoMode } from "@/lib/data-store";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +8,7 @@ type Props = { searchParams: Promise<{ deliverable?: string; matterId?: string }
 export default async function NewAssignmentPage({ searchParams }: Props) {
   const params = await searchParams;
   const matters = await listMatters();
-  const demo = useDemoMode();
+  const demo = isDemoMode();
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">

@@ -37,14 +37,21 @@ export function EditableOutputMemo({
   const [skillOpen, setSkillOpen] = useState(false);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
+  // Re-sync local edit state when the server-sourced `content`/`noteId` props
+  // change (e.g. a parent refetch after another save). Adjusted during render
+  // rather than in a useEffect per https://react.dev/learn/you-might-not-need-an-effect
+  // so this doesn't trigger an extra cascading render.
+  const [prevContent, setPrevContent] = useState(content);
+  if (content !== prevContent) {
+    setPrevContent(content);
     setDraft(content);
     setSavedContent(content);
-  }, [content]);
-
-  useEffect(() => {
+  }
+  const [prevNoteId, setPrevNoteId] = useState(noteId);
+  if (noteId !== prevNoteId) {
+    setPrevNoteId(noteId);
     setPersistedNoteId(noteId);
-  }, [noteId]);
+  }
 
   const dirty = draft.trim() !== savedContent.trim();
   const canPersist = Boolean(matterId) && dirty;

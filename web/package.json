@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test:airtable": "node scripts/smoke-airtable.mjs",
-    "test:catalog": "tsx scripts/verify-deliverable-catalog.mjs"
+    "test:catalog": "tsx scripts/verify-deliverable-catalog.mjs",
+    "test:assignment-lifecycle": "tsx scripts/verify-assignment-lifecycle.mjs",
+    "test": "npm run test:catalog && npm run test:assignment-lifecycle"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { createCorrectionInAirtable, createStrategyPatternInAirtable } from "@/lib/airtable/queries";
-import { useDemoMode } from "@/lib/data-store";
+import { isDemoMode } from "@/lib/data-store";
 
 export async function POST(req: Request) {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     return NextResponse.json(
       { error: "Sample data mode. Connect Airtable in Settings to save skills." },
       { status: 503 },

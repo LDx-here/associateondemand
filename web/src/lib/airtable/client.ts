@@ -12,7 +12,7 @@ export function isAirtableConfigured(): boolean {
   return Boolean(process.env.AIRTABLE_PAT && process.env.AIRTABLE_BASE_ID);
 }
 
-export function useDemoMode(): boolean {
+export function isDemoMode(): boolean {
   return !isAirtableConfigured();
 }
 

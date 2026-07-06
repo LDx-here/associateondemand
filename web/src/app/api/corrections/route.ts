@@ -3,7 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 
 import { createCorrectionInAirtable } from "@/lib/airtable/queries";
-import { useDemoMode } from "@/lib/data-store";
+import { isDemoMode } from "@/lib/data-store";
 
 const CATEGORY_MAP = {
   factual_error: "Factual",
@@ -17,7 +17,7 @@ const CATEGORY_MAP = {
 type CategoryKey = keyof typeof CATEGORY_MAP;
 
 export async function POST(req: Request) {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     return NextResponse.json(
       { error: "Sample data mode. Connect Airtable in Settings to save corrections." },
       { status: 503 },

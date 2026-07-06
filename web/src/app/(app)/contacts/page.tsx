@@ -1,14 +1,14 @@
 import { Users } from "lucide-react";
 
 import { EmptyState } from "@/components/EmptyState";
-import { listContacts, useDemoMode } from "@/lib/data-store";
+import { listContacts, isDemoMode } from "@/lib/data-store";
 import { EMPTY_CELL } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function ContactsPage() {
   const contacts = await listContacts();
-  const demo = useDemoMode();
+  const demo = isDemoMode();
 
   return (
     <div className="space-y-6">
