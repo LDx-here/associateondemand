@@ -2,7 +2,7 @@ import {
   listEventsFromAirtable,
   listMattersFromAirtable,
 } from "@/lib/airtable/queries";
-import { useDemoMode } from "@/lib/data-store";
+import { isDemoMode } from "@/lib/data-store";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
 import { CalendarBoard, type CalendarEntry } from "@/components/CalendarBoard";
 import type { Matter } from "@/lib/types";
@@ -15,7 +15,7 @@ export default async function CalendarPage({
   searchParams?: Promise<{ month?: string }>;
 }) {
   const sp = (await searchParams) ?? {};
-  const demo = useDemoMode();
+  const demo = isDemoMode();
 
   const now = new Date();
   const monthStart = sp.month

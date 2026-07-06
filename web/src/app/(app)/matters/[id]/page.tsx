@@ -12,7 +12,7 @@ import {
   listLegalElements,
   listNotesForMatter,
   listTasksForMatter,
-  useDemoMode,
+  isDemoMode,
 } from "@/lib/data-store";
 
 type Props = { params: Promise<{ id: string }> };
@@ -35,7 +35,7 @@ export default async function MatterDetailPage({ params }: Props) {
     listAgentAlertsForMatter(matter.matterId),
   ]);
 
-  const demo = useDemoMode();
+  const demo = isDemoMode();
 
   return (
     <MatterWorkbench

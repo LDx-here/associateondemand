@@ -27,7 +27,7 @@ export function buildIntakeDisclaimerBody(ctx: IntakeDisclaimerContext): string 
 
   return [
     "AssociateOnDemand provides limited-scope legal overflow support for licensed attorneys.",
-    "La'Dajia Williams (Recover My Value, LLC) verifies deliverables produced through this platform in Phase 0–2.",
+    "La'Dajia Ferguson (Recover My Value, LLC) verifies deliverables produced through this platform in Phase 0–2.",
     "You remain the attorney of record for your client and for any filing, court appearance, or advice to your client.",
     "AssociateOnDemand does not establish an attorney–client relationship with your client and does not provide legal advice to non-attorney end clients.",
     `Scope, applicable rules, and filing responsibility depend on ${practice} and the governing jurisdiction for the matter — not on a single default state.${countryNote}`,

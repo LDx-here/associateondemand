@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { createMatter, listMatters, useDemoMode } from "@/lib/data-store";
+import { createMatter, listMatters, isDemoMode } from "@/lib/data-store";
 
 export async function GET() {
   const matters = await listMatters();
-  return NextResponse.json({ matters, demoMode: useDemoMode() });
+  return NextResponse.json({ matters, demoMode: isDemoMode() });
 }
 
 export async function POST(request: Request) {
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       status: body.status ? String(body.status) : undefined,
       summary: body.summary ? String(body.summary) : undefined,
     });
-    return NextResponse.json({ matter, demoMode: useDemoMode() }, { status: 201 });
+    return NextResponse.json({ matter, demoMode: isDemoMode() }, { status: 201 });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Create failed" },

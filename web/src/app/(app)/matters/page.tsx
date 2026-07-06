@@ -1,10 +1,10 @@
 import { MattersTable } from "@/components/MattersTable";
 import { NewMatterButton } from "@/components/NewMatterButton";
-import { listMatters, useDemoMode } from "@/lib/data-store";
+import { listMatters, isDemoMode } from "@/lib/data-store";
 
 export default async function MattersPage() {
   const matters = await listMatters();
-  const demo = useDemoMode();
+  const demo = isDemoMode();
   return (
     <div className="space-y-4">
       <header className="flex flex-wrap items-start justify-between gap-3">

@@ -2,13 +2,13 @@ import Link from "next/link";
 
 import { AssignmentBoard } from "@/components/AssignmentBoard";
 import { InboxBoard } from "@/components/InboxBoard";
-import { listInboxItems, useDemoMode } from "@/lib/data-store";
+import { listInboxItems, isDemoMode } from "@/lib/data-store";
 import { btnPrimary } from "@/lib/ui-classes";
 
 export const dynamic = "force-dynamic";
 
 export default async function InboxPage() {
-  const demo = useDemoMode();
+  const demo = isDemoMode();
   const items = await listInboxItems();
 
   const assignments = items.filter((item) => item.kind === "assignment");

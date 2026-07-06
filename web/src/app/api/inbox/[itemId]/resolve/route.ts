@@ -4,7 +4,7 @@ import {
   resolveInboxItemInAirtable,
   type InboxItem,
 } from "@/lib/airtable/queries";
-import { useDemoMode } from "@/lib/data-store";
+import { isDemoMode } from "@/lib/data-store";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -52,7 +52,7 @@ async function resumePmAfterApprove(item: InboxItem, resolution: string) {
 
 export async function POST(req: Request, ctx: Ctx) {
   const { itemId } = await ctx.params;
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     return NextResponse.json(
       { error: "Demo mode — PM Inbox resolution requires a live Airtable connection." },
       { status: 503 },
