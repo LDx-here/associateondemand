@@ -23,7 +23,7 @@ import {
   updateMatterDeadlineInAirtable,
   updateMatterInAirtable,
   updateNoteInAirtable,
-  useDemoMode,
+  isDemoMode,
 } from "./airtable/queries";
 import { emptyCaseAssessment } from "./case-assessment";
 import {
@@ -48,21 +48,21 @@ import type {
   TimelineEntry,
 } from "./types";
 
-export { useDemoMode };
+export { isDemoMode };
 
 async function loadDemoSeed(): Promise<DevSeed> {
   return getMutableSeed();
 }
 
 export async function listMatters(): Promise<Matter[]> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     return (await loadDemoSeed()).matters;
   }
   return listMattersFromAirtable();
 }
 
 export async function listContacts(): Promise<Contact[]> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     return [];
   }
   return listContactsFromAirtable();
@@ -76,7 +76,7 @@ export async function createMatter(payload: {
   status?: string;
   summary?: string;
 }): Promise<Matter> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     const matterId = `AOD-${1000 + seed.matters.length + 1}`;
     const matter: Matter = {
@@ -109,7 +109,7 @@ export async function getMatterByCode(matterId: string): Promise<Matter | null> 
 }
 
 export async function listTasksForMatter(matterId: string): Promise<Task[]> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     return seed.tasks.filter((t) => t.matterId === matterId);
   }
@@ -117,21 +117,21 @@ export async function listTasksForMatter(matterId: string): Promise<Task[]> {
 }
 
 export async function listAllTasks(): Promise<Task[]> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     return (await loadDemoSeed()).tasks;
   }
   return listAllTasksFromAirtable();
 }
 
 export async function listAllNotes(): Promise<Note[]> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     return (await loadDemoSeed()).notes;
   }
   return listAllNotesFromAirtable();
 }
 
 export async function listNotesForMatter(matterId: string): Promise<Note[]> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     return seed.notes.filter((n) => n.matterId === matterId);
   }
@@ -139,7 +139,7 @@ export async function listNotesForMatter(matterId: string): Promise<Note[]> {
 }
 
 export async function listLegalElements(matterId: string): Promise<LegalElementRow[]> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     return seed.legalElements.filter((e) => e.matterId === matterId);
   }
@@ -147,7 +147,7 @@ export async function listLegalElements(matterId: string): Promise<LegalElementR
 }
 
 export async function listEventsForMatter(matterId: string) {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     return seed.events.filter((e) => e.matterId === matterId);
   }
@@ -155,7 +155,7 @@ export async function listEventsForMatter(matterId: string) {
 }
 
 export async function listDocumentsForMatter(matterId: string): Promise<DocumentRow[]> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     return seed.documents.filter((d) => d.matterId === matterId);
   }
@@ -163,7 +163,7 @@ export async function listDocumentsForMatter(matterId: string): Promise<Document
 }
 
 export async function getCaseAssessment(matterId: string): Promise<CaseAssessment> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     const stored = seed.caseAssessments?.find((c) => c.matterId === matterId);
     return stored ?? emptyCaseAssessment(matterId);
@@ -172,7 +172,7 @@ export async function getCaseAssessment(matterId: string): Promise<CaseAssessmen
 }
 
 export async function saveCaseAssessment(matterId: string, assessment: CaseAssessment): Promise<CaseAssessment> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     if (!seed.caseAssessments) seed.caseAssessments = [];
     const idx = seed.caseAssessments.findIndex((c) => c.matterId === matterId);
@@ -190,7 +190,7 @@ export async function createLegalElement(
   matterId: string,
   elementName: string,
 ): Promise<LegalElementRow> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     const row: LegalElementRow = {
       id: `le-${Date.now()}`,
@@ -212,7 +212,7 @@ export async function updateLegalElementRow(
   id: string,
   patch: Partial<Pick<LegalElementRow, "assessment" | "keyGap" | "nextAction">>,
 ): Promise<LegalElementRow | null> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const { updateLegalElement } = await import("./demo-store-mutable");
     return updateLegalElement(id, patch);
   }
@@ -223,7 +223,7 @@ export async function completeTask(
   taskId: string,
   options?: { completionDocs?: string; completionNote?: string; completedBy?: string },
 ): Promise<Task | null> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const { completeTask: completeDemoTask } = await import("./demo-store-mutable");
     return completeDemoTask(taskId);
   }
@@ -243,7 +243,7 @@ export async function createTaskForMatter(
   matterId: string,
   payload: Pick<Task, "description" | "dueDate" | "priority" | "isFilingDeadline">,
 ): Promise<Task> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     const task: Task = {
       id: `tsk-${Date.now()}`,
@@ -261,7 +261,7 @@ export async function createTaskForMatter(
 }
 
 export async function createNoteForMatter(matterId: string, content: string, author: string): Promise<Note> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     const note: Note = {
       id: `note-${Date.now()}`,
@@ -283,7 +283,7 @@ export async function updateNoteForMatter(
   content: string,
   author?: string,
 ): Promise<Note | null> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     const note = seed.notes.find((n) => n.id === noteId && n.matterId === matterId);
     if (!note) return null;
@@ -307,7 +307,7 @@ export async function upsertAgentOutputForMatter(
   const trimmed = content.trim();
   if (!trimmed) throw new Error("content required");
 
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     if (options?.noteId) {
       const updated = await updateNoteDemo(options.noteId, trimmed, "Attorney (edited)");
       if (updated) return updated;
@@ -349,7 +349,7 @@ export async function updateMatterFields(
   matterId: string,
   patch: Parameters<typeof updateMatterInAirtable>[1],
 ): Promise<Matter | null> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     const matter = seed.matters.find((m) => m.matterId === matterId);
     if (!matter) return null;
@@ -360,7 +360,7 @@ export async function updateMatterFields(
 }
 
 export async function updateMatterDeadline(matterId: string, nextDeadline: string | null): Promise<Matter | null> {
-  if (useDemoMode()) {
+  if (isDemoMode()) {
     const seed = await loadDemoSeed();
     const matter = seed.matters.find((m) => m.matterId === matterId);
     if (!matter) return null;
@@ -373,7 +373,7 @@ export async function updateMatterDeadline(matterId: string, nextDeadline: strin
 const OPEN_INBOX_STATUSES = new Set(["Pending", "Submitted", "In progress", "Ready for review", "Returned"]);
 
 export async function listInboxItems(): Promise<InboxItem[]> {
-  if (useDemoMode()) return listInboxItemsDemo();
+  if (isDemoMode()) return listInboxItemsDemo();
   return listInboxItemsFromAirtable();
 }
 
@@ -396,7 +396,7 @@ export async function createAssignment(payload: {
   dueDate?: string | null;
   submittedBy?: string;
 }): Promise<InboxItem> {
-  if (useDemoMode()) return createAssignmentDemo(payload);
+  if (isDemoMode()) return createAssignmentDemo(payload);
   return createAssignmentInAirtable({ matterCode: payload.matterId, ...payload });
 }
 
@@ -405,12 +405,12 @@ export async function updateAssignmentStatus(
   nextStatus: AssignmentStatus,
   options?: { note?: string; by?: string },
 ): Promise<InboxItem | null> {
-  if (useDemoMode()) return updateAssignmentStatusDemo(itemId, nextStatus, options);
+  if (isDemoMode()) return updateAssignmentStatusDemo(itemId, nextStatus, options);
   return updateAssignmentStatusInAirtable(itemId, nextStatus, options);
 }
 
 export async function buildTimeline(matterId: string): Promise<TimelineEntry[]> {
-  const seed = useDemoMode() ? await loadDemoSeed() : null;
+  const seed = isDemoMode() ? await loadDemoSeed() : null;
   const entries: TimelineEntry[] = [];
 
   const notes = seed ? seed.notes.filter((n) => n.matterId === matterId) : await listNotesForMatter(matterId);

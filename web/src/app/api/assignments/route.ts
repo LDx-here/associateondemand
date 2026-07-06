@@ -8,7 +8,7 @@ import {
   createTaskForMatter,
   getMatterByCode,
   updateAssignmentStatus,
-  useDemoMode,
+  isDemoMode,
 } from "@/lib/data-store";
 import { notifyNewAssignment } from "@/lib/notify-assignment";
 import type { AssignmentTier } from "@/lib/types";
@@ -109,7 +109,7 @@ export async function POST(req: Request) {
     let dispatch = null as Awaited<ReturnType<typeof dispatchAssignmentToPm>> | null;
     let notify = null as Awaited<ReturnType<typeof notifyNewAssignment>> | null;
 
-    if (!useDemoMode()) {
+    if (!isDemoMode()) {
       dispatch = await dispatchAssignmentToPm(matterId, deliverableType, tier as AssignmentTier, facts);
       if (dispatch.started) {
         const advanced = await updateAssignmentStatus(inboxItem.id, "In progress", {

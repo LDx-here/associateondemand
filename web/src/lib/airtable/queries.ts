@@ -16,7 +16,7 @@ import {
   airtableGetRecord,
   airtableListAll,
   airtablePatch,
-  useDemoMode,
+  isDemoMode,
 } from "./client";
 import { SPEC_FIELDS as F, TABLES } from "./fields";
 import { isValidAssignmentTransition } from "../assignment-lifecycle";
@@ -952,4 +952,4 @@ export async function createInboxItemInAirtable(payload: {
   return mapInbox(rec);
 }
 
-export { useDemoMode };
+export { isDemoMode };

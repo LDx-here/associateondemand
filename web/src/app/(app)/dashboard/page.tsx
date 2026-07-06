@@ -19,7 +19,7 @@ import {
   listAllTasks,
   listInboxItems,
   listMatters,
-  useDemoMode,
+  isDemoMode,
 } from "@/lib/data-store";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
 import { linkMatter } from "@/lib/ui-classes";
@@ -36,7 +36,7 @@ export default async function DashboardPage() {
   const matters = await listMatters();
   const tasks = await listAllTasks();
   const matterIndex = new Map(matters.map((m) => [m.matterId, m]));
-  const demo = useDemoMode();
+  const demo = isDemoMode();
   const seed = demo ? await getMutableSeed() : null;
 
   const activeMatters = matters.filter((m) => {

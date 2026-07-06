@@ -1,6 +1,6 @@
 import { SessionAccount } from "@/components/SessionAccount";
 import { listPeopleFromAirtable } from "@/lib/airtable/queries";
-import { useDemoMode } from "@/lib/data-store";
+import { isDemoMode } from "@/lib/data-store";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ function piiTierLabel(tier: string): string {
 }
 
 export default async function SettingsPage() {
-  const demo = useDemoMode();
+  const demo = isDemoMode();
   const piiTier = process.env.NEXT_PUBLIC_PII_TIER ?? "0";
   const authEnabled =
     (process.env.AOD_AUTH_ENABLED ?? "false").toLowerCase() === "true";
