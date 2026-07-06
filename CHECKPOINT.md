@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-06 (EDT) — pass 14  
+**Last updated:** 2026-07-06 (EDT) — pass 15  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -202,6 +202,24 @@ PM dispatch → Ready for review lane was verified manually against live Airtabl
 for next pilot, not a code failure.
 
 **Deployed:** pass 3 (`ff25481`, `4b96f8a`), pass 5, **pass 6**, **pass 7**, **pass 8**, **pass 9**, and **pass 10** (2026-07-06) live on Fly + Vercel.
+
+### Autonomous pass log — pass 15 (2026-07-06, Master Roadmap Phase 2 Intelligent Intake)
+
+- **Interactive onboarding wizard** — multi-step modal on first dashboard visit (`OnboardingWizard`); localStorage state; dismissible/resumable; steps: Welcome → Firm Memory → Assignment → Assessment → Review.
+- **Intelligent Intake Engine v3** — chat-style `IntakeGuidancePanel` on `/assignments/new`; deliverable-aware prompts; missing-fact alerts; form + disclaimer remain submit backbone.
+- **Strong Reader prefill** — attachment OCR/heuristic extraction → `mergeOcrIntoDraftingFacts`; .txt client-side; PDF via Fly pipeline when existing matter linked + tier 0 approval.
+- **Context-aware intake** — `IntakeContextSidebar` when matter linked: case type, saved drafting facts, assessment OCR, Firm Memory hints.
+- **Helpers + tests** — `onboarding-state.ts`, `intake-prefill.ts`; `npm run test:onboarding`, `test:intake-prefill`; pytest `test_intake_prefill.py`.
+
+Verified: `pytest` (31 passed), `test:onboarding`, `test:intake-prefill`, `test:facts`, `next build`, `scripts/smoke-production.sh` PASS.
+
+**Deployed 2026-07-06:** pass 15 — Fly API + Vercel prod.
+
+**Deferred (roadmap):**
+- Phase 3 — Firm Memory depth / style QC
+- Phase 4 — Stripe + client portal
+- Full Harvey-style conversational intake (multi-turn LLM chat) — guidance layer shipped; LLM chat deferred
+- OCR prefill on new-matter intake before matter exists (PDF) — requires matter link or post-submit upload
 
 ### Autonomous pass log — pass 14 (2026-07-06, Master Roadmap Phase 1 UX)
 
@@ -436,6 +454,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 15 (deployed 2026-07-06):** Master Roadmap Phase 2 — onboarding wizard, intelligent intake guidance panel, Strong Reader OCR prefill, context-aware intake sidebar.
 - **Pass 14 (deployed 2026-07-06):** Master Roadmap Phase 1 — nav streamlining, dashboard relief metrics, context-aware Associate panel, Site Reviewer Agent + strategy docs in `.aod-context/`.
 - **Pass 13 (deployed 2026-07-06):** AOS intake schema fix, Firm Memory setup on `/templates#firm-memory`, Phase 0 billing honesty (no Stripe UI), overflow counsel user journey doc + dashboard banner.
 - **Pass 12 (deployed 2026-07-06):** assessment-as-document UX — Documents tab upload path, firm templates on `/templates`, OCR feeds agent prompts; Assessment tab removed.
@@ -451,10 +470,10 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Manual verify pass 14** — dashboard relief KPIs; sidebar primary vs More tools; Associate panel on `/matters/AOD-1001`; Getting Started 4-step card; Inbox label (not PM Inbox).
-2. **Site Reviewer cycle** — run checklist in `docs/runbooks/site-reviewer-agent.md` after next UI change.
+1. **Manual verify pass 15** — dashboard onboarding wizard (first visit / dismiss / resume); `/assignments/new?deliverable=aos-discretionary-brief&matterId=AOD-1001` — guidance panel, context sidebar, upload .txt for prefill.
+2. **Site Reviewer cycle** — run checklist in `docs/runbooks/site-reviewer-agent.md` after Phase 2 UI change.
 3. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md) and [`docs/runbooks/overflow-counsel-user-journey.md`](docs/runbooks/overflow-counsel-user-journey.md): first pilot attorney, off-platform quote + conflict check.
-4. **Roadmap Phase 2** — Intelligent Intake Engine (chat-centric + Strong Reader prefill) per `.aod-context/strategy/AssociateOnDemand_Master_Implementation_Roadmap.md` §4.
+4. **Roadmap Phase 3** — Firm Memory depth + style QC per `.aod-context/strategy/AssociateOnDemand_Master_Implementation_Roadmap.md` §5.
 
 ## Blockers
 

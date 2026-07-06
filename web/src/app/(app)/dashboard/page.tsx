@@ -9,7 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import { GettingStartedBanner } from "@/components/GettingStartedBanner";
+import { GettingStartedBanner, OnboardingWizard } from "@/components/OnboardingWizard";
 import { EmptyState } from "@/components/EmptyState";
 import { DashboardCharts } from "@/components/DashboardCharts";
 import { KpiCard } from "@/components/KpiCard";
@@ -138,6 +138,7 @@ export default async function DashboardPage() {
         </Link>
       </header>
 
+      <OnboardingWizard />
       <GettingStartedBanner />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

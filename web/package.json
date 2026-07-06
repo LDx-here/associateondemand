@@ -10,7 +10,9 @@
     "test:airtable": "node scripts/smoke-airtable.mjs",
     "test:catalog": "tsx scripts/verify-deliverable-catalog.mjs",
     "test:facts": "tsx scripts/verify-practice-area-facts.mjs",
-    "test:assessment-docs": "tsx scripts/verify-assessment-documents.mjs"
+    "test:assessment-docs": "tsx scripts/verify-assessment-documents.mjs",
+    "test:onboarding": "tsx scripts/verify-onboarding-state.mjs",
+    "test:intake-prefill": "tsx scripts/verify-intake-prefill.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

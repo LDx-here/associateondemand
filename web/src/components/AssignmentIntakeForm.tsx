@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import {
   TierZeroBanner,
@@ -10,11 +10,18 @@ import {
   uploadDocument,
   type UploadResult,
 } from "@/components/IntakeUploadShared";
+import { IntakeContextSidebar } from "@/components/IntakeContextSidebar";
+import { IntakeGuidancePanel } from "@/components/IntakeGuidancePanel";
 import { useToast } from "@/components/Toast";
 import {
   buildIntakeDisclaimerBody,
   intakeDisclaimerCheckboxLabel,
 } from "@/lib/intake-disclaimer";
+import {
+  extractHeuristicFactsFromText,
+  mergeOcrIntoDraftingFacts,
+  seedDraftingFactsFromMatter,
+} from "@/lib/intake-prefill";
 import {
   isDraftingFactsCompleteEnough,
   mergeFactsForDispatch,
@@ -85,6 +92,8 @@ export function AssignmentIntakeForm({
   const [uploadQueue, setUploadQueue] = useState<QueueItem[]>([]);
 
   const [busy, setBusy] = useState(false);
+  const [ocrPrefillCount, setOcrPrefillCount] = useState(0);
+  const [extractingOcr, setExtractingOcr] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -125,6 +134,113 @@ export function AssignmentIntakeForm({
 
   const sampleEligible = selectedCatalog ? isSampleDiscountEligible(selectedCatalog) : false;
   const discountNote = selectedCatalog ? sampleDiscountNote(selectedCatalog) : null;
+
+  const applyOcrMerge = useCallback(
+    (ocrFacts: Array<{ fact_type: string; value: string }>, ocrText?: string) => {
+      setStructuredFacts((prev) => {
+        const base =
+          prev ??
+          seedDraftingFactsFromMatter(
+            matterMode === "existing" ? existingMatterId : "draft",
+            activeCaseType,
+            deliverableId === CUSTOM_OPTION ? undefined : deliverableId,
+          );
+        const { payload, filledFieldIds } = mergeOcrIntoDraftingFacts(base, ocrFacts, ocrText);
+        if (filledFieldIds.length > 0) {
+          setOcrPrefillCount((n) => n + filledFieldIds.length);
+        }
+        return payload;
+      });
+    },
+    [matterMode, existingMatterId, activeCaseType, deliverableId],
+  );
+
+  const applySavedFacts = useCallback(
+    (saved: DraftingFactsPayload) => {
+      setStructuredFacts(
+        seedDraftingFactsFromMatter(
+          matterMode === "existing" ? existingMatterId : "draft",
+          activeCaseType,
+          deliverableId === CUSTOM_OPTION ? undefined : deliverableId,
+          saved,
+        ),
+      );
+    },
+    [matterMode, existingMatterId, activeCaseType, deliverableId],
+  );
+
+  async function extractFactsFromAttachments(selected: File[]) {
+    if (!selected.length) return;
+    setExtractingOcr(true);
+    try {
+      let totalFilled = 0;
+      for (const file of selected) {
+        const lower = file.name.toLowerCase();
+        if (lower.endsWith(".txt") || lower.endsWith(".md")) {
+          const text = await file.text();
+          const facts = extractHeuristicFactsFromText(text);
+          if (facts.length) {
+            setStructuredFacts((prev) => {
+              const base =
+                prev ??
+                seedDraftingFactsFromMatter(
+                  matterMode === "existing" ? existingMatterId : "draft",
+                  activeCaseType,
+                  deliverableId === CUSTOM_OPTION ? undefined : deliverableId,
+                );
+              const { payload, filledFieldIds } = mergeOcrIntoDraftingFacts(base, facts, text);
+              totalFilled += filledFieldIds.length;
+              return payload;
+            });
+          }
+          continue;
+        }
+
+        if (matterMode === "existing" && existingMatterId.trim()) {
+          if (tierRequiresManualApproval() && !manualApproved) {
+            showToast("Check tier 0 manual approval before OCR on attachments.", "error");
+            continue;
+          }
+          const result = await uploadDocument(existingMatterId, file, manualApproved, "batch");
+          if (result.error) {
+            showToast(result.error, "error");
+            continue;
+          }
+          if (result.facts?.length || result.text_preview) {
+            setStructuredFacts((prev) => {
+              const base =
+                prev ??
+                seedDraftingFactsFromMatter(
+                  existingMatterId,
+                  activeCaseType,
+                  deliverableId === CUSTOM_OPTION ? undefined : deliverableId,
+                );
+              const { payload, filledFieldIds } = mergeOcrIntoDraftingFacts(
+                base,
+                result.facts ?? [],
+                result.text_preview,
+              );
+              totalFilled += filledFieldIds.length;
+              return payload;
+            });
+          }
+        }
+      }
+      if (totalFilled > 0) {
+        setOcrPrefillCount((n) => n + totalFilled);
+        showToast(`Strong Reader pre-filled ${totalFilled} checklist field(s). Verify below.`, "success");
+      } else if (matterMode === "new") {
+        showToast("Link an existing matter or use .txt uploads for pre-submit OCR prefill.", "error");
+      }
+    } finally {
+      setExtractingOcr(false);
+    }
+  }
+
+  async function onFilesSelected(next: File[]) {
+    setFiles(next);
+    if (next.length > 0) await extractFactsFromAttachments(next);
+  }
 
   function validate(): Record<string, string> {
     const errors: Record<string, string> = {};
@@ -239,7 +355,8 @@ export function AssignmentIntakeForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6" noValidate>
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+      <form onSubmit={onSubmit} className="space-y-6 min-w-0" noValidate>
       {demoMode ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           Demo mode — this assignment will be saved to the local sample data, not live Airtable.
@@ -405,6 +522,13 @@ export function AssignmentIntakeForm({
 
       <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-900">3. Facts for drafting</h2>
+        <IntakeGuidancePanel
+          deliverableId={deliverableId}
+          deliverableName={deliverableType}
+          caseType={activeCaseType}
+          structuredFacts={structuredFacts}
+          ocrPrefillCount={ocrPrefillCount}
+        />
         <p className="text-xs text-slate-500">
           Answer the practice-area questions first — they flow into the associate&apos;s draft prompt automatically.
         </p>
@@ -478,10 +602,13 @@ export function AssignmentIntakeForm({
         <input
           type="file"
           multiple
-          accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.txt"
+          accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.txt,.md"
           className="w-full text-sm"
-          onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+          onChange={(e) => void onFilesSelected(Array.from(e.target.files ?? []))}
         />
+        {extractingOcr ? (
+          <p className="text-xs text-sky-800">Strong Reader extracting facts from attachment…</p>
+        ) : null}
         {fieldErrors.files ? <p className="text-sm text-rose-700">{fieldErrors.files}</p> : null}
         <UploadProgressTable items={uploadQueue} />
       </section>
@@ -509,10 +636,21 @@ export function AssignmentIntakeForm({
         <button type="button" className={btnSecondary} onClick={() => router.back()} disabled={busy}>
           Cancel
         </button>
-        <button type="submit" className={`${btnPrimary} px-4 py-2`} disabled={busy}>
+        <button type="submit" className={`${btnPrimary} px-4 py-2`} disabled={busy || extractingOcr}>
           {busy ? "Submitting…" : "Submit assignment"}
         </button>
       </div>
     </form>
+
+      {matterMode === "existing" && existingMatterId ? (
+        <IntakeContextSidebar
+          matterId={existingMatterId}
+          caseType={activeCaseType}
+          deliverableId={deliverableId === CUSTOM_OPTION ? undefined : deliverableId}
+          onApplyAssessmentFacts={applyOcrMerge}
+          onApplySavedFacts={applySavedFacts}
+        />
+      ) : null}
+    </div>
   );
 }

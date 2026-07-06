@@ -11,12 +11,12 @@ export default async function NewAssignmentPage({ searchParams }: Props) {
   const demo = isDemoMode();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
+    <div className="mx-auto max-w-6xl space-y-4">
       <header>
         <h1 className="text-2xl font-semibold text-slate-900">New assignment</h1>
         <p className="text-sm text-slate-600">
-          Submit a deliverable request — facts, tier, and optional attachments — and it lands in the PM Inbox
-          Submitted lane for pickup.
+          Submit a deliverable request — the intelligent intake assistant guides practice-specific facts;
+          optional attachments run through Strong Reader to pre-fill the checklist.
         </p>
       </header>
       <AssignmentIntakeForm
