@@ -19,7 +19,7 @@ from app.db import Base, get_engine
 from app.models.db_models import AgentJob, AuditLog  # noqa: F401 — register ORM models
 from app.models.document import Document, ExtractedFact  # noqa: F401 — register ORM models
 from app.routers import agents, eimmigration, intake
-from app.routers import correction_router
+from app.routers import correction_router, notes_router
 
 _ENGINE = None
 
@@ -46,6 +46,7 @@ app = FastAPI(title="AssociateOnDemand API", version="0.4.0")
 app.include_router(intake.router)
 app.include_router(agents.router)
 app.include_router(correction_router.router)
+app.include_router(notes_router.router)
 app.include_router(eimmigration.router)
 
 app.add_middleware(

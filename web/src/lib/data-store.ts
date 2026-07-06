@@ -4,6 +4,7 @@ import {
   createLegalElementInAirtable,
   createNoteInAirtable,
   createTaskInAirtable,
+  findLatestAgentNoteForMatter,
   getCaseAssessmentFromAirtable,
   listDocumentsFromAirtable,
   listEventsForMatterFromAirtable,
@@ -21,6 +22,7 @@ import {
   updateLegalElementInAirtable,
   updateMatterDeadlineInAirtable,
   updateMatterInAirtable,
+  updateNoteInAirtable,
   useDemoMode,
 } from "./airtable/queries";
 import { emptyCaseAssessment } from "./case-assessment";
@@ -29,6 +31,7 @@ import {
   getMutableSeed,
   listInboxItemsDemo,
   updateAssignmentStatusDemo,
+  updateNote as updateNoteDemo,
 } from "./demo-store-mutable";
 import type {
   AssignmentStatus,
@@ -272,6 +275,74 @@ export async function createNoteForMatter(matterId: string, content: string, aut
     return note;
   }
   return createNoteInAirtable(matterId, content, author);
+}
+
+export async function updateNoteForMatter(
+  matterId: string,
+  noteId: string,
+  content: string,
+  author?: string,
+): Promise<Note | null> {
+  if (useDemoMode()) {
+    const seed = await loadDemoSeed();
+    const note = seed.notes.find((n) => n.id === noteId && n.matterId === matterId);
+    if (!note) return null;
+    note.content = content;
+    if (author) note.author = author;
+    return note;
+  }
+  try {
+    return await updateNoteInAirtable(noteId, matterId, content, author);
+  } catch {
+    return null;
+  }
+}
+
+/** Upsert the latest agent work product on a matter (Notes table, type Agent). */
+export async function upsertAgentOutputForMatter(
+  matterId: string,
+  content: string,
+  options?: { noteId?: string; agent?: string },
+): Promise<Note> {
+  const trimmed = content.trim();
+  if (!trimmed) throw new Error("content required");
+
+  if (useDemoMode()) {
+    if (options?.noteId) {
+      const updated = await updateNoteDemo(options.noteId, trimmed, "Attorney (edited)");
+      if (updated) return updated;
+    }
+    const seed = await loadDemoSeed();
+    const existing = seed.notes
+      .filter((n) => n.matterId === matterId && n.type === "Agent")
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    if (existing) {
+      existing.content = trimmed;
+      existing.author = "Attorney (edited)";
+      return existing;
+    }
+    const note: Note = {
+      id: `note-${Date.now()}`,
+      matterId,
+      author: options?.agent ?? "Litigation Associate",
+      content: trimmed,
+      createdAt: new Date().toISOString(),
+      type: "Agent",
+    };
+    seed.notes.push(note);
+    return note;
+  }
+
+  if (options?.noteId) {
+    const updated = await updateNoteInAirtable(options.noteId, matterId, trimmed, "Attorney (edited)");
+    return updated;
+  }
+  const latest = await findLatestAgentNoteForMatter(matterId);
+  if (latest) {
+    return updateNoteInAirtable(latest.id, matterId, trimmed, "Attorney (edited)");
+  }
+  const label = options?.agent ? `[${options.agent} — edited output]` : "[Agent output — edited]";
+  return createNoteInAirtable(matterId, `${label}\n\n${trimmed}`, options?.agent ?? "Litigation Associate", "Agent");
 }
 
 export async function updateMatterFields(

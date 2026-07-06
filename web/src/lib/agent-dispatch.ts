@@ -7,6 +7,8 @@ export type AgentCommandResult = {
   summary?: string;
   /** Full research memo when backend includes metadata.full_memo (length-capped by /api/command). */
   fullMemo?: string;
+  /** Airtable Notes row id when PM dispatch persisted the work product. */
+  noteId?: string;
   /** True when memo was trimmed to FULL_MEMO_MAX_CHARS. */
   fullMemoTruncated?: boolean;
   gaps?: string[];

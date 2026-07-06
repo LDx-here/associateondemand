@@ -28,6 +28,7 @@ import type { AgentCommandResult } from "@/lib/agent-dispatch";
 import { dispatchAgentCommand } from "@/lib/agent-dispatch";
 import { prefillCommandPanel } from "@/lib/case-assessment";
 import { AddTaskForm } from "./AddTaskForm";
+import { EditableOutputMemo } from "./EditableOutputMemo";
 import { CaseAssessmentEditor } from "./CaseAssessmentEditor";
 import { MatterDeadlineForm } from "./MatterDeadlineForm";
 import { MatterEventsPanel } from "./MatterEventsPanel";
@@ -442,7 +443,19 @@ export function MatterWorkbench({
                   <p className="text-xs text-slate-500">
                     {n.author} · {new Date(n.createdAt).toLocaleString()} · {n.type}
                   </p>
-                  <p className="text-slate-800">{n.content}</p>
+                  {n.type === "Agent" ? (
+                    <EditableOutputMemo
+                      content={n.content}
+                      matterId={matter.matterId}
+                      noteId={n.id}
+                      saveMode="note"
+                      onSaved={({ content }) => {
+                        setNotes((prev) => prev.map((row) => (row.id === n.id ? { ...row, content } : row)));
+                      }}
+                    />
+                  ) : (
+                    <p className="text-slate-800">{n.content}</p>
+                  )}
                 </li>
               ))
             )}

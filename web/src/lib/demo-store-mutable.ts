@@ -37,6 +37,16 @@ export async function addNote(matterId: string, content: string, author: string)
   return note;
 }
 
+export async function updateNote(noteId: string, content: string, author?: string): Promise<Note | null> {
+  const seed = await getMutableSeed();
+  const note = seed.notes.find((n) => n.id === noteId);
+  if (!note) return null;
+  note.content = content;
+  if (author) note.author = author;
+  await persistSeed();
+  return note;
+}
+
 export async function addTask(
   matterId: string,
   payload: Pick<Task, "description" | "dueDate" | "priority" | "isFilingDeadline">,

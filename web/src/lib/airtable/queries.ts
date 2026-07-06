@@ -381,6 +381,30 @@ export async function createNoteInAirtable(
   return mapNote(rec, resolved.matterId);
 }
 
+export async function updateNoteInAirtable(
+  noteId: string,
+  matterCode: string,
+  content: string,
+  author?: string,
+): Promise<Note> {
+  const resolved = await resolveMatterRecordId(matterCode);
+  if (!resolved) throw new Error(`Matter not found: ${matterCode}`);
+  const n = F.notes;
+  const fields: RawFields = { [n.content]: content.slice(0, 8000) };
+  if (author) fields[n.author] = author.slice(0, 120);
+  const rec = await airtablePatch(TABLES.notes, noteId, fields);
+  return mapNote(rec, resolved.matterId);
+}
+
+/** Latest agent work-product note for a matter (PM dispatch persists type Agent). */
+export async function findLatestAgentNoteForMatter(matterCode: string): Promise<Note | null> {
+  const notes = await listNotesForMatterFromAirtable(matterCode);
+  const agentNotes = notes
+    .filter((note) => note.type === "Agent")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return agentNotes[0] ?? null;
+}
+
 export async function listLegalElementsFromAirtable(matterCode: string): Promise<LegalElementRow[]> {
   const resolved = await resolveMatterRecordId(matterCode);
   if (!resolved) return [];
@@ -842,6 +866,37 @@ export async function listPeopleFromAirtable(): Promise<PersonRow[]> {
       isActive: Boolean(f[F.people.is_active] ?? false),
     };
   });
+}
+
+/* ------------------------------------------------------------------ */
+/* Strategy Patterns / skills (BUILD_SPEC §10)                         */
+/* ------------------------------------------------------------------ */
+
+export async function createStrategyPatternInAirtable(payload: {
+  name: string;
+  description?: string;
+  trigger?: string;
+  body: string;
+  agent?: string;
+  matterCode?: string;
+  correctionNote?: string;
+}) {
+  const sp = F.strategyPatterns;
+  const detailParts = [payload.description?.trim(), payload.trigger?.trim()].filter(Boolean);
+  const fields: RawFields = {
+    [sp.fact_pattern]: payload.name.slice(0, 240) || "Custom skill",
+    [sp.fact_pattern_detail]: detailParts.join("\n\n").slice(0, 4000) || payload.body.slice(0, 4000),
+    [sp.strategy_used]: (payload.agent ?? "attorney-skill").slice(0, 240),
+    [sp.outcome]: payload.body.slice(0, 4000),
+    [sp.created_at]: new Date().toISOString(),
+  };
+  if (payload.correctionNote) {
+    fields[sp.correction_note] = payload.correctionNote.slice(0, 2000);
+  }
+  if (payload.matterCode) {
+    fields[sp.matching_matters] = payload.matterCode.slice(0, 240);
+  }
+  return airtableCreate(TABLES.strategyPatterns, fields);
 }
 
 /* ------------------------------------------------------------------ */

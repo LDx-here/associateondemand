@@ -30,6 +30,7 @@ type AgentDispatchResult = {
   metadata?: {
     manual_flags?: string[];
     full_memo?: string;
+    airtable_note_id?: string;
     routed_to?: string;
     draft_type?: string;
     citation_verification_summary?: string;
@@ -282,6 +283,9 @@ async function dispatchToPm(matterId: string, instruction: string) {
     if (fullMemoTruncated) {
       payload.fullMemoTruncated = true;
     }
+    const airtableNoteId =
+      typeof data.metadata?.airtable_note_id === "string" ? data.metadata.airtable_note_id : undefined;
+    if (airtableNoteId) payload.noteId = airtableNoteId;
     const citationSummary =
       typeof data.metadata?.citation_verification_summary === "string"
         ? data.metadata.citation_verification_summary

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { AgentCommandResult } from "@/lib/agent-dispatch";
+import { EditableOutputMemo } from "@/components/EditableOutputMemo";
 import { btnSecondary, linkMatter } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
@@ -24,13 +25,20 @@ export function AgentResultPanel({
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [citationBusy, setCitationBusy] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [memoContent, setMemoContent] = useState(result.fullMemo?.trim() ?? "");
+  const [memoNoteId, setMemoNoteId] = useState(result.noteId);
+
+  useEffect(() => {
+    setMemoContent(result.fullMemo?.trim() ?? "");
+    setMemoNoteId(result.noteId);
+  }, [result.fullMemo, result.noteId]);
 
   const hasGaps = (result.gaps ?? []).length > 0;
   const hasUncertainties = (result.uncertainties ?? []).length > 0;
   const hasManualFlags = (result.manualFlags ?? []).length > 0;
   const hasSources = (result.sources ?? []).length > 0;
   const hasNextSteps = (result.nextSteps ?? []).length > 0;
-  const fullMemo = result.fullMemo?.trim();
+  const fullMemo = memoContent.trim();
   const hasFullMemo = Boolean(fullMemo);
 
   const statusLabel = hasManualFlags
@@ -233,9 +241,17 @@ export function AgentResultPanel({
             ) : null}
           </div>
           {memoOpen ? (
-            <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded border border-slate-200 bg-white p-2 font-mono text-[0.7rem] leading-relaxed text-slate-800">
-              {fullMemo}
-            </pre>
+            <EditableOutputMemo
+              content={fullMemo}
+              matterId={result.matterId}
+              agent={result.agent}
+              noteId={memoNoteId}
+              compact
+              onSaved={({ content, noteId }) => {
+                setMemoContent(content);
+                if (noteId) setMemoNoteId(noteId);
+              }}
+            />
           ) : null}
         </div>
       ) : null}

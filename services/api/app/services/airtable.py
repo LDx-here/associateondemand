@@ -499,6 +499,20 @@ def create_matter_note(
     return _create_record(TABLE_NOTES, fields)
 
 
+def update_matter_note(
+    *,
+    note_id: str,
+    content: str,
+    author: str | None = None,
+) -> dict[str, Any] | None:
+    """Update an existing matter note (attorney-edited agent output)."""
+
+    fields: dict[str, Any] = {FIELDS_NOTES["content"]: content[:8000]}
+    if author:
+        fields[FIELDS_NOTES["author"]] = author[:120]
+    return _patch_record(TABLE_NOTES, note_id, fields)
+
+
 def create_strategy_pattern(
     *,
     fact_pattern: str,
