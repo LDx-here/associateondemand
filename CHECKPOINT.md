@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-06 (pass 10 deployed — practice-area fact intake + drafting fluency)
+**Last updated:** 2026-07-06 (B2B Overflow Counsel pivot — context integration + intake v2 + Firm Memory v1)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -203,6 +203,17 @@ for next pilot, not a code failure.
 
 **Deployed:** pass 3 (`ff25481`, `4b96f8a`), pass 5, **pass 6**, **pass 7**, **pass 8**, **pass 9**, and **pass 10** (2026-07-06) live on Fly + Vercel.
 
+### Autonomous pass log — pass 11 (2026-07-06, B2B Overflow Counsel pivot)
+
+- **`.aod-context/`** — strategy docs integrated (B2B strategy, Firm Memory, Workflow Fluency, Practice Fact Mapping, Production Cost Pricing); agent rule `.cursor/rules/aod-context.mdc`; `STRATEGY.md` pointer updated.
+- **Intelligent Intake v2** — deliverable-aware prompts for `aos-discretionary-brief`, `research-memo`, `hearing-packet`, PI `demand-letter`; `feedsSection` helper text on each field.
+- **Firm Memory v1** — `POST /api/firm-memory`, Save to Firm Memory on editable output, Firm Memory badge on `/templates` and intake.
+- **Sample discount** — `sampleDiscountEligible` + `discountApplied` on assignment options; intake checkbox + sample upload; catalog metadata (20%).
+
+Verified: `pytest`, `npm run test:facts`, `next build`, `scripts/smoke-production.sh`.
+
+**Deployed 2026-07-06:** pass 11 — Fly API + Vercel prod.
+
 ### Autonomous pass log — pass 10 (2026-07-06, practice-area workflow fluency)
 
 - **Practice-area fact guides** — Immigration (priority) and Personal Injury checklists with progressive disclosure by case type; generic fallback stays freeform-only.
@@ -287,7 +298,18 @@ Verified: `pytest` (26 passed), `next build` (40 routes incl. agent-output, note
 - **LiteLLM** Presidio scrub proxy — compose uses Presidio sidecars directly
 - **Qdrant on Fly** — pattern seed via `POST /agents/pattern/seed`; cloud Qdrant optional
 
-## Product vision — verified associate marketplace (2026)
+## Product vision — B2B Overflow Counsel (2026 pivot)
+
+**North star:** Verified overflow counsel for solo and small-firm attorneys — they submit assignments with facts and samples; AssociateOnDemand returns **associate-quality work in the firm's style**, not raw AI output. La'Dajia/RMV verifies year one; contract associates Phase 3+.
+
+**Strategic context:** [`.aod-context/README.md`](.aod-context/README.md) · legacy index [`docs/strategy/README.md`](docs/strategy/README.md)
+
+**Differentiators shipped in code:**
+- **Intelligent Intake v2** — deliverable-aware fact prompts with section mapping (`practice-area-facts.ts`)
+- **Firm Memory v1** — save style edits → Strategy Patterns (`POST /api/firm-memory`)
+- **Sample discount** — 20% off when firm uploads prior work at intake (persisted in assignment `options` JSON)
+
+## Product vision — verified associate marketplace (2026, archive)
 
 **North star:** A platform where a client (or contracting attorney) submits an assignment — *“I need X drafted; here are the facts and attachments”* — and receives **associate-quality work** that reads like it came from a person, not a raw chatbot. **La'Dajia (RMV) verifies** first; later, **contract associate attorneys** verify work they take on — matching entry-level lawyers who want flexible, Docketly-style contract work without full employment.
 
@@ -352,12 +374,13 @@ cd web && npm run build
 | 4 | $99/mo self-serve AI: roadmap only — **bar counsel gate** |
 | 5 | Day-one SKUs: **`aos-discretionary-brief`**, **`custom-motion`**, **`hearing-packet`**, **`research-memo`** |
 
-Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.md`](STRATEGY.md)
+Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.md`](STRATEGY.md)
 
 ---
 
 ## Last completed
 
+- **Pass 11 (deployed 2026-07-06):** B2B Overflow Counsel pivot — `.aod-context/` integration, intelligent intake v2 (deliverable-aware facts), Firm Memory v1, sample discount on intake.
 - **Pass 10 (deployed 2026-07-06):** practice-area guided fact intake — Immigration/PI checklists, completeness indicator, Facts notes → agent prompts, matter workbench + assignment intake integration.
 - **Pass 9 (deployed 2026-07-06):** unified Command panel + matter review — inline agent alert actions, deliverable-ready gate, cross-panel refresh without page reload.
 - **Pass 8 (deployed 2026-07-06):** matter workbench inline deliverable review — approve/request revision on matter page without visiting `/inbox`.
@@ -369,9 +392,9 @@ Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.m
 
 ## Next step
 
-1. **Manual verify pass 10** — on `/matters/AOD-1001` fill Immigration fact checklist, save, submit assignment, confirm draft prompt includes structured facts.
-2. **Manual verify pass 9** — on `/matters/AOD-1001` resolve agent alert inline; run Associate `pm:research` and confirm matter panels refresh.
-3. **Manual verify pass 8** — open matter with Ready-for-review assignment (e.g. AOD-1003 in demo); approve inline and confirm inbox lane updates.
+1. **Manual verify pass 11** — open `/assignments/new?deliverable=aos-discretionary-brief` → confirm deliverable-specific fact prompts with "Feeds: …" helper text; test sample discount checkbox + upload.
+2. **Manual verify Firm Memory** — edit agent output on a matter → **Save to Firm Memory** → confirm Strategy Patterns row in Airtable (demo mode shows 503).
+3. **Manual verify pass 10** — on `/matters/AOD-1001` fill Immigration fact checklist, save, submit assignment, confirm draft prompt includes structured facts.
 4. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief`.
 
 ## Blockers

@@ -1,0 +1,14 @@
+---
+description: Read .aod-context before product/architecture changes (B2B Overflow Counsel pivot)
+alwaysApply: true
+---
+
+# AOD strategic context
+
+Before proposing **architecture**, **product**, or **pricing** changes:
+
+1. Read [`.aod-context/README.md`](../../.aod-context/README.md) for the B2B Overflow Counsel north star and strategic lock.
+2. For intake, Firm Memory, or pricing work, read the relevant doc under `.aod-context/features/` or `.aod-context/technical/`.
+3. Continue from [`CHECKPOINT.md`](../../CHECKPOINT.md) **Next step** unless the user overrides.
+
+Constitution (`docs/constitution/`) and [`LEGAL_BOUNDARIES.md`](../../LEGAL_BOUNDARIES.md) still govern integrations.

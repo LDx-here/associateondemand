@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "fs/promises";
 import path from "path";
 
-import type { AssignmentStatus, AssignmentTier, DevSeed, InboxItem, LegalElementRow, Note, Task } from "./types";
+import type { AssignmentStatus, AssignmentTier, DevSeed, DocumentRow, InboxItem, LegalElementRow, Note, Task } from "./types";
 
 let cache: DevSeed | null = null;
 
@@ -96,6 +96,26 @@ export async function updateLegalElement(
   return row;
 }
 
+export async function addDocument(
+  matterId: string,
+  payload: Pick<DocumentRow, "title" | "category"> & { ocrStatus?: string; fileType?: string; id?: string },
+): Promise<DocumentRow> {
+  const seed = await getMutableSeed();
+  const doc: DocumentRow = {
+    id: payload.id ?? `doc-${Date.now()}`,
+    matterId,
+    title: payload.title,
+    category: payload.category,
+    uploadedAt: new Date().toISOString(),
+    uploadedBy: "Attorney",
+    ocrStatus: payload.ocrStatus ?? "processed",
+    fileType: payload.fileType,
+  };
+  seed.documents.push(doc);
+  await persistSeed();
+  return doc;
+}
+
 const ASSIGNMENT_TRANSITIONS: Record<AssignmentStatus, AssignmentStatus[]> = {
   Submitted: ["In progress"],
   "In progress": ["Ready for review"],
@@ -117,6 +137,8 @@ export async function createAssignmentDemo(payload: {
   priority?: string;
   dueDate?: string | null;
   submittedBy?: string;
+  sampleDiscountEligible?: boolean;
+  discountApplied?: boolean;
 }): Promise<InboxItem> {
   const seed = await getMutableSeed();
   if (!seed.inboxItems) seed.inboxItems = [];
@@ -140,6 +162,8 @@ export async function createAssignmentDemo(payload: {
     facts: payload.facts,
     priority: payload.priority ?? "Medium",
     dueDate: payload.dueDate ?? null,
+    sampleDiscountEligible: payload.sampleDiscountEligible,
+    discountApplied: payload.discountApplied,
     history: [
       {
         status: "Submitted",

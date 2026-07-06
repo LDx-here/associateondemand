@@ -4,9 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useToast } from "@/components/Toast";
 import {
+  deliverableFactGuideTitle,
   draftingFactsCompleteness,
   emptyDraftingFacts,
-  fieldsForPracticeArea,
+  fieldsForDeliverable,
   mergeFactsForDispatch,
   type DraftingFactsPayload,
   type FactFieldDef,
@@ -84,6 +85,8 @@ function FieldInput({
 type Props = {
   matterId?: string;
   caseType: string;
+  /** Catalog deliverable id — enables deliverable-aware fact prompts. */
+  deliverableId?: string;
   /** Intake mode: no save button, parent owns state via onChange */
   mode?: "workbench" | "intake";
   initialPayload?: DraftingFactsPayload | null;
@@ -97,6 +100,7 @@ type Props = {
 export function PracticeAreaFactGuide({
   matterId,
   caseType,
+  deliverableId,
   mode = "workbench",
   initialPayload,
   freeformFacts = "",
@@ -107,13 +111,21 @@ export function PracticeAreaFactGuide({
 }: Props) {
   const { showToast } = useToast();
   const [payload, setPayload] = useState<DraftingFactsPayload>(
-    () => initialPayload ?? emptyDraftingFacts(matterId ?? "draft", caseType),
+    () => initialPayload ?? emptyDraftingFacts(matterId ?? "draft", caseType, deliverableId),
   );
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(mode === "intake");
 
-  const defs = useMemo(() => fieldsForPracticeArea(payload.practiceArea), [payload.practiceArea]);
-  const completeness = useMemo(() => draftingFactsCompleteness(payload), [payload]);
+  const activeDeliverableId = deliverableId ?? payload.deliverableId;
+  const defs = useMemo(
+    () => fieldsForDeliverable(activeDeliverableId, payload.practiceArea),
+    [activeDeliverableId, payload.practiceArea],
+  );
+  const completeness = useMemo(
+    () => draftingFactsCompleteness(payload, activeDeliverableId),
+    [payload, activeDeliverableId],
+  );
+  const guideTitle = deliverableFactGuideTitle(activeDeliverableId);
   const mergedPreview = useMemo(
     () => mergeFactsForDispatch(payload, freeformFacts),
     [payload, freeformFacts],
@@ -141,7 +153,7 @@ export function PracticeAreaFactGuide({
           setPayload(data.facts);
           onChange?.(data.facts);
         } else {
-          const empty = emptyDraftingFacts(matterId, caseType);
+          const empty = emptyDraftingFacts(matterId, caseType, deliverableId);
           setPayload(empty);
           onChange?.(empty);
         }
@@ -151,15 +163,19 @@ export function PracticeAreaFactGuide({
     return () => {
       cancelled = true;
     };
-  }, [matterId, caseType, mode, onChange]);
+  }, [matterId, caseType, deliverableId, mode, onChange]);
 
   useEffect(() => {
     if (mode !== "intake") return;
-    const area = emptyDraftingFacts(matterId ?? "draft", caseType).practiceArea;
-    if (area !== payload.practiceArea || payload.caseType !== caseType) {
-      patchPayload(() => emptyDraftingFacts(matterId ?? "draft", caseType));
+    const next = emptyDraftingFacts(matterId ?? "draft", caseType, deliverableId);
+    if (
+      next.practiceArea !== payload.practiceArea ||
+      payload.caseType !== caseType ||
+      payload.deliverableId !== deliverableId
+    ) {
+      patchPayload(() => next);
     }
-  }, [caseType, matterId, mode, payload.practiceArea, payload.caseType, patchPayload]);
+  }, [caseType, matterId, deliverableId, mode, payload.practiceArea, payload.caseType, payload.deliverableId, patchPayload]);
 
   async function save() {
     if (!matterId) return;
@@ -224,7 +240,8 @@ export function PracticeAreaFactGuide({
         <div>
           <h3 className="text-sm font-semibold text-slate-900">Facts for drafting</h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            {areaLabel} checklist — answers feed drafts and research memos automatically.
+            {guideTitle ? `${guideTitle} · ` : ""}
+            {areaLabel} checklist — each answer feeds a specific section of your deliverable.
           </p>
         </div>
         <CompletenessBar {...completeness} />
@@ -240,6 +257,11 @@ export function PracticeAreaFactGuide({
               {def.label}
               {def.required ? <span className="text-rose-600"> *</span> : null}
             </span>
+            {def.feedsSection ? (
+              <span className="mt-0.5 block text-xs text-sky-700">
+                Feeds: {def.feedsSection}
+              </span>
+            ) : null}
             {def.hint ? <span className="mt-0.5 block text-xs text-slate-400">{def.hint}</span> : null}
             <FieldInput
               def={def}

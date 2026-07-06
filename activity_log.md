@@ -90,3 +90,10 @@
 - **Files Affected:** `web/src/components/MatterAssignmentReview.tsx`, `web/src/app/api/matters/[matterId]/assignments/route.ts`, `web/src/components/MatterWorkbench.tsx`, `web/src/app/(app)/matters/[id]/page.tsx`, `web/src/lib/data-store.ts`, `CHECKPOINT.md`
 - **Command Executed:** `pytest tests/ -q`, `npm run build`, `flyctl deploy`, `vercel deploy --prod`, `scripts/smoke-production.sh`
 - **Reason/Context:** Pass 7 follow-up — attorney should approve deliverables in matter context without switching to `/inbox` Kanban.
+
+## 2026-07-06 — Pass 11: B2B Overflow Counsel pivot
+
+- **Details:** Integrated `.aod-context/` strategy docs; intelligent intake v2 with deliverable-aware fact prompts; Firm Memory v1 (`POST /api/firm-memory`); sample discount (20%) on assignment intake; deployed Fly + Vercel.
+- **Files Affected:** `.aod-context/`, `web/src/lib/practice-area-facts.ts`, `PracticeAreaFactGuide.tsx`, `AssignmentIntakeForm.tsx`, `deliverable-catalog.ts`, `api/firm-memory`, `FirmMemoryBadge.tsx`, `CHECKPOINT.md`, `docs/strategy/README.md`
+- **Command Executed:** `pytest tests/ -q`, `npm run test:facts`, `npm run build`, `flyctl deploy`, `vercel deploy --prod`, `scripts/smoke-production.sh`
+- **Reason/Context:** Strategic pivot to B2B Overflow Counsel — align product with Firm Memory, Workflow Fluency, and Production Cost Pricing docs.

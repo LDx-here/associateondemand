@@ -2,10 +2,12 @@ import { FileCheck2, FlaskConical, Hammer } from "lucide-react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
+import { FirmMemoryBadge } from "@/components/FirmMemoryBadge";
 import {
   DELIVERABLE_CATALOG,
   formatCatalogQuote,
   isPhase0LaunchSku,
+  sampleDiscountNote,
   type DeliverableCatalogEntry,
 } from "@/lib/deliverable-catalog";
 import type { AssignmentTier } from "@/lib/types";
@@ -65,6 +67,9 @@ function DeliverableCard({ entry }: { entry: DeliverableCatalogEntry }) {
       </div>
       <p className="text-sm text-slate-600">{entry.description}</p>
       <p className="text-sm font-medium text-slate-800">{formatCatalogQuote(entry)}</p>
+      {sampleDiscountNote(entry) ? (
+        <p className="text-xs text-violet-800">{sampleDiscountNote(entry)}</p>
+      ) : null}
       {entry.pricing?.note ? <p className="text-xs text-slate-500">{entry.pricing.note}</p> : null}
       <div className="mt-auto flex items-center justify-between gap-2 pt-2">
         {entry.skillDoc ? (
@@ -90,6 +95,9 @@ export default function TemplateCatalogPage() {
             Browse deliverables with flat-fee ranges and typical turnaround. Phase 0 launch SKUs are
             available now; other catalog entries are coming soon. Start an assignment from any card.
           </p>
+          <div className="mt-2">
+            <FirmMemoryBadge />
+          </div>
         </div>
         <Link href="/assignments/new" className={btnPrimary}>
           New assignment

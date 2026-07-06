@@ -27,6 +27,8 @@ type AssignmentRequest = {
   structuredFacts?: DraftingFactsPayload;
   priority?: string;
   dueDate?: string | null;
+  sampleDiscountEligible?: boolean;
+  discountApplied?: boolean;
 };
 
 /**
@@ -113,6 +115,8 @@ export async function POST(req: Request) {
       priority,
       dueDate,
       submittedBy: "La'Dajia Ferguson",
+      sampleDiscountEligible: Boolean(body.sampleDiscountEligible),
+      discountApplied: Boolean(body.discountApplied),
     });
 
     let dispatch = null as Awaited<ReturnType<typeof dispatchAssignmentToPm>> | null;

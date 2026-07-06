@@ -1,6 +1,18 @@
 # AssociateOnDemand strategy docs (July 2026)
 
-Canonical strategy and phasing documents for Phase 0 B2B overflow launch. Code inventory lives in [`CHECKPOINT.md`](../../CHECKPOINT.md); legal guardrails in [`LEGAL_BOUNDARIES.md`](../../LEGAL_BOUNDARIES.md).
+Canonical strategy for the **B2B Overflow Counsel** pivot lives in **[`.aod-context/`](../.aod-context/README.md)**. This folder retains the July 2025 strategic lock and phasing index.
+
+Code inventory: [`CHECKPOINT.md`](../../CHECKPOINT.md) · legal guardrails: [`LEGAL_BOUNDARIES.md`](../../LEGAL_BOUNDARIES.md)
+
+## B2B Overflow Counsel pivot (2026-07-06)
+
+New strategic documents are integrated under `.aod-context/`:
+
+- **Strategy:** B2B law firm strategy, shift analysis, branding
+- **Features:** Firm Memory, Workflow Fluency, Production Cost Pricing
+- **Technical:** Practice Fact Mapping, Airtable/workflow refs
+
+See [`.aod-context/README.md`](../.aod-context/README.md) for the full index.
 
 ## Strategic lock (2026-07-05)
 

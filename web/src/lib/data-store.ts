@@ -8,6 +8,8 @@ import {
   findLatestDraftingFactsNoteForMatter,
   getCaseAssessmentFromAirtable,
   listDocumentsFromAirtable,
+  listAssessmentTemplatesFromAirtable,
+  registerAssessmentDocumentInAirtable,
   listEventsForMatterFromAirtable,
   listInboxItemsFromAirtable,
   listLegalElementsFromAirtable,
@@ -35,11 +37,19 @@ import {
 } from "./practice-area-facts";
 import {
   createAssignmentDemo,
+  addDocument as addDocumentDemo,
   getMutableSeed,
   listInboxItemsDemo,
+  persistSeed,
   updateAssignmentStatusDemo,
   updateNote as updateNoteDemo,
 } from "./demo-store-mutable";
+import {
+  ASSESSMENT_DOCUMENT_NOTE_TYPE,
+  encodeAssessmentTemplateCategory,
+  FIRM_TEMPLATE_MATTER_ID,
+  isAssessmentTemplateDocument,
+} from "./assessment-documents";
 import type {
   AssignmentStatus,
   AssignmentTier,
@@ -467,6 +477,8 @@ export async function createAssignment(payload: {
   priority?: string;
   dueDate?: string | null;
   submittedBy?: string;
+  sampleDiscountEligible?: boolean;
+  discountApplied?: boolean;
 }): Promise<InboxItem> {
   if (isDemoMode()) return createAssignmentDemo(payload);
   return createAssignmentInAirtable({ matterCode: payload.matterId, ...payload });

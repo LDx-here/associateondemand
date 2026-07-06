@@ -1,10 +1,20 @@
 import type { AssignmentTier } from "./types";
 
+import {
+  applySampleDiscount,
+  formatSampleDiscountNote,
+  SAMPLE_DISCOUNT_PERCENT,
+} from "./practice-area-facts";
+
 export type DeliverablePricing = {
   /** Flat-fee range in USD (Monetization Strategy). */
   minUsd: number;
   maxUsd: number;
   note?: string;
+  /** Whether intake can apply sample prior-work discount. */
+  sampleDiscountEligible?: boolean;
+  /** Percent off when sample provided (default 20). */
+  sampleDiscountPercent?: number;
 };
 
 /** Phase 0 B2B overflow launch SKUs — immigration brief, motion, hearing packet, research upsell. */
@@ -57,7 +67,7 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
       "Adjustment-of-status discretionary factors brief. Complete the AOS Discretionary Factors workbook, then the drafting agent produces a first-pass brief from the Case Assessment tab.",
     turnaround: "1-2 business days",
     skillDoc: "docs/constitution/05-Drafting-SKILL.md",
-    pricing: { minUsd: 750, maxUsd: 1500 },
+    pricing: { minUsd: 750, maxUsd: 1500, sampleDiscountEligible: true, sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT },
   },
   {
     id: "citation-package",
@@ -76,7 +86,7 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
       "Full legal research memorandum with a multi-source citation table (gov + practice resources, Midpage/Fastcase when keys are configured). MEMORANDUM header, TO/FROM block, and DOCX export.",
     turnaround: "1-3 business days depending on scope",
     skillDoc: "docs/constitution/04-Research-Memo-SKILL.md",
-    pricing: { minUsd: 500, maxUsd: 900 },
+    pricing: { minUsd: 500, maxUsd: 900, sampleDiscountEligible: true, sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT },
   },
   {
     id: "mass-audit",
@@ -104,7 +114,7 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
       "Organize exhibits, hearing binders, and supporting documents for immigration or trial hearings. Agent compiles from your fact packet and attachments; attorney verifies index, pagination, and filing compliance.",
     turnaround: "1–2 business days",
     skillDoc: "docs/constitution/05-Drafting-SKILL.md",
-    pricing: { minUsd: 500, maxUsd: 1250 },
+    pricing: { minUsd: 500, maxUsd: 1250, sampleDiscountEligible: true, sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT },
   },
   {
     id: "custom-motion",
@@ -117,7 +127,19 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
       minUsd: 250,
       maxUsd: 450,
       note: "Setup surcharge may apply on first use of a new motion type.",
+      sampleDiscountEligible: true,
+      sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT,
     },
+  },
+  {
+    id: "demand-letter",
+    name: "Demand Letter",
+    tier: "Template",
+    description:
+      "Personal injury demand letter to carrier or opposing party. Agent drafts from incident, liability, injury, and damages facts; attorney signs off.",
+    turnaround: "1–2 business days",
+    skillDoc: "docs/constitution/05-Drafting-SKILL.md",
+    pricing: { minUsd: 400, maxUsd: 800, sampleDiscountEligible: true, sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT },
   },
   {
     id: "custom-other",
@@ -146,9 +168,25 @@ function formatUsd(amount: number): string {
 }
 
 /** Client-facing flat-fee range, e.g. "$750–$1,500". */
-export function formatPricingRange(pricing: DeliverablePricing): string {
+export function formatPricingRange(pricing: DeliverablePricing, withSampleDiscount = false): string {
+  if (withSampleDiscount && pricing.sampleDiscountEligible) {
+    const pct = pricing.sampleDiscountPercent ?? SAMPLE_DISCOUNT_PERCENT;
+    const min = applySampleDiscount(pricing.minUsd, pct);
+    const max = applySampleDiscount(pricing.maxUsd, pct);
+    if (min === max) return `${formatUsd(min)} (${pct}% sample discount)`;
+    return `${formatUsd(min)}–${formatUsd(max)} (${pct}% sample discount)`;
+  }
   if (pricing.minUsd === pricing.maxUsd) return formatUsd(pricing.minUsd);
   return `${formatUsd(pricing.minUsd)}–${formatUsd(pricing.maxUsd)}`;
+}
+
+export function isSampleDiscountEligible(entry: DeliverableCatalogEntry): boolean {
+  return Boolean(entry.pricing?.sampleDiscountEligible);
+}
+
+export function sampleDiscountNote(entry: DeliverableCatalogEntry): string | null {
+  if (!isSampleDiscountEligible(entry)) return null;
+  return formatSampleDiscountNote(entry.pricing?.sampleDiscountPercent);
 }
 
 /** Price + turnaround for catalog cards and intake, e.g. "$750–$1,500 · 1–2 business days". */

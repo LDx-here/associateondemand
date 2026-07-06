@@ -35,6 +35,7 @@ export function EditableOutputMemo({
   const [persistedNoteId, setPersistedNoteId] = useState(noteId);
   const [saving, setSaving] = useState(false);
   const [skillOpen, setSkillOpen] = useState(false);
+  const [firmMemoryOpen, setFirmMemoryOpen] = useState(false);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -139,13 +140,22 @@ export function EditableOutputMemo({
             </>
           )}
           {dirty && matterId ? (
-            <button
-              type="button"
-              className={cn(btnSecondary, "py-0.5 px-2 text-[0.65rem]")}
-              onClick={() => setSkillOpen(true)}
-            >
-              Save as skill
-            </button>
+            <>
+              <button
+                type="button"
+                className={cn(btnSecondary, "py-0.5 px-2 text-[0.65rem]")}
+                onClick={() => setSkillOpen(true)}
+              >
+                Save as skill
+              </button>
+              <button
+                type="button"
+                className={cn(btnSecondary, "py-0.5 px-2 text-[0.65rem]")}
+                onClick={() => setFirmMemoryOpen(true)}
+              >
+                Save to Firm Memory
+              </button>
+            </>
           ) : null}
           {dirty && editing ? (
             <span className="text-[0.65rem] text-amber-800">Unsaved changes · autosaves after 2.5s</span>
@@ -181,6 +191,16 @@ export function EditableOutputMemo({
         originalOutput={savedContent}
         matterId={matterId}
         agent={agent}
+      />
+      <SaveAsSkillModal
+        open={firmMemoryOpen}
+        onClose={() => setFirmMemoryOpen(false)}
+        defaultName={defaultSkillName}
+        defaultBody={draft.trim()}
+        originalOutput={savedContent}
+        matterId={matterId}
+        agent={agent}
+        variant="firm_memory"
       />
     </>
   );

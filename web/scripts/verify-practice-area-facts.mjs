@@ -38,4 +38,21 @@ const merged = mergeFactsForDispatch(base, "Client has strong equities.");
 assert.match(merged, /Structured facts for drafting/);
 assert.match(merged, /Client has strong equities/);
 
+const aosFields = emptyDraftingFacts("AOD-1001", "Immigration - Asylum", "aos-discretionary-brief");
+assert.ok(aosFields.deliverableId === "aos-discretionary-brief");
+const aosCompleteness = draftingFactsCompleteness(aosFields, "aos-discretionary-brief");
+assert.ok(aosCompleteness.total >= 5);
+
+const aosPrompt = formatDraftingFactsForPrompt({
+  ...aosFields,
+  fields: {
+    ...aosFields.fields,
+    persecutionNarrative: "Harassed by police in 2019",
+    protectedGround: "Political opinion",
+    countryConditions: "State Dept report on file",
+  },
+});
+assert.match(aosPrompt, /Credibility Assessment/);
+assert.match(aosPrompt, /Country Conditions for Nexus/);
+
 console.log("verify-practice-area-facts: OK");

@@ -512,6 +512,8 @@ type ParsedInboxOptions = {
   facts?: string;
   priority?: string;
   dueDate?: string | null;
+  sampleDiscountEligible?: boolean;
+  discountApplied?: boolean;
   history?: Array<{ status: string; note?: string; at: string; by?: string }>;
 };
 
@@ -557,6 +559,8 @@ function parsePmInboxOptions(raw: unknown): ParsedInboxOptions {
       facts: o.facts ? String(o.facts) : undefined,
       priority: o.priority ? String(o.priority) : undefined,
       dueDate: o.dueDate ? String(o.dueDate) : null,
+      sampleDiscountEligible: Boolean(o.sampleDiscountEligible),
+      discountApplied: Boolean(o.discountApplied),
       history,
     };
   }
@@ -614,6 +618,8 @@ function mapInbox(rec: { id: string; fields: RawFields }): InboxItem {
     facts: parsed.facts,
     priority: parsed.priority,
     dueDate: parsed.dueDate,
+    sampleDiscountEligible: parsed.sampleDiscountEligible,
+    discountApplied: parsed.discountApplied,
     history: parsed.history,
   };
 }
@@ -655,6 +661,8 @@ function serializeAssignmentOptions(payload: {
   facts: string;
   priority?: string;
   dueDate?: string | null;
+  sampleDiscountEligible?: boolean;
+  discountApplied?: boolean;
   history: Array<{ status: string; note?: string; at: string; by?: string }>;
 }): string {
   return JSON.stringify({
@@ -664,6 +672,8 @@ function serializeAssignmentOptions(payload: {
     facts: payload.facts,
     priority: payload.priority ?? "Medium",
     dueDate: payload.dueDate ?? null,
+    sampleDiscountEligible: payload.sampleDiscountEligible ?? false,
+    discountApplied: payload.discountApplied ?? false,
     history: payload.history,
   });
 }
@@ -676,6 +686,8 @@ export async function createAssignmentInAirtable(payload: {
   priority?: string;
   dueDate?: string | null;
   submittedBy?: string;
+  sampleDiscountEligible?: boolean;
+  discountApplied?: boolean;
 }): Promise<InboxItem> {
   const resolved = await resolveMatterRecordId(payload.matterCode);
   if (!resolved) throw new Error(`Matter not found: ${payload.matterCode}`);
@@ -701,6 +713,8 @@ export async function createAssignmentInAirtable(payload: {
       facts: payload.facts,
       priority: payload.priority,
       dueDate: payload.dueDate,
+      sampleDiscountEligible: payload.sampleDiscountEligible,
+      discountApplied: payload.discountApplied,
       history,
     }),
     [i.status]: "Submitted",
@@ -747,6 +761,8 @@ export async function updateAssignmentStatusInAirtable(
       facts: current.facts ?? current.whatNeeded,
       priority: current.priority,
       dueDate: current.dueDate,
+      sampleDiscountEligible: current.sampleDiscountEligible,
+      discountApplied: current.discountApplied,
       history,
     }),
   };
@@ -889,13 +905,15 @@ export async function createStrategyPatternInAirtable(payload: {
   agent?: string;
   matterCode?: string;
   correctionNote?: string;
+  category?: string;
 }) {
   const sp = F.strategyPatterns;
   const detailParts = [payload.description?.trim(), payload.trigger?.trim()].filter(Boolean);
+  const categoryTag = payload.category ? `[${payload.category}] ` : "";
   const fields: RawFields = {
-    [sp.fact_pattern]: payload.name.slice(0, 240) || "Custom skill",
+    [sp.fact_pattern]: `${categoryTag}${payload.name}`.slice(0, 240) || "Custom skill",
     [sp.fact_pattern_detail]: detailParts.join("\n\n").slice(0, 4000) || payload.body.slice(0, 4000),
-    [sp.strategy_used]: (payload.agent ?? "attorney-skill").slice(0, 240),
+    [sp.strategy_used]: (payload.agent ?? payload.category ?? "attorney-skill").slice(0, 240),
     [sp.outcome]: payload.body.slice(0, 4000),
     [sp.created_at]: new Date().toISOString(),
   };
@@ -969,6 +987,56 @@ export async function createInboxItemInAirtable(payload: {
   if (payload.matterCode) fields[i.matter_id] = payload.matterCode;
   const rec = await airtableCreate(TABLES.pmInbox, fields);
   return mapInbox(rec);
+}
+
+export async function listAssessmentTemplatesFromAirtable(): Promise<DocumentRow[]> {
+  const d = F.documents;
+  const formula = `FIND('assessment_template', {${d.category}})`;
+  try {
+    const records = await airtableListAll<RawFields>(TABLES.documents, { filterByFormula: formula });
+    return records.map((r) => mapDocument(r, "FIRM-TEMPLATES"));
+  } catch {
+    return [];
+  }
+}
+
+export async function registerAssessmentDocumentInAirtable(
+  matterCode: string,
+  payload: { title: string; category: string; airtableDocumentId?: string },
+): Promise<DocumentRow> {
+  const resolved = await resolveMatterRecordId(matterCode);
+  if (!resolved) throw new Error(`Matter not found: ${matterCode}`);
+  const d = F.documents;
+  if (payload.airtableDocumentId) {
+    await airtablePatch(TABLES.documents, payload.airtableDocumentId, {
+      [d.category]: payload.category,
+      [d.title]: payload.title.slice(0, 240),
+    });
+    return {
+      id: payload.airtableDocumentId,
+      matterId: resolved.matterId,
+      title: payload.title,
+      category: payload.category,
+      uploadedAt: new Date().toISOString(),
+    };
+  }
+  const rec = await airtableCreate(TABLES.documents, {
+    [d.title]: payload.title.slice(0, 240),
+    [d.category]: payload.category,
+    [d.matter_id]: [resolved.recordId],
+    [d.created_at]: new Date().toISOString(),
+    [d.uploaded_by]: "Attorney",
+    [d.ocr_status]: "processed",
+  });
+  return mapDocument(rec, resolved.matterId);
+}
+
+export async function findLatestAssessmentOcrNoteForMatter(matterCode: string): Promise<Note | null> {
+  const notes = await listNotesForMatterFromAirtable(matterCode);
+  const matches = notes
+    .filter((n) => n.type === "Assessment Document")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return matches[0] ?? null;
 }
 
 export { isDemoMode };

@@ -195,6 +195,8 @@ export type InboxItem = {
   facts?: string;
   priority?: string;
   dueDate?: string | null;
+  sampleDiscountEligible?: boolean;
+  discountApplied?: boolean;
   history?: Array<{ status: string; note?: string; at: string; by?: string }>;
 };
 

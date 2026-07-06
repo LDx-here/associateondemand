@@ -20,13 +20,17 @@ import {
   mergeFactsForDispatch,
   type DraftingFactsPayload,
 } from "@/lib/practice-area-facts";
+import { FirmMemoryBadge } from "@/components/FirmMemoryBadge";
 import { PracticeAreaFactGuide } from "@/components/PracticeAreaFactGuide";
 import {
   DELIVERABLE_CATALOG,
   deliverableById,
   formatCatalogQuote,
+  formatPricingRange,
   isPhase0LaunchSku,
+  isSampleDiscountEligible,
   PHASE0_LAUNCH_SKU_IDS,
+  sampleDiscountNote,
 } from "@/lib/deliverable-catalog";
 import type { AssignmentTier, Matter } from "@/lib/types";
 import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
@@ -74,6 +78,8 @@ export function AssignmentIntakeForm({
 
   const [manualApproved, setManualApproved] = useState(false);
   const [disclaimerAcknowledged, setDisclaimerAcknowledged] = useState(false);
+  const [applySampleDiscount, setApplySampleDiscount] = useState(false);
+  const [sampleFile, setSampleFile] = useState<File | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [uploadQueue, setUploadQueue] = useState<QueueItem[]>([]);
 
@@ -116,6 +122,9 @@ export function AssignmentIntakeForm({
     [structuredFacts, facts],
   );
 
+  const sampleEligible = selectedCatalog ? isSampleDiscountEligible(selectedCatalog) : false;
+  const discountNote = selectedCatalog ? sampleDiscountNote(selectedCatalog) : null;
+
   function validate(): Record<string, string> {
     const errors: Record<string, string> = {};
     if (matterMode === "existing" && !existingMatterId.trim()) {
@@ -133,6 +142,9 @@ export function AssignmentIntakeForm({
     }
     if (files.length > 0 && tierRequiresManualApproval() && !manualApproved) {
       errors.files = "Check the tier 0 manual approval box before attaching files.";
+    }
+    if (applySampleDiscount && !sampleFile && files.length === 0) {
+      errors.sample = "Upload a sample of your firm's prior work to apply the sample discount.";
     }
     if (!disclaimerAcknowledged) {
       errors.disclaimer = "Acknowledge the limited-scope disclaimer before submitting.";
@@ -164,6 +176,8 @@ export function AssignmentIntakeForm({
           structuredFacts: structuredFacts ?? undefined,
           priority,
           dueDate: dueDate || null,
+          sampleDiscountEligible: sampleEligible,
+          discountApplied: applySampleDiscount && sampleEligible,
         }),
       });
       const data = await resp.json();
@@ -181,13 +195,14 @@ export function AssignmentIntakeForm({
         deliverableReady?: boolean;
       } | null;
 
-      if (files.length > 0) {
-        const initialQueue: QueueItem[] = files.map((f) => ({ name: f.name, status: "pending" }));
+      if (files.length > 0 || sampleFile) {
+        const uploadFiles = sampleFile ? [sampleFile, ...files.filter((f) => f !== sampleFile)] : files;
+        const initialQueue: QueueItem[] = uploadFiles.map((f) => ({ name: f.name, status: "pending" }));
         setUploadQueue(initialQueue);
-        for (let i = 0; i < files.length; i++) {
+        for (let i = 0; i < uploadFiles.length; i++) {
           setUploadQueue((prev) => prev.map((q, idx) => (idx === i ? { ...q, status: "uploading" } : q)));
           try {
-            const result = await uploadDocument(matterId, files[i], manualApproved, "batch");
+            const result = await uploadDocument(matterId, uploadFiles[i], manualApproved, "batch");
             setUploadQueue((prev) =>
               prev.map((q, idx) => (idx === i ? { ...q, status: result.error ? "error" : "done", result } : q)),
             );
@@ -310,7 +325,10 @@ export function AssignmentIntakeForm({
       </section>
 
       <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">2. Deliverable &amp; tier</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-sm font-semibold text-slate-900">2. Deliverable &amp; tier</h2>
+          <FirmMemoryBadge compact />
+        </div>
         <label className="block text-sm">
           <span className="text-slate-700">Deliverable type</span>
           <select
@@ -339,6 +357,12 @@ export function AssignmentIntakeForm({
           <div className="space-y-1">
             <p className="text-xs text-slate-500">{selectedCatalog.description}</p>
             <p className="text-sm font-medium text-slate-800">{formatCatalogQuote(selectedCatalog)}</p>
+            {sampleEligible && applySampleDiscount && selectedCatalog.pricing ? (
+              <p className="text-sm font-medium text-emerald-800">
+                With sample discount: {formatPricingRange(selectedCatalog.pricing, true)}
+              </p>
+            ) : null}
+            {discountNote ? <p className="text-xs text-violet-800">{discountNote}</p> : null}
             {selectedCatalog.pricing?.note ? (
               <p className="text-xs text-slate-500">{selectedCatalog.pricing.note}</p>
             ) : null}
@@ -384,6 +408,7 @@ export function AssignmentIntakeForm({
         <PracticeAreaFactGuide
           mode="intake"
           caseType={activeCaseType}
+          deliverableId={deliverableId === CUSTOM_OPTION ? undefined : deliverableId}
           freeformFacts={facts}
           onFreeformChange={setFacts}
           onChange={setStructuredFacts}
@@ -419,6 +444,33 @@ export function AssignmentIntakeForm({
 
       <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-900">4. Attachments (optional)</h2>
+        {sampleEligible ? (
+          <div className="rounded-md border border-violet-100 bg-violet-50/50 p-3 space-y-2">
+            <label className="flex items-start gap-2 text-sm text-slate-800">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={applySampleDiscount}
+                onChange={(e) => setApplySampleDiscount(e.target.checked)}
+              />
+              <span>
+                Apply sample discount — upload a prior brief, motion, or letter in your firm&apos;s style
+              </span>
+            </label>
+            {applySampleDiscount ? (
+              <label className="block text-sm">
+                <span className="text-slate-700">Sample prior work</span>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.txt"
+                  className="mt-1 w-full text-sm"
+                  onChange={(e) => setSampleFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+            ) : null}
+            {fieldErrors.sample ? <p className="text-sm text-rose-700">{fieldErrors.sample}</p> : null}
+          </div>
+        ) : null}
         {files.length > 0 ? <TierZeroBanner approved={manualApproved} onApprovedChange={setManualApproved} /> : null}
         <input
           type="file"
