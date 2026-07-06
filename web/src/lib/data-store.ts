@@ -409,6 +409,14 @@ export async function updateAssignmentStatus(
   return updateAssignmentStatusInAirtable(itemId, nextStatus, options);
 }
 
+/** Assignment-kind PM Inbox rows linked to a matter code (e.g. AOD-1001). */
+export async function listAssignmentsForMatter(matterId: string): Promise<InboxItem[]> {
+  const items = await listInboxItems();
+  return items
+    .filter((item) => item.kind === "assignment" && item.matterId === matterId)
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
 export async function buildTimeline(matterId: string): Promise<TimelineEntry[]> {
   const seed = useDemoMode() ? await loadDemoSeed() : null;
   const entries: TimelineEntry[] = [];

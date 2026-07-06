@@ -5,6 +5,7 @@ import {
   buildTimeline,
   getCaseAssessment,
   getMatterByCode,
+  listAssignmentsForMatter,
   listDocumentsForMatter,
   listEventsForMatter,
   listLegalElements,
@@ -20,7 +21,7 @@ export default async function MatterDetailPage({ params }: Props) {
   const matter = await getMatterByCode(id);
   if (!matter) notFound();
 
-  const [tasks, notes, elements, timeline, documents, assessment, events] = await Promise.all([
+  const [tasks, notes, elements, timeline, documents, assessment, events, assignments] = await Promise.all([
     listTasksForMatter(matter.matterId),
     listNotesForMatter(matter.matterId),
     listLegalElements(matter.matterId),
@@ -28,6 +29,7 @@ export default async function MatterDetailPage({ params }: Props) {
     listDocumentsForMatter(matter.matterId),
     getCaseAssessment(matter.matterId),
     listEventsForMatter(matter.matterId),
+    listAssignmentsForMatter(matter.matterId),
   ]);
 
   const demo = useDemoMode();
@@ -43,6 +45,7 @@ export default async function MatterDetailPage({ params }: Props) {
       initialDocuments={documents}
       initialAssessment={assessment}
       initialEvents={events}
+      initialAssignments={assignments}
     />
   );
 }

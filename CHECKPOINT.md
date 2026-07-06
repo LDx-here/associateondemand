@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-06 (pass 7 deployed — inbox workflow UX)
+**Last updated:** 2026-07-06 (pass 8 deployed — matter workbench review drawer)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -201,7 +201,16 @@ PM dispatch → Ready for review lane was verified manually against live Airtabl
 (2026-07-02); re-run requires attorney Airtable PAT + Supabase login — **manual verify**
 for next pilot, not a code failure.
 
-**Deployed:** pass 3 (`ff25481`, `4b96f8a`), pass 5, **pass 6**, and **pass 7** (2026-07-06) live on Fly + Vercel.
+**Deployed:** pass 3 (`ff25481`, `4b96f8a`), pass 5, **pass 6**, **pass 7**, and **pass 8** (2026-07-06) live on Fly + Vercel.
+
+### Autonomous pass log — pass 8 (2026-07-06, matter workbench review drawer)
+
+- **Matter page** — `GET /api/matters/[id]/assignments` + inline **Deliverable review** panel below matter header. Attorney approves or requests revision without leaving the workbench.
+- **Review UX** — shows deliverable name, tier, status chip, agent-output preview snippet, Approve deliverable / Request revision (same `/api/inbox/[itemId]/status` as inbox board), optimistic update + toast. Approved assignments show compact green state; **View in inbox →** is secondary only.
+
+Verified: `pytest` (26 passed), `next build` green.
+
+**Deployed 2026-07-06:** pass 8 — Fly API + Vercel prod; post-deploy smoke pass.
 
 ### Autonomous pass log — pass 7 (2026-07-06, inbox workflow UX)
 
@@ -315,6 +324,7 @@ Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.m
 
 ## Last completed
 
+- **Pass 8 (deployed 2026-07-06):** matter workbench inline deliverable review — approve/request revision on matter page without visiting `/inbox`.
 - **Pass 7 (deployed 2026-07-06):** inbox agent alerts use workflow actions (not Accept/Reject comment UI); assignment board labels polished; resolve API resumes on guidance.
 - **Pass 6 (deployed 2026-07-06):** bidirectional agent output editing (Notes tab + Command panel) + Save as skill → Strategy Patterns; Fly + Vercel prod + smoke pass.
 - **Pass 5 (deployed):** strategic lock recorded; hearing-packet + motion launch SKUs; jurisdiction-aware intake disclaimer; strategy docs consolidated under `docs/strategy/`; production deploy + smoke pass.
@@ -323,7 +333,7 @@ Full index: [`docs/strategy/README.md`](docs/strategy/README.md) · [`STRATEGY.m
 
 ## Next step
 
-1. **Matter workbench review drawer** — surface Ready-for-review assignments inline on matter page (not only `/inbox` Kanban).
+1. **Manual verify pass 8** — open matter with Ready-for-review assignment (e.g. AOD-1003 in demo); approve inline and confirm inbox lane updates.
 2. **Manual verify pass 6 (ops)** — run agent on matter → Edit output → Save → confirm Notes tab; Save as skill → check Airtable Strategy Patterns.
 3. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief`.
 

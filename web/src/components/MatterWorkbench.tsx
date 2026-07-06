@@ -21,6 +21,7 @@ import type {
   Note,
   Task,
   TimelineEntry,
+  InboxItem,
 } from "@/lib/types";
 import { btnPrimary, btnSecondary, tabActive, tabInactive } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
@@ -29,6 +30,7 @@ import { dispatchAgentCommand } from "@/lib/agent-dispatch";
 import { prefillCommandPanel } from "@/lib/case-assessment";
 import { AddTaskForm } from "./AddTaskForm";
 import { EditableOutputMemo } from "./EditableOutputMemo";
+import { MatterAssignmentReview } from "./MatterAssignmentReview";
 import { CaseAssessmentEditor } from "./CaseAssessmentEditor";
 import { MatterDeadlineForm } from "./MatterDeadlineForm";
 import { MatterEventsPanel } from "./MatterEventsPanel";
@@ -71,6 +73,7 @@ export function MatterWorkbench({
   initialDocuments,
   initialAssessment,
   initialEvents = [],
+  initialAssignments = [],
   demoMode = false,
 }: {
   matter: Matter;
@@ -81,6 +84,7 @@ export function MatterWorkbench({
   initialDocuments: DocumentRow[];
   initialAssessment: CaseAssessment;
   initialEvents?: CalendarEvent[];
+  initialAssignments?: InboxItem[];
   demoMode?: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("Assessment");
@@ -230,6 +234,15 @@ export function MatterWorkbench({
           </div>
         ) : null}
       </header>
+
+      <MatterAssignmentReview
+        matterId={matter.matterId}
+        initialAssignments={initialAssignments}
+        notes={notes}
+        demoMode={demoMode}
+        onAssignmentUpdated={refresh}
+        onViewAgentNote={() => setTab("Notes")}
+      />
 
       <nav className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
         {tabs.map((t) => (

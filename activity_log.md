@@ -79,3 +79,10 @@
 - **Files Affected:** `web/src/components/InboxBoard.tsx`, `web/src/lib/inbox-alert-actions.ts`, `web/src/components/AssignmentBoard.tsx`, `web/src/app/(app)/inbox/page.tsx`, `web/src/app/api/inbox/[itemId]/resolve/route.ts`, `CHECKPOINT.md`
 - **Command Executed:** `pytest tests/ -q`, `npm run build`, `flyctl deploy`, `vercel deploy --prod`, `scripts/smoke-production.sh`
 - **Reason/Context:** Attorney feedback — inbox felt static/incomplete with orphan accept/reject comment UX instead of integrated workflow actions.
+
+## 2026-07-06 — Pass 8: matter workbench review drawer
+
+- **Details:** Inline Deliverable review panel on matter page — fetch assignments per matter, show Ready-for-review (and in-progress/submitted) with agent-output preview, Approve deliverable / Request revision via same inbox status API, optimistic update + toast; approved compact state; secondary View in inbox link.
+- **Files Affected:** `web/src/components/MatterAssignmentReview.tsx`, `web/src/app/api/matters/[matterId]/assignments/route.ts`, `web/src/components/MatterWorkbench.tsx`, `web/src/app/(app)/matters/[id]/page.tsx`, `web/src/lib/data-store.ts`, `CHECKPOINT.md`
+- **Command Executed:** `pytest tests/ -q`, `npm run build`, `flyctl deploy`, `vercel deploy --prod`, `scripts/smoke-production.sh`
+- **Reason/Context:** Pass 7 follow-up — attorney should approve deliverables in matter context without switching to `/inbox` Kanban.
