@@ -115,3 +115,7 @@ tmp/
 temp/
 
 services/api/.venv-smoke/
+
+# Supabase CLI link metadata (local only)
+supabase/.temp/
+web/supabase/.temp/
