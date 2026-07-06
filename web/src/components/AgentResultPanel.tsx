@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import type { AgentCommandResult } from "@/lib/agent-dispatch";
 import { EditableOutputMemo } from "@/components/EditableOutputMemo";
@@ -28,10 +28,16 @@ export function AgentResultPanel({
   const [memoContent, setMemoContent] = useState(result.fullMemo?.trim() ?? "");
   const [memoNoteId, setMemoNoteId] = useState(result.noteId);
 
-  useEffect(() => {
+  // Re-sync when a new command result arrives (e.g. attorney runs another
+  // command in the panel). Adjusted during render rather than in a useEffect
+  // per https://react.dev/learn/you-might-not-need-an-effect so this doesn't
+  // trigger an extra cascading render.
+  const [prevResult, setPrevResult] = useState(result);
+  if (result !== prevResult) {
+    setPrevResult(result);
     setMemoContent(result.fullMemo?.trim() ?? "");
     setMemoNoteId(result.noteId);
-  }, [result.fullMemo, result.noteId]);
+  }
 
   const hasGaps = (result.gaps ?? []).length > 0;
   const hasUncertainties = (result.uncertainties ?? []).length > 0;
