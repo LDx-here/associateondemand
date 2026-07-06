@@ -10,6 +10,8 @@
 
 This document outlines the end-to-end workflow for the AssociateOnDemand Associate Services Marketplace. It details a streamlined process for law firms to initiate various substantive legal projects (such as drafting, legal research, and memo writing) and for freelance attorneys to be matched, assigned, and complete these tasks. The workflow is designed for efficiency, transparency, and seamless integration with the Airtable-backed AssociateOnDemand platform, drawing inspiration from successful models like LawClerk, but with a singular focus on associate-level legal work.
 
+> **Supervision (RESOLVED — La'Dajia, July 6, 2026):** **La'Dajia is the supervising attorney** for now. This is consistent with the Phase 0 lock that RMV/La'Dajia signs every deliverable (see [`AssociateOnDemand_Implementation_Phasing.md`](AssociateOnDemand_Implementation_Phasing.md)). The freelance attorney's work product is drafting/preparation delivered to the supervising/requesting attorney, who remains responsible to the end client — AOD is not the attorney of record and does not represent the requesting firm's client.
+
 ## 2. Workflow for Requesting Firms
 
 ### 2.1. Initiate New Project Request

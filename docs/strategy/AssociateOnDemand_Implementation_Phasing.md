@@ -151,10 +151,17 @@ The marketplace graduates the contract-associate track (CHECKPOINT "Later: contr
 
 **Scope:** smart matching engine · freelance attorney profiles · bar + background-check **verification gate** (default-deny; annual re-verification) · project applications · **escrow**/payment release · ratings & reviews.
 
-**Dependencies (all must land first):**
+**Marketplace decisions (RESOLVED — La'Dajia, July 6, 2026):**
 
-*   **Bar-counsel sign-off** on the fee-division / supervision / lawyer-referral structure — RMV collects fees as a lawyer-owned firm, but Rule 1.5(e) (proportional-or-joint-responsibility + client written consent + reasonable total fee) and Rule 7.2(b) referral characterization must be cleared. See [`LEGAL_BOUNDARIES.md`](../../LEGAL_BOUNDARIES.md).
-*   **In-app payments (Phase 2)** — Stripe/escrow rails and trust-accounting (IOLTA) handling must exist before funds move between firms.
+*   **Fee model:** **flat platform fee + firm subscription tiers (LawClerk-style, 0% of the legal fee)** — not a percentage commission. Materially de-risks Rule 1.5(e) / 7.2(b).
+*   **Trust / escrow holder:** **Recover My Value, LLC (RMV)** (IOLTA/trust-accounting rules); flat-fee structure may let the platform avoid holding the legal fee entirely (firm pays attorney directly) — bar-counsel confirm.
+*   **Supervisor / attorney-of-record:** **La'Dajia** for now — consistent with the Phase 0 lock (RMV signs deliverables).
+*   **Service scope:** **drafting/preparation of items for licensed attorneys** — AOD is not the attorney of record, does not represent the requesting firm's client, and does not appear in court (UPL guardrail). See [`LEGAL_BOUNDARIES.md`](../../LEGAL_BOUNDARIES.md).
+
+**Dependencies (remaining — must land before build):**
+
+*   **Bar-counsel sign-off + malpractice confirmation** — final bar-counsel review of the marketplace structure and confirmation of malpractice coverage allocation. The flat-fee choice de-risks Rule 1.5(e)/7.2(b), but confirmation is still required (Rule 1.5(e) client-consent flow only if any residual share-of-legal-fee division is reintroduced). See [`LEGAL_BOUNDARIES.md`](../../LEGAL_BOUNDARIES.md).
+*   **In-app payments (Phase 2)** — Stripe/escrow rails and RMV trust-accounting (IOLTA) handling must exist before funds move (or the cleaner "firm pays attorney directly; platform bills flat fee separately" path is adopted).
 *   **Multi-role auth** — freelance-attorney vs. requesting-firm vs. RMV-verifier roles/permissions (CHECKPOINT: contractor roles are "Later").
 
 ---

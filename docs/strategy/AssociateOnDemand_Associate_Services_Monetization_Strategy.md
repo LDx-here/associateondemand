@@ -12,20 +12,25 @@ This document outlines the refined monetization and growth strategies for the As
 
 ## 2. Monetization Strategy: Core Revenue Streams
 
-The primary monetization model for the Associate Services Marketplace will be a **transaction-based fee structure**, complemented by potential premium services and a tiered approach.
+**Fee model (RESOLVED — La'Dajia, July 6, 2026):** The primary monetization model is a **flat platform fee + firm subscription tiers (LawClerk-style)** — AssociateOnDemand takes **0% of the legal fee**. The requesting firm pays the freelance attorney for the legal work; the platform earns a flat/subscription fee for access and matching. Percentage commission is **not** the chosen model (retained in §2.1 only as a secondary/deprecated alternative).
 
 ### 2.0. Fee-Collecting Entity and Compliance Conditions
 
-All marketplace fees are collected by **Recover My Value, LLC (RMV)** — a **lawyer-owned law firm** operating AssociateOnDemand. Because RMV's principal (La'Dajia) is a **licensed attorney**, payments between RMV and freelance attorneys are a **lawyer-to-lawyer** arrangement, **not** fee-sharing with a non-lawyer (the MN RPC 5.4 / ORC 4705.07 concern that drives the B2B overflow model). The marketplace therefore operates inside the existing RMV law-firm brand, not through a separate non-lawyer intermediary.
+All platform fees are collected by **Recover My Value, LLC (RMV)** — a **lawyer-owned law firm** operating AssociateOnDemand. Because RMV's principal (La'Dajia) is a **licensed attorney**, payments between RMV and freelance attorneys are a **lawyer-to-lawyer** arrangement, **not** fee-sharing with a non-lawyer (the MN RPC 5.4 / ORC 4705.07 concern that drives the B2B overflow model). The marketplace therefore operates inside the existing RMV law-firm brand, not through a separate non-lawyer intermediary.
 
-**Remaining compliance conditions (being lawyer-owned does not auto-satisfy these):** When RMV collects a fee and pays a *different* firm's freelance attorney — or splits with the requesting firm — the division must still satisfy **ABA / MN RPC 1.5(e)**: (1) division proportional to services performed **or** each lawyer assumes joint responsibility; (2) the client gives **informed written consent**, including each lawyer's share; and (3) the **total fee is reasonable**. A percentage commission can also implicate the **lawyer-referral-service** rules (Rule 7.2(b)). **Bar-counsel sign-off is recommended** before launch to confirm the fee mechanism, consent flow, and referral characterization.
+**Flat/subscription fee materially de-risks the fee-division questions:** Because the platform fee is **not a division of the client's legal fee** (it is a flat access/subscription charge, LawClerk-style with 0% of the legal fee), it **substantially reduces the Rule 1.5(e) fee-division and Rule 7.2(b) referral-service concerns** — the platform is charging for a service, not taking a share of the legal fee or paying for referrals. This does not remove the need for review: **bar-counsel confirmation is still recommended**, but the flat-fee structure materially de-risks both items. Any *residual* fee division (only if a share of the legal fee were ever reintroduced) would still have to satisfy **ABA / MN RPC 1.5(e)**: (1) division proportional to services performed **or** each lawyer assumes joint responsibility; (2) the client gives **informed written consent**, including each lawyer's share; and (3) the **total fee is reasonable**.
 
-### 2.1. Transaction Fee (Commission)
+**Escrow / trust-account holder (RESOLVED — RMV):** If escrow is used, client/project funds are held by **Recover My Value, LLC**, subject to **IOLTA / trust-accounting** rules (client funds cannot sit in an operating account). **Cleaner option:** with a flat platform fee, the platform may be able to **avoid holding the legal fee entirely** — the requesting firm pays the attorney directly, and the platform bills its flat fee separately. This is the preferred structure and is a **bar-counsel confirm** item.
 
-*   **Model**: AssociateOnDemand will charge a commission on each successfully completed associate service project. This is a standard and proven model in legal marketplaces [1].
-*   **Rate**: A competitive commission rate, likely between **15% to 25%** of the proposed project fee, will be applied. This fee will be deducted from the payment made to the freelance attorney.
-    *   *Example*: If a firm offers $300 for a legal research project and the commission is 20%, the freelance attorney receives $240, and AssociateOnDemand earns $60.
-*   **Value Proposition**: This model aligns incentives, as AssociateOnDemand only earns when value is successfully delivered and the project is completed. It also provides price flexibility and transparency to the legal industry [3].
+### 2.1. Fee Model — Flat Platform Fee + Firm Subscription (primary)
+
+*   **Model**: AssociateOnDemand charges the requesting firm a **flat per-project platform fee and/or a subscription tier** for access to the marketplace and matching. This mirrors **LawClerk, which charges freelancers 0% and monetizes via a firm subscription** specifically to avoid fee-division characterization [1][2].
+*   **0% of the legal fee**: The platform does **not** take a share of the legal fee. The firm pays the freelance attorney for the legal work directly (or via RMV-held escrow); the platform fee is billed separately.
+*   **Value Proposition**: Predictable, transparent pricing for firms; freelance attorneys keep 100% of the negotiated legal fee; and the structure keeps the platform clearly on the "payment for services" side of Rule 7.2(b).
+
+#### 2.1.1. Transaction Fee (Commission) — secondary/deprecated alternative
+
+*   A percentage commission (historically modeled at **15% to 25%** of the proposed project fee, deducted from the freelance attorney's payment) was considered but is **not** the chosen model, because taking a share of the legal fee raises the Rule 1.5(e) fee-division and Rule 7.2(b) referral concerns that the flat-fee model avoids. Retained here only for reference should bar counsel ever prefer a services-based split.
 
 ### 2.2. Value-Added Services (Premium Features)
 
@@ -94,7 +99,7 @@ To ensure the marketplace's profitability, a robust growth strategy is essential
 *   **Freelance Attorney Satisfaction**: Ensures a healthy supply side.
 *   **Law Firm Satisfaction**: Ensures repeat business and referrals.
 *   **Gross Merchandise Volume (GMV)**: Total value of projects facilitated.
-*   **Net Revenue**: Commission earned after all costs.
+*   **Net Revenue**: Platform/subscription fees earned after all costs.
 *   **Customer Acquisition Cost (CAC)**: Cost to acquire a new law firm or freelance attorney.
 *   **Lifetime Value (LTV)**: Revenue generated from a firm/attorney over their engagement.
 
