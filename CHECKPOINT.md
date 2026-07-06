@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-06 (B2B Overflow Counsel pivot — context integration + intake v2 + Firm Memory v1)
+**Last updated:** 2026-07-06 (pass 13 — AOS intake fix, Firm Memory setup journey, billing honesty, user journey doc)
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -214,6 +214,20 @@ Verified: `pytest`, `npm run test:facts`, `next build`, `scripts/smoke-productio
 
 **Deployed 2026-07-06:** pass 11 — Fly API + Vercel prod.
 
+### Autonomous pass log — pass 13 (2026-07-06, UX honesty + Firm Memory onboarding)
+
+User feedback: Stripe promised but not built; Firm Memory badge with no setup path; AOS brief asked asylum facts; unclear overflow counsel journey.
+
+- **AOS discretionary brief intake** — replaced asylum persecution fields with waiver/equities schema (qualifying relative, extreme hardship, INA §212(a) grounds, positive/negative discretionary factors, prior immigration history).
+- **Firm Memory setup journey** — `/templates#firm-memory` three-step wizard; actionable CTA on intake when Firm Memory empty.
+- **Billing honesty** — `PHASE0_BILLING_NOTE` on launch SKUs, catalog, intake, Settings; no Stripe/checkout in UI.
+- **User journey** — `docs/runbooks/overflow-counsel-user-journey.md`; dismissible Getting started banner on dashboard.
+- **API** — `GET/POST /api/firm-memory`, `GET/POST /api/firm-samples`.
+
+Verified: `pytest` (30 passed), `test:catalog`, `test:facts`, `test:assessment-docs`, `next build`, `scripts/smoke-production.sh` PASS.
+
+**Deployed 2026-07-06:** pass 13 — Fly API + Vercel prod.
+
 ### Autonomous pass log — pass 12 (2026-07-06, assessment-as-document UX)
 
 User feedback: attorneys could not find the **Assessment** tab and expect assessment as a **scanned document**, not a web checklist.
@@ -399,6 +413,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 13 (deployed 2026-07-06):** AOS intake schema fix, Firm Memory setup on `/templates#firm-memory`, Phase 0 billing honesty (no Stripe UI), overflow counsel user journey doc + dashboard banner.
 - **Pass 12 (deployed 2026-07-06):** assessment-as-document UX — Documents tab upload path, firm templates on `/templates`, OCR feeds agent prompts; Assessment tab removed.
 - **Pass 11 (deployed 2026-07-06):** B2B Overflow Counsel pivot — `.aod-context/` integration, intelligent intake v2 (deliverable-aware facts), Firm Memory v1, sample discount on intake.
 - **Pass 10 (deployed 2026-07-06):** practice-area guided fact intake — Immigration/PI checklists, completeness indicator, Facts notes → agent prompts, matter workbench + assignment intake integration.
@@ -412,10 +427,9 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Manual verify pass 12** — on `/matters/AOD-1001` → **Documents** tab → **Upload case assessment** with any PDF; confirm chip + extracted facts; submit assignment and verify draft uses OCR block.
-2. **Manual verify pass 11** — open `/assignments/new?deliverable=aos-discretionary-brief` → confirm deliverable-specific fact prompts with "Feeds: …" helper text; test sample discount checkbox + upload.
-3. **Manual verify Firm Memory** — edit agent output on a matter → **Save to Firm Memory** → confirm Strategy Patterns row in Airtable (demo mode shows 503).
-4. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): first pilot attorney, off-platform quote + conflict check, intake at `/assignments/new?deliverable=aos-discretionary-brief`.
+1. **Manual verify pass 13** — `/templates#firm-memory` setup; `/assignments/new?deliverable=aos-discretionary-brief` AOS fields; `/settings` billing copy; dashboard Getting started banner.
+2. **Manual verify pass 12** — on `/matters/AOD-1001` → **Documents** tab → **Upload case assessment** with any PDF; confirm chip + extracted facts; submit assignment and verify draft uses OCR block.
+3. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md) and [`docs/runbooks/overflow-counsel-user-journey.md`](docs/runbooks/overflow-counsel-user-journey.md): first pilot attorney, off-platform quote + conflict check.
 
 ## Blockers
 

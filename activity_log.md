@@ -101,3 +101,10 @@
 - **Files Affected:** `.aod-context/`, `web/src/lib/practice-area-facts.ts`, `PracticeAreaFactGuide.tsx`, `AssignmentIntakeForm.tsx`, `deliverable-catalog.ts`, `api/firm-memory`, `FirmMemoryBadge.tsx`, `CHECKPOINT.md`, `docs/strategy/README.md`
 - **Command Executed:** `pytest tests/ -q`, `npm run test:facts`, `npm run build`, `flyctl deploy`, `vercel deploy --prod`, `scripts/smoke-production.sh`
 - **Reason/Context:** Strategic pivot to B2B Overflow Counsel — align product with Firm Memory, Workflow Fluency, and Production Cost Pricing docs.
+
+- **2026-07-06:** Restored CI lint as blocking gate; added /book route, dashboard New assignment CTA, Phase 0 invoicing/booking runbook notes; deployed Vercel prod (964d99c).
+
+- **2026-07-06 (pass 13):** Fixed AOS discretionary brief intake (waiver/equities not asylum); Firm Memory setup on `/templates#firm-memory`; Phase 0 billing honesty; overflow counsel user journey doc + dashboard banner; deployed Fly + Vercel.
+- **Files Affected:** `practice-area-facts.ts`, `deliverable-catalog.ts`, `FirmMemorySetup.tsx`, `FirmMemoryPrompt.tsx`, `GettingStartedBanner.tsx`, `templates/page.tsx`, `settings/page.tsx`, `api/firm-memory`, `api/firm-samples`, `docs/runbooks/overflow-counsel-user-journey.md`, `CHECKPOINT.md`
+- **Command Executed:** `pytest`, `npm run test:catalog`, `test:facts`, `test:assessment-docs`, `npm run build`, `scripts/smoke-production.sh`, `flyctl deploy`, `vercel deploy --prod`
+- **Reason/Context:** User feedback on Stripe honesty, Firm Memory entry point, AOS fact mapping, and overflow counsel user journey clarity.
