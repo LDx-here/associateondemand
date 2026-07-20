@@ -1,3 +1,5 @@
+### [2026-07-20] CHECKPOINT: pass 16: Stripe checkout, pay-before-dispatch, billing UX finish
+
 ### [2026-07-06] CHECKPOINT: pass 16 — Stripe Checkout + webhook, pay-before-dispatch, billing UX (Settings/Inbox/Dashboard), Firm Memory count KPI; Vercel prod; smoke pass
 
 ### [2026-07-06] CHECKPOINT: pass 15 — Master Roadmap Phase 2 intelligent intake (onboarding wizard, guidance panel, OCR prefill, context sidebar); Fly + Vercel prod; smoke pass
