@@ -501,7 +501,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Activate Stripe on Vercel** — add three env vars (see pass 16 log above); create webhook in Stripe Dashboard; test with card 4242…
+1. **Activate Stripe on Vercel** — follow [`docs/runbooks/stripe-activation.md`](docs/runbooks/stripe-activation.md) (three env vars, webhook, test card 4242…).
 2. **Manual verify pass 16** — `/assignments/new?deliverable=aos-discretionary-brief` — quote + checkout (with keys) or invoice fallback (without); `/inbox?payment=success` toast; Settings → Billing shows Stripe status.
 3. **Site Reviewer cycle** — run checklist in `docs/runbooks/site-reviewer-agent.md` (billing honesty now Stripe-aware when configured).
 4. **Phase 0 B2B overflow launch (ops)** — follow phase0 runbook for first pilot attorney.
@@ -517,10 +517,12 @@ All remaining blockers are **attorney-side** (no code work required):
 | Bar counsel for B2B overflow + $99 self-serve tier | La'Dajia | Required before self-serve AI tier ships (Phase 3+ gate) |
 | Supabase custom SMTP (Resend) | La'Dajia | Magic link / password reset — **password sign-in works**; see `docs/runbooks/auth-email-setup.md` |
 | Assignment notify email on Vercel | La'Dajia | `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` unset — **in-app inbox works** |
-| **Stripe env vars on Vercel** | La'Dajia | `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` — code ships; checkout live after config |
+| **Stripe env vars on Vercel** | La'Dajia | See [`stripe-activation.md`](docs/runbooks/stripe-activation.md) — code ships; checkout live after config |
 | Live Airtable assignment E2E | La'Dajia | Manual pilot verify — see Phase 0 runbook step 2–3 |
+| Consultation booking link | La'Dajia | `NEXT_PUBLIC_BOOKING_URL` unset — `/book` shows setup prompt |
+| Off-platform invoicing | La'Dajia | Stripe Payment Links / LawPay manual — see invoicing runbook |
 
-Pre-existing, non-blocking: eslint circular-config crash; template catalog is static config.
+Non-blocking code debt: 3 `react-hooks/set-state-in-effect` lint diagnostics (OnboardingWizard, CommandPanel); template catalog is static config.
 
 ## Commands to resume
 
@@ -536,10 +538,11 @@ cd web && npm run dev -- -p 3003
 
 ## Resume here (attorney return)
 
-1. Open https://aod-next.vercel.app/templates — confirm four **Available now** SKUs with pricing.
-2. Open https://aod-next.vercel.app/assignments/new — confirm disclaimer checkbox required before submit.
-3. Run one live pilot: intake → inbox → export (requires Supabase login + Airtable PAT).
-4. If selling motion/hearing work: use `?deliverable=custom-motion` or `?deliverable=hearing-packet`.
+1. Open https://aod-next.vercel.app/dashboard — relief KPIs + onboarding wizard on first visit (no overdue KPI).
+2. Open https://aod-next.vercel.app/templates#firm-memory — complete Firm Memory setup before first pilot assignment.
+3. Run one live pilot: `/assignments/new` → `/inbox` → approve → export (Supabase login + Airtable PAT).
+4. Optional: https://aod-next.vercel.app/book (after `NEXT_PUBLIC_BOOKING_URL` set); invoice pilot per invoicing runbook.
+5. Motion/hearing SKUs: `?deliverable=custom-motion` or `?deliverable=hearing-packet`.
 
 ---
 
