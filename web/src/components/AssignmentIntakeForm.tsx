@@ -31,15 +31,17 @@ import { FirmMemoryPrompt } from "@/components/FirmMemoryPrompt";
 import { PracticeAreaFactGuide } from "@/components/PracticeAreaFactGuide";
 import {
   DELIVERABLE_CATALOG,
+  billingNoteForStripe,
   deliverableById,
   formatCatalogQuote,
   formatPricingRange,
   isPhase0LaunchSku,
   isSampleDiscountEligible,
-  PHASE0_BILLING_NOTE,
   PHASE0_LAUNCH_SKU_IDS,
   sampleDiscountNote,
 } from "@/lib/deliverable-catalog";
+import { formatUsdFromCents, quoteFromCatalogEntry } from "@/lib/stripe-pricing";
+import { isStripeCheckoutEnabled } from "@/lib/stripe-client";
 import type { AssignmentTier, Matter } from "@/lib/types";
 import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 
@@ -134,6 +136,13 @@ export function AssignmentIntakeForm({
 
   const sampleEligible = selectedCatalog ? isSampleDiscountEligible(selectedCatalog) : false;
   const discountNote = selectedCatalog ? sampleDiscountNote(selectedCatalog) : null;
+  const stripeCheckout = isStripeCheckoutEnabled();
+  const billingNote = billingNoteForStripe(stripeCheckout);
+  const quotedCents = useMemo(() => {
+    if (!selectedCatalog) return null;
+    const quote = quoteFromCatalogEntry(selectedCatalog, applySampleDiscount && sampleEligible);
+    return quote?.amountCents ?? null;
+  }, [selectedCatalog, applySampleDiscount, sampleEligible]);
 
   const applyOcrMerge = useCallback(
     (ocrFacts: Array<{ fact_type: string; value: string }>, ocrText?: string) => {
@@ -288,6 +297,7 @@ export function AssignmentIntakeForm({
               ? { title: newTitle.trim(), caseType: newCaseType, country: newCountry.trim() || undefined }
               : undefined,
           deliverableType,
+          deliverableCatalogId: selectedCatalog?.id,
           tier,
           facts: mergedFactsPreview,
           structuredFacts: structuredFacts ?? undefined,
@@ -305,6 +315,8 @@ export function AssignmentIntakeForm({
       }
 
       const matterId = data.matterId as string;
+      const inboxItem = data.inboxItem as { id: string };
+      const requiresPayment = Boolean(data.requiresPayment);
       const dispatch = data.dispatch as {
         started?: boolean;
         agent?: string;
@@ -333,6 +345,28 @@ export function AssignmentIntakeForm({
             );
           }
         }
+      }
+
+      if (requiresPayment && inboxItem?.id) {
+        const checkoutResp = await fetch("/api/stripe/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ inboxItemId: inboxItem.id }),
+        });
+        const checkoutData = await checkoutResp.json();
+        if (checkoutResp.ok && checkoutData.checkoutUrl) {
+          showToast("Redirecting to secure checkout…", "success");
+          window.location.href = checkoutData.checkoutUrl as string;
+          return;
+        }
+        showToast(
+          checkoutData.error ||
+            "Assignment saved — invoice after delivery (checkout unavailable).",
+          "error",
+        );
+        router.push("/inbox");
+        router.refresh();
+        return;
       }
 
       const dispatchNote = dispatch?.deliverableReady
@@ -481,10 +515,16 @@ export function AssignmentIntakeForm({
               </p>
             ) : null}
             {discountNote ? <p className="text-xs text-violet-800">{discountNote}</p> : null}
-            {selectedCatalog.pricing?.note ? (
+            {selectedCatalog.pricing?.note && !stripeCheckout ? (
               <p className="text-xs text-slate-500">{selectedCatalog.pricing.note}</p>
-            ) : isPhase0LaunchSku(selectedCatalog.id) ? (
-              <p className="text-xs text-slate-500">{PHASE0_BILLING_NOTE}</p>
+            ) : (
+              <p className="text-xs text-slate-500">{billingNote}</p>
+            )}
+            {stripeCheckout && quotedCents ? (
+              <p className="text-sm font-medium text-emerald-800">
+                Checkout total: {formatUsdFromCents(quotedCents)}
+                {applySampleDiscount && sampleEligible ? " (sample discount applied)" : ""}
+              </p>
             ) : null}
             {!isPhase0LaunchSku(selectedCatalog.id) ? (
               <p className="text-xs text-amber-800">

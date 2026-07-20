@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { AssignmentBoard } from "@/components/AssignmentBoard";
 import { InboxBoard } from "@/components/InboxBoard";
+import { PaymentToastHandler } from "@/components/PaymentToastHandler";
 import { listInboxItems, isDemoMode } from "@/lib/data-store";
 import { btnPrimary } from "@/lib/ui-classes";
 
@@ -18,6 +20,9 @@ export default async function InboxPage() {
 
   return (
     <div className="space-y-8">
+      <Suspense fallback={null}>
+        <PaymentToastHandler />
+      </Suspense>
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Inbox</h1>

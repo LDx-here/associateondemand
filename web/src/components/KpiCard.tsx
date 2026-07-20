@@ -1,4 +1,6 @@
 import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
+import type { Route } from "next";
 
 import { cn } from "@/lib/utils";
 
@@ -28,16 +30,18 @@ export function KpiCard({
   hint,
   icon: Icon,
   tone = "neutral",
+  href,
 }: {
   label: string;
   value: string | number;
   hint?: string;
   icon: LucideIcon;
   tone?: KpiTone;
+  href?: Route;
 }) {
   const styles = toneStyles[tone];
-  return (
-    <div className={cn("flex gap-3 rounded-lg border p-4 shadow-sm", styles.ring)}>
+  const inner = (
+    <>
       <div
         className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full", styles.icon)}
         aria-hidden
@@ -49,6 +53,15 @@ export function KpiCard({
         <p className={cn("mt-0.5 text-2xl font-semibold tabular-nums", styles.value)}>{value}</p>
         {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
       </div>
-    </div>
+    </>
   );
+  const className = cn("flex gap-3 rounded-lg border p-4 shadow-sm", styles.ring, href && "transition hover:shadow-md");
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        {inner}
+      </Link>
+    );
+  }
+  return <div className={className}>{inner}</div>;
 }

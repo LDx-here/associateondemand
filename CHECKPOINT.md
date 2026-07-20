@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-06 (EDT) — pass 15  
+**Last updated:** 2026-07-20 (CDT)  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -202,6 +202,36 @@ PM dispatch → Ready for review lane was verified manually against live Airtabl
 for next pilot, not a code failure.
 
 **Deployed:** pass 3 (`ff25481`, `4b96f8a`), pass 5, **pass 6**, **pass 7**, **pass 8**, **pass 9**, and **pass 10** (2026-07-06) live on Fly + Vercel.
+
+### Autonomous pass log — pass 16 (2026-07-06, Master Roadmap Phase 4 Stripe + payment flow)
+
+- **Stripe SDK** — `stripe` on Next.js (Vercel); checkout + webhook route handlers (no Fly API changes).
+- **Pay-before-dispatch** — when `STRIPE_SECRET_KEY` + `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` set on Vercel, intake saves assignment with `payment_status: pending`, redirects to Stripe Checkout; webhook marks paid → PM dispatch. Without keys: invoice-after-delivery fallback (unchanged dispatch).
+- **Pricing** — catalog midpoint → cents; 20% sample discount when flagged (`stripe-pricing.ts`).
+- **PM Inbox options JSON** — `payment_status`, `stripe_session_id`, `amount_cents`, `deliverableCatalogId` (no Airtable schema migration).
+- **UX** — intake checkout total, inbox Pay now + payment badges, dashboard awaiting-payment banner, Settings Stripe status (test/live), Firm Memory saved count KPI + link.
+- **Tests** — `npm run test:stripe-pricing`, `test:stripe-webhook`.
+
+Verified: `pytest` (31 passed), `test:stripe-*`, `test:catalog`, `next build`, `scripts/smoke-production.sh` PASS.
+
+**Stripe activation (attorney/IT — set on Vercel, not committed):**
+
+| Variable | Where |
+|----------|--------|
+| `STRIPE_SECRET_KEY` | Vercel → aod-next → Environment Variables |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Vercel (same) |
+| `STRIPE_WEBHOOK_SECRET` | Vercel (same) |
+
+Webhook URL in Stripe Dashboard: `https://aod-next.vercel.app/api/stripe/webhook` — event: `checkout.session.completed`.
+
+Test card: `4242 4242 4242 4242`, any future expiry, any CVC.
+
+**Deployed 2026-07-06:** pass 16 — Vercel prod (web only).
+
+**Deferred (roadmap):**
+- Phase 4 client portal (attorney-facing matter status outside RMV inbox)
+- Firm Memory depth / style QC (Phase 3)
+- Live Stripe E2E on production (requires env vars above)
 
 ### Autonomous pass log — pass 15 (2026-07-06, Master Roadmap Phase 2 Intelligent Intake)
 
@@ -454,6 +484,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 16 (deployed 2026-07-06):** Master Roadmap Phase 4 — Stripe Checkout + webhook, pay-before-dispatch, billing honesty when configured, dashboard awaiting-payment + Firm Memory count KPI.
 - **Pass 15 (deployed 2026-07-06):** Master Roadmap Phase 2 — onboarding wizard, intelligent intake guidance panel, Strong Reader OCR prefill, context-aware intake sidebar.
 - **Pass 14 (deployed 2026-07-06):** Master Roadmap Phase 1 — nav streamlining, dashboard relief metrics, context-aware Associate panel, Site Reviewer Agent + strategy docs in `.aod-context/`.
 - **Pass 13 (deployed 2026-07-06):** AOS intake schema fix, Firm Memory setup on `/templates#firm-memory`, Phase 0 billing honesty (no Stripe UI), overflow counsel user journey doc + dashboard banner.
@@ -470,10 +501,11 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Manual verify pass 15** — dashboard onboarding wizard (first visit / dismiss / resume); `/assignments/new?deliverable=aos-discretionary-brief&matterId=AOD-1001` — guidance panel, context sidebar, upload .txt for prefill.
-2. **Site Reviewer cycle** — run checklist in `docs/runbooks/site-reviewer-agent.md` after Phase 2 UI change.
-3. **Phase 0 B2B overflow launch (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md) and [`docs/runbooks/overflow-counsel-user-journey.md`](docs/runbooks/overflow-counsel-user-journey.md): first pilot attorney, off-platform quote + conflict check.
-4. **Roadmap Phase 3** — Firm Memory depth + style QC per `.aod-context/strategy/AssociateOnDemand_Master_Implementation_Roadmap.md` §5.
+1. **Activate Stripe on Vercel** — add three env vars (see pass 16 log above); create webhook in Stripe Dashboard; test with card 4242…
+2. **Manual verify pass 16** — `/assignments/new?deliverable=aos-discretionary-brief` — quote + checkout (with keys) or invoice fallback (without); `/inbox?payment=success` toast; Settings → Billing shows Stripe status.
+3. **Site Reviewer cycle** — run checklist in `docs/runbooks/site-reviewer-agent.md` (billing honesty now Stripe-aware when configured).
+4. **Phase 0 B2B overflow launch (ops)** — follow phase0 runbook for first pilot attorney.
+5. **Roadmap Phase 3** — Firm Memory depth + style QC per Master Implementation Roadmap §5.
 
 ## Blockers
 
@@ -485,6 +517,7 @@ All remaining blockers are **attorney-side** (no code work required):
 | Bar counsel for B2B overflow + $99 self-serve tier | La'Dajia | Required before self-serve AI tier ships (Phase 3+ gate) |
 | Supabase custom SMTP (Resend) | La'Dajia | Magic link / password reset — **password sign-in works**; see `docs/runbooks/auth-email-setup.md` |
 | Assignment notify email on Vercel | La'Dajia | `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` unset — **in-app inbox works** |
+| **Stripe env vars on Vercel** | La'Dajia | `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` — code ships; checkout live after config |
 | Live Airtable assignment E2E | La'Dajia | Manual pilot verify — see Phase 0 runbook step 2–3 |
 
 Pre-existing, non-blocking: eslint circular-config crash; template catalog is static config.
@@ -496,7 +529,7 @@ cd /Users/ladaj/Developer/AssociateOnDemand
 git pull origin cursor/phase0-foundation
 bash scripts/smoke-production.sh
 cd services/api && .venv/bin/python -m pytest tests/ -q
-cd web && npm run test:catalog && npm run test:facts && npm run test:assessment-docs && npm run build
+cd web && npm run test:catalog && npm run test:facts && npm run test:assessment-docs && npm run test:stripe-pricing && npm run test:stripe-webhook && npm run build
 docker compose up -d --build && bash scripts/smoke-docker-e2e.sh
 cd web && npm run dev -- -p 3003
 ```

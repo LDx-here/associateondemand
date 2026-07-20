@@ -1,6 +1,8 @@
 import { SessionAccount } from "@/components/SessionAccount";
 import { listPeopleFromAirtable } from "@/lib/airtable/queries";
 import { isDemoMode } from "@/lib/data-store";
+import { billingNoteForStripe } from "@/lib/deliverable-catalog";
+import { isStripeConfigured, isStripeTestMode } from "@/lib/stripe-config";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +26,9 @@ export default async function SettingsPage() {
   const piiTier = process.env.NEXT_PUBLIC_PII_TIER ?? "0";
   const authEnabled =
     (process.env.AOD_AUTH_ENABLED ?? "false").toLowerCase() === "true";
+  const stripeConnected = isStripeConfigured();
+  const stripeTestMode = stripeConnected && isStripeTestMode();
+  const billingNote = billingNoteForStripe(stripeConnected);
 
   let attorney: { name: string; role: string; email: string; isActive: boolean } | null = null;
   if (!demo) {
@@ -82,14 +87,47 @@ export default async function SettingsPage() {
         </Row>
       </SettingsSection>
 
-      <SettingsSection title="Billing (Phase 0)">
-        <Row label="Payment">
-          Quoted flat fee — invoice after delivery. No in-app Stripe or checkout in Phase 0;
-          online payments planned for Phase 2.
+      <SettingsSection title="Billing">
+        <Row label="Stripe">
+          {stripeConnected ? (
+            <span className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
+              Connected{stripeTestMode ? " (test mode)" : " (live mode)"}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden />
+              Not configured — invoice after delivery
+            </span>
+          )}
         </Row>
+        <Row label="Payment flow">{billingNote}</Row>
         <Row label="How to pay">
-          RMV sends an invoice after deliverable approval (ACH, check, or manual payment link).
+          {stripeConnected
+            ? "Flat fee at Stripe Checkout when you submit an assignment. RMV starts work after payment clears."
+            : "RMV sends an invoice after deliverable approval (ACH, check, or manual payment link)."}
         </Row>
+        {stripeConnected ? (
+          <Row label="Stripe dashboard">
+            <a
+              className="font-medium text-slate-800 underline-offset-2 hover:underline"
+              href="https://dashboard.stripe.com/test/payments"
+              rel="noreferrer"
+              target="_blank"
+            >
+              Open Stripe Dashboard (test)
+            </a>
+            {" · "}
+            <a
+              className="font-medium text-slate-800 underline-offset-2 hover:underline"
+              href="https://docs.stripe.com/checkout"
+              rel="noreferrer"
+              target="_blank"
+            >
+              Checkout docs
+            </a>
+          </Row>
+        ) : null}
       </SettingsSection>
 
       <SettingsSection title="Privacy and security">
@@ -122,7 +160,9 @@ export default async function SettingsPage() {
       <SettingsSection title="For IT">
         <p className="text-sm text-slate-700">
           Local setup, environment variables, and deployment steps are documented for technical staff
-          only.
+          only. Stripe env vars: <code className="text-xs">STRIPE_SECRET_KEY</code>,{" "}
+          <code className="text-xs">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code>,{" "}
+          <code className="text-xs">STRIPE_WEBHOOK_SECRET</code>.
         </p>
         <p className="mt-2 text-sm">
           <a

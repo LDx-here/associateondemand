@@ -17,9 +17,19 @@ export type DeliverablePricing = {
   sampleDiscountPercent?: number;
 };
 
-/** Phase 0 billing — no in-app Stripe/checkout until Phase 2. */
-export const PHASE0_BILLING_NOTE =
-  "Quoted flat fee — invoice after delivery (no in-app payment in Phase 0).";
+/** Offline billing when Stripe env vars are not configured. */
+export const PHASE0_BILLING_NOTE_OFFLINE =
+  "Quoted flat fee — invoice after delivery (online checkout when Stripe is configured).";
+
+/** @deprecated use billingNoteForStripe() */
+export const PHASE0_BILLING_NOTE = PHASE0_BILLING_NOTE_OFFLINE;
+
+export function billingNoteForStripe(stripeConfigured: boolean): string {
+  if (stripeConfigured) {
+    return "Quoted flat fee — pay securely at checkout before RMV starts work.";
+  }
+  return PHASE0_BILLING_NOTE_OFFLINE;
+}
 
 /** Phase 0 B2B overflow launch SKUs — immigration brief, motion, hearing packet, research upsell. */
 export const PHASE0_LAUNCH_SKU_IDS = [
@@ -74,7 +84,7 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
     pricing: {
       minUsd: 750,
       maxUsd: 1500,
-      note: PHASE0_BILLING_NOTE,
+      note: PHASE0_BILLING_NOTE_OFFLINE,
       sampleDiscountEligible: true,
       sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT,
     },
@@ -99,7 +109,7 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
     pricing: {
       minUsd: 500,
       maxUsd: 900,
-      note: PHASE0_BILLING_NOTE,
+      note: PHASE0_BILLING_NOTE_OFFLINE,
       sampleDiscountEligible: true,
       sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT,
     },
@@ -133,7 +143,7 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
     pricing: {
       minUsd: 500,
       maxUsd: 1250,
-      note: PHASE0_BILLING_NOTE,
+      note: PHASE0_BILLING_NOTE_OFFLINE,
       sampleDiscountEligible: true,
       sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT,
     },
@@ -148,7 +158,7 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
     pricing: {
       minUsd: 250,
       maxUsd: 450,
-      note: `Setup surcharge may apply on first use of a new motion type. ${PHASE0_BILLING_NOTE}`,
+      note: `Setup surcharge may apply on first use of a new motion type. ${PHASE0_BILLING_NOTE_OFFLINE}`,
       sampleDiscountEligible: true,
       sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT,
     },

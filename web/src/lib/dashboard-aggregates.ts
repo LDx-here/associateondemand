@@ -80,6 +80,7 @@ export function overflowDashboardMetrics(items: InboxItem[], now = new Date()) {
     hoursSavedThisMonth: approvedThisMonth.length * HOURS_SAVED_PER_DELIVERABLE,
     deliverablesInReview,
     openAssignments,
+    awaitingPayment: assignments.filter((item) => item.paymentStatus === "pending").length,
     completedThisMonth: approvedThisMonth.length,
     activeProjects: assignments.filter((item) =>
       ["Submitted", "In progress", "Ready for review", "Returned"].includes(item.status),

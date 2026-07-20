@@ -514,6 +514,10 @@ type ParsedInboxOptions = {
   dueDate?: string | null;
   sampleDiscountEligible?: boolean;
   discountApplied?: boolean;
+  paymentStatus?: "pending" | "paid" | "invoice";
+  stripeSessionId?: string;
+  amountCents?: number;
+  deliverableCatalogId?: string;
   history?: Array<{ status: string; note?: string; at: string; by?: string }>;
 };
 
@@ -561,6 +565,13 @@ function parsePmInboxOptions(raw: unknown): ParsedInboxOptions {
       dueDate: o.dueDate ? String(o.dueDate) : null,
       sampleDiscountEligible: Boolean(o.sampleDiscountEligible),
       discountApplied: Boolean(o.discountApplied),
+      paymentStatus:
+        o.paymentStatus === "pending" || o.paymentStatus === "paid" || o.paymentStatus === "invoice"
+          ? o.paymentStatus
+          : undefined,
+      stripeSessionId: o.stripeSessionId ? String(o.stripeSessionId) : undefined,
+      amountCents: typeof o.amountCents === "number" ? o.amountCents : undefined,
+      deliverableCatalogId: o.deliverableCatalogId ? String(o.deliverableCatalogId) : undefined,
       history,
     };
   }
@@ -620,6 +631,10 @@ function mapInbox(rec: { id: string; fields: RawFields }): InboxItem {
     dueDate: parsed.dueDate,
     sampleDiscountEligible: parsed.sampleDiscountEligible,
     discountApplied: parsed.discountApplied,
+    paymentStatus: parsed.paymentStatus,
+    stripeSessionId: parsed.stripeSessionId,
+    amountCents: parsed.amountCents,
+    deliverableCatalogId: parsed.deliverableCatalogId,
     history: parsed.history,
   };
 }
@@ -663,6 +678,10 @@ function serializeAssignmentOptions(payload: {
   dueDate?: string | null;
   sampleDiscountEligible?: boolean;
   discountApplied?: boolean;
+  paymentStatus?: "pending" | "paid" | "invoice";
+  stripeSessionId?: string;
+  amountCents?: number;
+  deliverableCatalogId?: string;
   history: Array<{ status: string; note?: string; at: string; by?: string }>;
 }): string {
   return JSON.stringify({
@@ -674,8 +693,29 @@ function serializeAssignmentOptions(payload: {
     dueDate: payload.dueDate ?? null,
     sampleDiscountEligible: payload.sampleDiscountEligible ?? false,
     discountApplied: payload.discountApplied ?? false,
+    paymentStatus: payload.paymentStatus,
+    stripeSessionId: payload.stripeSessionId,
+    amountCents: payload.amountCents,
+    deliverableCatalogId: payload.deliverableCatalogId,
     history: payload.history,
   });
+}
+
+function assignmentOptionsFromItem(item: InboxItem, history: InboxItem["history"]) {
+  return {
+    deliverableType: item.deliverableType ?? "",
+    tier: item.tier ?? "Custom",
+    facts: item.facts ?? item.whatNeeded,
+    priority: item.priority,
+    dueDate: item.dueDate,
+    sampleDiscountEligible: item.sampleDiscountEligible,
+    discountApplied: item.discountApplied,
+    paymentStatus: item.paymentStatus,
+    stripeSessionId: item.stripeSessionId,
+    amountCents: item.amountCents,
+    deliverableCatalogId: item.deliverableCatalogId,
+    history: history ?? [],
+  };
 }
 
 export async function createAssignmentInAirtable(payload: {
@@ -688,6 +728,10 @@ export async function createAssignmentInAirtable(payload: {
   submittedBy?: string;
   sampleDiscountEligible?: boolean;
   discountApplied?: boolean;
+  paymentStatus?: "pending" | "paid" | "invoice";
+  stripeSessionId?: string;
+  amountCents?: number;
+  deliverableCatalogId?: string;
 }): Promise<InboxItem> {
   const resolved = await resolveMatterRecordId(payload.matterCode);
   if (!resolved) throw new Error(`Matter not found: ${payload.matterCode}`);
@@ -715,6 +759,10 @@ export async function createAssignmentInAirtable(payload: {
       dueDate: payload.dueDate,
       sampleDiscountEligible: payload.sampleDiscountEligible,
       discountApplied: payload.discountApplied,
+      paymentStatus: payload.paymentStatus,
+      stripeSessionId: payload.stripeSessionId,
+      amountCents: payload.amountCents,
+      deliverableCatalogId: payload.deliverableCatalogId,
       history,
     }),
     [i.status]: "Submitted",
@@ -755,19 +803,66 @@ export async function updateAssignmentStatusInAirtable(
   ];
   const fields: RawFields = {
     [i.status]: nextStatus,
-    [i.options]: serializeAssignmentOptions({
-      deliverableType: current.deliverableType ?? "",
-      tier: current.tier ?? "Custom",
-      facts: current.facts ?? current.whatNeeded,
-      priority: current.priority,
-      dueDate: current.dueDate,
-      sampleDiscountEligible: current.sampleDiscountEligible,
-      discountApplied: current.discountApplied,
-      history,
-    }),
+    [i.options]: serializeAssignmentOptions(assignmentOptionsFromItem(current, history)),
   };
   if (options?.note?.trim()) fields[i.resolution] = options.note.trim();
   if (nextStatus === "Approved" || nextStatus === "Returned") fields[i.resolved_at] = now;
+  const rec = await airtablePatch(TABLES.pmInbox, recordId, fields);
+  return mapInbox(rec);
+}
+
+export async function getInboxItemByIdFromAirtable(recordId: string): Promise<InboxItem | null> {
+  try {
+    const rec = await airtableGetRecord<RawFields>(TABLES.pmInbox, recordId);
+    return mapInbox(rec);
+  } catch {
+    return null;
+  }
+}
+
+export async function updateAssignmentPaymentInAirtable(
+  recordId: string,
+  patch: {
+    paymentStatus?: "pending" | "paid" | "invoice";
+    stripeSessionId?: string;
+    amountCents?: number;
+  },
+): Promise<InboxItem | null> {
+  const existing = await airtableGetRecord<RawFields>(TABLES.pmInbox, recordId);
+  const current = mapInbox(existing);
+  if (current.kind !== "assignment") return null;
+
+  const i = F.pmInbox;
+  const now = new Date().toISOString();
+  const paymentStatus = patch.paymentStatus ?? current.paymentStatus;
+  const stripeSessionId = patch.stripeSessionId ?? current.stripeSessionId;
+  const amountCents = patch.amountCents ?? current.amountCents;
+
+  const history =
+    patch.paymentStatus === "paid" && current.paymentStatus !== "paid"
+      ? [
+          ...(current.history ?? []),
+          {
+            status: "Payment received",
+            note: stripeSessionId ? `Stripe session ${stripeSessionId}` : "Checkout completed.",
+            at: now,
+            by: "Stripe",
+          },
+        ]
+      : (current.history ?? []);
+
+  const fields: RawFields = {
+    [i.options]: serializeAssignmentOptions({
+      ...assignmentOptionsFromItem(current, history),
+      paymentStatus,
+      stripeSessionId,
+      amountCents,
+    }),
+  };
+  if (patch.paymentStatus === "paid") {
+    fields[i.what_tried] = "Payment received. PM dispatch started.";
+  }
+
   const rec = await airtablePatch(TABLES.pmInbox, recordId, fields);
   return mapInbox(rec);
 }

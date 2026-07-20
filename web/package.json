@@ -12,7 +12,9 @@
     "test:facts": "tsx scripts/verify-practice-area-facts.mjs",
     "test:assessment-docs": "tsx scripts/verify-assessment-documents.mjs",
     "test:onboarding": "tsx scripts/verify-onboarding-state.mjs",
-    "test:intake-prefill": "tsx scripts/verify-intake-prefill.mjs"
+    "test:intake-prefill": "tsx scripts/verify-intake-prefill.mjs",
+    "test:stripe-pricing": "tsx scripts/verify-stripe-pricing.mjs",
+    "test:stripe-webhook": "tsx scripts/verify-stripe-webhook.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
@@ -26,6 +28,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.8.1",
+    "stripe": "^17.7.0",
     "tailwind-merge": "^3.5.0",
     "zod": "^3.24.1"
   },

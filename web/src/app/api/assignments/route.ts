@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requiresPaymentBeforeDispatch } from "@/lib/assignment-payment";
 import { dispatchAssignmentToPm } from "@/lib/assignment-dispatch";
 import {
   createAssignment,
@@ -13,6 +14,7 @@ import {
 } from "@/lib/data-store";
 import { mergeFactsForDispatch, type DraftingFactsPayload } from "@/lib/practice-area-facts";
 import { notifyNewAssignment } from "@/lib/notify-assignment";
+import { quoteAssignmentAmount } from "@/lib/stripe-pricing";
 import type { AssignmentTier } from "@/lib/types";
 
 const VALID_TIERS: AssignmentTier[] = ["Template", "Custom", "Research"];
@@ -22,6 +24,7 @@ type AssignmentRequest = {
   matterId?: string;
   newMatter?: { title?: string; caseType?: string; country?: string };
   deliverableType?: string;
+  deliverableCatalogId?: string;
   tier?: string;
   facts?: string;
   structuredFacts?: DraftingFactsPayload;
@@ -32,10 +35,9 @@ type AssignmentRequest = {
 };
 
 /**
- * Assignment intake (BUILD_SPEC marketplace pass §1): creates/links a
- * matter, records a task + facts note, and opens a PM Inbox review card
- * in the "Submitted" lane. Mirrors the eImmigration import pattern of
- * validating client-side, then doing one authoritative server write.
+ * Assignment intake: creates/links matter, task, note, and PM Inbox row.
+ * When Stripe is configured, payment is collected before PM dispatch (pay-before-dispatch).
+ * Without Stripe keys, falls back to invoice-after-delivery and dispatches immediately.
  */
 export async function POST(req: Request) {
   let body: AssignmentRequest;
@@ -46,10 +48,12 @@ export async function POST(req: Request) {
   }
 
   const deliverableType = (body.deliverableType ?? "").trim();
+  const deliverableCatalogId = (body.deliverableCatalogId ?? "").trim() || undefined;
   const tier = body.tier as AssignmentTier | undefined;
   const rawFacts = (body.facts ?? "").trim();
   const structuredFacts = body.structuredFacts;
   const facts = rawFacts || mergeFactsForDispatch(structuredFacts, "");
+  const discountApplied = Boolean(body.discountApplied);
 
   const errors: string[] = [];
   if (!deliverableType) errors.push("Deliverable type is required.");
@@ -68,6 +72,12 @@ export async function POST(req: Request) {
   if (errors.length > 0) {
     return NextResponse.json({ error: errors.join(" ") }, { status: 400 });
   }
+
+  const payBeforeDispatch = requiresPaymentBeforeDispatch();
+  const quote =
+    deliverableCatalogId != null
+      ? quoteAssignmentAmount({ deliverableCatalogId, discountApplied })
+      : null;
 
   try {
     let matterId: string;
@@ -116,13 +126,16 @@ export async function POST(req: Request) {
       dueDate,
       submittedBy: "La'Dajia Ferguson",
       sampleDiscountEligible: Boolean(body.sampleDiscountEligible),
-      discountApplied: Boolean(body.discountApplied),
+      discountApplied,
+      paymentStatus: payBeforeDispatch ? "pending" : "invoice",
+      amountCents: quote?.amountCents,
+      deliverableCatalogId,
     });
 
     let dispatch = null as Awaited<ReturnType<typeof dispatchAssignmentToPm>> | null;
     let notify = null as Awaited<ReturnType<typeof notifyNewAssignment>> | null;
 
-    if (!isDemoMode()) {
+    if (!isDemoMode() && !payBeforeDispatch) {
       dispatch = await dispatchAssignmentToPm(matterId, deliverableType, tier as AssignmentTier, facts);
       if (dispatch.started) {
         const advanced = await updateAssignmentStatus(inboxItem.id, "In progress", {
@@ -151,7 +164,23 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ matterId, inboxItem, dispatch, notify }, { status: 201 });
+    return NextResponse.json(
+      {
+        matterId,
+        inboxItem,
+        dispatch,
+        notify,
+        requiresPayment: payBeforeDispatch,
+        quote: quote
+          ? {
+              amountCents: quote.amountCents,
+              amountUsd: quote.amountUsd,
+              discountApplied: quote.discountApplied,
+            }
+          : null,
+      },
+      { status: 201 },
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not submit assignment.";
     return NextResponse.json({ error: message }, { status: 502 });

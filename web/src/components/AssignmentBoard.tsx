@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 
 import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
+import { formatUsdFromCents } from "@/lib/stripe-pricing";
 import type { AssignmentStatus, AssignmentTier, InboxItem } from "@/lib/types";
 import { btnPrimary, btnSecondary, linkMatter } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,24 @@ const TIER_STYLES: Record<AssignmentTier, string> = {
   Custom: "bg-amber-50 text-amber-900 ring-amber-600/20",
   Research: "bg-sky-50 text-sky-800 ring-sky-600/20",
 };
+
+function PaymentBadge({ item }: { item: InboxItem }) {
+  if (item.paymentStatus === "paid") {
+    return (
+      <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800 ring-1 ring-inset ring-emerald-600/20">
+        Paid{item.amountCents ? ` · ${formatUsdFromCents(item.amountCents)}` : ""}
+      </span>
+    );
+  }
+  if (item.paymentStatus === "pending") {
+    return (
+      <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-900 ring-1 ring-inset ring-amber-600/20">
+        Awaiting payment
+      </span>
+    );
+  }
+  return null;
+}
 
 function TierBadge({ tier }: { tier?: AssignmentTier }) {
   if (!tier) return null;
@@ -149,9 +168,12 @@ export function AssignmentBoard({
                   const busy = busyId === item.id;
                   return (
                     <article key={item.id} className="rounded-md border border-slate-200 bg-white p-3 text-sm shadow-sm">
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
                         <p className="font-medium text-slate-900">{item.deliverableType || item.title}</p>
-                        <TierBadge tier={item.tier} />
+                        <div className="flex flex-wrap gap-1">
+                          <PaymentBadge item={item} />
+                          <TierBadge tier={item.tier} />
+                        </div>
                       </div>
                       <p className="mt-1 text-xs text-slate-500">
                         {item.matterId ? (
@@ -178,7 +200,36 @@ export function AssignmentBoard({
                         </p>
                       ) : null}
                       <div className="mt-3 flex flex-wrap gap-1.5">
-                        {item.status === "Submitted" ? (
+                        {item.status === "Submitted" && item.paymentStatus === "pending" ? (
+                          <button
+                            type="button"
+                            disabled={busy || demoMode}
+                            className={cn(btnPrimary, "text-xs")}
+                            onClick={async () => {
+                              setBusyId(item.id);
+                              try {
+                                const resp = await fetch("/api/stripe/checkout", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ inboxItemId: item.id }),
+                                });
+                                const data = await resp.json();
+                                if (resp.ok && data.checkoutUrl) {
+                                  window.location.href = data.checkoutUrl as string;
+                                  return;
+                                }
+                                showToast(data.error || "Could not start checkout.", "error");
+                              } catch (err) {
+                                showToast(err instanceof Error ? err.message : "Checkout error.", "error");
+                              } finally {
+                                setBusyId(null);
+                              }
+                            }}
+                          >
+                            {busy ? "Loading…" : "Pay now"}
+                          </button>
+                        ) : null}
+                        {item.status === "Submitted" && item.paymentStatus !== "pending" ? (
                           <button
                             type="button"
                             disabled={busy || demoMode}

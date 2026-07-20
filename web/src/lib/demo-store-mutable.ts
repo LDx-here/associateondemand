@@ -139,6 +139,10 @@ export async function createAssignmentDemo(payload: {
   submittedBy?: string;
   sampleDiscountEligible?: boolean;
   discountApplied?: boolean;
+  paymentStatus?: "pending" | "paid" | "invoice";
+  stripeSessionId?: string;
+  amountCents?: number;
+  deliverableCatalogId?: string;
 }): Promise<InboxItem> {
   const seed = await getMutableSeed();
   if (!seed.inboxItems) seed.inboxItems = [];
@@ -164,6 +168,10 @@ export async function createAssignmentDemo(payload: {
     dueDate: payload.dueDate ?? null,
     sampleDiscountEligible: payload.sampleDiscountEligible,
     discountApplied: payload.discountApplied,
+    paymentStatus: payload.paymentStatus ?? "invoice",
+    stripeSessionId: payload.stripeSessionId,
+    amountCents: payload.amountCents,
+    deliverableCatalogId: payload.deliverableCatalogId,
     history: [
       {
         status: "Submitted",
@@ -174,6 +182,43 @@ export async function createAssignmentDemo(payload: {
     ],
   };
   seed.inboxItems.push(item);
+  await persistSeed();
+  return item;
+}
+
+export async function getInboxItemByIdDemo(itemId: string): Promise<InboxItem | null> {
+  const seed = await getMutableSeed();
+  return (seed.inboxItems ?? []).find((i) => i.id === itemId) ?? null;
+}
+
+export async function updateAssignmentPaymentDemo(
+  itemId: string,
+  patch: {
+    paymentStatus?: "pending" | "paid" | "invoice";
+    stripeSessionId?: string;
+    amountCents?: number;
+  },
+): Promise<InboxItem | null> {
+  const seed = await getMutableSeed();
+  const item = (seed.inboxItems ?? []).find((i) => i.id === itemId);
+  if (!item) return null;
+  const now = new Date().toISOString();
+  const wasPaid = item.paymentStatus === "paid";
+  if (patch.paymentStatus) item.paymentStatus = patch.paymentStatus;
+  if (patch.stripeSessionId) item.stripeSessionId = patch.stripeSessionId;
+  if (patch.amountCents != null) item.amountCents = patch.amountCents;
+  if (patch.paymentStatus === "paid" && !wasPaid) {
+    item.history = [
+      ...(item.history ?? []),
+      {
+        status: "Payment received",
+        note: patch.stripeSessionId ? `Stripe session ${patch.stripeSessionId}` : "Checkout completed.",
+        at: now,
+        by: "Stripe",
+      },
+    ];
+    item.whatTried = "Payment received. PM dispatch started.";
+  }
   await persistSeed();
   return item;
 }

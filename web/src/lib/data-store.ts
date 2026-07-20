@@ -25,6 +25,8 @@ import {
   listTasksForMatterFromAirtable,
   saveCaseAssessmentInAirtable,
   updateAssignmentStatusInAirtable,
+  updateAssignmentPaymentInAirtable,
+  getInboxItemByIdFromAirtable,
   updateLegalElementInAirtable,
   updateMatterDeadlineInAirtable,
   updateMatterInAirtable,
@@ -45,6 +47,8 @@ import {
   listInboxItemsDemo,
   persistSeed,
   updateAssignmentStatusDemo,
+  updateAssignmentPaymentDemo,
+  getInboxItemByIdDemo,
   updateNote as updateNoteDemo,
 } from "./demo-store-mutable";
 import {
@@ -485,9 +489,30 @@ export async function createAssignment(payload: {
   submittedBy?: string;
   sampleDiscountEligible?: boolean;
   discountApplied?: boolean;
+  paymentStatus?: "pending" | "paid" | "invoice";
+  stripeSessionId?: string;
+  amountCents?: number;
+  deliverableCatalogId?: string;
 }): Promise<InboxItem> {
   if (isDemoMode()) return createAssignmentDemo(payload);
   return createAssignmentInAirtable({ matterCode: payload.matterId, ...payload });
+}
+
+export async function getInboxItemById(itemId: string): Promise<InboxItem | null> {
+  if (isDemoMode()) return getInboxItemByIdDemo(itemId);
+  return getInboxItemByIdFromAirtable(itemId);
+}
+
+export async function updateAssignmentPayment(
+  itemId: string,
+  patch: {
+    paymentStatus?: "pending" | "paid" | "invoice";
+    stripeSessionId?: string;
+    amountCents?: number;
+  },
+): Promise<InboxItem | null> {
+  if (isDemoMode()) return updateAssignmentPaymentDemo(itemId, patch);
+  return updateAssignmentPaymentInAirtable(itemId, patch);
 }
 
 export async function updateAssignmentStatus(

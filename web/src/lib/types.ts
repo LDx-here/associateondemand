@@ -197,6 +197,10 @@ export type InboxItem = {
   dueDate?: string | null;
   sampleDiscountEligible?: boolean;
   discountApplied?: boolean;
+  paymentStatus?: "pending" | "paid" | "invoice";
+  stripeSessionId?: string;
+  amountCents?: number;
+  deliverableCatalogId?: string;
   history?: Array<{ status: string; note?: string; at: string; by?: string }>;
 };
 

@@ -7,12 +7,13 @@ import { FirmMemoryBadge } from "@/components/FirmMemoryBadge";
 import { FirmMemorySetup } from "@/components/FirmMemorySetup";
 import {
   DELIVERABLE_CATALOG,
+  billingNoteForStripe,
   formatCatalogQuote,
   isPhase0LaunchSku,
-  PHASE0_BILLING_NOTE,
   sampleDiscountNote,
   type DeliverableCatalogEntry,
 } from "@/lib/deliverable-catalog";
+import { isStripeConfigured } from "@/lib/stripe-config";
 import type { AssignmentTier } from "@/lib/types";
 import { btnPrimary } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
@@ -89,6 +90,7 @@ function DeliverableCard({ entry }: { entry: DeliverableCatalogEntry }) {
 }
 
 export default function TemplateCatalogPage() {
+  const billingNote = billingNoteForStripe(isStripeConfigured());
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -96,7 +98,7 @@ export default function TemplateCatalogPage() {
           <h1 className="text-2xl font-semibold text-slate-900">Deliverable catalog</h1>
           <p className="text-sm text-slate-600">
             Browse deliverables with flat-fee ranges and typical turnaround. Phase 0 launch SKUs are
-            available now; other catalog entries are coming soon. {PHASE0_BILLING_NOTE}
+            available now; other catalog entries are coming soon. {billingNote}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <FirmMemoryBadge linked />
