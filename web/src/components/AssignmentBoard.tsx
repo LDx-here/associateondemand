@@ -8,6 +8,7 @@ import { useState, useTransition } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { formatUsdFromCents } from "@/lib/stripe-pricing";
+import { assignmentSourceLabel } from "@/lib/partner-submission";
 import type { AssignmentStatus, AssignmentTier, InboxItem } from "@/lib/types";
 import { btnPrimary, btnSecondary, linkMatter } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,16 @@ function TierBadge({ tier }: { tier?: AssignmentTier }) {
   return (
     <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset", TIER_STYLES[tier])}>
       {tier} tier
+    </span>
+  );
+}
+
+function SourceBadge({ item }: { item: InboxItem }) {
+  const label = assignmentSourceLabel(item.source);
+  if (!label) return null;
+  return (
+    <span className="inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-900 ring-1 ring-inset ring-violet-600/20">
+      {label}
     </span>
   );
 }
@@ -171,6 +182,7 @@ export function AssignmentBoard({
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <p className="font-medium text-slate-900">{item.deliverableType || item.title}</p>
                         <div className="flex flex-wrap gap-1">
+                          <SourceBadge item={item} />
                           <PaymentBadge item={item} />
                           <TierBadge tier={item.tier} />
                         </div>

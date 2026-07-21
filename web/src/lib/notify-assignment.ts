@@ -15,12 +15,19 @@ export async function notifyNewAssignment(payload: {
   deliverableType: string;
   tier: string;
   inboxItemId: string;
+  source?: "internal" | "partner";
+  partnerEmail?: string;
+  partnerFirmName?: string;
 }): Promise<AssignmentNotifyResult> {
+  const partnerLine =
+    payload.source === "partner"
+      ? ` Partner firm${payload.partnerFirmName ? ` (${payload.partnerFirmName})` : ""}${payload.partnerEmail ? ` — ${payload.partnerEmail}` : ""}.`
+      : "";
   let matterNoteLogged = false;
   try {
     await createNoteForMatter(
       payload.matterId,
-      `New assignment submitted: ${payload.deliverableType} (${payload.tier} tier). PM Inbox item ${payload.inboxItemId.slice(0, 8)}… — review in Submitted lane or wait for agent output.`,
+      `New assignment submitted: ${payload.deliverableType} (${payload.tier} tier). PM Inbox item ${payload.inboxItemId.slice(0, 8)}… — review in Submitted lane or wait for agent output.${partnerLine}`,
       "System",
     );
     matterNoteLogged = true;
@@ -51,6 +58,9 @@ export async function notifyNewAssignment(payload: {
         text: [
           `A new ${payload.tier} tier assignment was submitted for ${payload.matterId}.`,
           `Deliverable: ${payload.deliverableType}`,
+          payload.source === "partner"
+            ? `Source: external partner funnel${payload.partnerFirmName ? ` (${payload.partnerFirmName})` : ""}${payload.partnerEmail ? ` — ${payload.partnerEmail}` : ""}.`
+            : "Source: internal RMV operator intake.",
           `Open PM Inbox: https://aod-next.vercel.app/inbox`,
         ].join("\n"),
       }),

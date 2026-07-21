@@ -54,10 +54,18 @@ export async function POST(req: Request) {
   const origin = new URL(req.url).origin;
   const stripe = getStripe();
   const deliverableLabel = item.deliverableType ?? "Overflow deliverable";
+  const isPartner = item.source === "partner";
+  const successPath = isPartner
+    ? `/partner/submit?payment=success&matterId=${encodeURIComponent(item.matterId ?? "")}`
+    : `/inbox?payment=success&matterId=${encodeURIComponent(item.matterId ?? "")}`;
+  const cancelPath = isPartner
+    ? `/partner/submit?payment=cancelled&deliverable=${encodeURIComponent(catalogId ?? "")}`
+    : `/assignments/new?payment=cancelled&deliverable=${encodeURIComponent(catalogId ?? "")}`;
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     payment_method_types: ["card"],
+    customer_email: isPartner && item.partnerEmail ? item.partnerEmail : undefined,
     line_items: [
       {
         price_data: {
@@ -65,7 +73,7 @@ export async function POST(req: Request) {
           unit_amount: amountCents,
           product_data: {
             name: deliverableLabel,
-            description: `${deliverableLabel} — flat fee${item.discountApplied ? " (sample discount applied)" : ""}`,
+            description: `${deliverableLabel} — RMV overflow counsel flat fee${item.discountApplied ? " (sample discount applied)" : ""}`,
           },
         },
         quantity: 1,
@@ -75,9 +83,10 @@ export async function POST(req: Request) {
       inboxItemId,
       matterId: item.matterId ?? "",
       deliverableType: item.deliverableType ?? "",
+      source: item.source ?? "internal",
     },
-    success_url: `${origin}/inbox?payment=success&matterId=${encodeURIComponent(item.matterId ?? "")}`,
-    cancel_url: `${origin}/assignments/new?payment=cancelled&deliverable=${encodeURIComponent(catalogId ?? "")}`,
+    success_url: `${origin}${successPath}`,
+    cancel_url: `${origin}${cancelPath}`,
   });
 
   if (!session.url) {

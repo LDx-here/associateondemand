@@ -176,7 +176,7 @@ def build_drafting_system_prompt(
 
 
 def build_drafting_context_block(matter_code: str, matter_ctx: dict[str, Any] | None = None) -> str:
-    """Always inject structured facts + assessment OCR + case assessment for drafting."""
+    """Always inject structured facts + assessment OCR + case assessment + Firm Memory for drafting."""
 
     ctx = matter_ctx if matter_ctx is not None else fetch_matter_context(matter_code)
     parts: list[str] = []
@@ -209,5 +209,12 @@ def build_drafting_context_block(matter_code: str, matter_ctx: dict[str, Any] | 
             if val:
                 style_lines.append(f"- {label}: {val}")
         parts.append("\n".join(style_lines))
+
+    if not parts:
+        parts.append(
+            "## Matter context for drafting\n"
+            "No structured facts, case assessment, or Firm Memory on file yet. "
+            "Use [FACT NEEDED] placeholders for any missing client-specific details."
+        )
 
     return "\n\n".join(parts)

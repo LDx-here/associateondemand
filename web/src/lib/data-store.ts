@@ -578,6 +578,9 @@ export async function createAssignment(payload: {
   conflictReviewRequired?: boolean;
   opposingParty?: string;
   opposingCounsel?: string;
+  source?: "internal" | "partner";
+  partnerEmail?: string;
+  partnerFirmName?: string;
 }): Promise<InboxItem> {
   if (isDemoMode()) return createAssignmentDemo(payload);
   return createAssignmentInAirtable({ matterCode: payload.matterId, ...payload });

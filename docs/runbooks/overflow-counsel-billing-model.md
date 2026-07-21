@@ -3,6 +3,8 @@
 **Last updated:** July 21, 2026  
 **Related:** [`phase0-invoicing-setup.md`](./phase0-invoicing-setup.md) · [`stripe-activation.md`](./stripe-activation.md) · [`LEGAL_BOUNDARIES.md`](../../LEGAL_BOUNDARIES.md) · [`.aod-context/features/AssociateOnDemand_Production_Cost_Pricing.md`](../../.aod-context/features/AssociateOnDemand_Production_Cost_Pricing.md)
 
+**Pass 20:** External partner funnel shipped at `/partner/submit` — partner metadata on PM Inbox; Stripe checkout when `STRIPE_CHECKOUT_ENABLED=true`.
+
 ## Who pays whom
 
 | Role | Pays | Receives |
@@ -41,7 +43,7 @@ Agent work is **not blocked** on partner payment unless your engagement letter r
 - `web/src/lib/stripe-pricing.ts` — catalog midpoint + sample discount
 - Enable with `STRIPE_CHECKOUT_ENABLED=true` on the **external** funnel only (internal intake ignores checkout)
 
-**Not built yet:** Separate public `/assignments/new` (or marketing intake) route that sets `requiresPaymentBeforeDispatch` for external submitters only.
+**Not built yet:** ~~Separate public `/assignments/new` (or marketing intake) route~~ **Shipped Pass 20:** `/partner/submit` + `POST /api/partner/assignments` — sets `source: partner` on PM Inbox options JSON; checkout when `STRIPE_CHECKOUT_ENABLED=true`.
 
 ---
 

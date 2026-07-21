@@ -133,6 +133,11 @@ export default async function DashboardPage() {
               Showing sample data. Connect Airtable in Settings to load live matters.
             </p>
           ) : null}
+          <p className="mt-2 text-sm">
+            <Link href="/help" className="font-medium text-sky-800 underline-offset-2 hover:underline">
+              How this works →
+            </Link>
+          </p>
         </div>
         <Link
           href="/assignments/new"

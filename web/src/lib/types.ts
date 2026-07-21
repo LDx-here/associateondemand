@@ -207,6 +207,10 @@ export type InboxItem = {
   opposingCounsel?: string;
   /** ISO timestamp when attorney exported an approved deliverable. */
   deliveredAt?: string;
+  /** internal = RMV operator intake; partner = external firm funnel. */
+  source?: "internal" | "partner";
+  partnerEmail?: string;
+  partnerFirmName?: string;
   history?: Array<{ status: string; note?: string; at: string; by?: string }>;
 };
 

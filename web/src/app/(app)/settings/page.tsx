@@ -1,8 +1,12 @@
+import Link from "next/link";
+
 import { SessionAccount } from "@/components/SessionAccount";
+import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { PiiTierComplianceSection } from "@/components/PiiTierComplianceSection";
 import { listPeopleFromAirtable } from "@/lib/airtable/queries";
 import { isDemoMode } from "@/lib/data-store";
 import { billingNoteForPartnerFirm } from "@/lib/deliverable-catalog";
+import { partnerSubmissionUrl } from "@/lib/partner-submission";
 import { isStripeConfigured, isStripeTestMode } from "@/lib/stripe-config";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +34,7 @@ export default async function SettingsPage() {
   const stripeConnected = isStripeConfigured();
   const stripeTestMode = stripeConnected && isStripeTestMode();
   const billingNote = billingNoteForPartnerFirm();
+  const partnerLink = partnerSubmissionUrl();
 
   let attorney: { name: string; role: string; email: string; isActive: boolean } | null = null;
   if (!demo) {
@@ -50,6 +55,11 @@ export default async function SettingsPage() {
         <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
         <p className="text-sm text-slate-600">
           Firm profile and connection status. Account editing arrives with sign-in.
+        </p>
+        <p className="mt-2 text-sm">
+          <Link href="/help" className="font-medium text-sky-800 underline-offset-2 hover:underline">
+            How this works — site guide →
+          </Link>
         </p>
       </header>
 
@@ -107,7 +117,13 @@ export default async function SettingsPage() {
         </Row>
         <Row label="Payment flow">{billingNote}</Row>
         <Row label="How partner firms pay">
-          RMV sends a flat-fee invoice or Stripe Payment Link after scope is agreed (Phase 0). Future: partner pays at external assignment submission.
+          RMV sends a flat-fee invoice or Stripe Payment Link after scope is agreed (Phase 0). Partner firms may also pay at secure checkout when submitting via the external funnel (Phase 1).
+        </Row>
+        <Row label="Partner submission link">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <code className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-800">{partnerLink}</code>
+            <CopyLinkButton url={partnerLink} />
+          </div>
         </Row>
         {stripeConnected ? (
           <Row label="Stripe dashboard">

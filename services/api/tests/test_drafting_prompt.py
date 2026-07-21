@@ -110,3 +110,69 @@ def test_build_drafting_context_block_includes_structured_facts(monkeypatch) -> 
     assert "Case assessment (structured)" in block
     assert "Firm Memory" in block
     assert "Professional" in block
+
+
+def test_build_drafting_context_block_full_fixture_with_assessment_doc(monkeypatch) -> None:
+    """Integration-style check: facts + structured assessment + OCR doc + Firm Memory all appear."""
+
+    def fake_fetch_drafting_facts(_matter: str):
+        return {
+            "v": 1,
+            "practiceArea": "immigration",
+            "caseType": "Immigration - Family",
+            "fields": {"reliefSought": "AOS + I-601A waiver", "qualifyingRelative": "USC spouse"},
+        }
+
+    def fake_fetch_assessment_doc(_matter: str):
+        return {
+            "v": 1,
+            "title": "Case assessment scan.pdf",
+            "ocrText": "Client seeks adjustment with waiver. Extreme hardship to spouse documented.",
+            "facts": [
+                {
+                    "label": "Hardship factors",
+                    "value": "Financial, medical, emotional",
+                    "verified": True,
+                }
+            ],
+        }
+
+    def fake_fetch_matter(_matter: str):
+        return {
+            "matter_id": "AOD-1002",
+            "assessment_data": json.dumps(
+                {"claimType": "AOS waiver", "legalStandard": "Extreme hardship", "overallAssessment": "Strong equities"}
+            ),
+        }
+
+    def fake_firm_memory():
+        return {
+            "writing_tone": "Formal immigration brief",
+            "citation_style": "Bluebook",
+            "additional_notes": "Use RMV caption block.",
+        }
+
+    monkeypatch.setattr("app.services.drafting_prompt.fetch_drafting_facts", fake_fetch_drafting_facts)
+    monkeypatch.setattr("app.services.drafting_prompt.fetch_latest_assessment_document", fake_fetch_assessment_doc)
+    monkeypatch.setattr("app.services.drafting_prompt.fetch_matter_context", fake_fetch_matter)
+    monkeypatch.setattr("app.services.drafting_prompt.fetch_firm_memory_profile", fake_firm_memory)
+
+    block = build_drafting_context_block("AOD-1002")
+    assert "Structured facts for drafting" in block
+    assert "Relief sought: AOS + I-601A waiver" in block
+    assert "Case assessment (structured)" in block
+    assert "AOS waiver" in block
+    assert "Assessment document (OCR)" in block or "Case assessment document" in block
+    assert "Firm Memory" in block
+    assert "Bluebook" in block
+
+
+def test_build_drafting_context_block_empty_matter_has_placeholder(monkeypatch) -> None:
+    monkeypatch.setattr("app.services.drafting_prompt.fetch_matter_context", lambda _m: None)
+    monkeypatch.setattr("app.services.drafting_prompt.fetch_drafting_facts", lambda _m: None)
+    monkeypatch.setattr("app.services.drafting_prompt.fetch_latest_assessment_document", lambda _m: None)
+    monkeypatch.setattr("app.services.drafting_prompt.fetch_firm_memory_profile", lambda: None)
+
+    block = build_drafting_context_block("AOD-9999")
+    assert "[FACT NEEDED]" in block
+    assert "Matter context for drafting" in block

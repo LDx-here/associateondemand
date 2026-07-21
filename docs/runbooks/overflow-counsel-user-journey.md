@@ -8,8 +8,7 @@
 1. **Set up Firm Memory** — [`/templates#firm-memory`](https://aod-next.vercel.app/templates#firm-memory)  
    Upload your blank assessment template, 1–2 sample briefs in your firm's style, and save tone/citation/header preferences. This teaches the platform your voice before the first assignment.
 
-2. **Submit an assignment** — [`/assignments/new`](https://aod-next.vercel.app/assignments/new)  
-   Pick a deliverable (hero SKU: **AOS Discretionary Brief**), link or create a matter, answer deliverable-specific fact questions, optionally attach documents and a sample for the 20% discount. Acknowledge the limited-scope disclaimer. **No in-app payment** — you receive a quoted flat fee and invoice after delivery.
+2. **Submit an assignment** — Partner firms: [`/partner/submit`](https://aod-next.vercel.app/partner/submit) (external funnel). RMV operators: [`/assignments/new`](https://aod-next.vercel.app/assignments/new) (internal — no checkout).
 
 3. **Upload case assessment on the matter** — Matter → **Documents** tab  
    Upload the completed case assessment scan (PDF/photo). OCR extracts fields that feed agent drafts. Optional: collapse **Or fill quick facts below** for structured facts without a scan.
@@ -34,7 +33,8 @@
 |------|-----|
 | Firm Memory setup | `/templates#firm-memory` |
 | Firm assessment templates | `/templates#firm-assessment-templates` |
-| New assignment | `/assignments/new?deliverable=aos-discretionary-brief` |
+| **Partner submission (external firms)** | `/partner/submit?deliverable=aos-discretionary-brief` |
+| Internal operator assignment | `/assignments/new?deliverable=aos-discretionary-brief` |
 | PM Inbox | `/inbox` |
 | Settings (billing honesty) | `/settings` |
 
@@ -55,9 +55,9 @@ Asylum-specific fields (protected ground, persecution narrative, country conditi
 
 ## Billing (Phase 0 honesty)
 
-- Catalog and intake show: **Quoted flat fee — invoice after delivery**  
-- No Stripe plugin, checkout route, or in-app payment collection  
-- Phase 2: Stripe deposits + automated invoicing (after bar/ops sign-off)
+- Catalog and intake show: **Quoted flat fee — invoice after delivery** (internal operator path)
+- Partner funnel (`/partner/submit`): invoice by default; Stripe Checkout when `STRIPE_CHECKOUT_ENABLED=true` on Vercel
+- Phase 2: automated invoicing + Clio trust (document only until bar counsel)
 
 ## Related runbooks
 

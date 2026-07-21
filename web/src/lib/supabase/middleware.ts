@@ -7,8 +7,10 @@ const PUBLIC_PREFIXES = [
   "/login",
   "/auth/callback",
   "/auth/reset-password",
+  "/partner/submit",
   "/api/health",
   "/api/stripe/webhook",
+  "/api/partner/assignments",
 ];
 
 export async function updateSupabaseSession(request: NextRequest) {

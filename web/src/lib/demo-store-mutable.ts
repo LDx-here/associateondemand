@@ -141,16 +141,23 @@ export async function createAssignmentDemo(payload: {
   conflictReviewRequired?: boolean;
   opposingParty?: string;
   opposingCounsel?: string;
+  source?: "internal" | "partner";
+  partnerEmail?: string;
+  partnerFirmName?: string;
 }): Promise<InboxItem> {
   const seed = await getMutableSeed();
   if (!seed.inboxItems) seed.inboxItems = [];
   const now = new Date().toISOString();
+  const sourceNote =
+    payload.source === "partner"
+      ? `Partner assignment submitted${payload.partnerFirmName ? ` by ${payload.partnerFirmName}` : ""}.`
+      : "Assignment submitted via intake form.";
   const item: InboxItem = {
     id: `inbox-demo-${Date.now()}`,
     title: `${payload.deliverableType} \u2014 ${payload.tier} tier`,
     matterId: payload.matterId,
     agent: "PM Orchestrator",
-    whatTried: "Assignment submitted via intake form. Awaiting PM pickup.",
+    whatTried: sourceNote,
     whatNeeded: payload.facts,
     options: [],
     followUpSteps: [],
@@ -173,10 +180,13 @@ export async function createAssignmentDemo(payload: {
     conflictReviewRequired: payload.conflictReviewRequired,
     opposingParty: payload.opposingParty,
     opposingCounsel: payload.opposingCounsel,
+    source: payload.source,
+    partnerEmail: payload.partnerEmail,
+    partnerFirmName: payload.partnerFirmName,
     history: [
       {
         status: "Submitted",
-        note: "Assignment submitted via intake form.",
+        note: sourceNote,
         at: now,
         by: payload.submittedBy ?? "Attorney",
       },

@@ -163,3 +163,5 @@
 ### [2026-07-21] CHECKPOINT: Pass 19 partner-firm billing model — removed operator-side Stripe Checkout on internal intake; submit→dispatch→inbox restored; overflow-counsel-billing-model runbook; pytest 51; next build; smoke-production PASS
 
 ### [2026-07-21] CHECKPOINT: Pass 20 matter navigation fix — setState-during-render infinite loop on matter detail (500); dashboard quick actions; matter workflow next-step hint; smoke E2E matter detail 200
+
+### [2026-07-21] CHECKPOINT: Pass 20 partner funnel — `/partner/submit` + `/api/partner/assignments`; Stripe checkout when enabled; inbox partner badge; drafting prompt hardening; pytest 53; next build; smoke-production + smoke-assignment-e2e PASS; Fly + Vercel prod

@@ -22,7 +22,7 @@ export async function dispatchAssignmentAfterPayment(item: InboxItem): Promise<{
     return { dispatch, inboxItem };
   }
 
-  dispatch = await dispatchAssignmentToPm(item.matterId, item.deliverableType, item.tier, item.facts);
+  dispatch = await dispatchAssignmentToPm(item.matterId, item.deliverableType, item.tier, item.facts, item.deliverableCatalogId);
   if (dispatch.started) {
     const advanced = await updateAssignmentStatus(inboxItem.id, "In progress", {
       note: `Auto-dispatched to ${dispatch.agent ?? "PM orchestrator"} after payment.`,

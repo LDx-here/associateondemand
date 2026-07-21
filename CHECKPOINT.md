@@ -1,13 +1,13 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-21 (CDT) — Pass 20 matter navigation fix + operator UX  
+**Last updated:** 2026-07-21 (CDT) — Pass 20 partner funnel + drafting hardening  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
 
-**Pass 20 (2026-07-21):** Fixed critical matter click bug — `/matters/[id]` returned HTTP 500 (infinite re-render in `CaseAssessmentSummary` / `TemplateApplyPanel` / `LegalElementsPanel` / `ProceduralTimelinePanel` from setState-during-render). Operator UX: dashboard quick actions, matter workflow "What to do next", matters empty state with CTA. Smoke E2E now asserts matter detail 200.
+**Pass 20 (2026-07-21):** External partner funnel `/partner/submit` + `POST /api/partner/assignments` (Stripe when `STRIPE_CHECKOUT_ENABLED=true`; inbox `source: partner` badge; dashboard/settings partner link copy). Drafting prompt context hardening + pytest integration tests (53). Also: matter navigation fix (setState-during-render loops); dashboard operator quick actions; smoke E2E asserts `/matters/{id}` HTTP 200.
 
-**Next (user choice):** run **first pilot matter** on prod (`/assignments/new` → inbox → approve → export) *or* Legal OS local pilot.
+**Next (user choice):** run **first pilot matter** on prod (operator: `/assignments/new` → inbox → approve → export) *or* share **partner funnel** `/partner/submit` with a friendly external firm *or* Legal OS local pilot.
 
 ## Dual track
 
@@ -525,7 +525,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
-- **Pass 20 (2026-07-21):** Matter navigation fix — removed setState-during-render infinite loops in matter workbench child panels; matters table row/link navigation hardened; dashboard operator quick actions; matter workflow "What to do next"; smoke E2E asserts `/matters/{id}` HTTP 200.
+- **Pass 20 (2026-07-21):** External partner funnel `/partner/submit`; Stripe checkout on partner path; inbox partner badge; partner link copy on dashboard/settings; drafting prompt hardening (53 pytest). Matter navigation fix + operator UX polish; smoke E2E matter detail 200.
 - **Pass 19 (2026-07-21):** Partner-firm billing model — disabled operator-side Stripe Checkout on internal `/assignments/new`; restored submit → dispatch → inbox; partner invoicing copy site-wide; [`overflow-counsel-billing-model.md`](docs/runbooks/overflow-counsel-billing-model.md). Stripe routes kept for external funnel.
 - **Document isolation + smart templates (2026-07-21):** Matter-scoped document list post-filter (`matter-link-filter.ts`); firm template/sample rows excluded from matter Documents; matter_id patched on document register; smart template field maps + telephonic request example; TemplateApplyPanel on matter Overview; Firm Memory badge shows configured status; `POST /api/templates/detect-fields`. pytest 51; next build green.
 - **LLM fact enrichment (2026-07-21):** Claude enrichment pass maps heuristic OCR facts to legal elements with human labels, element-fit explanations, dedupe; auto-triggers on low-diversity heuristics; `POST /intake/enrich-facts` + Re-analyze with AI UI; grouped ExtractedFactsReview + element counts in CaseAssessmentSummary. Runbook updated. pytest 51; next build green.
@@ -555,13 +555,13 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Verify document isolation on prod** — upload on AOD-1001 vs AOD-1002; confirm Documents tab is matter-specific only.
-2. **Pilot telephonic template** — Matter Overview → Smart templates → save RMV profile → generate preview.
-3. **Pilot matter on new workbench** — upload case assessment; verify enriched facts show element labels (not generic "name"); test **Re-analyze with AI** on Legal elements tab.
-2. **Upload immigration book excerpts** — `brain/03_Firm_Knowledge/` + Firm Memory per `docs/runbooks/firm-memory-legal-elements.md`.
-3. **First pilot matter (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): intake → inbox → approve → export.
-4. **Optional:** Stripe + Resend env vars — `bash scripts/stripe-setup-checklist.sh`.
-5. **Roadmap Phase 3** — Firm Memory depth + style QC.
+1. **Share partner funnel** — copy link from Dashboard or Settings → `/partner/submit?deliverable=aos-discretionary-brief`; optional: set `STRIPE_CHECKOUT_ENABLED=true` on Vercel for pay-at-submit.
+2. **Verify document isolation on prod** — upload on AOD-1001 vs AOD-1002; confirm Documents tab is matter-specific only.
+3. **Pilot telephonic template** — Matter Overview → Smart templates → save RMV profile → generate preview.
+4. **Pilot matter on new workbench** — upload case assessment; verify enriched facts show element labels (not generic "name"); test **Re-analyze with AI** on Legal elements tab.
+5. **First pilot matter (ops)** — operator path: `/assignments/new` → `/inbox` → approve → export.
+6. **Optional:** Stripe + Resend env vars — `bash scripts/stripe-setup-checklist.sh`.
+7. **Roadmap Phase 3** — Firm Memory depth + style QC.
 
 ## Blockers
 

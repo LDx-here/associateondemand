@@ -586,6 +586,9 @@ type ParsedInboxOptions = {
   opposingParty?: string;
   opposingCounsel?: string;
   deliveredAt?: string;
+  source?: "internal" | "partner";
+  partnerEmail?: string;
+  partnerFirmName?: string;
   history?: Array<{ status: string; note?: string; at: string; by?: string }>;
 };
 
@@ -644,6 +647,9 @@ function parsePmInboxOptions(raw: unknown): ParsedInboxOptions {
       opposingParty: o.opposingParty ? String(o.opposingParty) : undefined,
       opposingCounsel: o.opposingCounsel ? String(o.opposingCounsel) : undefined,
       deliveredAt: o.deliveredAt ? String(o.deliveredAt) : undefined,
+      source: o.source === "partner" || o.source === "internal" ? o.source : undefined,
+      partnerEmail: o.partnerEmail ? String(o.partnerEmail) : undefined,
+      partnerFirmName: o.partnerFirmName ? String(o.partnerFirmName) : undefined,
       history,
     };
   }
@@ -711,6 +717,9 @@ function mapInbox(rec: { id: string; fields: RawFields }): InboxItem {
     opposingParty: parsed.opposingParty,
     opposingCounsel: parsed.opposingCounsel,
     deliveredAt: parsed.deliveredAt,
+    source: parsed.source,
+    partnerEmail: parsed.partnerEmail,
+    partnerFirmName: parsed.partnerFirmName,
     history: parsed.history,
   };
 }
@@ -762,6 +771,9 @@ function serializeAssignmentOptions(payload: {
   opposingParty?: string;
   opposingCounsel?: string;
   deliveredAt?: string;
+  source?: "internal" | "partner";
+  partnerEmail?: string;
+  partnerFirmName?: string;
   history: Array<{ status: string; note?: string; at: string; by?: string }>;
 }): string {
   return JSON.stringify({
@@ -781,6 +793,9 @@ function serializeAssignmentOptions(payload: {
     opposingParty: payload.opposingParty,
     opposingCounsel: payload.opposingCounsel,
     deliveredAt: payload.deliveredAt,
+    source: payload.source,
+    partnerEmail: payload.partnerEmail,
+    partnerFirmName: payload.partnerFirmName,
     history: payload.history,
   });
 }
@@ -802,6 +817,9 @@ function assignmentOptionsFromItem(item: InboxItem, history: InboxItem["history"
     opposingParty: item.opposingParty,
     opposingCounsel: item.opposingCounsel,
     deliveredAt: item.deliveredAt,
+    source: item.source,
+    partnerEmail: item.partnerEmail,
+    partnerFirmName: item.partnerFirmName,
     history: history ?? [],
   };
 }
@@ -823,15 +841,22 @@ export async function createAssignmentInAirtable(payload: {
   conflictReviewRequired?: boolean;
   opposingParty?: string;
   opposingCounsel?: string;
+  source?: "internal" | "partner";
+  partnerEmail?: string;
+  partnerFirmName?: string;
 }): Promise<InboxItem> {
   const resolved = await resolveMatterRecordId(payload.matterCode);
   if (!resolved) throw new Error(`Matter not found: ${payload.matterCode}`);
   const i = F.pmInbox;
   const now = new Date().toISOString();
+  const sourceNote =
+    payload.source === "partner"
+      ? `Partner assignment submitted${payload.partnerFirmName ? ` by ${payload.partnerFirmName}` : ""}${payload.partnerEmail ? ` (${payload.partnerEmail})` : ""}.`
+      : "Assignment submitted via intake form.";
   const history = [
     {
       status: "Submitted",
-      note: "Assignment submitted via intake form.",
+      note: sourceNote,
       at: now,
       by: payload.submittedBy ?? "Attorney",
     },
@@ -840,7 +865,7 @@ export async function createAssignmentInAirtable(payload: {
     [i.title]: `${payload.deliverableType} \u2014 ${payload.tier} tier`,
     [i.matter_id]: resolved.matterId,
     [i.agent]: "PM Orchestrator",
-    [i.what_tried]: "Assignment submitted via intake form. Awaiting PM pickup.",
+    [i.what_tried]: sourceNote,
     [i.what_needed]: payload.facts.slice(0, 4000),
     [i.options]: serializeAssignmentOptions({
       deliverableType: payload.deliverableType,
@@ -857,6 +882,9 @@ export async function createAssignmentInAirtable(payload: {
       conflictReviewRequired: payload.conflictReviewRequired,
       opposingParty: payload.opposingParty,
       opposingCounsel: payload.opposingCounsel,
+      source: payload.source,
+      partnerEmail: payload.partnerEmail,
+      partnerFirmName: payload.partnerFirmName,
       history,
     }),
     [i.status]: "Submitted",

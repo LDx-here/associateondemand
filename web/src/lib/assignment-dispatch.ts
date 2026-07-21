@@ -36,9 +36,11 @@ export function buildAssignmentPmInstruction(
   deliverableType: string,
   tier: AssignmentTier,
   facts: string,
+  deliverableCatalogId?: string,
 ): string {
   const factsSnippet = facts.trim().slice(0, 600);
   const lower = deliverableType.toLowerCase();
+  const catalog = (deliverableCatalogId ?? "").toLowerCase();
 
   if (lower.includes("mass") && lower.includes("audit")) {
     return `mass audit ${matterId}`;
@@ -49,7 +51,11 @@ export function buildAssignmentPmInstruction(
   if (lower.includes("cover letter")) {
     return `draft cover letter ${matterId}. ${factsSnippet}`;
   }
-  if (lower.includes("aos") || lower.includes("discretionary")) {
+  if (
+    catalog === "aos-discretionary-brief" ||
+    lower.includes("aos") ||
+    lower.includes("discretionary")
+  ) {
     return `draft aos discretionary brief ${matterId}. ${factsSnippet}`;
   }
   if (lower.includes("hearing packet") || lower.includes("exhibit")) {
@@ -75,9 +81,16 @@ export async function dispatchAssignmentToPm(
   deliverableType: string,
   tier: AssignmentTier,
   facts: string,
+  deliverableCatalogId?: string,
 ): Promise<AssignmentDispatchResult> {
   const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-  const instruction = buildAssignmentPmInstruction(matterId, deliverableType, tier, facts);
+  const instruction = buildAssignmentPmInstruction(
+    matterId,
+    deliverableType,
+    tier,
+    facts,
+    deliverableCatalogId,
+  );
 
   try {
     const resp = await fetch(`${api}/agents/pm/dispatch`, {
