@@ -14,9 +14,14 @@ import {
   sampleDiscountNote,
   type DeliverableCatalogEntry,
 } from "@/lib/deliverable-catalog";
+import {
+  formatSpecIncludes,
+  getDeliverableTemplateSpec,
+} from "@/lib/deliverable-template-specs";
+import { getTemplateFieldMapByDeliverable } from "@/lib/template-field-maps";
 import { isStripeConfigured } from "@/lib/stripe-config";
 import type { AssignmentTier } from "@/lib/types";
-import { btnPrimary } from "@/lib/ui-classes";
+import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 
 const TIER_META: Record<
@@ -50,6 +55,8 @@ const TIER_ORDER: AssignmentTier[] = ["Template", "Research", "Custom"];
 
 function DeliverableCard({ entry }: { entry: DeliverableCatalogEntry }) {
   const launchSku = isPhase0LaunchSku(entry.id);
+  const spec = getDeliverableTemplateSpec(entry.id);
+  const hasInteractiveTemplate = Boolean(getTemplateFieldMapByDeliverable(entry.id));
   return (
     <article
       className={cn(
@@ -71,20 +78,32 @@ function DeliverableCard({ entry }: { entry: DeliverableCatalogEntry }) {
         </span>
       </div>
       <p className="text-sm text-slate-600">{entry.description}</p>
+      {spec ? (
+        <p className="text-xs text-slate-500">
+          <span className="font-medium text-slate-700">Includes:</span> {formatSpecIncludes(spec)}
+        </p>
+      ) : null}
       <p className="text-sm font-medium text-slate-800">{formatCatalogQuote(entry)}</p>
       {sampleDiscountNote(entry) ? (
         <p className="text-xs text-violet-800">{sampleDiscountNote(entry)}</p>
       ) : null}
       {entry.pricing?.note ? <p className="text-xs text-slate-500">{entry.pricing.note}</p> : null}
-      <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2">
         {entry.skillDoc ? (
           <span className="text-[11px] text-slate-400">SKILL wired</span>
         ) : (
           <span className="text-[11px] text-slate-400">Scoped at intake</span>
         )}
-        <Link href={`/assignments/new?deliverable=${entry.id}`} className={btnPrimary}>
-          Start assignment
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {hasInteractiveTemplate ? (
+            <Link href={`/templates#smart-templates`} className={btnSecondary}>
+              Configure & preview
+            </Link>
+          ) : null}
+          <Link href={`/assignments/new?deliverable=${entry.id}`} className={btnPrimary}>
+            Start assignment
+          </Link>
+        </div>
       </div>
     </article>
   );

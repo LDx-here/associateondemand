@@ -71,6 +71,7 @@ import {
   isFirmSampleDocument,
   serializeAssessmentOcrPayload,
   type AssessmentOcrPayload,
+  type FirmSampleDocType,
 } from "./assessment-documents";
 import type {
   AssignmentStatus,
@@ -816,9 +817,13 @@ export async function getFirmMemoryStatus(): Promise<FirmMemoryStatus> {
 export async function saveFirmSample(payload: {
   title: string;
   practiceArea: string;
+  docType?: string;
   airtableDocumentId?: string;
 }): Promise<DocumentRow> {
-  const category = encodeFirmSampleCategory(payload.practiceArea);
+  const category = encodeFirmSampleCategory(
+    payload.practiceArea,
+    payload.docType as FirmSampleDocType | undefined,
+  );
   if (isDemoMode()) {
     return addDocumentDemo(FIRM_TEMPLATE_MATTER_ID, {
       title: payload.title,

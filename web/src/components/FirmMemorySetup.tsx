@@ -11,11 +11,13 @@ import {
 import { useToast } from "@/components/Toast";
 import {
   encodeFirmSampleCategory,
+  FIRM_SAMPLE_DOC_TYPE_LABELS,
   FIRM_TEMPLATE_MATTER_ID,
   practiceAreaLabel,
+  type FirmSampleDocType,
 } from "@/lib/assessment-documents";
 import type { DocumentRow } from "@/lib/types";
-import { btnPrimary } from "@/lib/ui-classes";
+import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
 
 type FirmMemoryStatus = {
@@ -26,6 +28,7 @@ type FirmMemoryStatus = {
 };
 
 const PRACTICE_AREAS = ["immigration", "personal_injury"] as const;
+const DOC_TYPES = Object.keys(FIRM_SAMPLE_DOC_TYPE_LABELS) as FirmSampleDocType[];
 
 function StepIcon({ done }: { done: boolean }) {
   return done ? (
@@ -54,12 +57,14 @@ export function FirmMemorySetup() {
   const [status, setStatus] = useState<FirmMemoryStatus | null>(null);
   const [samples, setSamples] = useState<DocumentRow[]>([]);
   const [area, setArea] = useState<(typeof PRACTICE_AREAS)[number]>("immigration");
+  const [docType, setDocType] = useState<FirmSampleDocType>("brief");
   const [sampleBusy, setSampleBusy] = useState(false);
   const [styleBusy, setStyleBusy] = useState(false);
   const [firmName, setFirmName] = useState("");
   const [tone, setTone] = useState(TONE_OPTIONS[0]);
   const [citationFormat, setCitationFormat] = useState(CITATION_OPTIONS[0]);
   const [headerFormat, setHeaderFormat] = useState("MEMORANDUM / TO-FROM-DATE-RE block");
+  const [styleSaved, setStyleSaved] = useState(false);
 
   const refresh = useCallback(async () => {
     const [statusResp, samplesResp] = await Promise.all([
@@ -70,6 +75,7 @@ export function FirmMemorySetup() {
     const samplesData = (await samplesResp.json()) as { samples?: DocumentRow[] };
     setStatus(statusData);
     setSamples(samplesData.samples ?? []);
+    setStyleSaved((statusData.stylePreferenceCount ?? 0) > 0);
   }, []);
 
   useEffect(() => {
@@ -81,6 +87,7 @@ export function FirmMemorySetup() {
         if (cancelled) return;
         setStatus(statusData);
         setSamples(samplesData.samples ?? []);
+        setStyleSaved((statusData.stylePreferenceCount ?? 0) > 0);
       });
     return () => {
       cancelled = true;
@@ -95,7 +102,7 @@ export function FirmMemorySetup() {
 
     setSampleBusy(true);
     try {
-      const category = encodeFirmSampleCategory(area);
+      const category = encodeFirmSampleCategory(area, docType);
       const data = await uploadDocument(FIRM_TEMPLATE_MATTER_ID, file, attorneyUploadApproved(), "single", {
         documentCategory: category,
       });
@@ -109,6 +116,7 @@ export function FirmMemorySetup() {
         body: JSON.stringify({
           title: data.filename ?? file.name,
           practiceArea: area,
+          docType,
           airtableDocumentId: data.airtable_document_id,
         }),
       });
@@ -117,7 +125,10 @@ export function FirmMemorySetup() {
         showToast(err.error ?? "Sample save failed", "error");
         return;
       }
-      showToast("Sample brief saved — feeds style alignment and sample discount eligibility.", "success");
+      showToast(
+        `${FIRM_SAMPLE_DOC_TYPE_LABELS[docType]} sample saved — feeds drafting tone and sample discount.`,
+        "success",
+      );
       await refresh();
       input.value = "";
     } catch (err) {
@@ -148,7 +159,8 @@ export function FirmMemorySetup() {
         showToast(data.error ?? "Save failed", "error");
         return;
       }
-      showToast("Style preferences saved to Firm Memory.", "success");
+      showToast("Style preferences saved — active for all drafting.", "success");
+      setStyleSaved(true);
       await refresh();
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Save failed", "error");
@@ -157,8 +169,8 @@ export function FirmMemorySetup() {
     }
   }
 
-  const step1Done = (status?.templateCount ?? 0) > 0;
-  const step2Done = (status?.sampleCount ?? 0) > 0;
+  const step1Done = (status?.sampleCount ?? 0) > 0;
+  const step2Done = (status?.templateCount ?? 0) > 0;
   const step3Done = (status?.stylePreferenceCount ?? 0) > 0;
 
   return (
@@ -168,12 +180,12 @@ export function FirmMemorySetup() {
         <div>
           <h2 className="text-sm font-semibold text-violet-950">Firm Memory setup</h2>
           <p className="mt-0.5 text-xs text-violet-900">
-            Teach AssociateOnDemand your firm&apos;s voice before your first overflow assignment.
-            Complete all three steps so drafts read like your in-house associate — not generic AI.
+            Teach AssociateOnDemand your firm&apos;s voice with real document samples — briefs, motions,
+            letters, or forms. Tone and citation prefs apply automatically to agent drafting.
           </p>
           {status && !status.configured ? (
             <p className="mt-2 text-xs font-medium text-amber-900">
-              Firm Memory not configured yet — start with Step 1 below.
+              Firm Memory not configured yet — upload at least one sample or save style preferences below.
             </p>
           ) : null}
         </div>
@@ -183,28 +195,11 @@ export function FirmMemorySetup() {
         <li className="rounded-md border border-white bg-white p-3 shadow-sm">
           <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
             <StepIcon done={step1Done} />
-            Step 1 — Upload firm assessment template
+            Step 1 — Upload firm document samples
           </div>
           <p className="mt-1 text-xs text-slate-600">
-            Upload your blank case assessment form once per practice area. Matters use it on the
-            Documents tab.
-          </p>
-          <Link
-            href="#firm-assessment-templates"
-            className="mt-2 inline-block text-xs font-medium text-violet-800 underline-offset-2 hover:underline"
-          >
-            Go to firm assessment templates ↓
-          </Link>
-        </li>
-
-        <li className="rounded-md border border-white bg-white p-3 shadow-sm">
-          <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
-            <StepIcon done={step2Done} />
-            Step 2 — Upload 1–2 sample briefs
-          </div>
-          <p className="mt-1 text-xs text-slate-600">
-            Prior work in your firm&apos;s style feeds drafting alignment and unlocks the sample
-            discount at assignment intake.
+            Any prior work in your style — brief, motion, telephonic request, cover letter, demand letter.
+            Samples teach tone/format and unlock the sample discount at intake.
           </p>
           {samples.length > 0 ? (
             <ul className="mt-2 space-y-1 text-xs text-emerald-800">
@@ -215,20 +210,39 @@ export function FirmMemorySetup() {
               ))}
             </ul>
           ) : (
-            <p className="mt-1 text-xs text-slate-500">No sample briefs on file yet.</p>
+            <p className="mt-1 text-xs text-slate-500">No firm samples on file yet.</p>
           )}
           <form className="mt-3 space-y-2" onSubmit={onSampleUpload}>
-            <select
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-              value={area}
-              onChange={(e) => setArea(e.target.value as (typeof PRACTICE_AREAS)[number])}
-            >
-              {PRACTICE_AREAS.map((pa) => (
-                <option key={pa} value={pa}>
-                  {practiceAreaLabel(pa)}
-                </option>
-              ))}
-            </select>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <label className="block text-sm">
+                <span className="text-slate-700">Practice area</span>
+                <select
+                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value as (typeof PRACTICE_AREAS)[number])}
+                >
+                  {PRACTICE_AREAS.map((pa) => (
+                    <option key={pa} value={pa}>
+                      {practiceAreaLabel(pa)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-sm">
+                <span className="text-slate-700">Document type</span>
+                <select
+                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  value={docType}
+                  onChange={(e) => setDocType(e.target.value as FirmSampleDocType)}
+                >
+                  {DOC_TYPES.map((dt) => (
+                    <option key={dt} value={dt}>
+                      {FIRM_SAMPLE_DOC_TYPE_LABELS[dt]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <input
               accept=".pdf,.doc,.docx"
               className="w-full text-sm"
@@ -242,19 +256,41 @@ export function FirmMemorySetup() {
               className={`${btnPrimary} inline-flex items-center gap-2 text-sm disabled:opacity-50`}
             >
               <Upload className="h-4 w-4" aria-hidden />
-              {sampleBusy ? "Uploading…" : "Upload sample brief"}
+              {sampleBusy ? "Uploading…" : "Upload firm sample"}
             </button>
           </form>
         </li>
 
         <li className="rounded-md border border-white bg-white p-3 shadow-sm">
           <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
-            <StepIcon done={step3Done} />
-            Step 3 — Save style preferences
+            <StepIcon done={step2Done} />
+            Step 2 — Case assessment template <span className="font-normal text-slate-400">(optional)</span>
           </div>
           <p className="mt-1 text-xs text-slate-600">
-            Tone, citation format, and headers persist to Strategy Patterns for future drafts. You can
-            also refine Firm Memory by editing agent output on any matter → Save to Firm Memory.
+            Only if you use a separate blank assessment workbook (e.g. AOS discretionary factors XLSX).
+            This is different from motion/brief samples above.
+          </p>
+          <Link
+            href="#firm-assessment-templates"
+            className={`${btnSecondary} mt-2 inline-block text-xs`}
+          >
+            Upload assessment template ↓
+          </Link>
+        </li>
+
+        <li className="rounded-md border border-white bg-white p-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900">
+            <StepIcon done={step3Done} />
+            Step 3 — Style preferences
+            {styleSaved || step3Done ? (
+              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800 ring-1 ring-emerald-200">
+                Active — applied to drafting
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 text-xs text-slate-600">
+            Tone, citation format, and memo headers inject into every agent draft via Strategy Patterns.
+            You can also refine Firm Memory by editing agent output on any matter → Save to Firm Memory.
           </p>
           <form className="mt-3 grid gap-3 sm:grid-cols-2" onSubmit={onSaveStyle}>
             <label className="block text-sm sm:col-span-2">

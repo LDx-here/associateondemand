@@ -68,7 +68,21 @@ export function encodeAssessmentTemplateCategory(practiceArea: string): string {
   return `${ASSESSMENT_TEMPLATE_PREFIX}:${practiceArea}`;
 }
 
-export function encodeFirmSampleCategory(practiceArea: string): string {
+/** Document type for Firm Memory samples — not everything is a "brief". */
+export type FirmSampleDocType = "brief" | "motion" | "letter" | "form" | "other";
+
+export const FIRM_SAMPLE_DOC_TYPE_LABELS: Record<FirmSampleDocType, string> = {
+  brief: "Brief / memorandum",
+  motion: "Motion / filing",
+  letter: "Letter / cover letter",
+  form: "Form / request sheet",
+  other: "Other",
+};
+
+export function encodeFirmSampleCategory(practiceArea: string, docType?: FirmSampleDocType): string {
+  if (docType && docType !== "other") {
+    return `${FIRM_SAMPLE_PREFIX}:${practiceArea}:${docType}`;
+  }
   return `${FIRM_SAMPLE_PREFIX}:${practiceArea}`;
 }
 
@@ -85,9 +99,11 @@ export function parseDocumentCategory(category: string): ParsedDocumentCategory 
     };
   }
   if (normalized.startsWith(`${FIRM_SAMPLE_PREFIX}:`)) {
+    const rest = normalized.slice(FIRM_SAMPLE_PREFIX.length + 1);
+    const [practiceArea] = rest.split(":");
     return {
       role: "firm_sample",
-      practiceArea: normalized.slice(FIRM_SAMPLE_PREFIX.length + 1),
+      practiceArea: practiceArea || rest,
     };
   }
   return { role: "other" };

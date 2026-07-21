@@ -46,7 +46,7 @@ export function FirmMemoryBadge({
       ? "Firm Memory active"
       : "Firm Memory"
     : configured
-      ? "Firm Memory — style profile active"
+      ? "Firm Memory — applied to drafting"
       : "Firm Memory — setup recommended";
 
   const className = configured

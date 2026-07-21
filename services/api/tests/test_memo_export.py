@@ -30,4 +30,6 @@ def test_memo_export_txt_when_clean() -> None:
         json={"matter_id": "AOD-1001", "memo_text": "Clean memo text.", "format": "txt"},
     )
     assert resp.status_code == 200
-    assert resp.text == "Clean memo text."
+    assert "MEMORANDUM" in resp.text
+    assert "Clean memo text." in resp.text
+    assert "Matter AOD-1001" in resp.text

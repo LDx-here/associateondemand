@@ -96,8 +96,33 @@ class MemoExportBody(BaseModel):
     format: Literal["docx", "txt"] = "docx"
 
 
-def _memo_docx_blob(text: str) -> bytes:
-    """Build a .docx from plain memo lines with Page X of Y footer (BUILD_SPEC §11)."""
+def _ensure_memorandum_header(text: str, *, matter_id: str = "") -> str:
+    """Prepend constitution-style MEMORANDUM block when draft body lacks one."""
+
+    memo = text.strip()
+    if "MEMORANDUM" in memo.upper()[:400]:
+        return memo
+
+    from app.services.docs_formatter import format_memorandum_header
+    from app.services.drafting_prompt import fetch_firm_memory_profile
+
+    firm = fetch_firm_memory_profile()
+    re_line = "Legal Research Memorandum"
+    if matter_id:
+        re_line += f" - Matter {matter_id}"
+
+    from_line = "Litigation Associate"
+    if firm and firm.get("caption_format"):
+        cap = str(firm["caption_format"])
+        if "FROM" in cap.upper():
+            from_line = cap.split("FROM", 1)[-1].strip()[:120] or from_line
+
+    header = format_memorandum_header(re_line=re_line, from_line=from_line)
+    return header + memo
+
+
+def _memo_docx_blob(text: str, *, matter_id: str = "") -> bytes:
+    """Build a .docx from memo lines with MEMORANDUM header and Page X of Y footer."""
 
     from io import BytesIO
 
@@ -106,6 +131,7 @@ def _memo_docx_blob(text: str) -> bytes:
         from docx.enum.text import WD_ALIGN_PARAGRAPH
         from docx.oxml import OxmlElement
         from docx.oxml.ns import qn
+        from docx.shared import Pt
     except ImportError:
         raise RuntimeError("python-docx unavailable") from None
 
@@ -122,9 +148,23 @@ def _memo_docx_blob(text: str) -> bytes:
         run._r.append(instr)
         run._r.append(fld_end)
 
+    normalized = _ensure_memorandum_header(text, matter_id=matter_id)
     doc = Document()
-    for line in text.replace("\r\n", "\n").split("\n"):
-        doc.add_paragraph(line)
+    for raw_line in normalized.replace("\r\n", "\n").split("\n"):
+        line = raw_line.strip()
+        if not line:
+            doc.add_paragraph("")
+            continue
+        clean = line.replace("**", "")
+        para = doc.add_paragraph()
+        run = para.add_run(clean)
+        upper = clean.upper()
+        if upper == "MEMORANDUM" or upper.startswith("MEMORANDUM IN SUPPORT"):
+            run.bold = True
+            run.font.size = Pt(14)
+            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        elif clean.startswith(("TO:", "FROM:", "DATE:", "RE:")):
+            run.bold = True
 
     section = doc.sections[0]
     footer = section.footer
@@ -150,6 +190,8 @@ def research_memo_export(body: MemoExportBody) -> Response:
     if not memo:
         raise HTTPException(status_code=400, detail="memo_text is required")
 
+    memo = _ensure_memorandum_header(memo, matter_id=body.matter_id)
+
     lint_issues = lint_document(memo)
     if lint_issues:
         raise HTTPException(
@@ -165,7 +207,7 @@ def research_memo_export(body: MemoExportBody) -> Response:
         )
 
     try:
-        blob = _memo_docx_blob(memo)
+        blob = _memo_docx_blob(memo, matter_id=body.matter_id)
     except RuntimeError:
         return Response(
             content=memo.encode("utf-8"),
