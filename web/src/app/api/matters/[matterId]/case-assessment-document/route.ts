@@ -34,6 +34,9 @@ export async function POST(req: Request, ctx: Ctx) {
     ocrConfidence?: number;
     practiceArea?: string;
     deliverableId?: string;
+    enrichmentStatus?: AssessmentOcrPayload["enrichmentStatus"];
+    enrichmentWarning?: string;
+    enrichmentSummary?: string;
   };
 
   try {
@@ -64,6 +67,9 @@ export async function POST(req: Request, ctx: Ctx) {
       ocrConfidence: body.ocrConfidence,
       practiceArea: body.practiceArea,
       deliverableId: body.deliverableId,
+      enrichmentStatus: body.enrichmentStatus,
+      enrichmentWarning: body.enrichmentWarning,
+      enrichmentSummary: body.enrichmentSummary,
     };
 
     await createNoteForMatter(

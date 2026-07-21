@@ -17,6 +17,8 @@ export type ParsedDocumentCategory = {
 export type ExtractedFactRecord = {
   id?: string;
   fact_type: string;
+  /** Human-readable label from LLM enrichment (preferred over fact_type in UI). */
+  label?: string;
   value: string;
   confidence?: number;
   context?: string;
@@ -27,6 +29,12 @@ export type ExtractedFactRecord = {
   verifiedAt?: string;
   /** Maps to practice-area-facts field id when known. */
   fieldId?: string;
+  /** Primary legal element name from enrichment pass. */
+  legalElement?: string;
+  legalElementId?: string;
+  /** One-line explanation of how the fact supports the element. */
+  elementFit?: string;
+  enriched?: boolean;
 };
 
 export type AssessmentOcrPayload = {
@@ -40,6 +48,9 @@ export type AssessmentOcrPayload = {
   ocrConfidence?: number;
   practiceArea?: string;
   deliverableId?: string;
+  enrichmentStatus?: "heuristic_only" | "enriched" | "failed";
+  enrichmentWarning?: string;
+  enrichmentSummary?: string;
 };
 
 export type CaseAssessmentElementRow = {
@@ -146,6 +157,12 @@ export function parseAssessmentOcrPayload(raw: string): AssessmentOcrPayload | n
     return null;
   }
   return null;
+}
+
+export function factDisplayLabel(fact: ExtractedFactRecord): string {
+  const label = fact.label?.trim();
+  if (label) return label;
+  return fact.fact_type.replace(/_/g, " ");
 }
 
 export function factDisplayValue(fact: ExtractedFactRecord): string {
@@ -270,6 +287,33 @@ function matchFactToField(
   return undefined;
 }
 
+export function groupFactsByLegalElement(
+  facts: ExtractedFactRecord[],
+): { element: string; facts: ExtractedFactRecord[] }[] {
+  const groups = new Map<string, ExtractedFactRecord[]>();
+  for (const fact of facts) {
+    const key = fact.legalElement?.trim() || "Unmapped facts";
+    const list = groups.get(key) ?? [];
+    list.push(fact);
+    groups.set(key, list);
+  }
+  return [...groups.entries()].map(([element, grouped]) => ({ element, facts: grouped }));
+}
+
+export function elementFactCounts(
+  facts: ExtractedFactRecord[],
+): { element: string; count: number; verified: number }[] {
+  const counts = new Map<string, { count: number; verified: number }>();
+  for (const fact of facts) {
+    const key = fact.legalElement?.trim() || factDisplayLabel(fact);
+    const row = counts.get(key) ?? { count: 0, verified: 0 };
+    row.count += 1;
+    if (fact.verified) row.verified += 1;
+    counts.set(key, row);
+  }
+  return [...counts.entries()].map(([element, stats]) => ({ element, ...stats }));
+}
+
 export function formatAssessmentOcrForAgents(payload: AssessmentOcrPayload): string {
   const lines = ["## Case assessment document (uploaded scan)"];
   lines.push(`- Document: ${payload.title}`);
@@ -283,7 +327,9 @@ export function formatAssessmentOcrForAgents(payload: AssessmentOcrPayload): str
       const val = factDisplayValue(fact);
       if (!val) continue;
       const tag = fact.verified ? " [verified]" : " [needs review]";
-      lines.push(`  - ${fact.fact_type}: ${val}${tag}`);
+      const label = factDisplayLabel(fact);
+      const element = fact.legalElement ? ` → ${fact.legalElement}` : "";
+      lines.push(`  - ${label}: ${val}${element}${tag}`);
     }
   }
   return lines.length > 1 ? lines.join("\n") : "";

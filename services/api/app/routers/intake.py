@@ -8,6 +8,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
@@ -18,7 +19,7 @@ from app.services.document_files import (
     guess_media_type,
     resolve_document_path,
 )
-from app.services.intake_processor import process_uploaded_document
+from app.services.intake_processor import enrich_document_facts, process_uploaded_document
 from app.services.presidio_gate import current_tier, presidio_reachable, require_strong_reader
 
 router = APIRouter(prefix="/intake", tags=["intake"])
@@ -33,6 +34,35 @@ def _parse_manual_approval(
     if header_value and header_value.lower() in {"true", "1", "yes"}:
         return True
     return False
+
+
+class EnrichFactsRequest(BaseModel):
+    matter_id: str = Field(..., min_length=1)
+    ocr_text: str = ""
+    facts: list[dict[str, Any]] = Field(default_factory=list)
+    extraction_context: dict[str, Any] | None = None
+    force: bool = False
+
+
+@router.post("/enrich-facts")
+def enrich_facts(body: EnrichFactsRequest) -> dict[str, Any]:
+    """Re-run LLM enrichment on saved OCR text + heuristic facts."""
+
+    ctx = body.extraction_context or {}
+    result = enrich_document_facts(
+        ocr_text=body.ocr_text,
+        heuristic_facts=body.facts,
+        extraction_context=ctx,
+        force=body.force,
+    )
+    return {
+        "matter_id": body.matter_id,
+        "facts": result["facts"],
+        "enrichment_status": result.get("enrichmentStatus"),
+        "enrichment_warning": result.get("enrichmentWarning"),
+        "enrichment_summary": result.get("enrichmentSummary"),
+        "enriched": result.get("enriched", False),
+    }
 
 
 @router.get("/status")

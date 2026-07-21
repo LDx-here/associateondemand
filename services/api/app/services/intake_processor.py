@@ -16,6 +16,11 @@ from app.models.document import Document, ExtractedFact
 from app.pipelines.ocr_pipeline import run_ocr_pipeline, text_quality_score
 from app.pipelines.pii_pipeline import anonymize_text
 from app.services import airtable as at
+from app.services.fact_enrichment import (
+    enrich_facts_with_llm,
+    heuristic_facts_need_enrichment,
+    merge_enrichment_into_payload,
+)
 from app.services.presidio_gate import current_tier
 
 
@@ -23,10 +28,12 @@ def _assessment_ocr_note_payload(
     filename: str,
     ocr_text: str,
     facts: list[dict[str, Any]],
+    *,
+    enrichment_meta: dict[str, Any] | None = None,
 ) -> str:
     import json
 
-    payload = {
+    payload: dict[str, Any] = {
         "v": 1,
         "documentId": filename,
         "title": filename,
@@ -34,7 +41,48 @@ def _assessment_ocr_note_payload(
         "facts": facts[:24],
         "uploadedAt": None,
     }
+    if enrichment_meta:
+        for key in ("enrichmentStatus", "enrichmentWarning", "enrichmentSummary"):
+            val = enrichment_meta.get(key)
+            if val:
+                payload[key] = val
     return json.dumps(payload)
+
+
+def enrich_document_facts(
+    *,
+    ocr_text: str,
+    heuristic_facts: list[dict[str, Any]],
+    extraction_context: dict[str, Any] | None = None,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Run LLM enrichment when configured and heuristic facts need mapping."""
+
+    ctx = extraction_context or {}
+    should_enrich = force or (
+        ctx.get("document_category") == "case_assessment"
+        and heuristic_facts_need_enrichment(heuristic_facts)
+    )
+    if not should_enrich and not force:
+        return {
+            "facts": heuristic_facts,
+            "enrichmentStatus": "heuristic_only",
+            "enriched": False,
+        }
+
+    enrichment = enrich_facts_with_llm(
+        ocr_text=ocr_text,
+        heuristic_facts=heuristic_facts,
+        context=ctx,
+    )
+    facts = merge_enrichment_into_payload(heuristic_facts, enrichment)
+    return {
+        "facts": facts,
+        "enrichmentStatus": enrichment.get("enrichment_status", "heuristic_only"),
+        "enrichmentWarning": enrichment.get("enrichment_warning"),
+        "enrichmentSummary": enrichment.get("enrichment_summary"),
+        "enriched": bool(enrichment.get("enriched")),
+    }
 
 
 def _parse_extraction_context(raw: str | None) -> dict[str, Any] | None:
@@ -70,6 +118,13 @@ def process_uploaded_document(
         ctx = {**ctx, "document_category": "case_assessment"}
     fact_records = fact_extraction_agent.extract(ocr_text, context=ctx or None)
     facts_payload = [f.to_dict() for f in fact_records]
+
+    enrichment_result = enrich_document_facts(
+        ocr_text=ocr_text,
+        heuristic_facts=facts_payload,
+        extraction_context=ctx or None,
+    )
+    facts_payload = enrichment_result["facts"]
 
     doc_id = str(uuid.uuid4())
     document = Document(
@@ -126,7 +181,12 @@ def process_uploaded_document(
     if document_category == "case_assessment" and ocr_text:
         at.create_matter_note(
             matter_code=external_id,
-            content=_assessment_ocr_note_payload(filename, ocr_text, facts_payload),
+            content=_assessment_ocr_note_payload(
+                filename,
+                ocr_text,
+                facts_payload,
+                enrichment_meta=enrichment_result,
+            ),
             author="Strong Reader",
             note_type="Assessment Document",
         )
@@ -144,6 +204,9 @@ def process_uploaded_document(
         "category_confidence": cat["confidence"],
         "facts_extracted": len(fact_records),
         "facts": facts_payload,
+        "enrichment_status": enrichment_result.get("enrichmentStatus"),
+        "enrichment_warning": enrichment_result.get("enrichmentWarning"),
+        "enrichment_summary": enrichment_result.get("enrichmentSummary"),
         "text_preview": ocr_text[:500],
         "obsidian_path": str(obsidian),
         "airtable_document_id": (airtable_doc or {}).get("id"),

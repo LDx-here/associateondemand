@@ -86,6 +86,9 @@ export type UploadResult = {
   category?: string;
   facts_extracted?: number;
   facts?: Array<{ fact_type: string; value: string; confidence: number }>;
+  enrichment_status?: "heuristic_only" | "enriched" | "failed";
+  enrichment_warning?: string;
+  enrichment_summary?: string;
   obsidian_path?: string;
   text_preview?: string;
   error?: string;

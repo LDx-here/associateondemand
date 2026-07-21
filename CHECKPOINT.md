@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-21 (CDT) — matter workbench reorg + close matter  
+**Last updated:** 2026-07-21 (CDT) — LLM fact enrichment + legal element mapping UX  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -523,6 +523,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **LLM fact enrichment (2026-07-21):** Claude enrichment pass maps heuristic OCR facts to legal elements with human labels, element-fit explanations, dedupe; auto-triggers on low-diversity heuristics; `POST /intake/enrich-facts` + Re-analyze with AI UI; grouped ExtractedFactsReview + element counts in CaseAssessmentSummary. Runbook updated. pytest 51; next build green.
 - **Matter workbench reorg (2026-07-21):** Close/reopen matter (Airtable status Closed); matters list active-only default + Show closed. Tabs: Overview | Documents | Case activity | Procedural timeline | Legal elements | Tasks. Procedural milestones in Notes (type Procedural); legal elements with practice-area templates + extracted fact mapping; task templates from deliverable catalog. Workflow strip aligned. Runbook: `docs/runbooks/firm-memory-legal-elements.md`. Commit `9299349`; pytest 46; next build; Vercel prod.
 - **Fact extraction QC (2026-07-21):** Attorney verify/edit panel for extracted facts on case assessment upload; honest OCR confidence labels; case assessment summary on matter header; case-type extraction hints wired to Strong Reader intake. Runbook: `docs/runbooks/fact-extraction-and-accuracy.md`. Verified: pytest (46), test:assessment-docs, next build, smoke-production PASS.
 - **Document upload UX fix (2026-07-21):** Matter Documents tab is primary upload surface (list → upload → assessment). Airtable document query matches linked record id + matter code. View PDF + preview cache wired on intake, assignment attachments, and legacy `/intake/upload` paths; assignment with files redirects to matter Documents tab. PII tier 0 policy moved to Settings admin section. QA screenshots: `docs/qa/*.png`.
@@ -549,7 +550,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Pilot matter on new workbench** — close/reopen a test matter; fill procedural timeline; load legal elements; verify Show closed on `/matters`.
+1. **Pilot matter on new workbench** — upload case assessment; verify enriched facts show element labels (not generic "name"); test **Re-analyze with AI** on Legal elements tab.
 2. **Upload immigration book excerpts** — `brain/03_Firm_Knowledge/` + Firm Memory per `docs/runbooks/firm-memory-legal-elements.md`.
 3. **First pilot matter (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): intake → inbox → approve → export.
 4. **Optional:** Stripe + Resend env vars — `bash scripts/stripe-setup-checklist.sh`.

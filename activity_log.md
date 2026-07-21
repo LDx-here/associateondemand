@@ -153,3 +153,9 @@
 - **Files Affected:** `web/src/lib/airtable/queries.ts`, `MattersTable.tsx`, `IntakeUploadShared.tsx`, `PiiTierComplianceSection.tsx`, `docs/qa/*`, `docs/runbooks/local-dev.md`, `CHECKPOINT.md`
 - **Command Executed:** `pytest` (43), `npm run build`, `bash scripts/smoke-production.sh`, `vercel deploy --prod`
 - **Reason/Context:** User-reported UX issues on matters/documents/intake PII messaging.
+
+### 2026-07-21 — LLM fact enrichment + legal element mapping UX
+- **Action:** Added Claude enrichment pass (`fact_enrichment.py`, `POST /intake/enrich-facts`) to map heuristic OCR facts to legal elements with human labels and element-fit explanations; auto-triggers on low-diversity heuristics (e.g. repeated "name"); UI grouped ExtractedFactsReview, Re-analyze with AI button, element counts in CaseAssessmentSummary; runbook updated.
+- **Files Affected:** `services/api/app/services/fact_enrichment.py`, `intake_processor.py`, `intake.py`, `web/src/components/ExtractedFactsReview.tsx`, `LegalElementsPanel.tsx`, `CaseAssessmentSummary.tsx`, `docs/runbooks/fact-extraction-and-accuracy.md`
+- **Command Executed:** `pytest` (51), `npm run build`, `flyctl deploy`, `vercel deploy --prod`
+- **Reason/Context:** User feedback — generic "name, name, name" labels without legal element mapping after assessment upload.

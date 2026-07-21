@@ -5,8 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   buildCaseAssessmentSummaryRows,
+  elementFactCounts,
   findCaseAssessmentDocument,
   matterPracticeArea,
+  normalizeExtractedFacts,
   type AssessmentOcrPayload,
 } from "@/lib/assessment-documents";
 import type { DraftingFactsPayload } from "@/lib/practice-area-facts";
@@ -81,6 +83,11 @@ export function CaseAssessmentSummary({
     [payload, matter.caseType, draftingFacts],
   );
 
+  const elementCounts = useMemo(
+    () => elementFactCounts(normalizeExtractedFacts(payload?.facts)),
+    [payload?.facts],
+  );
+
   const captured = rows.filter((r) => r.status !== "missing").length;
   const hasContent = Boolean(assessmentDoc || draftingFacts || payload?.ocrText);
 
@@ -105,6 +112,12 @@ export function CaseAssessmentSummary({
       <p className="mt-1 text-xs text-slate-600">
         {practiceAreaLabel(practiceArea)} · from uploaded scan + saved facts · feeds agent prompts
       </p>
+      {elementCounts.length > 0 ? (
+        <p className="mt-1 text-xs text-slate-600">
+          Supporting facts by element:{" "}
+          {elementCounts.map((e) => `${e.element} (${e.verified}/${e.count} verified)`).join(" · ")}
+        </p>
+      ) : null}
 
       {expanded ? (
         <div className="mt-3 overflow-x-auto rounded-md border border-slate-200 bg-white">

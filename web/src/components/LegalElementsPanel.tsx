@@ -8,6 +8,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { ExtractedFactsReview } from "@/components/ExtractedFactsReview";
 import {
   findCaseAssessmentDocument,
+  factDisplayLabel,
+  matterPracticeArea,
   normalizeExtractedFacts,
   parseAssessmentOcrPayload,
   type AssessmentOcrPayload,
@@ -155,7 +157,14 @@ export function LegalElementsPanel({
             Extracted facts review (feeds element mapping)
           </summary>
           <div className="mt-3">
-            <ExtractedFactsReview matterId={matter.matterId} payload={payload} onSaved={onRefresh} />
+            <ExtractedFactsReview
+              matterId={matter.matterId}
+              payload={payload}
+              caseType={matter.caseType}
+              practiceArea={matterPracticeArea(matter)}
+              deliverableId={payload?.deliverableId ?? "aos-discretionary-brief"}
+              onSaved={onRefresh}
+            />
           </div>
         </details>
       ) : null}
@@ -265,8 +274,14 @@ export function LegalElementsPanel({
                           <p>
                             <span className="font-semibold">How facts meet this element: </span>
                             {linked.length
-                              ? linked.map((f) => `${f.fact_type}: ${formatLinkedFacts([f])}`).join(" · ")
-                              : row.supportingFacts?.trim() || "None linked — upload assessment or save structured facts."}
+                              ? linked
+                                  .map((f) => {
+                                    const fit = f.elementFit ? ` — ${f.elementFit}` : "";
+                                    return `${factDisplayLabel(f)}: ${formatLinkedFacts([f])}${fit}`;
+                                  })
+                                  .join(" · ")
+                              : row.supportingFacts?.trim() ||
+                                "None linked — upload assessment or run Re-analyze with AI."}
                           </p>
                           <label className="block">
                             <span className="font-semibold">Supporting facts (editable)</span>

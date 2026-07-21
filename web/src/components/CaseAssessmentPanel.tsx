@@ -25,6 +25,7 @@ import {
   practiceAreaLabel,
   type AssessmentOcrPayload,
 } from "@/lib/assessment-documents";
+import { legalElementTemplatesForMatter } from "@/lib/legal-element-templates";
 import type { DocumentRow, Matter } from "@/lib/types";
 import { btnPrimary } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
@@ -39,6 +40,9 @@ async function registerCaseAssessmentDocument(
     ocrConfidence?: number;
     practiceArea?: string;
     deliverableId?: string;
+    enrichmentStatus?: AssessmentOcrPayload["enrichmentStatus"];
+    enrichmentWarning?: string;
+    enrichmentSummary?: string;
   },
 ): Promise<void> {
   const resp = await fetch(`/api/matters/${matterId}/case-assessment-document`, {
@@ -109,13 +113,22 @@ export function CaseAssessmentPanel({
     setLastFile(file);
 
     try {
+      const templates = legalElementTemplatesForMatter(matter.caseType, "aos-discretionary-brief");
       const data = await uploadDocument(matter.matterId, file, attorneyUploadApproved(), "single", {
         documentCategory: CASE_ASSESSMENT_CATEGORY,
-        extractionContext: buildExtractionContext({
-          practiceArea,
-          caseType: matter.caseType,
-          deliverableId: "aos-discretionary-brief",
-        }),
+        extractionContext: {
+          ...buildExtractionContext({
+            practiceArea,
+            caseType: matter.caseType,
+            deliverableId: "aos-discretionary-brief",
+            legalElements: templates.map((t) => t.name),
+          }),
+          legal_elements: templates.map((t) => ({
+            id: t.id,
+            name: t.name,
+            description: t.description,
+          })),
+        },
       });
       if (data.error) {
         setError(data.error);
@@ -130,6 +143,9 @@ export function CaseAssessmentPanel({
         ocrConfidence: data.confidence,
         practiceArea,
         deliverableId: "aos-discretionary-brief",
+        enrichmentStatus: data.enrichment_status,
+        enrichmentWarning: data.enrichment_warning,
+        enrichmentSummary: data.enrichment_summary,
       });
       showToast(
         "Case assessment saved → Documents list above. OCR feeds drafts automatically.",
@@ -194,6 +210,9 @@ export function CaseAssessmentPanel({
               <ExtractedFactsReview
                 matterId={matter.matterId}
                 payload={ocrPreview}
+                caseType={matter.caseType}
+                practiceArea={practiceArea}
+                deliverableId="aos-discretionary-brief"
                 onSaved={() => {
                   void loadExtractedFacts();
                   onUpdated?.();

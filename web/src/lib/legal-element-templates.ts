@@ -118,8 +118,20 @@ export function linkFactsToElement(
   template: LegalElementTemplate,
   facts: ExtractedFactRecord[],
 ): ExtractedFactRecord[] {
-  if (!template.fieldId) return [];
-  return facts.filter((f) => f.fieldId === template.fieldId || f.fact_type === template.fieldId);
+  if (!template.fieldId) {
+    return facts.filter(
+      (f) =>
+        f.legalElement?.toLowerCase() === template.name.toLowerCase() ||
+        f.legalElementId === template.id,
+    );
+  }
+  return facts.filter(
+    (f) =>
+      f.fieldId === template.fieldId ||
+      f.fact_type === template.fieldId ||
+      f.legalElementId === template.id ||
+      f.legalElement?.toLowerCase() === template.name.toLowerCase(),
+  );
 }
 
 export function formatLinkedFacts(facts: ExtractedFactRecord[]): string {

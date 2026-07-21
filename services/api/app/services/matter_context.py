@@ -147,7 +147,12 @@ def format_assessment_document(raw: Any) -> str:
             val = edited or str(fact.get("value") or "").strip()
             if val:
                 tag = " [verified]" if fact.get("verified") else " [needs review]"
-                lines.append(f"  - {fact.get('fact_type', 'fact')}: {val}{tag}")
+                label = str(fact.get("label") or fact.get("fact_type") or "fact").strip()
+                element = str(fact.get("legalElement") or "").strip()
+                element_suffix = f" → {element}" if element else ""
+                fit = str(fact.get("elementFit") or "").strip()
+                fit_suffix = f" ({fit})" if fit else ""
+                lines.append(f"  - {label}: {val}{element_suffix}{fit_suffix}{tag}")
     return "\n".join(lines) if len(lines) > 1 else ""
 
 

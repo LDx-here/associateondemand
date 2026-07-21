@@ -9,7 +9,8 @@
 3. **PII gate** — Presidio tier may anonymize text before storage.
 4. **Categorize** — Heuristic document category (court filing, case assessment, etc.).
 5. **Extract facts** — Regex/heuristic agent finds dates, A-numbers, names, events, and (for case assessments) practice-area field hints (`fact_extraction_agent.py`).
-6. **Persist**
+6. **Enrich facts (case assessment)** — When heuristic output is low-diversity (e.g. repeated generic `name` labels), Claude maps facts to legal elements (`fact_enrichment.py`). Skipped gracefully if `ANTHROPIC_API_KEY` is unset.
+7. **Persist**
    - **Postgres** — `Document` + `ExtractedFact` rows (processing audit).
    - **Airtable Documents** — row on the matter Documents tab.
    - **Airtable Notes** — for case assessment uploads, JSON note type **Assessment Document** with OCR text + facts.
@@ -56,6 +57,33 @@ PM dispatch and SKILL agents merge, in order:
 - Attorney instructions and research notes
 
 Case assessment uploads pass **extraction context** (practice area, deliverable SKU, legal element hints) so the reader targets waiver/equities fields for immigration AOS work.
+
+## Agent enrichment pass
+
+After heuristic OCR extraction, case assessment uploads may trigger an **LLM enrichment pass** (Claude via `ANTHROPIC_API_KEY` on Fly API):
+
+1. **Heuristic pre-extract** — regex finds dates, A-numbers, names, events (`fact_extraction_agent.py`).
+2. **Auto-trigger** — when heuristic facts are low-diversity (e.g. repeated generic `name` labels without `fieldId`), `enrich_document_facts()` calls Claude.
+3. **Enrichment output** — human-readable labels, legal element mapping, deduplicated facts, one-line **element fit** explanations.
+4. **Persist** — enriched JSON saved to the **Assessment Document** note; UI shows grouped facts under element headings.
+5. **Re-analyze** — attorney clicks **Re-analyze with AI** on Extracted facts review to re-run on saved OCR text.
+
+**API:** `POST /intake/enrich-facts` (Fly) · proxied by `POST /api/matters/{matterId}/enrich-facts` (Next.js).
+
+**Graceful fallback:** If `ANTHROPIC_API_KEY` is missing, UI shows heuristic facts with warning: *Enable ANTHROPIC_API_KEY for element mapping*.
+
+### How fact-to-element mapping works
+
+| Step | Component | Output |
+|------|-----------|--------|
+| OCR | `ocr_pipeline.py` | Raw text |
+| Heuristic | `fact_extraction_agent.py` | `{ fact_type, value, context }` |
+| Enrichment | `fact_enrichment.py` + Claude | `{ label, legalElement, elementFit, fieldId }` |
+| Review | `ExtractedFactsReview.tsx` | Attorney verify/edit |
+| Elements tab | `LegalElementsPanel.tsx` | Element strategy + linked facts |
+| Agents | `format_assessment_document()` | Verified enriched facts in prompts |
+
+**Low-diversity detection:** `heuristic_facts_need_enrichment()` returns true when ≥2 facts lack `fieldId` and use generic types (`name`, `date`, `event`, etc.) or when all facts share one generic type.
 
 ## What still needs attorney input
 
