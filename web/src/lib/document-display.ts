@@ -65,3 +65,16 @@ export function documentPreviewKind(
   if (name.endsWith(".txt") || type.startsWith("text/")) return "text";
   return "metadata";
 }
+
+export function documentPreviewSupportsFile(
+  kind: ReturnType<typeof documentPreviewKind>,
+): kind is "pdf" | "image" {
+  return kind === "pdf" || kind === "image";
+}
+
+export function documentViewLabel(kind: ReturnType<typeof documentPreviewKind>): string {
+  if (kind === "pdf") return "View PDF";
+  if (kind === "image") return "View image";
+  if (kind === "text") return "View text";
+  return "View";
+}

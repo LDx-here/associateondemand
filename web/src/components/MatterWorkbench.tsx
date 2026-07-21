@@ -38,6 +38,7 @@ import { MatterWorkflowStrip } from "./MatterWorkflowStrip";
 import { ResearchInputPanel } from "./ResearchInputPanel";
 import type { UploadResult } from "./IntakeUploadShared";
 import { MatterDocumentUpload, type DocumentUploadPayload } from "./MatterDocumentUpload";
+import { cacheDocumentPreview, setBlobPreview } from "@/lib/document-preview-cache";
 import { MatterDocumentsList } from "./MatterDocumentsList";
 import { MatterHeaderEditModal } from "./MatterHeaderEditModal";
 import { TaskList } from "./TaskList";
@@ -143,9 +144,16 @@ export function MatterWorkbench({
   }, [matter.matterId, refresh]);
 
   async function handleDocumentUploaded(payload: DocumentUploadPayload) {
-    const { documentId, result } = payload;
+    const { documentId, result, file } = payload;
     if (documentId) {
       setUploadPreviews((prev) => ({ ...prev, [documentId]: result }));
+      cacheDocumentPreview(matter.matterId, documentId, {
+        postgresDocumentId: result.document_id,
+        filename: result.filename,
+      });
+      if (file) {
+        setBlobPreview(matter.matterId, documentId, file);
+      }
       setHighlightDocumentId(documentId);
     }
     await refresh();

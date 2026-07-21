@@ -17,6 +17,7 @@ import { btnPrimary } from "@/lib/ui-classes";
 export type DocumentUploadPayload = {
   documentId?: string;
   result: UploadResult;
+  file?: File;
 };
 
 export function MatterDocumentUpload({
@@ -71,7 +72,7 @@ export function MatterDocumentUpload({
           `Saved to this matter → Documents tab. "${data.filename ?? file.name}" is in the list above.`,
           "success",
         );
-        onUploaded?.({ documentId, result: data });
+        onUploaded?.({ documentId, result: data, file });
         input.value = "";
       }
     } catch (err) {

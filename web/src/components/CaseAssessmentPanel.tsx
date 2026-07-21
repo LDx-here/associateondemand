@@ -125,6 +125,7 @@ export function CaseAssessmentPanel({
       onAssessmentUploaded?.({
         documentId: data.airtable_document_id,
         result: data,
+        file,
       });
       if (!onAssessmentUploaded) {
         onUpdated?.();
