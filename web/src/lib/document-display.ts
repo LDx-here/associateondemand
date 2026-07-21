@@ -39,6 +39,20 @@ export function documentStorageNote(matterId: string): string {
   return `Stored in Airtable Documents (matter ${matterId})`;
 }
 
+/** Same-origin URL for in-app PDF preview (auth-protected proxy to Fly storage). */
+export function documentFilePreviewUrl(
+  matterId: string,
+  documentId: string,
+  title: string,
+  postgresDocumentId?: string,
+): string {
+  const params = new URLSearchParams({ title });
+  if (postgresDocumentId) {
+    params.set("postgresId", postgresDocumentId);
+  }
+  return `/api/matters/${encodeURIComponent(matterId)}/documents/${encodeURIComponent(documentId)}/file?${params.toString()}`;
+}
+
 /** Infer preview kind from filename / mime for inline viewers. */
 export function documentPreviewKind(
   doc: DocumentRow,

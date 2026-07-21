@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   documentCategoryLabel,
+  documentFilePreviewUrl,
   documentPreviewKind,
   documentStatusLabel,
   documentStorageNote,
@@ -209,16 +210,19 @@ function DocumentPreviewPanel({
     <div className="space-y-3 text-sm text-slate-700">
       <p className="text-xs text-slate-500">{documentStorageNote(matterId)}</p>
 
+      {previewKind === "pdf" ? (
+        <PdfFilePreview
+          matterId={matterId}
+          documentId={doc.id}
+          title={doc.title}
+          postgresDocumentId={preview?.document_id}
+        />
+      ) : null}
+
       {previewKind === "image" && textPreview ? (
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
           Image uploaded — OCR text excerpt shown below. Original image is stored on RMV processing servers
           (not attached in Airtable).
-        </p>
-      ) : null}
-
-      {previewKind === "pdf" && textPreview ? (
-        <p className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-950">
-          PDF processed — preview shows OCR text excerpt. Full PDF is stored on RMV processing servers.
         </p>
       ) : null}
 
@@ -273,6 +277,61 @@ function DocumentPreviewPanel({
           <dd className="font-mono text-[0.65rem]">{doc.id}</dd>
         </div>
       </dl>
+    </div>
+  );
+}
+
+function PdfFilePreview({
+  matterId,
+  documentId,
+  title,
+  postgresDocumentId,
+}: {
+  matterId: string;
+  documentId: string;
+  title: string;
+  postgresDocumentId?: string;
+}) {
+  const fileUrl = documentFilePreviewUrl(matterId, documentId, title, postgresDocumentId);
+  const [status, setStatus] = useState<"checking" | "ready" | "unavailable">("checking");
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus("checking");
+    fetch(fileUrl, { method: "HEAD" })
+      .then((resp) => {
+        if (!cancelled) setStatus(resp.ok ? "ready" : "unavailable");
+      })
+      .catch(() => {
+        if (!cancelled) setStatus("unavailable");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fileUrl]);
+
+  if (status === "checking") {
+    return <p className="text-xs text-slate-500">Loading PDF preview…</p>;
+  }
+
+  if (status === "unavailable") {
+    return (
+      <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+        PDF preview unavailable — the file may have been uploaded before preview was enabled, or the
+        processing server no longer has the binary (Fly disk is ephemeral without a volume). OCR
+        excerpt below if available.
+      </p>
+    );
+  }
+
+  return (
+    <div>
+      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">PDF preview</p>
+      <iframe
+        src={fileUrl}
+        title={`Preview: ${title}`}
+        className="h-[min(480px,70vh)] w-full rounded-md border border-slate-200 bg-white"
+      />
     </div>
   );
 }

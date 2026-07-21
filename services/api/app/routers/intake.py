@@ -6,11 +6,18 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, Header, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
 from app.db import get_db
+from app.services.document_files import (
+    find_document_by_title,
+    get_document_for_matter,
+    guess_media_type,
+    resolve_document_path,
+)
 from app.services.intake_processor import process_uploaded_document
 from app.services.presidio_gate import current_tier, presidio_reachable, require_strong_reader
 
@@ -70,6 +77,52 @@ async def _process_single(
     )
     result["tier_gate"] = {"manual_review_approved": manual_review_approved}
     return result
+
+
+@router.get("/documents/resolve")
+def resolve_document_file(
+    matter_id: str = Query(..., min_length=1),
+    title: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> dict[str, Any]:
+    """Map Airtable document title → Postgres document id + file availability."""
+
+    doc = find_document_by_title(db, matter_id=matter_id, title=title)
+    if not doc:
+        return {"found": False, "file_available": False}
+    file_available = False
+    try:
+        resolve_document_path(settings, doc.stored_path)
+        file_available = True
+    except HTTPException:
+        file_available = False
+    return {
+        "found": True,
+        "document_id": doc.id,
+        "filename": doc.filename,
+        "mime_type": guess_media_type(doc),
+        "file_available": file_available,
+    }
+
+
+@router.get("/documents/{document_id}/file")
+def download_document_file(
+    document_id: str,
+    matter_id: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> FileResponse:
+    """Stream an uploaded document binary (PDF/image) from disk."""
+
+    doc = get_document_for_matter(db, document_id=document_id, matter_id=matter_id)
+    path = resolve_document_path(settings, doc.stored_path)
+    return FileResponse(
+        path,
+        media_type=guess_media_type(doc),
+        filename=doc.filename,
+        content_disposition_type="inline",
+    )
 
 
 @router.post("/upload")
