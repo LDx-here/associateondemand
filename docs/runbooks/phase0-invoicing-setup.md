@@ -1,7 +1,7 @@
 # Phase 0 invoicing setup (Stripe + LawPay)
 
 **Last updated:** July 6, 2026  
-**Related:** [`phase0-b2b-overflow-launch.md`](./phase0-b2b-overflow-launch.md) · [`LEGAL_BOUNDARIES.md`](../../LEGAL_BOUNDARIES.md)
+**Related:** [`phase0-b2b-overflow-launch.md`](./phase0-b2b-overflow-launch.md) · [`overflow-counsel-billing-model.md`](./overflow-counsel-billing-model.md) · [`LEGAL_BOUNDARIES.md`](../../LEGAL_BOUNDARIES.md)
 
 Phase 0 has **no in-app checkout**. RMV collects flat fees **off-platform** after scope is agreed and before or after delivery. This runbook covers the manual accounts and workflows to use until Phase 2 in-app billing ships.
 

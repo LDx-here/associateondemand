@@ -37,7 +37,7 @@ function PaymentBadge({ item }: { item: InboxItem }) {
   if (item.paymentStatus === "pending") {
     return (
       <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-900 ring-1 ring-inset ring-amber-600/20">
-        Awaiting payment
+        Partner payment pending
       </span>
     );
   }
@@ -200,36 +200,7 @@ export function AssignmentBoard({
                         </p>
                       ) : null}
                       <div className="mt-3 flex flex-wrap gap-1.5">
-                        {item.status === "Submitted" && item.paymentStatus === "pending" ? (
-                          <button
-                            type="button"
-                            disabled={busy || demoMode}
-                            className={cn(btnPrimary, "text-xs")}
-                            onClick={async () => {
-                              setBusyId(item.id);
-                              try {
-                                const resp = await fetch("/api/stripe/checkout", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ inboxItemId: item.id }),
-                                });
-                                const data = await resp.json();
-                                if (resp.ok && data.checkoutUrl) {
-                                  window.location.href = data.checkoutUrl as string;
-                                  return;
-                                }
-                                showToast(data.error || "Could not start checkout.", "error");
-                              } catch (err) {
-                                showToast(err instanceof Error ? err.message : "Checkout error.", "error");
-                              } finally {
-                                setBusyId(null);
-                              }
-                            }}
-                          >
-                            {busy ? "Loading…" : "Pay now"}
-                          </button>
-                        ) : null}
-                        {item.status === "Submitted" && item.paymentStatus !== "pending" ? (
+                        {item.status === "Submitted" ? (
                           <button
                             type="button"
                             disabled={busy || demoMode}

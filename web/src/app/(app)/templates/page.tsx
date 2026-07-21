@@ -8,7 +8,7 @@ import { FirmMemorySetup } from "@/components/FirmMemorySetup";
 import { SmartTemplatesCatalog } from "@/components/SmartTemplatesCatalog";
 import {
   DELIVERABLE_CATALOG,
-  billingNoteForStripe,
+  billingNoteForPartnerFirm,
   formatCatalogQuote,
   isPhase0LaunchSku,
   sampleDiscountNote,
@@ -19,7 +19,6 @@ import {
   getDeliverableTemplateSpec,
 } from "@/lib/deliverable-template-specs";
 import { getTemplateFieldMapByDeliverable } from "@/lib/template-field-maps";
-import { isStripeConfigured } from "@/lib/stripe-config";
 import type { AssignmentTier } from "@/lib/types";
 import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
@@ -110,7 +109,7 @@ function DeliverableCard({ entry }: { entry: DeliverableCatalogEntry }) {
 }
 
 export default function TemplateCatalogPage() {
-  const billingNote = billingNoteForStripe(isStripeConfigured());
+  const billingNote = billingNoteForPartnerFirm();
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">

@@ -38,9 +38,8 @@ type AssignmentRequest = {
 };
 
 /**
- * Assignment intake: creates/links matter, task, note, and PM Inbox row.
- * When Stripe is configured, payment is collected before PM dispatch (pay-before-dispatch).
- * Without Stripe keys, falls back to invoice-after-delivery and dispatches immediately.
+ * Assignment intake: creates/links matter, task, note, and PM Inbox row, then dispatches PM work.
+ * Partner firms are invoiced off-platform — RMV operator intake never blocks on Stripe Checkout.
  */
 export async function POST(req: Request) {
   let body: AssignmentRequest;
@@ -79,7 +78,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: errors.join(" ") }, { status: 400 });
   }
 
-  const payBeforeDispatch = requiresPaymentBeforeDispatch();
   const quote =
     deliverableCatalogId != null
       ? quoteAssignmentAmount({ deliverableCatalogId, discountApplied })
@@ -140,7 +138,7 @@ export async function POST(req: Request) {
       submittedBy: "La'Dajia Ferguson",
       sampleDiscountEligible: Boolean(body.sampleDiscountEligible),
       discountApplied,
-      paymentStatus: payBeforeDispatch ? "pending" : "invoice",
+      paymentStatus: "invoice",
       amountCents: quote?.amountCents,
       deliverableCatalogId,
       conflictReviewRequired,
@@ -151,7 +149,7 @@ export async function POST(req: Request) {
     let dispatch = null as Awaited<ReturnType<typeof dispatchAssignmentToPm>> | null;
     let notify = null as Awaited<ReturnType<typeof notifyNewAssignment>> | null;
 
-    if (!isDemoMode() && !payBeforeDispatch) {
+    if (!isDemoMode()) {
       dispatch = await dispatchAssignmentToPm(matterId, deliverableType, tier as AssignmentTier, facts);
       if (dispatch.started) {
         const advanced = await updateAssignmentStatus(inboxItem.id, "In progress", {
@@ -186,7 +184,7 @@ export async function POST(req: Request) {
         inboxItem,
         dispatch,
         notify,
-        requiresPayment: payBeforeDispatch,
+        requiresPayment: requiresPaymentBeforeDispatch(),
         quote: quote
           ? {
               amountCents: quote.amountCents,

@@ -26,7 +26,7 @@ for (const id of PHASE0_LAUNCH_SKU_IDS) {
   if (!entry.pricing) {
     console.error(`FAIL: launch SKU "${id}" should have pricing metadata`);
     failed++;
-  } else if (!entry.pricing.note?.includes("invoice after delivery") && !entry.pricing.note?.includes("Stripe")) {
+  } else if (!entry.pricing.note?.includes("partner firm") && !entry.pricing.note?.includes("invoiced")) {
     console.error(`FAIL: launch SKU "${id}" should include billing note`);
     failed++;
   }

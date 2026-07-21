@@ -19,12 +19,12 @@ export function PaymentToastHandler() {
     if (payment === "success") {
       showToast(
         matterId
-          ? `Payment received for ${matterId}. RMV is starting work on your assignment.`
-          : "Payment received. RMV is starting work on your assignment.",
+          ? `Partner payment received for ${matterId}. RMV is starting work on the assignment.`
+          : "Partner payment received. RMV is starting work on the assignment.",
         "success",
       );
     } else if (payment === "cancelled") {
-      showToast("Checkout cancelled — your assignment is saved and awaiting payment.", "error");
+      showToast("Checkout cancelled — assignment saved; partner payment still pending.", "error");
     }
 
     const url = new URL(window.location.href);

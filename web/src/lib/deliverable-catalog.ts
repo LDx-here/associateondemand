@@ -17,18 +17,24 @@ export type DeliverablePricing = {
   sampleDiscountPercent?: number;
 };
 
-/** Offline billing when Stripe env vars are not configured. */
-export const PHASE0_BILLING_NOTE_OFFLINE =
-  "Quoted flat fee — invoice after delivery (online checkout when Stripe is configured).";
+/** Partner firms are quoted flat fees; RMV invoices off-platform (operator dashboard does not checkout). */
+export const PARTNER_FIRM_BILLING_NOTE =
+  "Quoted flat fee for partner firm — invoiced off-platform. RMV does not pay through this dashboard.";
 
-/** @deprecated use billingNoteForStripe() */
-export const PHASE0_BILLING_NOTE = PHASE0_BILLING_NOTE_OFFLINE;
+/** @deprecated use PARTNER_FIRM_BILLING_NOTE or billingNoteForPartnerFirm() */
+export const PHASE0_BILLING_NOTE_OFFLINE = PARTNER_FIRM_BILLING_NOTE;
 
-export function billingNoteForStripe(stripeConfigured: boolean): string {
-  if (stripeConfigured) {
-    return "Quoted flat fee — pay securely at checkout before RMV starts work.";
-  }
-  return PHASE0_BILLING_NOTE_OFFLINE;
+/** @deprecated use PARTNER_FIRM_BILLING_NOTE */
+export const PHASE0_BILLING_NOTE = PARTNER_FIRM_BILLING_NOTE;
+
+/** Billing copy for templates, intake, and Settings — partner pays RMV, not the operator. */
+export function billingNoteForPartnerFirm(): string {
+  return PARTNER_FIRM_BILLING_NOTE;
+}
+
+/** @deprecated use billingNoteForPartnerFirm() — stripeConfigured ignored (no operator checkout). */
+export function billingNoteForStripe(_stripeConfigured?: boolean): string {
+  return PARTNER_FIRM_BILLING_NOTE;
 }
 
 /** Phase 0 B2B overflow launch SKUs — immigration brief, motion, hearing packet, research upsell. */

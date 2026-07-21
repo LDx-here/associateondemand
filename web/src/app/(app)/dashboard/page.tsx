@@ -4,7 +4,6 @@ import {
   Briefcase,
   CheckCircle2,
   Clock3,
-  CreditCard,
   FilePlus2,
   Inbox,
   Sparkles,
@@ -187,20 +186,6 @@ export default async function DashboardPage() {
             Set up your firm profile
           </Link>{" "}
           so overflow counsel drafts read like your in-house associate.
-        </section>
-      ) : null}
-
-      {overflow.awaitingPayment > 0 ? (
-        <section className="rounded-lg border border-amber-200 bg-amber-50/50 px-4 py-3 text-sm text-amber-950">
-          <strong className="inline-flex items-center gap-1.5">
-            <CreditCard className="h-4 w-4" aria-hidden />
-            {overflow.awaitingPayment} assignment{overflow.awaitingPayment === 1 ? "" : "s"} awaiting payment
-          </strong>
-          {" — "}
-          <Link href="/inbox" className="font-medium underline-offset-2 hover:underline">
-            Complete checkout in Inbox
-          </Link>{" "}
-          so RMV can start work.
         </section>
       ) : null}
 

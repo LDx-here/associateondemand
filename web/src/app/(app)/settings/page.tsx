@@ -2,7 +2,7 @@ import { SessionAccount } from "@/components/SessionAccount";
 import { PiiTierComplianceSection } from "@/components/PiiTierComplianceSection";
 import { listPeopleFromAirtable } from "@/lib/airtable/queries";
 import { isDemoMode } from "@/lib/data-store";
-import { billingNoteForStripe } from "@/lib/deliverable-catalog";
+import { billingNoteForPartnerFirm } from "@/lib/deliverable-catalog";
 import { isStripeConfigured, isStripeTestMode } from "@/lib/stripe-config";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +29,7 @@ export default async function SettingsPage() {
     (process.env.AOD_AUTH_ENABLED ?? "false").toLowerCase() === "true";
   const stripeConnected = isStripeConfigured();
   const stripeTestMode = stripeConnected && isStripeTestMode();
-  const billingNote = billingNoteForStripe(stripeConnected);
+  const billingNote = billingNoteForPartnerFirm();
 
   let attorney: { name: string; role: string; email: string; isActive: boolean } | null = null;
   if (!demo) {
@@ -89,24 +89,25 @@ export default async function SettingsPage() {
       </SettingsSection>
 
       <SettingsSection title="Billing">
+        <Row label="Overflow counsel billing">
+          Partner law firms are invoiced for deliverables. RMV does not pay through this dashboard.
+        </Row>
         <Row label="Stripe">
           {stripeConnected ? (
             <span className="inline-flex items-center gap-2 text-sm text-slate-700">
               <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
-              Connected{stripeTestMode ? " (test mode)" : " (live mode)"}
+              Connected{stripeTestMode ? " (test mode)" : " (live mode)"} — reserved for external partner checkout (Phase 1)
             </span>
           ) : (
             <span className="inline-flex items-center gap-2 text-sm text-slate-700">
               <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden />
-              Not configured — invoice after delivery
+              Not configured — off-platform invoice to partner firms
             </span>
           )}
         </Row>
         <Row label="Payment flow">{billingNote}</Row>
-        <Row label="How to pay">
-          {stripeConnected
-            ? "Flat fee at Stripe Checkout when you submit an assignment. RMV starts work after payment clears."
-            : "RMV sends an invoice after deliverable approval (ACH, check, or manual payment link)."}
+        <Row label="How partner firms pay">
+          RMV sends a flat-fee invoice or Stripe Payment Link after scope is agreed (Phase 0). Future: partner pays at external assignment submission.
         </Row>
         {stripeConnected ? (
           <Row label="Stripe dashboard">

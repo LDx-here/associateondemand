@@ -1,11 +1,14 @@
 import { dispatchAssignmentToPm } from "./assignment-dispatch";
 import { isDemoMode, updateAssignmentPayment, updateAssignmentStatus } from "./data-store";
-import { isStripeConfigured } from "./stripe-config";
 import type { InboxItem } from "./types";
 
-/** Overflow counsel: collect flat fee before PM dispatch when Stripe is live. */
+/**
+ * Internal RMV operator intake never blocks on Stripe Checkout.
+ * Partner law firms are invoiced off-platform (Phase 0) or pay at a future
+ * external submission funnel (Phase 1). Stripe webhook routes remain for that funnel.
+ */
 export function requiresPaymentBeforeDispatch(): boolean {
-  return isStripeConfigured() && !isDemoMode();
+  return false;
 }
 
 export async function dispatchAssignmentAfterPayment(item: InboxItem): Promise<{

@@ -160,4 +160,4 @@
 - **Command Executed:** `pytest` (51), `npm run build`, `flyctl deploy`, `vercel deploy --prod`
 - **Reason/Context:** User feedback — generic "name, name, name" labels without legal element mapping after assessment upload.
 
-### [2026-07-21] CHECKPOINT: document matter isolation + smart templates — post-filter linked matter_id, exclude firm-wide doc categories, template field maps (telephonic request), TemplateApplyPanel, Firm Memory badge status, detect-fields API; pytest 51; next build; Fly + Vercel prod
+### [2026-07-21] CHECKPOINT: Pass 19 partner-firm billing model — removed operator-side Stripe Checkout on internal intake; submit→dispatch→inbox restored; overflow-counsel-billing-model runbook; pytest 51; next build; smoke-production PASS

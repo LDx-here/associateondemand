@@ -1,6 +1,8 @@
-# Activate Stripe Checkout on Vercel (Pass 16)
+# Activate Stripe Checkout on Vercel (Pass 16, updated Pass 19)
 
-Plain-English steps for turning on **pay-before-dispatch** on production. Code is already deployed on `aod-next`; checkout goes live only after these secrets exist on Vercel (never commit them to git).
+**Billing model (Pass 19):** Internal RMV operator intake (`/assignments/new`) does **not** redirect to Checkout. Partner law firms pay RMV — see [`overflow-counsel-billing-model.md`](./overflow-counsel-billing-model.md). Stripe routes below are reserved for the **Phase 1 external partner funnel** (`STRIPE_CHECKOUT_ENABLED=true` on that surface only).
+
+Plain-English steps for turning on **pay-before-dispatch on external partner submission**. Code is deployed on `aod-next`; checkout on the external funnel goes live only after these secrets exist on Vercel (never commit them to git).
 
 ## 1. Add three environment variables (Vercel)
 

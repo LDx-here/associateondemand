@@ -62,6 +62,12 @@ This pricing model, combined with the "Firm Memory" feature, creates a powerful 
 
 By adopting the Production Cost Pricing Model with a Flat Fee and Sample Discount, AssociateOnDemand can effectively communicate its unique value proposition, build trust, and consistently attract assignments by demonstrating clear financial and operational benefits to client law firms.
 
+## Billing implementation (July 2026)
+
+**Partner firms pay RMV** — not the internal RMV operator. Flat-fee ranges in the catalog are **quotes to partner firms**. Phase 0: off-platform invoice / Stripe Payment Link (manual). Phase 1: Stripe Checkout on external partner submission funnel. Phase 2+: Clio trust → operating on delivery (document only).
+
+Runbook: [`docs/runbooks/overflow-counsel-billing-model.md`](../../docs/runbooks/overflow-counsel-billing-model.md) · Phase 0 invoicing: [`docs/runbooks/phase0-invoicing-setup.md`](../../docs/runbooks/phase0-invoicing-setup.md)
+
 ## References
 
 *   [1] User provided feedback (pasted_content_4.txt).
