@@ -5,8 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import {
-  TierZeroBanner,
-  tierRequiresManualApproval,
+  attorneyUploadApproved,
   uploadDocument,
 } from "@/components/IntakeUploadShared";
 import { useToast } from "@/components/Toast";
@@ -55,7 +54,6 @@ export function FirmMemorySetup() {
   const [status, setStatus] = useState<FirmMemoryStatus | null>(null);
   const [samples, setSamples] = useState<DocumentRow[]>([]);
   const [area, setArea] = useState<(typeof PRACTICE_AREAS)[number]>("immigration");
-  const [manualApproved, setManualApproved] = useState(false);
   const [sampleBusy, setSampleBusy] = useState(false);
   const [styleBusy, setStyleBusy] = useState(false);
   const [firmName, setFirmName] = useState("");
@@ -91,7 +89,6 @@ export function FirmMemorySetup() {
 
   async function onSampleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (tierRequiresManualApproval() && !manualApproved) return;
     const input = e.currentTarget.elements.namedItem("sample-file") as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -99,7 +96,7 @@ export function FirmMemorySetup() {
     setSampleBusy(true);
     try {
       const category = encodeFirmSampleCategory(area);
-      const data = await uploadDocument(FIRM_TEMPLATE_MATTER_ID, file, manualApproved, "single", {
+      const data = await uploadDocument(FIRM_TEMPLATE_MATTER_ID, file, attorneyUploadApproved(), "single", {
         documentCategory: category,
       });
       if (data.error) {
@@ -232,7 +229,6 @@ export function FirmMemorySetup() {
                 </option>
               ))}
             </select>
-            <TierZeroBanner approved={manualApproved} onApprovedChange={setManualApproved} />
             <input
               accept=".pdf,.doc,.docx"
               className="w-full text-sm"
@@ -242,7 +238,7 @@ export function FirmMemorySetup() {
             />
             <button
               type="submit"
-              disabled={sampleBusy || (tierRequiresManualApproval() && !manualApproved)}
+              disabled={sampleBusy}
               className={`${btnPrimary} inline-flex items-center gap-2 text-sm disabled:opacity-50`}
             >
               <Upload className="h-4 w-4" aria-hidden />

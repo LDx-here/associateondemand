@@ -18,6 +18,7 @@ import {
   listLegalElementsFromAirtable,
   listContactsFromAirtable,
   listMattersFromAirtable,
+  getMatterFromAirtable,
   createMatterInAirtable,
   listAllNotesFromAirtable,
   listAllTasksFromAirtable,
@@ -132,8 +133,11 @@ export async function createMatter(payload: {
 }
 
 export async function getMatterByCode(matterId: string): Promise<Matter | null> {
-  const matters = await listMatters();
-  return matters.find((m) => m.matterId === matterId || m.id === matterId) ?? null;
+  if (isDemoMode()) {
+    const matters = await listMatters();
+    return matters.find((m) => m.matterId === matterId || m.id === matterId) ?? null;
+  }
+  return getMatterFromAirtable(matterId);
 }
 
 export async function listTasksForMatter(matterId: string): Promise<Task[]> {

@@ -1,4 +1,5 @@
 import { SessionAccount } from "@/components/SessionAccount";
+import { PiiTierComplianceSection } from "@/components/PiiTierComplianceSection";
 import { listPeopleFromAirtable } from "@/lib/airtable/queries";
 import { isDemoMode } from "@/lib/data-store";
 import { billingNoteForStripe } from "@/lib/deliverable-catalog";
@@ -145,6 +146,15 @@ export default async function SettingsPage() {
           {authEnabled ? "AOD_AUTH_ENABLED is on" : "Off for local development"}
         </Row>
       </SettingsSection>
+
+      <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <header className="border-b border-slate-200 px-4 py-3">
+          <h2 className="font-medium text-slate-900">Technical / compliance</h2>
+        </header>
+        <div className="px-4 py-4">
+          <PiiTierComplianceSection />
+        </div>
+      </section>
 
       <SettingsSection title="Production deployment">
         <p className="text-sm text-slate-700">

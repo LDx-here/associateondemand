@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import {
-  TierZeroBanner,
-  tierRequiresManualApproval,
+  attorneyUploadApproved,
   UploadProgressTable,
+  UploadSupportingDocsHint,
   uploadDocument,
   type UploadResult,
 } from "@/components/IntakeUploadShared";
@@ -61,10 +61,10 @@ export function CaseAssessmentPanel({
   onAssessmentUploaded?: (payload: DocumentUploadPayload) => void;
 }) {
   const { showToast } = useToast();
-  const [manualApproved, setManualApproved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<UploadResult | null>(null);
+  const [lastFile, setLastFile] = useState<File | null>(null);
   const [showQuickFacts, setShowQuickFacts] = useState(false);
   const [showExtracted, setShowExtracted] = useState(false);
   const [ocrPreview, setOcrPreview] = useState<AssessmentOcrPayload | null>(null);
@@ -94,7 +94,6 @@ export function CaseAssessmentPanel({
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (tierRequiresManualApproval() && !manualApproved) return;
     const input = e.currentTarget.elements.namedItem("assessment-file") as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -102,9 +101,10 @@ export function CaseAssessmentPanel({
     setBusy(true);
     setError(null);
     setResult(null);
+    setLastFile(file);
 
     try {
-      const data = await uploadDocument(matter.matterId, file, manualApproved, "single", {
+      const data = await uploadDocument(matter.matterId, file, attorneyUploadApproved(), "single", {
         documentCategory: CASE_ASSESSMENT_CATEGORY,
       });
       if (data.error) {
@@ -197,10 +197,10 @@ export function CaseAssessmentPanel({
         </div>
       ) : (
         <div className="space-y-3 rounded-md border border-dashed border-sky-300 bg-white p-4">
-          <p className="text-sm text-slate-700">
-            Use the same assessment PDF or worksheet you already use with clients. Upload the filled
-            version here — not a web checklist.
-          </p>
+            <p className="text-sm text-slate-700">
+              Use the same assessment PDF or worksheet you already use with clients. Upload the filled
+              version here — it also appears in the <strong>Documents list above</strong> with View PDF.
+            </p>
           {(firmTemplate || staticTemplateHref) && (
             <p className="text-xs text-slate-600">
               Need a blank form?{" "}
@@ -224,7 +224,7 @@ export function CaseAssessmentPanel({
               </Link>
             </p>
           )}
-          <TierZeroBanner approved={manualApproved} onApprovedChange={setManualApproved} />
+          <UploadSupportingDocsHint context="assessment" />
           <form className="space-y-3" onSubmit={onSubmit}>
             <input
               accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff"
@@ -235,7 +235,7 @@ export function CaseAssessmentPanel({
             />
             <button
               type="submit"
-              disabled={busy || (tierRequiresManualApproval() && !manualApproved)}
+              disabled={busy}
               className={`${btnPrimary} w-full disabled:opacity-50`}
             >
               {busy ? "Uploading & scanning…" : "Upload case assessment"}
@@ -245,6 +245,8 @@ export function CaseAssessmentPanel({
           {result ? (
             <UploadProgressTable
               items={[{ name: result.filename ?? "upload", status: "done", result }]}
+              matterId={matter.matterId}
+              filesByName={lastFile ? { [lastFile.name]: lastFile } : undefined}
             />
           ) : null}
         </div>

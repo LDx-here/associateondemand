@@ -4,9 +4,11 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
-  TierZeroBanner,
-  tierRequiresManualApproval,
+  attorneyUploadApproved,
+  cacheUploadPreview,
+  matterDocumentsHref,
   UploadProgressTable,
+  UploadSupportingDocsHint,
   uploadDocument,
   type UploadResult,
 } from "@/components/IntakeUploadShared";
@@ -113,11 +115,11 @@ export function AssignmentIntakeForm({
   const [priority, setPriority] = useState("Medium");
   const [dueDate, setDueDate] = useState("");
 
-  const [manualApproved, setManualApproved] = useState(false);
   const [disclaimerAcknowledged, setDisclaimerAcknowledged] = useState(false);
   const [applySampleDiscount, setApplySampleDiscount] = useState(false);
   const [sampleFile, setSampleFile] = useState<File | null>(null);
   const [files, setFiles] = useState<File[]>([]);
+  const [filesByName, setFilesByName] = useState<Record<string, File>>({});
   const [uploadQueue, setUploadQueue] = useState<QueueItem[]>([]);
 
   const [busy, setBusy] = useState(false);
@@ -266,6 +268,7 @@ export function AssignmentIntakeForm({
   async function extractFactsFromAttachments(selected: File[]) {
     if (!selected.length) return;
     setExtractingOcr(true);
+    const activeMatterId = matterMode === "existing" ? existingMatterId.trim() : "";
     try {
       let totalFilled = 0;
       for (const file of selected) {
@@ -290,16 +293,26 @@ export function AssignmentIntakeForm({
           continue;
         }
 
-        if (matterMode === "existing" && existingMatterId.trim()) {
-          if (tierRequiresManualApproval() && !manualApproved) {
-            showToast("Check tier 0 manual approval before OCR on attachments.", "error");
-            continue;
-          }
-          const result = await uploadDocument(existingMatterId, file, manualApproved, "batch");
+        if (matterMode === "existing" && activeMatterId) {
+          setUploadQueue((prev) => {
+            const existing = prev.find((q) => q.name === file.name);
+            if (existing) {
+              return prev.map((q) => (q.name === file.name ? { ...q, status: "uploading" } : q));
+            }
+            return [...prev, { name: file.name, status: "uploading" }];
+          });
+          const result = await uploadDocument(activeMatterId, file, attorneyUploadApproved(), "batch");
           if (result.error) {
             showToast(result.error, "error");
+            setUploadQueue((prev) =>
+              prev.map((q) => (q.name === file.name ? { ...q, status: "error", result } : q)),
+            );
             continue;
           }
+          cacheUploadPreview(activeMatterId, file, result);
+          setUploadQueue((prev) =>
+            prev.map((q) => (q.name === file.name ? { ...q, status: "done", result } : q)),
+          );
           if (result.facts?.length || result.text_preview) {
             setStructuredFacts((prev) => {
               const base =
@@ -325,6 +338,8 @@ export function AssignmentIntakeForm({
         showToast(`Strong Reader pre-filled ${totalFilled} checklist field(s). Verify below.`, "success");
       } else if (matterMode === "new") {
         showToast("Link an existing matter or use .txt uploads for pre-submit OCR prefill.", "error");
+      } else if (activeMatterId && selected.some((f) => !f.name.toLowerCase().endsWith(".txt"))) {
+        showToast(`Attachment(s) saved to Matter → ${activeMatterId} → Documents.`, "success");
       }
     } finally {
       setExtractingOcr(false);
@@ -333,6 +348,7 @@ export function AssignmentIntakeForm({
 
   async function onFilesSelected(next: File[]) {
     setFiles(next);
+    setFilesByName(Object.fromEntries(next.map((f) => [f.name, f])));
     if (next.length > 0) await extractFactsFromAttachments(next);
   }
 
@@ -350,9 +366,6 @@ export function AssignmentIntakeForm({
     if (!isDraftingFactsCompleteEnough(structuredFacts, facts, MIN_FACTS_LENGTH)) {
       errors.facts =
         "Complete the guided checklist (at least 3 key items) or add a freeform summary (20+ characters).";
-    }
-    if (files.length > 0 && tierRequiresManualApproval() && !manualApproved) {
-      errors.files = "Check the tier 0 manual approval box before attaching files.";
     }
     if (applySampleDiscount && !sampleFile && files.length === 0) {
       errors.sample = "Upload a sample of your firm's prior work to apply the sample discount.";
@@ -442,12 +455,18 @@ export function AssignmentIntakeForm({
 
       if (files.length > 0 || sampleFile) {
         const uploadFiles = sampleFile ? [sampleFile, ...files.filter((f) => f !== sampleFile)] : files;
+        const uploadFilesByName = Object.fromEntries(uploadFiles.map((f) => [f.name, f]));
         const initialQueue: QueueItem[] = uploadFiles.map((f) => ({ name: f.name, status: "pending" }));
         setUploadQueue(initialQueue);
+        let lastDocId: string | undefined;
         for (let i = 0; i < uploadFiles.length; i++) {
           setUploadQueue((prev) => prev.map((q, idx) => (idx === i ? { ...q, status: "uploading" } : q)));
           try {
-            const result = await uploadDocument(matterId, uploadFiles[i], manualApproved, "batch");
+            const result = await uploadDocument(matterId, uploadFiles[i], attorneyUploadApproved(), "batch");
+            if (!result.error) {
+              const docId = cacheUploadPreview(matterId, uploadFiles[i], result);
+              if (docId) lastDocId = docId;
+            }
             setUploadQueue((prev) =>
               prev.map((q, idx) => (idx === i ? { ...q, status: result.error ? "error" : "done", result } : q)),
             );
@@ -461,6 +480,45 @@ export function AssignmentIntakeForm({
             );
           }
         }
+        setFilesByName((prev) => ({ ...prev, ...uploadFilesByName }));
+
+        if (requiresPayment && inboxItem?.id) {
+          const checkoutResp = await fetch("/api/stripe/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ inboxItemId: inboxItem.id }),
+          });
+          const checkoutData = await checkoutResp.json();
+          if (checkoutResp.ok && checkoutData.checkoutUrl) {
+            showToast("Redirecting to secure checkout…", "success");
+            window.location.href = checkoutData.checkoutUrl as string;
+            return;
+          }
+          showToast(
+            checkoutData.error ||
+              "Assignment saved — invoice after delivery (checkout unavailable).",
+            "error",
+          );
+          router.push(matterDocumentsHref(matterId, lastDocId));
+          router.refresh();
+          return;
+        }
+
+        const dispatchNote = dispatch?.deliverableReady
+          ? ` Draft ready for attorney review (${dispatch.agent ?? "agent"}).`
+          : dispatch?.started
+            ? ` PM agent started (${dispatch.agent ?? "orchestrator"}).`
+            : dispatch?.error
+              ? " Saved to Submitted lane — agent dispatch will run when API is online."
+              : "";
+        showToast(
+          `Assignment submitted for ${matterId}.${dispatchNote} ${uploadFiles.length} file(s) on Documents tab.`,
+          "success",
+        );
+        clearIntakeSession();
+        router.push(matterDocumentsHref(matterId, lastDocId));
+        router.refresh();
+        return;
       }
 
       if (requiresPayment && inboxItem?.id) {
@@ -832,7 +890,12 @@ export function AssignmentIntakeForm({
             {fieldErrors.sample ? <p className="text-sm text-rose-700">{fieldErrors.sample}</p> : null}
           </div>
         ) : null}
-        {files.length > 0 ? <TierZeroBanner approved={manualApproved} onApprovedChange={setManualApproved} /> : null}
+        <UploadSupportingDocsHint context="assignment" />
+        <p className="text-xs text-slate-500">
+          Attachments are saved to{" "}
+          <strong>Matter → Documents</strong> (link an existing matter for pre-submit upload, or files upload
+          after you submit).
+        </p>
         <input
           type="file"
           multiple
@@ -844,7 +907,13 @@ export function AssignmentIntakeForm({
           <p className="text-xs text-sky-800">Strong Reader extracting facts from attachment…</p>
         ) : null}
         {fieldErrors.files ? <p className="text-sm text-rose-700">{fieldErrors.files}</p> : null}
-        <UploadProgressTable items={uploadQueue} />
+        <UploadProgressTable
+          items={uploadQueue}
+          matterId={
+            matterMode === "existing" && existingMatterId.trim() ? existingMatterId.trim() : undefined
+          }
+          filesByName={filesByName}
+        />
       </section>
 
       <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

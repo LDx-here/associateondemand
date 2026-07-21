@@ -44,6 +44,18 @@ function escapeFormula(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
+/** Filter linked-record fields to a matter (record id + exact matter code). */
+function matterLinkFilterFormula(
+  linkFieldName: string,
+  resolved: { recordId: string; matterId: string },
+): string {
+  const code = escapeFormula(resolved.matterId);
+  const rec = escapeFormula(resolved.recordId);
+  const byRecordId = `{${linkFieldName}} = '${rec}'`;
+  const byExactCode = `FIND(',' & '${code}' & ',', ',' & ARRAYJOIN({${linkFieldName}}) & ',')`;
+  return `OR(${byRecordId}, ${byExactCode})`;
+}
+
 function linkedIds(field: unknown): string[] {
   if (!field) return [];
   if (Array.isArray(field)) return field.map(String);
@@ -136,22 +148,43 @@ function mapLegalElement(rec: { id: string; fields: RawFields }, matterId: strin
 function mapDocument(rec: { id: string; fields: RawFields }, matterId: string): DocumentRow {
   const f = rec.fields;
   const d = F.documents;
+  const title = String(f[d.title] ?? "Untitled");
+  const fileType = String(f[d.file_type] ?? "");
   return {
     id: rec.id,
     matterId,
-    title: String(f[d.title] ?? "Untitled"),
+    title,
     category: String(f[d.category] ?? ""),
     uploadedAt: String(f[d.created_at] ?? new Date().toISOString()),
     uploadedBy: String(f[d.uploaded_by] ?? ""),
     ocrStatus: String(f[d.ocr_status] ?? ""),
     piiTier: String(f[d.pii_tier] ?? ""),
-    fileType: String(f[d.file_type] ?? ""),
+    fileType: fileType || inferFileTypeFromTitle(title),
   };
+}
+
+function inferFileTypeFromTitle(title: string): string {
+  const lower = title.toLowerCase();
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (/\.(png|jpe?g|gif|webp|tif|tiff)$/.test(lower)) return "image/jpeg";
+  if (lower.endsWith(".txt")) return "text/plain";
+  return "";
 }
 
 export async function listMattersFromAirtable(): Promise<Matter[]> {
   const records = await airtableListAll<RawFields>(TABLES.matters);
   return records.map(mapMatter);
+}
+
+export async function getMatterFromAirtable(matterCode: string): Promise<Matter | null> {
+  const resolved = await resolveMatterRecordId(matterCode);
+  if (!resolved) return null;
+  try {
+    const rec = await airtableGetRecord<RawFields>(TABLES.matters, resolved.recordId);
+    return mapMatter(rec);
+  } catch {
+    return null;
+  }
 }
 
 function mapContact(rec: { id: string; fields: RawFields }) {
@@ -229,15 +262,19 @@ export async function resolveMatterRecordId(
 export async function listDocumentsFromAirtable(matterCode: string): Promise<DocumentRow[]> {
   const resolved = await resolveMatterRecordId(matterCode);
   if (!resolved) return [];
-  // ARRAYJOIN on a linked-record field renders the *primary field* of the
-  // linked row (Matters' primary field is the human-readable matter_id
-  // code), not the raw record id — match on `matterId`, not `recordId`.
-  const formula = `FIND('${escapeFormula(resolved.matterId)}', ARRAYJOIN({${F.documents.matter_id}}))`;
+  const formula = matterLinkFilterFormula(F.documents.matter_id, resolved);
   try {
     const records = await airtableListAll<RawFields>(TABLES.documents, { filterByFormula: formula });
     return records.map((r) => mapDocument(r, resolved.matterId));
   } catch {
-    return [];
+    // Legacy rows may only match on a plain matter code text field.
+    try {
+      const legacy = `{${F.documents.matter_id}} = '${escapeFormula(resolved.matterId)}'`;
+      const records = await airtableListAll<RawFields>(TABLES.documents, { filterByFormula: legacy });
+      return records.map((r) => mapDocument(r, resolved.matterId));
+    } catch {
+      return [];
+    }
   }
 }
 
@@ -357,9 +394,7 @@ export async function listAllNotesFromAirtable(): Promise<Note[]> {
 export async function listNotesForMatterFromAirtable(matterCode: string): Promise<Note[]> {
   const resolved = await resolveMatterRecordId(matterCode);
   if (!resolved) return [];
-  // See comment on `listDocumentsFromAirtable` — formulas render linked
-  // fields as the linked row's primary field, so match on `matterId`.
-  const formula = `FIND('${escapeFormula(resolved.matterId)}', ARRAYJOIN({${F.notes.matter_id}}))`;
+  const formula = matterLinkFilterFormula(F.notes.matter_id, resolved);
   const records = await airtableListAll<RawFields>(TABLES.notes, { filterByFormula: formula });
   return records.map((r) => mapNote(r, resolved.matterId));
 }
@@ -941,9 +976,7 @@ export async function listEventsForMatterFromAirtable(matterCode: string): Promi
 > {
   const resolved = await resolveMatterRecordId(matterCode);
   if (!resolved) return [];
-  // See comment on `listDocumentsFromAirtable` — formulas render linked
-  // fields as the linked row's primary field, so match on `matterId`.
-  const formula = `FIND('${escapeFormula(resolved.matterId)}', ARRAYJOIN({${F.events.matter_id}}))`;
+  const formula = matterLinkFilterFormula(F.events.matter_id, resolved);
   const records = await airtableListAll<RawFields>(TABLES.events, { filterByFormula: formula });
   return records.map((r) => ({
     ...mapEvent(r, resolved.matterId),

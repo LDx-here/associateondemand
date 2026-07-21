@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
-  TierZeroBanner,
-  tierRequiresManualApproval,
+  attorneyUploadApproved,
+  matterDocumentsHref,
   UploadProgressTable,
+  UploadSupportingDocsHint,
   uploadDocument,
   type UploadResult,
 } from "@/components/IntakeUploadShared";
@@ -19,13 +20,12 @@ type QueueItem = {
 
 export default function IntakeBatchPage() {
   const [matterId, setMatterId] = useState("AOD-1001");
-  const [manualApproved, setManualApproved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [filesByName, setFilesByName] = useState<Record<string, File>>({});
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (tierRequiresManualApproval() && !manualApproved) return;
 
     const form = e.currentTarget;
     const fileInput = form.elements.namedItem("files") as HTMLInputElement;
@@ -33,6 +33,7 @@ export default function IntakeBatchPage() {
     if (!files.length) return;
 
     setLoading(true);
+    setFilesByName(Object.fromEntries(files.map((f) => [f.name, f])));
     const initial: QueueItem[] = files.map((f) => ({ name: f.name, status: "pending" }));
     setQueue(initial);
 
@@ -41,7 +42,7 @@ export default function IntakeBatchPage() {
         prev.map((item, idx) => (idx === i ? { ...item, status: "uploading" } : item)),
       );
       try {
-        const data = await uploadDocument(matterId, files[i], manualApproved, "batch");
+        const data = await uploadDocument(matterId, files[i], attorneyUploadApproved(), "batch");
         setQueue((prev) =>
           prev.map((item, idx) =>
             idx === i
@@ -67,6 +68,13 @@ export default function IntakeBatchPage() {
   }
 
   const doneCount = queue.filter((q) => q.status === "done").length;
+  const lastDoneDocId = useMemo(() => {
+    for (let i = queue.length - 1; i >= 0; i--) {
+      const id = queue[i]?.result?.airtable_document_id;
+      if (queue[i]?.status === "done" && id) return id;
+    }
+    return undefined;
+  }, [queue]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -77,7 +85,13 @@ export default function IntakeBatchPage() {
         </Link>
       </div>
 
-      <TierZeroBanner approved={manualApproved} onApprovedChange={setManualApproved} />
+      <p className="rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-950">
+        Files upload to{" "}
+        <Link className="font-medium underline" href={matterDocumentsHref(matterId, lastDoneDocId)}>
+          Matter → {matterId} → Documents
+        </Link>
+        . Use the matter Documents tab for day-to-day uploads.
+      </p>
 
       <form className="space-y-3 rounded-lg border border-slate-200 bg-white p-4" onSubmit={onSubmit}>
         <label className="block text-sm">
@@ -88,6 +102,7 @@ export default function IntakeBatchPage() {
             onChange={(e) => setMatterId(e.target.value)}
           />
         </label>
+        <UploadSupportingDocsHint context="matter" />
         <label className="block text-sm">
           Files
           <input
@@ -101,14 +116,14 @@ export default function IntakeBatchPage() {
         </label>
         <button
           type="submit"
-          disabled={loading || (tierRequiresManualApproval() && !manualApproved)}
+          disabled={loading}
           className="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
           {loading ? `Processing ${doneCount}/${queue.length}…` : "Upload batch"}
         </button>
       </form>
 
-      <UploadProgressTable items={queue} />
+      <UploadProgressTable items={queue} matterId={matterId} filesByName={filesByName} />
     </div>
   );
 }

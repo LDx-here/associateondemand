@@ -109,6 +109,15 @@ export function MatterWorkbench({
       .catch(() => setFirmTemplates([]));
   }, [refreshKey]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const highlightDoc = params.get("highlightDoc")?.trim();
+    if (highlightDoc) {
+      setHighlightDocumentId(highlightDoc);
+      setTab("Documents");
+    }
+  }, []);
+
   const refresh = useCallback(async () => {
     const [t, n, tl, el, m, docs, asgn, alerts] = await Promise.all([
       fetch(`/api/matters/${matter.matterId}/tasks`).then((r) => r.json()),
@@ -319,6 +328,7 @@ export function MatterWorkbench({
             highlightId={highlightDocumentId}
             uploadPreviews={uploadPreviews}
           />
+          <MatterDocumentUpload matterId={matter.matterId} onUploaded={handleDocumentUploaded} />
           <CaseAssessmentPanel
             matter={matterHeader}
             documents={documents}
@@ -331,7 +341,6 @@ export function MatterWorkbench({
             researchNoteCount={notes.filter((n) => n.type === "Research").length}
             onSaved={refresh}
           />
-          <MatterDocumentUpload matterId={matter.matterId} onUploaded={handleDocumentUploaded} />
         </div>
       ) : null}
 

@@ -4,25 +4,24 @@ import Link from "next/link";
 import { useState } from "react";
 
 import {
-  TierZeroBanner,
-  tierRequiresManualApproval,
+  attorneyUploadApproved,
+  matterDocumentsHref,
   UploadProgressTable,
+  UploadSupportingDocsHint,
   uploadDocument,
   type UploadResult,
 } from "@/components/IntakeUploadShared";
+import { useToast } from "@/components/Toast";
 
 export default function IntakeUploadPage() {
+  const { showToast } = useToast();
   const [matterId, setMatterId] = useState("AOD-1001");
-  const [manualApproved, setManualApproved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<UploadResult | null>(null);
+  const [lastFile, setLastFile] = useState<File | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (tierRequiresManualApproval() && !manualApproved) {
-      setResult({ error: "Check the tier 0 manual approval box before uploading." });
-      return;
-    }
     const form = e.currentTarget;
     const fileInput = form.elements.namedItem("file") as HTMLInputElement;
     const file = fileInput.files?.[0];
@@ -30,15 +29,23 @@ export default function IntakeUploadPage() {
 
     setLoading(true);
     setResult(null);
+    setLastFile(file);
     try {
-      const data = await uploadDocument(matterId, file, manualApproved, "single");
+      const data = await uploadDocument(matterId, file, attorneyUploadApproved(), "single");
       setResult(data);
+      if (data.error) {
+        showToast(data.error, "error");
+      } else {
+        showToast(`Saved to Matter → ${matterId} → Documents.`, "success");
+      }
     } catch (err) {
       setResult({ error: err instanceof Error ? err.message : "Upload failed" });
     } finally {
       setLoading(false);
     }
   }
+
+  const filesByName = lastFile ? { [lastFile.name]: lastFile } : undefined;
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -49,7 +56,13 @@ export default function IntakeUploadPage() {
         </Link>
       </div>
 
-      <TierZeroBanner approved={manualApproved} onApprovedChange={setManualApproved} />
+      <p className="rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-950">
+        Prefer uploading from the matter workbench? Open{" "}
+        <Link className="font-medium underline" href={matterDocumentsHref(matterId)}>
+          Matter → {matterId} → Documents
+        </Link>{" "}
+        — that is the primary place for all matter files.
+      </p>
 
       <form className="space-y-3 rounded-lg border border-slate-200 bg-white p-4" onSubmit={onSubmit}>
         <label className="block text-sm">
@@ -60,6 +73,7 @@ export default function IntakeUploadPage() {
             onChange={(e) => setMatterId(e.target.value)}
           />
         </label>
+        <UploadSupportingDocsHint context="matter" />
         <label className="block text-sm">
           File (PDF scan, photocopy, or image)
           <input
@@ -72,7 +86,7 @@ export default function IntakeUploadPage() {
         </label>
         <button
           type="submit"
-          disabled={loading || (tierRequiresManualApproval() && !manualApproved)}
+          disabled={loading}
           className="rounded-md bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
           {loading ? "Running OCR pipeline…" : "Upload & extract"}
@@ -86,11 +100,13 @@ export default function IntakeUploadPage() {
         <UploadProgressTable
           items={[
             {
-              name: result.filename ?? "upload",
+              name: result.filename ?? lastFile?.name ?? "upload",
               status: "done",
               result,
             },
           ]}
+          matterId={matterId}
+          filesByName={filesByName}
         />
       ) : null}
     </div>

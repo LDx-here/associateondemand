@@ -1,6 +1,29 @@
 "use client";
 
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+import {
+  documentFilePreviewUrl,
+  documentPreviewKind,
+  documentPreviewSupportsFile,
+  documentViewLabel,
+} from "@/lib/document-display";
+import { cacheDocumentPreview, getBlobPreview, setBlobPreview } from "@/lib/document-preview-cache";
+import { btnSecondary } from "@/lib/ui-classes";
+
 const TIER = Number(process.env.NEXT_PUBLIC_PII_TIER ?? "0");
+
+/** Simple attorney-facing copy — full tier policy lives in Settings. */
+export function UploadSupportingDocsHint({ context }: { context: "matter" | "assignment" | "assessment" }) {
+  const label =
+    context === "assignment"
+      ? "Upload supporting documents for this assignment (PDF, image, or text)."
+      : context === "assessment"
+        ? "Upload a case assessment scan (PDF or image)."
+        : "Upload supporting documents for this matter (PDF, image, or text).";
+  return <p className="text-xs text-slate-600">{label}</p>;
+}
 
 export function TierZeroBanner({
   approved,
@@ -45,6 +68,11 @@ export function TierZeroBanner({
 
 export function tierRequiresManualApproval(): boolean {
   return TIER < 1;
+}
+
+/** Attorney-facing uploads auto-approve tier-0 manual review (logged-in counsel). */
+export function attorneyUploadApproved(): boolean {
+  return tierRequiresManualApproval();
 }
 
 export type UploadResult = {
@@ -104,6 +132,31 @@ export async function uploadDocument(
   return data;
 }
 
+/** Cache postgres + blob preview so Matter Documents tab and inline View PDF work after upload. */
+export function cacheUploadPreview(
+  matterId: string,
+  file: File,
+  result: UploadResult,
+): string | undefined {
+  const docId = result.airtable_document_id;
+  if (!docId) return undefined;
+  cacheDocumentPreview(matterId, docId, {
+    postgresDocumentId: result.document_id,
+    filename: result.filename ?? file.name,
+  });
+  setBlobPreview(matterId, docId, file);
+  return docId;
+}
+
+export function matterDocumentsHref(
+  matterId: string,
+  highlightDocId?: string,
+): `/matters/${string}` {
+  const base = `/matters/${encodeURIComponent(matterId)}` as `/matters/${string}`;
+  if (!highlightDocId) return base;
+  return `${base}?highlightDoc=${encodeURIComponent(highlightDocId)}` as `/matters/${string}`;
+}
+
 export function UploadProgressList({
   items,
 }: {
@@ -153,15 +206,20 @@ export function UploadProgressList({
   );
 }
 
-/** BUILD_SPEC §7.8 progress table: filename, status, category. */
+/** BUILD_SPEC §7.8 progress table: filename, status, category, View PDF. */
 export function UploadProgressTable({
   items,
+  matterId,
+  filesByName,
 }: {
   items: Array<{
     name: string;
     status: "pending" | "uploading" | "done" | "error";
     result?: UploadResult;
   }>;
+  /** When set, enables View PDF + link to Matter → Documents tab. */
+  matterId?: string;
+  filesByName?: Record<string, File>;
 }) {
   if (!items.length) return null;
   return (
@@ -173,26 +231,158 @@ export function UploadProgressTable({
             <th className="px-3 py-2">Status</th>
             <th className="px-3 py-2">Category</th>
             <th className="px-3 py-2">OCR</th>
+            {matterId ? <th className="px-3 py-2">Preview</th> : null}
           </tr>
         </thead>
         <tbody>
           {items.map((item) => (
-            <tr key={item.name} className="border-t border-slate-100">
-              <td className="px-3 py-2 font-medium">{item.name}</td>
-              <td className="px-3 py-2 capitalize text-slate-700">
-                {item.status === "uploading" ? "processing" : item.status}
-              </td>
-              <td className="px-3 py-2">{item.result?.category ?? "n/a"}</td>
-              <td className="px-3 py-2 text-xs text-slate-600">
-                {item.result?.ocr_method ?? "n/a"}
-                {item.result?.confidence != null
-                  ? ` · ${Math.round(item.result.confidence * 100)}%`
-                  : ""}
-              </td>
-            </tr>
+            <UploadProgressRow
+              key={item.name}
+              item={item}
+              matterId={matterId}
+              file={filesByName?.[item.name]}
+            />
           ))}
         </tbody>
       </table>
+      {matterId ? (
+        <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-600">
+          Saved to{" "}
+          <Link className="font-medium text-sky-800 hover:underline" href={matterDocumentsHref(matterId)}>
+            Matter → {matterId} → Documents
+          </Link>
+          . Use <strong>View PDF</strong> here or on that tab.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function UploadProgressRow({
+  item,
+  matterId,
+  file,
+}: {
+  item: {
+    name: string;
+    status: "pending" | "uploading" | "done" | "error";
+    result?: UploadResult;
+  };
+  matterId?: string;
+  file?: File;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const result = item.result;
+  const docId = result?.airtable_document_id;
+  const title = result?.filename ?? item.name;
+  const previewKind = documentPreviewKind({ title, fileType: "", category: "", id: "", matterId: "", uploadedAt: "", uploadedBy: "", ocrStatus: "", piiTier: "" }, result);
+  const canPreview = documentPreviewSupportsFile(previewKind);
+  const viewLabel = documentViewLabel(previewKind);
+
+  useEffect(() => {
+    if (item.status !== "done" || !matterId || !file || !result || result.error) return;
+    cacheUploadPreview(matterId, file, result);
+  }, [item.status, matterId, file, result]);
+
+  return (
+    <>
+      <tr className="border-t border-slate-100">
+        <td className="px-3 py-2 font-medium">{item.name}</td>
+        <td className="px-3 py-2 capitalize text-slate-700">
+          {item.status === "uploading" ? "processing" : item.status}
+        </td>
+        <td className="px-3 py-2">{result?.category ?? "n/a"}</td>
+        <td className="px-3 py-2 text-xs text-slate-600">
+          {result?.ocr_method ?? "n/a"}
+          {result?.confidence != null ? ` · ${Math.round(result.confidence * 100)}%` : ""}
+        </td>
+        {matterId ? (
+          <td className="px-3 py-2">
+            {item.status === "done" && !result?.error && docId && canPreview ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className={`${btnSecondary} text-xs`}
+                  onClick={() => setExpanded((v) => !v)}
+                >
+                  {expanded ? "Hide" : viewLabel}
+                </button>
+                <Link
+                  className="text-xs font-medium text-sky-800 hover:underline"
+                  href={matterDocumentsHref(matterId, docId)}
+                >
+                  Documents tab →
+                </Link>
+              </div>
+            ) : item.status === "done" && !result?.error && docId ? (
+              <Link
+                className="text-xs font-medium text-sky-800 hover:underline"
+                href={matterDocumentsHref(matterId, docId)}
+              >
+                Open in Documents →
+              </Link>
+            ) : (
+              <span className="text-xs text-slate-400">—</span>
+            )}
+          </td>
+        ) : null}
+      </tr>
+      {expanded && matterId && docId && canPreview ? (
+        <tr className="border-t border-slate-50 bg-slate-50/60">
+          <td colSpan={matterId ? 5 : 4} className="px-3 py-3">
+            <UploadInlineFilePreview
+              matterId={matterId}
+              documentId={docId}
+              title={title}
+              previewKind={previewKind}
+              postgresDocumentId={result?.document_id}
+            />
+          </td>
+        </tr>
+      ) : null}
+    </>
+  );
+}
+
+function UploadInlineFilePreview({
+  matterId,
+  documentId,
+  title,
+  previewKind,
+  postgresDocumentId,
+}: {
+  matterId: string;
+  documentId: string;
+  title: string;
+  previewKind: "pdf" | "image";
+  postgresDocumentId?: string;
+}) {
+  const blobUrl = getBlobPreview(matterId, documentId);
+  const serverUrl = documentFilePreviewUrl(matterId, documentId, title, postgresDocumentId);
+  const displayUrl = blobUrl ?? serverUrl;
+
+  return (
+    <div>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {previewKind === "pdf" ? "PDF preview" : "Image preview"}
+      </p>
+      {blobUrl ? (
+        <p className="mb-2 text-xs text-emerald-800">Showing your upload from this browser session.</p>
+      ) : null}
+      {previewKind === "pdf" ? (
+        <iframe
+          src={displayUrl}
+          title={`Preview: ${title}`}
+          className="h-[min(360px,60vh)] w-full rounded-md border border-slate-200 bg-white"
+        />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={displayUrl}
+          alt={`Preview: ${title}`}
+          className="max-h-[min(360px,60vh)] w-full rounded-md border border-slate-200 bg-white object-contain"
+        />
+      )}
     </div>
   );
 }

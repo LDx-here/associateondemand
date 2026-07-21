@@ -1,3 +1,5 @@
+### [2026-07-21] CHECKPOINT: document upload UX — Matter Documents tab primary; Airtable list filter fix; View PDF on all upload paths; PII tier 0 in Settings; pytest 43; next build; Vercel prod
+
 ### [2026-07-21] CHECKPOINT: pass 17 — port Legal OS drafting + workflow wins to production AOD (Firm Memory prompts, matter stage chip, conflict check, intake UX); pytest 43; next build; smoke pass; Fly + Vercel prod
 
 ### [2026-07-20] CHECKPOINT: pass 16: Stripe checkout, pay-before-dispatch, billing UX finish

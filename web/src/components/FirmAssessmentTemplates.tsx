@@ -4,8 +4,7 @@ import { FileText, Upload } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import {
-  TierZeroBanner,
-  tierRequiresManualApproval,
+  attorneyUploadApproved,
   uploadDocument,
 } from "@/components/IntakeUploadShared";
 import { useToast } from "@/components/Toast";
@@ -24,7 +23,6 @@ export function FirmAssessmentTemplates() {
   const { showToast } = useToast();
   const [templates, setTemplates] = useState<DocumentRow[]>([]);
   const [area, setArea] = useState<(typeof PRACTICE_AREAS)[number]>("immigration");
-  const [manualApproved, setManualApproved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -51,7 +49,6 @@ export function FirmAssessmentTemplates() {
 
   async function onUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (tierRequiresManualApproval() && !manualApproved) return;
     const input = e.currentTarget.elements.namedItem("template-file") as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -59,7 +56,7 @@ export function FirmAssessmentTemplates() {
     setBusy(true);
     try {
       const category = encodeAssessmentTemplateCategory(area);
-      const data = await uploadDocument(FIRM_TEMPLATE_MATTER_ID, file, manualApproved, "single", {
+      const data = await uploadDocument(FIRM_TEMPLATE_MATTER_ID, file, attorneyUploadApproved(), "single", {
         documentCategory: category,
       });
       if (data.error) {
@@ -140,7 +137,6 @@ export function FirmAssessmentTemplates() {
             <option value="personal_injury">Personal injury</option>
           </select>
         </label>
-        <TierZeroBanner approved={manualApproved} onApprovedChange={setManualApproved} />
         <input
           accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.xlsx,.docx"
           className="w-full text-sm"
@@ -150,7 +146,7 @@ export function FirmAssessmentTemplates() {
         />
         <button
           type="submit"
-          disabled={busy || (tierRequiresManualApproval() && !manualApproved)}
+          disabled={busy}
           className={`${btnPrimary} inline-flex items-center gap-2 disabled:opacity-50`}
         >
           <Upload className="h-4 w-4" aria-hidden />

@@ -10,6 +10,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { CaseTypeBadge, CountryBadge } from "@/components/CaseTypeBadge";
@@ -21,6 +22,7 @@ import { EMPTY_CELL, formatDate } from "@/lib/utils";
 const columnHelper = createColumnHelper<Matter>();
 
 export function MattersTable({ matters }: { matters: Matter[] }) {
+  const router = useRouter();
   const [globalFilter, setGlobalFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [caseTypeFilter, setCaseTypeFilter] = useState("");
@@ -64,7 +66,11 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
       columnHelper.accessor((row) => row.title || row.clientName, {
         id: "title",
         header: "Title",
-        cell: (info) => <span className="text-slate-900">{info.getValue() || EMPTY_CELL}</span>,
+        cell: (info) => (
+          <Link className={linkMatter} href={`/matters/${info.row.original.matterId}`}>
+            {info.getValue() || EMPTY_CELL}
+          </Link>
+        ),
       }),
       columnHelper.accessor("caseType", {
         header: "Case type",
@@ -197,7 +203,15 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
           <tbody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="border-t border-slate-100 hover:bg-slate-50">
+                <tr
+                  key={row.id}
+                  className="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
+                  onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target.closest("a, button, input, select, label")) return;
+                    router.push(`/matters/${row.original.matterId}`);
+                  }}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-4 py-3">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

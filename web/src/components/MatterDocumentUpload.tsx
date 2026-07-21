@@ -4,9 +4,9 @@ import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 
 import {
-  TierZeroBanner,
-  tierRequiresManualApproval,
+  attorneyUploadApproved,
   UploadProgressTable,
+  UploadSupportingDocsHint,
   uploadDocument,
   type UploadResult,
 } from "@/components/IntakeUploadShared";
@@ -28,10 +28,10 @@ export function MatterDocumentUpload({
   onUploaded?: (payload: DocumentUploadPayload) => void;
 }) {
   const { showToast } = useToast();
-  const [manualApproved, setManualApproved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [apiReachable, setApiReachable] = useState<boolean | null>(null);
   const [result, setResult] = useState<UploadResult | null>(null);
+  const [lastFile, setLastFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function checkApi() {
@@ -50,7 +50,6 @@ export function MatterDocumentUpload({
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (tierRequiresManualApproval() && !manualApproved) return;
     const input = e.currentTarget.elements.namedItem("file") as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -58,10 +57,11 @@ export function MatterDocumentUpload({
     setBusy(true);
     setError(null);
     setResult(null);
+    setLastFile(file);
     await checkApi();
 
     try {
-      const data = await uploadDocument(matterId, file, manualApproved, "single");
+      const data = await uploadDocument(matterId, file, attorneyUploadApproved(), "single");
       if (data.error) {
         setError(data.error);
         showToast(data.error, "error");
@@ -91,13 +91,13 @@ export function MatterDocumentUpload({
         PDF, image, or text files upload here and appear immediately in the Documents list above.{" "}
         {documentStorageNote(matterId)}.
       </p>
+      <UploadSupportingDocsHint context="matter" />
       {apiReachable === false ? (
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
           Document service is offline. Start the API stack to process uploads, or use the Intake tab when
           it is available.
         </p>
       ) : null}
-      <TierZeroBanner approved={manualApproved} onApprovedChange={setManualApproved} />
       <form className="space-y-3" onSubmit={onSubmit}>
         <input
           accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.txt"
@@ -108,7 +108,7 @@ export function MatterDocumentUpload({
         />
         <button
           type="submit"
-          disabled={busy || (tierRequiresManualApproval() && !manualApproved)}
+          disabled={busy}
           className={`${btnPrimary} disabled:opacity-50`}
         >
           {busy ? "Uploading…" : "Upload to matter"}
@@ -132,6 +132,8 @@ export function MatterDocumentUpload({
                 result,
               },
             ]}
+            matterId={matterId}
+            filesByName={lastFile ? { [lastFile.name]: lastFile } : undefined}
           />
         </div>
       ) : null}
