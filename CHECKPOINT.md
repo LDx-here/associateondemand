@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-21 (CDT) — pass 18: gap closure (E2E, conflicts, delivered, abandoned intake)  
+**Last updated:** 2026-07-21 (CDT) — Stripe webhook auth fix + env aliases  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -19,7 +19,7 @@
 | Gap | Status | Notes |
 |-----|--------|-------|
 | Live pilot E2E | **Shipped** | `bash scripts/smoke-assignment-e2e.sh` (demo, no login) |
-| Stripe checkout live | **Needs keys** | `bash scripts/stripe-setup-checklist.sh` — see runbook |
+| Stripe checkout live | **Needs webhook secret** | Webhook route public; env aliases work — create endpoint in Stripe Dashboard, set `STRIPE_WEBHOOK_SECRET` on Vercel |
 | Abandoned intake email | **Shipped** | `/api/intake/session` + `/api/cron/abandoned-intake`; needs `RESEND_API_KEY` to send |
 | Conflict DB (no Clio) | **Shipped** | Matters + Contacts search; match list on intake |
 | Stage transitions | **Shipped** | Payment→dispatch, dispatch→review, approve, export→Delivered |

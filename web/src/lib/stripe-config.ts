@@ -2,33 +2,49 @@ import Stripe from "stripe";
 
 let stripeClient: Stripe | null = null;
 
+/** Read first non-empty env var from canonical name or legacy Vercel aliases. */
+function readStripeEnv(canonical: string, ...aliases: string[]): string | null {
+  for (const name of [canonical, ...aliases]) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  return null;
+}
+
+export function getStripeSecretKey(): string | null {
+  return readStripeEnv("STRIPE_SECRET_KEY", "stripe_secret");
+}
+
+export function getStripePublishableKey(): string | null {
+  return readStripeEnv(
+    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+    "stripe_publishable",
+    "NEXT_PUBLIC_stripe_publishable",
+  );
+}
+
+export function getStripeWebhookSecret(): string | null {
+  return readStripeEnv("STRIPE_WEBHOOK_SECRET", "stripe_webhook_secret");
+}
+
 /** True when server-side Stripe secret and publishable key are both set. */
 export function isStripeConfigured(): boolean {
-  return Boolean(process.env.STRIPE_SECRET_KEY?.trim() && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim());
+  return Boolean(getStripeSecretKey() && getStripePublishableKey());
 }
 
 /** Test mode when secret key uses Stripe test prefix. */
 export function isStripeTestMode(): boolean {
-  const key = process.env.STRIPE_SECRET_KEY?.trim() ?? "";
+  const key = getStripeSecretKey() ?? "";
   return key.startsWith("sk_test_");
 }
 
-export function getStripePublishableKey(): string | null {
-  const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim();
-  return key || null;
-}
-
-export function getStripeWebhookSecret(): string | null {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
-  return secret || null;
-}
-
 export function getStripe(): Stripe {
-  if (!isStripeConfigured()) {
+  const secretKey = getStripeSecretKey();
+  if (!isStripeConfigured() || !secretKey) {
     throw new Error("Stripe is not configured. Set STRIPE_SECRET_KEY and NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.");
   }
   if (!stripeClient) {
-    stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY!.trim(), {
+    stripeClient = new Stripe(secretKey, {
       typescript: true,
     });
   }

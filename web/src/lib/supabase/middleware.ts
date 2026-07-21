@@ -3,7 +3,13 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getSupabasePublicConfig } from "./env";
 
-const PUBLIC_PREFIXES = ["/login", "/auth/callback", "/auth/reset-password", "/api/health"];
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/auth/callback",
+  "/auth/reset-password",
+  "/api/health",
+  "/api/stripe/webhook",
+];
 
 export async function updateSupabaseSession(request: NextRequest) {
   const config = getSupabasePublicConfig();

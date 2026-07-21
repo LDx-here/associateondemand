@@ -12,19 +12,44 @@ cd "$ROOT"
 
 echo "== Stripe env audit (Vercel project: aod-next) =="
 
+# canonical name -> space-separated legacy aliases
+declare -A STRIPE_VARS=(
+  [STRIPE_SECRET_KEY]="stripe_secret"
+  [NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY]="stripe_publishable NEXT_PUBLIC_stripe_publishable"
+  [STRIPE_WEBHOOK_SECRET]="stripe_webhook_secret"
+)
+
+vercel_env_list=""
+if (cd web && vercel env ls 2>/dev/null); then
+  vercel_env_list="$(cd web && vercel env ls 2>/dev/null || true)"
+fi
+
 MISSING=()
-for var in STRIPE_SECRET_KEY NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET; do
-  if (cd web && vercel env ls 2>/dev/null | grep -q "$var"); then
-    echo "  OK  $var (present on Vercel)"
+for canonical in "${!STRIPE_VARS[@]}"; do
+  aliases=${STRIPE_VARS[$canonical]}
+  found=""
+  if echo "$vercel_env_list" | grep -q "$canonical"; then
+    found="$canonical"
   else
-    echo "  MISSING  $var"
-    MISSING+=("$var")
+    for alias in $aliases; do
+      if echo "$vercel_env_list" | grep -q "$alias"; then
+        found="$alias (alias for $canonical)"
+        break
+      fi
+    done
+  fi
+
+  if [[ -n "$found" ]]; then
+    echo "  OK  $found"
+  else
+    echo "  MISSING  $canonical (aliases: $aliases)"
+    MISSING+=("$canonical")
   fi
 done
 
 if ((${#MISSING[@]} == 0)); then
   echo ""
-  echo "All three Stripe variables appear on Vercel. Redeploy production, then test checkout."
+  echo "All three Stripe variables appear on Vercel (canonical or alias). Redeploy production, then test checkout."
   echo "  bash scripts/smoke-production.sh"
   echo "  docs/runbooks/stripe-activation.md"
   exit 0
@@ -39,12 +64,12 @@ done
 echo ""
 echo "Steps:"
 echo "  1. Stripe Dashboard → Developers → API keys"
-echo "     STRIPE_SECRET_KEY=sk_test_…"
-echo "     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_…"
-echo "  2. Stripe Dashboard → Developers → Webhooks → Add endpoint"
+echo "     STRIPE_SECRET_KEY=sk_test_…  (alias: stripe_secret)"
+echo "     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_…  (alias: stripe_publishable)"
+echo "  2. Stripe Dashboard → Developers → Webhooks → Add endpoint (NOT in Vercel)"
 echo "     URL: https://aod-next.vercel.app/api/stripe/webhook"
 echo "     Event: checkout.session.completed"
-echo "     STRIPE_WEBHOOK_SECRET=whsec_…"
+echo "     STRIPE_WEBHOOK_SECRET=whsec_…  (alias: stripe_webhook_secret)"
 echo "  3. Vercel → aod-next → Settings → Environment Variables → Production"
 echo "     vercel env add STRIPE_SECRET_KEY"
 echo "     vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"

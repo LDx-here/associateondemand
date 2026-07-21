@@ -6,22 +6,28 @@ Plain-English steps for turning on **pay-before-dispatch** on production. Code i
 
 Project: **aod-next** → Settings → Environment Variables → **Production** (and Preview if you test there).
 
-| Variable | Purpose |
-|----------|---------|
-| `STRIPE_SECRET_KEY` | Server-side Stripe API (`sk_test_…` for test, `sk_live_…` for live) |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Browser Stripe.js (`pk_test_…` or `pk_live_…`) |
-| `STRIPE_WEBHOOK_SECRET` | Verifies webhook signatures (`whsec_…` from the Stripe Dashboard endpoint) |
+| Canonical name (preferred) | Legacy alias (also works) | Purpose |
+|----------------------------|---------------------------|---------|
+| `STRIPE_SECRET_KEY` | `stripe_secret` | Server-side Stripe API (`sk_test_…` for test, `sk_live_…` for live) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `stripe_publishable` | Browser Stripe.js (`pk_test_…` or `pk_live_…`) |
+| `STRIPE_WEBHOOK_SECRET` | `stripe_webhook_secret` | Verifies webhook signatures (`whsec_…` from the Stripe Dashboard endpoint) |
+
+**Use the canonical names on new setups.** If Vercel already has lowercase aliases (`stripe_secret`, `stripe_publishable`, `stripe_webhook_secret`), the app reads those too — no rename required for checkout to work. Renaming to canonical names is still recommended for clarity.
 
 After saving, **redeploy** the web app (or trigger a new production deployment) so Next.js picks up the new values.
 
 **Where to get keys:** Stripe Dashboard → Developers → API keys (secret + publishable). Use **test** keys first.
 
-## 2. Register the webhook in Stripe
+**Common mistake:** `STRIPE_WEBHOOK_SECRET` is **not** created in Vercel — you create the webhook endpoint in the **Stripe Dashboard** (step 2), then copy the signing secret (`whsec_…`) into Vercel.
+
+## 2. Register the webhook in Stripe (not Vercel)
 
 1. Stripe Dashboard → Developers → **Webhooks** → Add endpoint.
 2. **Endpoint URL:** `https://aod-next.vercel.app/api/stripe/webhook`
 3. **Events to send:** `checkout.session.completed` (only this event is required for assignment checkout).
-4. Copy the signing secret into Vercel as `STRIPE_WEBHOOK_SECRET`.
+4. Copy the signing secret into Vercel as `STRIPE_WEBHOOK_SECRET` (or `stripe_webhook_secret`).
+
+The webhook route is **public** (no login redirect) so Stripe can POST signed events. A missing or wrong secret returns **503** or **400**, not a login redirect.
 
 If the secret or URL is wrong, checkout may succeed in Stripe but the assignment will stay **awaiting payment** in the inbox.
 
@@ -80,7 +86,7 @@ Pricing uses catalog midpoint (cents) with optional sample discount logic in `st
 
 ## 5. Fallback when keys are missing
 
-If **either** `STRIPE_SECRET_KEY` **or** `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is unset:
+If **either** `STRIPE_SECRET_KEY` (or `stripe_secret`) **or** `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (or `stripe_publishable`) is unset:
 
 - Intake still works; assignments use **invoice-after-delivery** (`payment_status: invoice`).
 - PM dispatch runs **immediately** on submit (same as pre–Pass 16 behavior).
