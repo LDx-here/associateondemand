@@ -4,6 +4,7 @@ import { LayoutDashboard } from "lucide-react";
 
 import { CaseAssessmentSummary } from "@/components/CaseAssessmentSummary";
 import { MatterEventsPanel } from "@/components/MatterEventsPanel";
+import { TemplateApplyPanel } from "@/components/TemplateApplyPanel";
 import type { CalendarEvent, DocumentRow, Matter } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
@@ -57,6 +58,8 @@ export function MatterOverviewPanel({
       </section>
 
       <CaseAssessmentSummary matter={matter} documents={documents} />
+
+      <TemplateApplyPanel matter={matter} compact />
 
       {events.length > 0 ? (
         <section>

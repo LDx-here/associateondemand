@@ -31,3 +31,32 @@ Short runbook for wiring practice reference material into AssociateOnDemand lega
 - `web/src/lib/legal-element-templates.ts`
 - `web/src/components/LegalElementsPanel.tsx`
 - `docs/constitution/07-Legal-Mapping-SKILL.md`
+
+## Smart templates + Firm Memory (2026-07-21)
+
+Smart templates separate **editable fields** from **locked boilerplate** so overflow deliverables keep firm format.
+
+| Surface | Purpose |
+|---------|---------|
+| **`/templates#smart-templates`** | Catalog of field maps (e.g. telephonic records request) |
+| **Matter → Overview → Smart templates** | Apply template on a matter; autofill from matter profile + saved template profiles |
+| **`/templates#firm-memory`** | Firm-wide style samples + Strategy Patterns (drafting voice) |
+| **`POST /api/templates/detect-fields`** | Optional LLM/heuristic field detection from uploaded sample OCR |
+
+### Telephonic records request — setup steps
+
+1. Open **`/templates`** → confirm **Smart templates** lists *Telephonic records request*.
+2. **`/templates#firm-memory`** → upload a redacted firm sample (optional) → saves style to Strategy Patterns.
+3. On a matter → **Overview** tab → **Smart templates** → select *Telephonic records request*.
+4. Fill editable fields (client name, A-number, records list) — violet-highlighted regions are customizable; locked sections stay boilerplate.
+5. **Save profile** (e.g. "Telephonic requests — RMV defaults") for reuse on future matters.
+6. **Generate filled preview** → copy structured output or start a hearing-packet assignment.
+
+### Document isolation (matter-scoped uploads)
+
+Documents must only appear on the matter they were uploaded to. Code guards:
+
+- `web/src/lib/airtable/matter-link-filter.ts` — Airtable formula + post-filter on linked record ids
+- Firm-wide rows (`assessment_template:*`, `firm_sample:*`) excluded from matter document lists
+- Upload path always patches `matter_id` when registering an existing Airtable document row
+

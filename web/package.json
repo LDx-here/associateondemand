@@ -12,6 +12,8 @@
     "test:facts": "tsx scripts/verify-practice-area-facts.mjs",
     "test:assessment-docs": "tsx scripts/verify-assessment-documents.mjs",
     "test:document-create": "tsx scripts/verify-document-create.mjs",
+    "test:matter-link-filter": "tsx scripts/verify-matter-link-filter.mjs",
+    "test:template-field-maps": "tsx scripts/verify-template-field-maps.mjs",
     "test:onboarding": "tsx scripts/verify-onboarding-state.mjs",
     "test:matter-stage": "tsx scripts/verify-matter-stage.mjs",
     "test:assignment-transitions": "tsx scripts/verify-assignment-transitions.mjs",

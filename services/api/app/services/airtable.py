@@ -480,8 +480,9 @@ def create_document(
     rec_id = _resolve_matter_record_id(matter_code)
     if rec_id:
         fields[FIELDS_DOCUMENTS["matter_id"]] = [rec_id]
-    else:
-        fields[FIELDS_DOCUMENTS["matter_id"]] = matter_code
+    elif matter_code.startswith("rec"):
+        fields[FIELDS_DOCUMENTS["matter_id"]] = [matter_code]
+    # Skip matter_id when unresolved — unlinked rows must not leak across matters.
     return _create_record(TABLE_DOCUMENTS, fields)
 
 

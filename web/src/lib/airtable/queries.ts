@@ -20,6 +20,14 @@ import {
 } from "./client";
 import { buildDocumentCreateFields } from "./document-create";
 import { SPEC_FIELDS as F, TABLES } from "./fields";
+import {
+  matterLinkFilterFormula,
+  recordMatchesMatterLink,
+} from "./matter-link-filter";
+import {
+  isAssessmentTemplateDocument,
+  isFirmSampleDocument,
+} from "../assessment-documents";
 import { ASSIGNMENT_TRANSITIONS, buildDeliveredHistory, isValidAssignmentTransition } from "../assignment-transitions";
 import { emptyCaseAssessment, parseCaseAssessment, serializeCaseAssessment } from "../case-assessment";
 import type {
@@ -42,18 +50,6 @@ type RawFields = Record<string, unknown>;
 
 function escapeFormula(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-}
-
-/** Filter linked-record fields to a matter (record id + exact matter code). */
-function matterLinkFilterFormula(
-  linkFieldName: string,
-  resolved: { recordId: string; matterId: string },
-): string {
-  const code = escapeFormula(resolved.matterId);
-  const rec = escapeFormula(resolved.recordId);
-  const byRecordId = `{${linkFieldName}} = '${rec}'`;
-  const byExactCode = `FIND(',' & '${code}' & ',', ',' & ARRAYJOIN({${linkFieldName}}) & ',')`;
-  return `OR(${byRecordId}, ${byExactCode})`;
 }
 
 function linkedIds(field: unknown): string[] {
@@ -259,19 +255,40 @@ export async function resolveMatterRecordId(
   return { recordId: rec.id, matterId: String(rec.fields[F.matters.matter_id] ?? matterCode) };
 }
 
+function isFirmWideDocumentCategory(category: string): boolean {
+  const doc = { category };
+  return isAssessmentTemplateDocument(doc) || isFirmSampleDocument(doc);
+}
+
+function filterDocumentsForMatter(
+  records: Array<{ id: string; fields: RawFields }>,
+  resolved: { recordId: string; matterId: string },
+): DocumentRow[] {
+  return records
+    .filter((r) => {
+      const category = String(r.fields[F.documents.category] ?? "");
+      if (isFirmWideDocumentCategory(category)) return false;
+      return recordMatchesMatterLink(r.fields, F.documents.matter_id, resolved);
+    })
+    .map((r) => mapDocument(r, resolved.matterId));
+}
+
 export async function listDocumentsFromAirtable(matterCode: string): Promise<DocumentRow[]> {
   const resolved = await resolveMatterRecordId(matterCode);
   if (!resolved) return [];
   const formula = matterLinkFilterFormula(F.documents.matter_id, resolved);
   try {
     const records = await airtableListAll<RawFields>(TABLES.documents, { filterByFormula: formula });
-    return records.map((r) => mapDocument(r, resolved.matterId));
+    const scoped = filterDocumentsForMatter(records, resolved);
+    if (scoped.length > 0 || records.length === 0) return scoped;
+    // Formula matched rows but post-filter removed all — do not fall back to unscoped list.
+    return scoped;
   } catch {
     // Legacy rows may only match on a plain matter code text field.
     try {
       const legacy = `{${F.documents.matter_id}} = '${escapeFormula(resolved.matterId)}'`;
       const records = await airtableListAll<RawFields>(TABLES.documents, { filterByFormula: legacy });
-      return records.map((r) => mapDocument(r, resolved.matterId));
+      return filterDocumentsForMatter(records, resolved);
     } catch {
       return [];
     }
@@ -1212,10 +1229,14 @@ export async function registerAssessmentDocumentInAirtable(
   const resolved = await resolveMatterRecordId(matterCode);
   const d = F.documents;
   if (payload.airtableDocumentId) {
-    await airtablePatch(TABLES.documents, payload.airtableDocumentId, {
+    const patchFields: RawFields = {
       [d.category]: payload.category,
       [d.title]: payload.title.slice(0, 240),
-    });
+    };
+    if (resolved?.recordId) {
+      patchFields[d.matter_id] = [resolved.recordId];
+    }
+    await airtablePatch(TABLES.documents, payload.airtableDocumentId, patchFields);
     return {
       id: payload.airtableDocumentId,
       matterId: resolved?.matterId ?? matterCode,

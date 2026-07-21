@@ -523,6 +523,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Document isolation + smart templates (2026-07-21):** Matter-scoped document list post-filter (`matter-link-filter.ts`); firm template/sample rows excluded from matter Documents; matter_id patched on document register; smart template field maps + telephonic request example; TemplateApplyPanel on matter Overview; Firm Memory badge shows configured status; `POST /api/templates/detect-fields`. pytest 51; next build green.
 - **LLM fact enrichment (2026-07-21):** Claude enrichment pass maps heuristic OCR facts to legal elements with human labels, element-fit explanations, dedupe; auto-triggers on low-diversity heuristics; `POST /intake/enrich-facts` + Re-analyze with AI UI; grouped ExtractedFactsReview + element counts in CaseAssessmentSummary. Runbook updated. pytest 51; next build green.
 - **Matter workbench reorg (2026-07-21):** Close/reopen matter (Airtable status Closed); matters list active-only default + Show closed. Tabs: Overview | Documents | Case activity | Procedural timeline | Legal elements | Tasks. Procedural milestones in Notes (type Procedural); legal elements with practice-area templates + extracted fact mapping; task templates from deliverable catalog. Workflow strip aligned. Runbook: `docs/runbooks/firm-memory-legal-elements.md`. Commit `9299349`; pytest 46; next build; Vercel prod.
 - **Fact extraction QC (2026-07-21):** Attorney verify/edit panel for extracted facts on case assessment upload; honest OCR confidence labels; case assessment summary on matter header; case-type extraction hints wired to Strong Reader intake. Runbook: `docs/runbooks/fact-extraction-and-accuracy.md`. Verified: pytest (46), test:assessment-docs, next build, smoke-production PASS.
@@ -550,7 +551,9 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Pilot matter on new workbench** — upload case assessment; verify enriched facts show element labels (not generic "name"); test **Re-analyze with AI** on Legal elements tab.
+1. **Verify document isolation on prod** — upload on AOD-1001 vs AOD-1002; confirm Documents tab is matter-specific only.
+2. **Pilot telephonic template** — Matter Overview → Smart templates → save RMV profile → generate preview.
+3. **Pilot matter on new workbench** — upload case assessment; verify enriched facts show element labels (not generic "name"); test **Re-analyze with AI** on Legal elements tab.
 2. **Upload immigration book excerpts** — `brain/03_Firm_Knowledge/` + Firm Memory per `docs/runbooks/firm-memory-legal-elements.md`.
 3. **First pilot matter (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): intake → inbox → approve → export.
 4. **Optional:** Stripe + Resend env vars — `bash scripts/stripe-setup-checklist.sh`.

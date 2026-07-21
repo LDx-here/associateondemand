@@ -159,3 +159,5 @@
 - **Files Affected:** `services/api/app/services/fact_enrichment.py`, `intake_processor.py`, `intake.py`, `web/src/components/ExtractedFactsReview.tsx`, `LegalElementsPanel.tsx`, `CaseAssessmentSummary.tsx`, `docs/runbooks/fact-extraction-and-accuracy.md`
 - **Command Executed:** `pytest` (51), `npm run build`, `flyctl deploy`, `vercel deploy --prod`
 - **Reason/Context:** User feedback — generic "name, name, name" labels without legal element mapping after assessment upload.
+
+### [2026-07-21] CHECKPOINT: document matter isolation + smart templates — post-filter linked matter_id, exclude firm-wide doc categories, template field maps (telephonic request), TemplateApplyPanel, Firm Memory badge status, detect-fields API; pytest 51; next build; Fly + Vercel prod

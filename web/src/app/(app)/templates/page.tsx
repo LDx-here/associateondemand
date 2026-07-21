@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import { FirmAssessmentTemplates } from "@/components/FirmAssessmentTemplates";
 import { FirmMemoryBadge } from "@/components/FirmMemoryBadge";
 import { FirmMemorySetup } from "@/components/FirmMemorySetup";
+import { SmartTemplatesCatalog } from "@/components/SmartTemplatesCatalog";
 import {
   DELIVERABLE_CATALOG,
   billingNoteForStripe,
@@ -101,7 +102,7 @@ export default function TemplateCatalogPage() {
             available now; other catalog entries are coming soon. {billingNote}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <FirmMemoryBadge linked />
+            <FirmMemoryBadge linked showStatus />
             <Link
               href="#firm-memory"
               className="text-xs font-medium text-violet-800 underline-offset-2 hover:underline"
@@ -116,6 +117,8 @@ export default function TemplateCatalogPage() {
       </header>
 
       <FirmMemorySetup />
+
+      <SmartTemplatesCatalog />
 
       <FirmAssessmentTemplates />
 

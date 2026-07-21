@@ -199,7 +199,12 @@ export async function listEventsForMatter(matterId: string) {
 export async function listDocumentsForMatter(matterId: string): Promise<DocumentRow[]> {
   if (isDemoMode()) {
     const seed = await loadDemoSeed();
-    return seed.documents.filter((d) => d.matterId === matterId);
+    return seed.documents.filter(
+      (d) =>
+        d.matterId === matterId &&
+        !isAssessmentTemplateDocument(d) &&
+        !isFirmSampleDocument(d),
+    );
   }
   return listDocumentsFromAirtable(matterId);
 }
