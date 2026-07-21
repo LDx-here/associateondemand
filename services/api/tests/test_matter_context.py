@@ -7,8 +7,11 @@ import json
 from app.services.matter_context import (
     format_assessment_data,
     format_assessment_document,
+    format_attorney_instructions,
     format_drafting_facts,
+    format_research_notes,
 )
+from app.services import airtable as at
 
 
 def test_format_assessment_data_structured_json() -> None:
@@ -54,6 +57,25 @@ def test_format_drafting_facts_immigration() -> None:
 def test_format_drafting_facts_empty() -> None:
     assert format_drafting_facts(None) == ""
     assert format_drafting_facts({"v": 2}) == ""
+
+
+def test_format_research_notes() -> None:
+    notes = [
+        {
+            at.FIELDS_NOTES["content"]: "Matter of Cervantes-Gonzalez supports hardship finding.",
+            at.FIELDS_NOTES["author"]: "Attorney",
+        }
+    ]
+    text = format_research_notes(notes)
+    assert "Research inputs" in text
+    assert "Cervantes-Gonzalez" in text
+
+
+def test_format_attorney_instructions() -> None:
+    notes = [{at.FIELDS_NOTES["content"]: "Lead with extreme hardship; avoid prior departure."}]
+    text = format_attorney_instructions(notes)
+    assert "Attorney instructions" in text
+    assert "extreme hardship" in text
 
 
 def test_format_assessment_document_uploaded_scan() -> None:

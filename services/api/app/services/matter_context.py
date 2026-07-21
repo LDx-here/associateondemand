@@ -224,6 +224,55 @@ def fetch_latest_assessment_document(matter_code: str) -> dict[str, Any] | None:
     return None
 
 
+def format_research_notes(notes: list[dict[str, Any]]) -> str:
+    """Render attorney-pasted Westlaw / research notes for agent prompts."""
+
+    if not notes:
+        return ""
+    lines = ["## Research inputs (attorney-provided)"]
+    for note in notes[:6]:
+        content = str(note.get(at.FIELDS_NOTES["content"]) or "").strip()
+        if not content:
+            continue
+        author = str(note.get(at.FIELDS_NOTES["author"]) or "Attorney").strip()
+        lines.append(f"### {author}")
+        lines.append(content[:4000])
+    return "\n".join(lines) if len(lines) > 1 else ""
+
+
+def format_attorney_instructions(notes: list[dict[str, Any]]) -> str:
+    """Render persistent matter-level attorney instructions."""
+
+    if not notes:
+        return ""
+    latest = notes[0]
+    content = str(latest.get(at.FIELDS_NOTES["content"]) or "").strip()
+    if not content:
+        return ""
+    return "## Attorney instructions (persistent)\n" + content[:3000]
+
+
+def _notes_by_type(matter_code: str, note_type: str, *, max_records: int = 20) -> list[dict[str, Any]]:
+    if not at.is_configured() or not matter_code:
+        return []
+    try:
+        notes = at.list_matter_notes(matter_code, max_records=max_records)
+        matches = [n for n in notes if str(n.get(at.FIELDS_NOTES["type"]) or "") == note_type]
+        matches.sort(key=lambda n: str(n.get(at.FIELDS_NOTES["created_at"]) or ""), reverse=True)
+        return matches
+    except Exception:
+        LOGGER.exception("notes by type fetch failed")
+        return []
+
+
+def fetch_research_notes(matter_code: str) -> list[dict[str, Any]]:
+    return _notes_by_type(matter_code, "Research")
+
+
+def fetch_attorney_instructions(matter_code: str) -> list[dict[str, Any]]:
+    return _notes_by_type(matter_code, "Instructions", max_records=5)
+
+
 def format_matter_context(ctx: dict[str, Any] | None, *, matter_code: str | None = None) -> str:
     if not ctx:
         return "No live matter row found in Airtable for this matter_id."
@@ -240,4 +289,11 @@ def format_matter_context(ctx: dict[str, Any] | None, *, matter_code: str | None
     assessment_doc_block = format_assessment_document(assessment_doc)
     if assessment_doc_block:
         lines.append(assessment_doc_block)
+    if code:
+        instructions_block = format_attorney_instructions(fetch_attorney_instructions(code))
+        if instructions_block:
+            lines.append(instructions_block)
+        research_block = format_research_notes(fetch_research_notes(code))
+        if research_block:
+            lines.append(research_block)
     return "\n".join(lines)

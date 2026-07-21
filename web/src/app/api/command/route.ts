@@ -25,6 +25,8 @@ type AgentDispatchResult = {
   gaps?: string[];
   gap_questions?: Array<{ question?: string }>;
   next_steps?: string[];
+  anchor_facts?: string[];
+  anchor_next?: string[];
   uncertain?: Array<{ item?: string; reason?: string }>;
   sources?: Array<{ claim?: string; source?: string; url?: string | null }>;
   complete?: boolean;
@@ -286,6 +288,13 @@ async function dispatchToPm(matterId: string, instruction: string) {
       }
     }
 
+    const factsReliedOn =
+      data.anchor_facts?.filter((f): f is string => Boolean(f?.trim())) ?? undefined;
+    const stepsTaken = [
+      ...(data.anchor_next ?? []),
+      ...(data.next_steps ?? []),
+    ].filter((s, i, arr) => Boolean(s?.trim()) && arr.indexOf(s) === i);
+
     const payload: Record<string, unknown> = {
       type: "agent",
       matterId,
@@ -293,6 +302,8 @@ async function dispatchToPm(matterId: string, instruction: string) {
       summary: data.summary ?? "Dispatch complete.",
       gaps: gapStrings,
       nextSteps,
+      factsReliedOn: factsReliedOn?.length ? factsReliedOn : undefined,
+      stepsTaken: stepsTaken.length ? stepsTaken : undefined,
       uncertainties: uncertainties.length ? uncertainties : undefined,
       sources: sources.length ? sources : undefined,
       manualFlags: manualFlags.length ? manualFlags : undefined,

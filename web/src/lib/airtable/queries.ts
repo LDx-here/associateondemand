@@ -18,6 +18,7 @@ import {
   airtablePatch,
   isDemoMode,
 } from "./client";
+import { buildDocumentCreateFields } from "./document-create";
 import { SPEC_FIELDS as F, TABLES } from "./fields";
 import { emptyCaseAssessment, parseCaseAssessment, serializeCaseAssessment } from "../case-assessment";
 import type {
@@ -1136,16 +1137,12 @@ export async function registerAssessmentDocumentInAirtable(
       uploadedAt: new Date().toISOString(),
     };
   }
-  const fields: RawFields = {
-    [d.title]: payload.title.slice(0, 240),
-    [d.category]: payload.category,
-    [d.created_at]: new Date().toISOString(),
-    [d.uploaded_by]: "Attorney",
-    [d.ocr_status]: "processed",
-  };
-  if (resolved) {
-    fields[d.matter_id] = [resolved.recordId];
-  }
+  const fields: RawFields = buildDocumentCreateFields({
+    title: payload.title,
+    category: payload.category,
+    uploadedBy: "Attorney",
+    matterRecordId: resolved?.recordId,
+  }) as RawFields;
   const rec = await airtableCreate(TABLES.documents, fields);
   return mapDocument(rec, resolved?.matterId ?? matterCode);
 }

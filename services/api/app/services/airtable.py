@@ -63,11 +63,18 @@ FIELDS_DOCUMENTS = {
     "category": "category",
     "created_at": "created_at",
     "uploaded_by": "uploaded_by",
+    # BUILD_SPEC §2 columns not yet on live base `appqwRBpXjg9xlnhZ` — do not write
+    # until added via Airtable UI (see docs/constitution/BUILD_SPEC-GAP-AUDIT.md §6).
     "ocr_status": "ocr_status",
     "pii_tier": "pii_tier",
     "file_type": "file_type",
     "file_path": "file_path",
 }
+
+# Writable Documents columns on the live base (post field-rename migration).
+LIVE_DOCUMENT_CREATE_FIELDS = frozenset(
+    {"title", "matter_id", "category", "created_at", "uploaded_by"},
+)
 
 FIELDS_MATTERS = {
     "matter_id": "matter_id",
@@ -455,20 +462,21 @@ def create_document(
     file_type: str = "",
     file_path: str = "",
 ) -> dict[str, Any] | None:
-    """Persist a Documents row after intake (BUILD_SPEC §7.8)."""
+    """Persist a Documents row after intake (BUILD_SPEC §7.8).
 
+    OCR status, PII tier, file_type, and file_path are accepted for API
+    compatibility but are not written to Airtable until those columns exist
+    on the live base. OCR text and processing metadata live in Postgres +
+    Assessment Document notes instead.
+    """
+
+    _ = (ocr_status, pii_tier, file_type, file_path)
     fields: dict[str, Any] = {
         FIELDS_DOCUMENTS["title"]: title[:240],
         FIELDS_DOCUMENTS["category"]: category[:120] or "uncategorized",
         FIELDS_DOCUMENTS["created_at"]: _now_iso(),
         FIELDS_DOCUMENTS["uploaded_by"]: uploaded_by[:120],
-        FIELDS_DOCUMENTS["ocr_status"]: ocr_status[:80],
-        FIELDS_DOCUMENTS["pii_tier"]: str(pii_tier),
     }
-    if file_type:
-        fields[FIELDS_DOCUMENTS["file_type"]] = file_type[:80]
-    if file_path:
-        fields[FIELDS_DOCUMENTS["file_path"]] = file_path[:500]
     rec_id = _resolve_matter_record_id(matter_code)
     if rec_id:
         fields[FIELDS_DOCUMENTS["matter_id"]] = [rec_id]

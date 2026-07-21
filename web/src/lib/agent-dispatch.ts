@@ -21,6 +21,14 @@ export type AgentCommandResult = {
    */
   uncertainties?: string[];
   /**
+   * Five-Anchors facts the agent relied on (show your work).
+   */
+  factsReliedOn?: string[];
+  /**
+   * Agent workflow steps taken (anchor_next + next_steps combined when available).
+   */
+  stepsTaken?: string[];
+  /**
    * Structured source list with optional URLs.
    */
   sources?: Array<{ label: string; url?: string | null }>;

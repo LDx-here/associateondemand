@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-20 (CDT) — status verified against prod (smoke PASS, pytest 31, build green, lint exit 0)  
+**Last updated:** 2026-07-21 (CDT) — upload 422 fix + research/workflow UX shipped  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -484,6 +484,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Upload blocker fix (2026-07-21):** Documents create no longer writes `ocr_status`/`pii_tier`/`file_path` to Airtable (live base lacks those columns — caused 422). Westlaw research paste panel, attorney instructions, workflow strip, and Associate panel "Show your work" shipped on matter workbench.
 - **Status verify (2026-07-20):** prod smoke PASS; `pytest` 31 passed; `next build` green; `npm run lint` exit 0 (`718b486`, `ee792c6` fixed circular-config crash; 3 react-hooks diagnostics remain non-blocking).
 - **Pass 16 (deployed 2026-07-06):** Master Roadmap Phase 4 — Stripe Checkout + webhook, pay-before-dispatch, billing honesty when configured, dashboard awaiting-payment + Firm Memory count KPI.
 - **Pass 15 (deployed 2026-07-06):** Master Roadmap Phase 2 — onboarding wizard, intelligent intake guidance panel, Strong Reader OCR prefill, context-aware intake sidebar.
@@ -502,9 +503,9 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **First pilot matter (ops — main priority)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): pick pilot attorney, conflict check, live intake → inbox → approve → export.
-2. **Activate Stripe on Vercel (optional before pilot)** — follow [`docs/runbooks/stripe-activation.md`](docs/runbooks/stripe-activation.md) (three env vars, webhook, test card 4242…); without keys, invoice-after-delivery fallback still works.
-3. **Manual verify pass 15–16 UI** — onboarding wizard; `/assignments/new?deliverable=aos-discretionary-brief` checkout or invoice path; `/inbox?payment=success` toast; Settings billing status.
+1. **Verify upload fix on prod** — matter Documents tab → upload PDF; confirm no Airtable 422 and document row appears.
+2. **First pilot matter (ops — main priority)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): pick pilot attorney, conflict check, live intake → inbox → approve → export.
+3. **Activate Stripe on Vercel (optional before pilot)** — follow [`docs/runbooks/stripe-activation.md`](docs/runbooks/stripe-activation.md) (three env vars, webhook, test card 4242…); without keys, invoice-after-delivery fallback still works.
 4. **Site Reviewer cycle** — checklist in [`docs/runbooks/site-reviewer-agent.md`](docs/runbooks/site-reviewer-agent.md).
 5. **Roadmap Phase 3** — Firm Memory depth + style QC per Master Implementation Roadmap §5.
 

@@ -40,6 +40,8 @@ export function AgentResultPanel({
   const hasManualFlags = (result.manualFlags ?? []).length > 0;
   const hasSources = (result.sources ?? []).length > 0;
   const hasNextSteps = (result.nextSteps ?? []).length > 0;
+  const hasFactsReliedOn = (result.factsReliedOn ?? []).length > 0;
+  const hasStepsTaken = (result.stepsTaken ?? []).length > 0;
 
   const statusLabel = hasManualFlags
     ? "Manual review required"
@@ -181,6 +183,61 @@ export function AgentResultPanel({
         </div>
       ) : null}
 
+      {(hasFactsReliedOn || hasStepsTaken || hasSources) && (
+        <div className="mt-1 rounded-md border border-slate-200 bg-white p-2">
+          <p className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500">
+            Show your work
+          </p>
+          {hasFactsReliedOn ? (
+            <div className="mb-2">
+              <p className="text-[0.65rem] font-medium text-slate-600">Facts relied on</p>
+              <ul className="list-inside list-disc text-slate-700">
+                {(variant === "compact" ? result.factsReliedOn!.slice(0, 3) : result.factsReliedOn!).map(
+                  (fact) => (
+                    <li key={fact}>{fact}</li>
+                  ),
+                )}
+              </ul>
+            </div>
+          ) : null}
+          {hasStepsTaken ? (
+            <div className="mb-2">
+              <p className="text-[0.65rem] font-medium text-slate-600">Steps taken</p>
+              <ul className="list-inside list-disc text-slate-700">
+                {(variant === "compact" ? result.stepsTaken!.slice(0, 4) : result.stepsTaken!).map(
+                  (step) => (
+                    <li key={step}>{step}</li>
+                  ),
+                )}
+              </ul>
+            </div>
+          ) : null}
+          {hasSources ? (
+            <div>
+              <p className="text-[0.65rem] font-medium text-slate-600">Sources used</p>
+              <ul className="space-y-0.5 text-slate-700">
+                {(variant === "compact" ? result.sources!.slice(0, 3) : result.sources!).map((src) => (
+                  <li key={src.label} className="flex items-center gap-1">
+                    {src.url ? (
+                      <a
+                        href={src.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="truncate text-sky-700 underline underline-offset-2 hover:text-sky-900"
+                      >
+                        {src.label}
+                      </a>
+                    ) : (
+                      <span className="truncate">{src.label}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      )}
+
       {(hasGaps || hasUncertainties) && (
         <div className="mt-1 rounded-md border border-amber-200 bg-amber-50 p-2">
           <p className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-amber-700">
@@ -212,35 +269,6 @@ export function AgentResultPanel({
                 {flag}
               </li>
             ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {hasSources ? (
-        <div className="mt-1">
-          <p className="mb-0.5 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500">
-            Sources
-          </p>
-          <ul className="space-y-0.5 text-slate-700">
-            {(variant === "compact" ? result.sources!.slice(0, 3) : result.sources!).map((src) => (
-              <li key={src.label} className="flex items-center gap-1">
-                {src.url ? (
-                  <a
-                    href={src.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="truncate text-sky-700 underline underline-offset-2 hover:text-sky-900"
-                  >
-                    {src.label}
-                  </a>
-                ) : (
-                  <span className="truncate">{src.label}</span>
-                )}
-              </li>
-            ))}
-            {variant === "compact" && result.sources!.length > 3 ? (
-              <li className="text-slate-500">+ {result.sources!.length - 3} more</li>
-            ) : null}
           </ul>
         </div>
       ) : null}

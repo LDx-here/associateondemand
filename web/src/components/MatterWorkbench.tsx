@@ -34,6 +34,9 @@ import { DraftingFactsCompletenessChip } from "./PracticeAreaFactGuide";
 import { MatterEventsPanel } from "./MatterEventsPanel";
 import { NoteComposer } from "./NoteComposer";
 import { StatusBadge } from "./StatusBadge";
+import { AttorneyInstructionsPanel } from "./AttorneyInstructionsPanel";
+import { MatterWorkflowStrip } from "./MatterWorkflowStrip";
+import { ResearchInputPanel } from "./ResearchInputPanel";
 import { MatterDocumentUpload } from "./MatterDocumentUpload";
 import { MatterHeaderEditModal } from "./MatterHeaderEditModal";
 import { TaskList } from "./TaskList";
@@ -241,6 +244,16 @@ export function MatterWorkbench({
         ) : null}
       </header>
 
+      <MatterWorkflowStrip notes={notes} documents={documents} assignments={assignments} />
+
+      <AttorneyInstructionsPanel
+        matterId={matter.matterId}
+        initialInstructions={
+          notes.find((n) => n.type === "Instructions")?.content ?? ""
+        }
+        onSaved={refresh}
+      />
+
       <MatterAgentAlertReview
         matterId={matter.matterId}
         initialAlerts={agentAlerts}
@@ -283,6 +296,11 @@ export function MatterWorkbench({
             documents={documents}
             firmTemplates={firmTemplates}
             onUpdated={refresh}
+          />
+          <ResearchInputPanel
+            matterId={matter.matterId}
+            researchNoteCount={notes.filter((n) => n.type === "Research").length}
+            onSaved={refresh}
           />
           <MatterDocumentUpload matterId={matter.matterId} onUploaded={refresh} />
           <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">

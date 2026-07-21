@@ -117,3 +117,10 @@
 - **Files Affected:** `practice-area-facts.ts`, `deliverable-catalog.ts`, `FirmMemorySetup.tsx`, `FirmMemoryPrompt.tsx`, `GettingStartedBanner.tsx`, `templates/page.tsx`, `settings/page.tsx`, `api/firm-memory`, `api/firm-samples`, `docs/runbooks/overflow-counsel-user-journey.md`, `CHECKPOINT.md`
 - **Command Executed:** `pytest`, `npm run test:catalog`, `test:facts`, `test:assessment-docs`, `npm run build`, `scripts/smoke-production.sh`, `flyctl deploy`, `vercel deploy --prod`
 - **Reason/Context:** User feedback on Stripe honesty, Firm Memory entry point, AOS fact mapping, and overflow counsel user journey clarity.
+
+## 2026-07-21 — Upload 422 fix + research/workflow UX
+
+- **Action:** Fixed Airtable Documents create 422 (`UNKNOWN_FIELD_NAME: ocr_status`); added Westlaw research paste, attorney instructions, workflow strip, Associate panel show-your-work.
+- **Files Affected:** `airtable.py`, `document-create.ts`, `queries.ts`, `matter_context.py`, `MatterWorkbench.tsx`, `ResearchInputPanel.tsx`, `AttorneyInstructionsPanel.tsx`, `MatterWorkflowStrip.tsx`, `AgentResultPanel.tsx`, `command/route.ts`, tests
+- **Command Executed:** `pytest` (34 passed), `npm run test:document-create`, `npm run build`, `flyctl deploy`, `vercel deploy --prod`
+- **Reason/Context:** User blocked on document upload; requested Westlaw research path, persistent instructions, and visible agent reasoning.
