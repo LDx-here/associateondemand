@@ -1,0 +1,21 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: legalos
+      MYSQL_DATABASE: legal_os
+      MYSQL_USER: legalos
+      MYSQL_PASSWORD: legalos
+    ports:
+      - "3307:3306"
+    volumes:
+      - legal_os_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ulegalos", "-plegalos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  legal_os_mysql:

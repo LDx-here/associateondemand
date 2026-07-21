@@ -1,9 +1,20 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-21 (CDT) — upload 422 fix + research/workflow UX shipped  
+**Last updated:** 2026-07-21 (CDT) — Legal OS greenfield track (`legal-os/`) Steps 1–18  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+## Dual-track status
+
+| Track | Location | Stack | Production |
+|-------|----------|-------|------------|
+| **AOD (live)** | `web/` + `services/api/` | Next.js + FastAPI + Airtable | https://aod-next.vercel.app |
+| **Legal OS (greenfield)** | `legal-os/` | React 19 + Express + tRPC 11 + Drizzle + MySQL | Local/dev — not deployed |
+
+Legal OS blueprint: [`legal-os/docs/`](legal-os/docs/) · [`.aod-context/technical/legal-os/`](.aod-context/technical/legal-os/)
+
+**Legal OS env requirements:** `DATABASE_URL` (MySQL via `legal-os/docker-compose.yml` port 3307), `ADMIN_API_KEY`, optional `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`, `STRIPE_*`, `CLIO_*` (disabled until `CLIO_ENABLED=true` per LEGAL_BOUNDARIES).
 
 ## Project status: **BUILD_SPEC complete** (code)
 
@@ -484,6 +495,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Legal OS greenfield (2026-07-21):** Full `legal-os/` app — Matter Engine state machine, 10 tRPC routers (matters/leads/conflicts/agents/firmMemory/services/drafting/clio/files/payments), Stripe webhook, abandoned-session cron, /associate landing + intake funnel + admin dashboard, Vitest (22 tests). Production AOD untouched.
 - **Document upload UX (2026-07-21):** Documents list moved above upload controls with breadcrumb, status badges, expandable OCR preview, post-upload toast + row highlight; clarifies Airtable storage location (no file-system folder).
 - **Upload blocker fix (2026-07-21):** Documents create no longer writes `ocr_status`/`pii_tier`/`file_path` to Airtable (live base lacks those columns — caused 422). Westlaw research paste panel, attorney instructions, workflow strip, and Associate panel "Show your work" shipped on matter workbench.
 - **Status verify (2026-07-20):** prod smoke PASS; `pytest` 31 passed; `next build` green; `npm run lint` exit 0 (`718b486`, `ee792c6` fixed circular-config crash; 3 react-hooks diagnostics remain non-blocking).
@@ -504,7 +516,8 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Verify document upload UX on prod** — matter Documents tab → upload PDF; confirm toast, highlighted row in list above, expandable OCR preview.
+1. **Legal OS local smoke** — `cd legal-os && docker compose up -d && cp .env.example .env && npm run db:setup && npm run dev` + `npx vite`; open `/associate` and `/admin`.
+2. **Verify document upload UX on prod** — matter Documents tab → upload PDF; confirm toast, highlighted row in list above, expandable OCR preview.
 2. **First pilot matter (ops — main priority)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): pick pilot attorney, conflict check, live intake → inbox → approve → export.
 3. **Activate Stripe on Vercel (optional before pilot)** — follow [`docs/runbooks/stripe-activation.md`](docs/runbooks/stripe-activation.md) (three env vars, webhook, test card 4242…); without keys, invoice-after-delivery fallback still works.
 4. **Site Reviewer cycle** — checklist in [`docs/runbooks/site-reviewer-agent.md`](docs/runbooks/site-reviewer-agent.md).

@@ -51,6 +51,7 @@ Visual maps of the internal engine and partner-facing overflow counsel flow:
 | [AssociateOnDemand_Practice_Fact_Mapping.md](./technical/AssociateOnDemand_Practice_Fact_Mapping.md) | Deliverable-aware fact schemas |
 | [Airtable schema (live)](../docs/strategy/AssociateOnDemand_Associate_Services_Airtable_Schema.md) | Phase 3+ contractor schema sketch |
 | [Associate workflow](../docs/strategy/AssociateOnDemand_Associate_Services_Workflow.md) | Phase 3+ marketplace workflow |
+| [Legal OS implementation strategy](./technical/legal-os/) | Greenfield React+tRPC+MySQL track in `legal-os/` |
 
 ### `agent/` — AI partner rules
 
