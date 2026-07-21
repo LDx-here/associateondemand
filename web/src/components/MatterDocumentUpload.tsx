@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -9,15 +10,23 @@ import {
   uploadDocument,
   type UploadResult,
 } from "@/components/IntakeUploadShared";
+import { useToast } from "@/components/Toast";
+import { documentStorageNote } from "@/lib/document-display";
 import { btnPrimary } from "@/lib/ui-classes";
+
+export type DocumentUploadPayload = {
+  documentId?: string;
+  result: UploadResult;
+};
 
 export function MatterDocumentUpload({
   matterId,
   onUploaded,
 }: {
   matterId: string;
-  onUploaded?: () => void;
+  onUploaded?: (payload: DocumentUploadPayload) => void;
 }) {
+  const { showToast } = useToast();
   const [manualApproved, setManualApproved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [apiReachable, setApiReachable] = useState<boolean | null>(null);
@@ -54,12 +63,21 @@ export function MatterDocumentUpload({
       const data = await uploadDocument(matterId, file, manualApproved, "single");
       if (data.error) {
         setError(data.error);
+        showToast(data.error, "error");
       } else {
         setResult(data);
-        onUploaded?.();
+        const documentId = data.airtable_document_id;
+        showToast(
+          `Saved to this matter → Documents tab. "${data.filename ?? file.name}" is in the list above.`,
+          "success",
+        );
+        onUploaded?.({ documentId, result: data });
+        input.value = "";
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      const message = err instanceof Error ? err.message : "Upload failed";
+      setError(message);
+      showToast(message, "error");
     } finally {
       setBusy(false);
     }
@@ -67,7 +85,11 @@ export function MatterDocumentUpload({
 
   return (
     <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <h3 className="text-sm font-semibold text-slate-900">Upload document</h3>
+      <h3 className="text-sm font-semibold text-slate-900">Upload supporting document</h3>
+      <p className="text-xs text-slate-600">
+        PDF, image, or text files upload here and appear immediately in the Documents list above.{" "}
+        {documentStorageNote(matterId)}.
+      </p>
       {apiReachable === false ? (
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
           Document service is offline. Start the API stack to process uploads, or use the Intake tab when
@@ -93,15 +115,24 @@ export function MatterDocumentUpload({
       </form>
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
       {result ? (
-        <UploadProgressTable
-          items={[
-            {
-              name: result.filename ?? "upload",
-              status: "done",
-              result,
-            },
-          ]}
-        />
+        <div className="space-y-2">
+          <p className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+            <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
+            <span>
+              <strong>{result.filename ?? "Document"}</strong> saved — scroll up to the Documents list to
+              preview and verify.
+            </span>
+          </p>
+          <UploadProgressTable
+            items={[
+              {
+                name: result.filename ?? "upload",
+                status: "done",
+                result,
+              },
+            ]}
+          />
+        </div>
       ) : null}
     </div>
   );

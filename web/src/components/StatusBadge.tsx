@@ -60,6 +60,10 @@ const STATUS_BUCKETS: Record<string, Bucket> = {
   "Ready for review": "violet",
   Returned: "rose",
   Approved: "emerald",
+  // Document upload lifecycle
+  Uploaded: "sky",
+  Ready: "emerald",
+  "OCR processing": "amber",
 };
 
 function bucketFor(status: string): Bucket {

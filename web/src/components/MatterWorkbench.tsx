@@ -3,7 +3,6 @@
 import {
   Calendar,
   ClipboardList,
-  FileText,
   MessageSquare,
   ScrollText,
 } from "lucide-react";
@@ -22,7 +21,6 @@ import type {
   InboxItem,
 } from "@/lib/types";
 import { btnPrimary, btnSecondary, tabActive, tabInactive } from "@/lib/ui-classes";
-import { formatDate } from "@/lib/utils";
 import { AddTaskForm } from "./AddTaskForm";
 import { EditableOutputMemo } from "./EditableOutputMemo";
 import { MatterAssignmentReview } from "./MatterAssignmentReview";
@@ -37,7 +35,9 @@ import { StatusBadge } from "./StatusBadge";
 import { AttorneyInstructionsPanel } from "./AttorneyInstructionsPanel";
 import { MatterWorkflowStrip } from "./MatterWorkflowStrip";
 import { ResearchInputPanel } from "./ResearchInputPanel";
-import { MatterDocumentUpload } from "./MatterDocumentUpload";
+import type { UploadResult } from "./IntakeUploadShared";
+import { MatterDocumentUpload, type DocumentUploadPayload } from "./MatterDocumentUpload";
+import { MatterDocumentsList } from "./MatterDocumentsList";
 import { MatterHeaderEditModal } from "./MatterHeaderEditModal";
 import { TaskList } from "./TaskList";
 
@@ -97,6 +97,8 @@ export function MatterWorkbench({
   const [expandedElementId, setExpandedElementId] = useState<string | null>(null);
   const [firmTemplates, setFirmTemplates] = useState<DocumentRow[]>([]);
   const [newElementName, setNewElementName] = useState("");
+  const [highlightDocumentId, setHighlightDocumentId] = useState<string | null>(null);
+  const [uploadPreviews, setUploadPreviews] = useState<Record<string, UploadResult>>({});
 
   useEffect(() => {
     void fetch("/api/assessment-templates")
@@ -138,6 +140,16 @@ export function MatterWorkbench({
     window.addEventListener(MATTER_REVIEW_REFRESH_EVENT, onReviewRefresh);
     return () => window.removeEventListener(MATTER_REVIEW_REFRESH_EVENT, onReviewRefresh);
   }, [matter.matterId, refresh]);
+
+  async function handleDocumentUploaded(payload: DocumentUploadPayload) {
+    const { documentId, result } = payload;
+    if (documentId) {
+      setUploadPreviews((prev) => ({ ...prev, [documentId]: result }));
+      setHighlightDocumentId(documentId);
+    }
+    await refresh();
+    setTab("Documents");
+  }
 
   async function saveElement(id: string) {
     const row = elements.find((r) => r.id === id);
@@ -291,56 +303,25 @@ export function MatterWorkbench({
 
       {tab === "Documents" ? (
         <div className="space-y-4">
+          <MatterDocumentsList
+            matterId={matter.matterId}
+            documents={documents}
+            highlightId={highlightDocumentId}
+            uploadPreviews={uploadPreviews}
+          />
           <CaseAssessmentPanel
             matter={matterHeader}
             documents={documents}
             firmTemplates={firmTemplates}
             onUpdated={refresh}
+            onAssessmentUploaded={handleDocumentUploaded}
           />
           <ResearchInputPanel
             matterId={matter.matterId}
             researchNoteCount={notes.filter((n) => n.type === "Research").length}
             onSaved={refresh}
           />
-          <MatterDocumentUpload matterId={matter.matterId} onUploaded={refresh} />
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-                <tr>
-                  <th className="px-4 py-3">Title</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3">OCR</th>
-                  <th className="px-4 py-3">PII tier</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Uploaded</th>
-                </tr>
-              </thead>
-              <tbody>
-                {documents.length ? (
-                  documents.map((doc) => (
-                    <tr key={doc.id} className="border-t border-slate-100">
-                      <td className="px-4 py-3 font-medium">{doc.title}</td>
-                      <td className="px-4 py-3">{doc.category || "—"}</td>
-                      <td className="px-4 py-3">{doc.ocrStatus || "—"}</td>
-                      <td className="px-4 py-3">{doc.piiTier ?? "—"}</td>
-                      <td className="px-4 py-3">{doc.fileType || "—"}</td>
-                      <td className="px-4 py-3 tabular-nums">{formatDate(doc.uploadedAt)}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="p-0">
-                    <EmptyState
-                      icon={FileText}
-                      title="No other documents yet."
-                      description="Upload supporting files below, or start with a case assessment scan above."
-                    />
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+          <MatterDocumentUpload matterId={matter.matterId} onUploaded={handleDocumentUploaded} />
         </div>
       ) : null}
 

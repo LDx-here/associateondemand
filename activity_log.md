@@ -124,3 +124,10 @@
 - **Files Affected:** `airtable.py`, `document-create.ts`, `queries.ts`, `matter_context.py`, `MatterWorkbench.tsx`, `ResearchInputPanel.tsx`, `AttorneyInstructionsPanel.tsx`, `MatterWorkflowStrip.tsx`, `AgentResultPanel.tsx`, `command/route.ts`, tests
 - **Command Executed:** `pytest` (34 passed), `npm run test:document-create`, `npm run build`, `flyctl deploy`, `vercel deploy --prod`
 - **Reason/Context:** User blocked on document upload; requested Westlaw research path, persistent instructions, and visible agent reasoning.
+
+### [2026-07-21] CHECKPOINT: document upload UX — list refresh, preview, storage clarity
+
+- **Action:** Documents list above upload form with breadcrumb, status badges, expandable OCR preview, post-upload toast + row highlight; clarifies Airtable storage (not file-system folder).
+- **Files Affected:** `MatterDocumentsList.tsx`, `document-display.ts`, `MatterDocumentUpload.tsx`, `MatterWorkbench.tsx`, `CaseAssessmentPanel.tsx`, `StatusBadge.tsx`
+- **Command Executed:** `npm run build`, commit, push, `vercel deploy --prod`
+- **Reason/Context:** Upload showed green success but users could not find where files went or preview them.

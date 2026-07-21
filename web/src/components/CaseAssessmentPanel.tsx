@@ -11,6 +11,7 @@ import {
   uploadDocument,
   type UploadResult,
 } from "@/components/IntakeUploadShared";
+import type { DocumentUploadPayload } from "@/components/MatterDocumentUpload";
 import { useToast } from "@/components/Toast";
 import { PracticeAreaFactGuide } from "@/components/PracticeAreaFactGuide";
 import {
@@ -51,11 +52,13 @@ export function CaseAssessmentPanel({
   documents,
   firmTemplates,
   onUpdated,
+  onAssessmentUploaded,
 }: {
   matter: Matter;
   documents: DocumentRow[];
   firmTemplates: DocumentRow[];
   onUpdated?: () => void;
+  onAssessmentUploaded?: (payload: DocumentUploadPayload) => void;
 }) {
   const { showToast } = useToast();
   const [manualApproved, setManualApproved] = useState(false);
@@ -115,8 +118,17 @@ export function CaseAssessmentPanel({
         ocrText: data.text_preview,
         facts: data.facts,
       });
-      showToast("Case assessment on file — feeds drafts.", "success");
-      onUpdated?.();
+      showToast(
+        "Case assessment saved → Documents list above. OCR feeds drafts automatically.",
+        "success",
+      );
+      onAssessmentUploaded?.({
+        documentId: data.airtable_document_id,
+        result: data,
+      });
+      if (!onAssessmentUploaded) {
+        onUpdated?.();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
