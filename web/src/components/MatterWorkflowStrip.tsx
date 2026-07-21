@@ -14,7 +14,7 @@ type Step = {
   current: boolean;
 };
 
-function deriveSteps(
+export function deriveWorkflowSteps(
   notes: Note[],
   documents: DocumentRow[],
   assignments: InboxItem[],
@@ -64,22 +64,41 @@ function deriveSteps(
   ];
 }
 
+const NEXT_ACTIONS: Record<StepId, string> = {
+  intake: "Submit an overflow assignment with facts and attachments.",
+  documents: "Upload case assessment and supporting documents on the Documents tab.",
+  facts: "Verify extracted facts and map legal elements before drafting.",
+  draft: "RMV is drafting — add attorney instructions or wait for Ready for review.",
+  review: "Approve the deliverable or request revision in the review panel below.",
+  export: "Export the approved deliverable and mark the assignment delivered.",
+};
+
+export function workflowNextAction(steps: Step[]): string {
+  const current = steps.find((s) => s.current);
+  if (!current) return NEXT_ACTIONS.intake;
+  return NEXT_ACTIONS[current.id];
+}
+
 export function MatterWorkflowStrip({
   notes,
   documents,
   assignments,
+  showNextAction = false,
 }: {
   notes: Note[];
   documents: DocumentRow[];
   assignments: InboxItem[];
+  showNextAction?: boolean;
 }) {
-  const steps = deriveSteps(notes, documents, assignments);
+  const steps = deriveWorkflowSteps(notes, documents, assignments);
+  const nextAction = workflowNextAction(steps);
 
   return (
-    <nav
-      aria-label="Matter workflow"
-      className="flex flex-wrap items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
-    >
+    <div className="space-y-2">
+      <nav
+        aria-label="Matter workflow"
+        className="flex flex-wrap items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
+      >
       {steps.map((step, index) => (
         <div key={step.id} className="flex items-center gap-1">
           {index > 0 ? <span className="text-slate-300">→</span> : null}
@@ -101,6 +120,12 @@ export function MatterWorkflowStrip({
           </span>
         </div>
       ))}
-    </nav>
+      </nav>
+      {showNextAction ? (
+        <p className="rounded-md border border-sky-100 bg-sky-50/80 px-3 py-2 text-sm text-sky-950">
+          <span className="font-medium">What to do next:</span> {nextAction}
+        </p>
+      ) : null}
+    </div>
   );
 }

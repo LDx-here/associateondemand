@@ -2,7 +2,7 @@
 
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { TemplateFieldForm } from "@/components/TemplateFieldForm";
 import { useToast } from "@/components/Toast";
@@ -68,15 +68,11 @@ export function TemplateApplyPanel({
   }, [map, profileId, profiles, hints]);
 
   const [values, setValues] = useState<Record<string, string>>(defaultValues);
-  const [valuesSourceKey, setValuesSourceKey] = useState(
-    () => `${templateId}:${profileId}:${JSON.stringify(hints)}`,
-  );
   const sourceKey = `${templateId}:${profileId}:${JSON.stringify(hints)}`;
 
-  if (sourceKey !== valuesSourceKey) {
-    setValuesSourceKey(sourceKey);
+  useEffect(() => {
     setValues(defaultValues);
-  }
+  }, [sourceKey, defaultValues]);
 
   function onTemplateChange(id: string) {
     setTemplateId(id);

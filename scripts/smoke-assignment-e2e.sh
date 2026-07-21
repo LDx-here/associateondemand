@@ -57,6 +57,21 @@ assert d.get('ok') is True, d
 assert d.get('demoMode') is True, 'Expected demo mode — unset AIRTABLE_PAT for this script'
 "
 
+echo "== matter list + detail navigation =="
+MATTER_CODE="$(curl -sf "$WEB/matters" | python3 -c "
+import re, sys
+html = sys.stdin.read()
+links = re.findall(r'href=\"/matters/([^\"]+)\"', html)
+assert links, 'No matter links rendered on /matters'
+print(links[0])
+")"
+MATTER_STATUS="$(curl -s -o /dev/null -w '%{http_code}' "$WEB/matters/$MATTER_CODE")"
+if [ "$MATTER_STATUS" != "200" ]; then
+  echo "FAIL: /matters/$MATTER_CODE returned HTTP $MATTER_STATUS (expected 200)"
+  exit 1
+fi
+echo "matter detail OK: $MATTER_CODE ($MATTER_STATUS)"
+
 echo "== conflict check =="
 CONFLICT="$(curl -sf -X POST "$WEB/api/conflicts/check" \
   -H "Content-Type: application/json" \

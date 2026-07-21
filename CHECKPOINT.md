@@ -1,11 +1,11 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-21 (CDT) — Pass 19 partner-firm billing model  
+**Last updated:** 2026-07-21 (CDT) — Pass 20 matter navigation fix + operator UX  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
 
-**Pass 19 (2026-07-21):** Partner-firm billing model — removed operator-side Stripe Checkout on internal intake; submit → dispatch → inbox restored. Billing copy: partner firms invoiced off-platform. Runbook: [`docs/runbooks/overflow-counsel-billing-model.md`](docs/runbooks/overflow-counsel-billing-model.md). Stripe checkout/webhook code kept for Phase 1 external funnel.
+**Pass 20 (2026-07-21):** Fixed critical matter click bug — `/matters/[id]` returned HTTP 500 (infinite re-render in `CaseAssessmentSummary` / `TemplateApplyPanel` / `LegalElementsPanel` / `ProceduralTimelinePanel` from setState-during-render). Operator UX: dashboard quick actions, matter workflow "What to do next", matters empty state with CTA. Smoke E2E now asserts matter detail 200.
 
 **Next (user choice):** run **first pilot matter** on prod (`/assignments/new` → inbox → approve → export) *or* Legal OS local pilot.
 
@@ -525,6 +525,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 20 (2026-07-21):** Matter navigation fix — removed setState-during-render infinite loops in matter workbench child panels; matters table row/link navigation hardened; dashboard operator quick actions; matter workflow "What to do next"; smoke E2E asserts `/matters/{id}` HTTP 200.
 - **Pass 19 (2026-07-21):** Partner-firm billing model — disabled operator-side Stripe Checkout on internal `/assignments/new`; restored submit → dispatch → inbox; partner invoicing copy site-wide; [`overflow-counsel-billing-model.md`](docs/runbooks/overflow-counsel-billing-model.md). Stripe routes kept for external funnel.
 - **Document isolation + smart templates (2026-07-21):** Matter-scoped document list post-filter (`matter-link-filter.ts`); firm template/sample rows excluded from matter Documents; matter_id patched on document register; smart template field maps + telephonic request example; TemplateApplyPanel on matter Overview; Firm Memory badge shows configured status; `POST /api/templates/detect-fields`. pytest 51; next build green.
 - **LLM fact enrichment (2026-07-21):** Claude enrichment pass maps heuristic OCR facts to legal elements with human labels, element-fit explanations, dedupe; auto-triggers on low-diversity heuristics; `POST /intake/enrich-facts` + Re-analyze with AI UI; grouped ExtractedFactsReview + element counts in CaseAssessmentSummary. Runbook updated. pytest 51; next build green.

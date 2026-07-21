@@ -21,14 +21,9 @@ export function ProceduralTimelinePanel({ matterId }: { matterId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const [loadedMatterId, setLoadedMatterId] = useState(matterId);
-
-  if (matterId !== loadedMatterId) {
-    setLoadedMatterId(matterId);
-    setLoading(true);
-  }
 
   useEffect(() => {
+    setLoading(true);
     let cancelled = false;
 
     void (async () => {

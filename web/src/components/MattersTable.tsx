@@ -11,16 +11,22 @@ import {
 } from "@tanstack/react-table";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FilePlus2, Briefcase } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { CaseTypeBadge, CountryBadge } from "@/components/CaseTypeBadge";
+import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { Matter } from "@/lib/types";
-import { linkMatter } from "@/lib/ui-classes";
+import { btnPrimary, linkMatter } from "@/lib/ui-classes";
 import { EMPTY_CELL, formatDate } from "@/lib/utils";
 import { isActiveMatterStatus } from "@/lib/matter-status";
 
 const columnHelper = createColumnHelper<Matter>();
+
+function matterHref(matterId: string): `/matters/${string}` {
+  return `/matters/${encodeURIComponent(matterId)}` as `/matters/${string}`;
+}
 
 export function MattersTable({ matters }: { matters: Matter[] }) {
   const router = useRouter();
@@ -61,7 +67,11 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
       columnHelper.accessor("matterId", {
         header: "Matter ID",
         cell: (info) => (
-          <Link className={linkMatter} href={`/matters/${info.getValue()}`}>
+          <Link
+            className={linkMatter}
+            href={matterHref(info.getValue())}
+            onClick={(e) => e.stopPropagation()}
+          >
             {info.getValue()}
           </Link>
         ),
@@ -70,7 +80,11 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
         id: "title",
         header: "Title",
         cell: (info) => (
-          <Link className={linkMatter} href={`/matters/${info.row.original.matterId}`}>
+          <Link
+            className={linkMatter}
+            href={matterHref(info.row.original.matterId)}
+            onClick={(e) => e.stopPropagation()}
+          >
             {info.getValue() || EMPTY_CELL}
           </Link>
         ),
@@ -217,11 +231,18 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
                 <tr
                   key={row.id}
                   className="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
-                  onClick={(e) => {
-                    const target = e.target as HTMLElement;
-                    if (target.closest("a, button, input, select, label")) return;
-                    router.push(`/matters/${row.original.matterId}`);
+                  onClick={() => {
+                    router.push(matterHref(row.original.matterId));
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      router.push(matterHref(row.original.matterId));
+                    }
+                  }}
+                  tabIndex={0}
+                  role="link"
+                  aria-label={`Open matter ${row.original.matterId}`}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-4 py-3">
@@ -232,8 +253,39 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
               ))
             ) : (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-8 text-center text-slate-500">
-                  No matters match your filters.
+                <td colSpan={columns.length} className="px-4 py-8">
+                  <EmptyState
+                    icon={Briefcase}
+                    title={matters.length === 0 ? "No matters yet." : "No matters match your filters."}
+                    description={
+                      matters.length === 0
+                        ? "Create your first overflow assignment or import a matter to get started."
+                        : "Try clearing filters or enable Show closed to see archived matters."
+                    }
+                    action={
+                      matters.length === 0 ? (
+                        <Link href="/assignments/new" className={`${btnPrimary} inline-flex items-center gap-2`}>
+                          <FilePlus2 className="h-4 w-4" aria-hidden />
+                          New assignment
+                        </Link>
+                      ) : showClosed || statusFilter || caseTypeFilter || countryFilter || postureFilter || globalFilter ? (
+                        <button
+                          type="button"
+                          className={btnPrimary}
+                          onClick={() => {
+                            setGlobalFilter("");
+                            setStatusFilter("");
+                            setCaseTypeFilter("");
+                            setCountryFilter("");
+                            setPostureFilter("");
+                            setShowClosed(true);
+                          }}
+                        >
+                          Clear filters
+                        </button>
+                      ) : undefined
+                    }
+                  />
                 </td>
               </tr>
             )}

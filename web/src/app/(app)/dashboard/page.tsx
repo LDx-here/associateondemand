@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { GettingStartedBanner, OnboardingWizard } from "@/components/OnboardingWizard";
+import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { ResumeIntakeBanner } from "@/components/ResumeIntakeBanner";
 import { EmptyState } from "@/components/EmptyState";
 import { DashboardCharts } from "@/components/DashboardCharts";
@@ -35,6 +36,7 @@ import {
 } from "@/lib/data-store";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
 import { getSupabaseSessionUser } from "@/lib/supabase/server";
+import { partnerSubmissionUrl } from "@/lib/partner-submission";
 import { btnPrimary, linkMatter } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
 
@@ -107,6 +109,8 @@ export default async function DashboardPage() {
     year: "numeric",
   });
 
+  const partnerLink = partnerSubmissionUrl();
+
   const statusCounts = [...new Set(matters.map((m) => m.status || "Unknown"))]
     .map((name) => ({ name, value: matters.filter((m) => (m.status || "Unknown") === name).length }))
     .filter((row) => row.value > 0);
@@ -142,6 +146,65 @@ export default async function DashboardPage() {
       <OnboardingWizard />
       <GettingStartedBanner />
       <ResumeIntakeBanner />
+
+      <section className="rounded-lg border border-sky-200 bg-sky-50/40 px-4 py-3 text-sm text-sky-950">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <strong>Partner submission link</strong> — send external firms to submit overflow work with quoted flat fees.
+            <p className="mt-1 font-mono text-xs text-sky-900">{partnerLink}</p>
+          </div>
+          <CopyLinkButton url={partnerLink} label="Copy partner link" />
+        </div>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Link
+          href="/assignments/new"
+          className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-sky-200 hover:bg-sky-50/40"
+        >
+          <FilePlus2 className="h-5 w-5 shrink-0 text-sky-800" aria-hidden />
+          <div>
+            <p className="font-medium text-slate-900">New assignment</p>
+            <p className="text-xs text-slate-600">Submit overflow work to RMV</p>
+          </div>
+        </Link>
+        <Link
+          href="/inbox"
+          className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-violet-200 hover:bg-violet-50/40"
+        >
+          <Inbox className="h-5 w-5 shrink-0 text-violet-800" aria-hidden />
+          <div>
+            <p className="font-medium text-slate-900">Review inbox</p>
+            <p className="text-xs text-slate-600">
+              {overflow.deliverablesInReview > 0
+                ? `${overflow.deliverablesInReview} deliverable${overflow.deliverablesInReview === 1 ? "" : "s"} awaiting sign-off`
+                : "Assignments and agent alerts"}
+            </p>
+          </div>
+        </Link>
+        <Link
+          href="/matters"
+          className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40"
+        >
+          <Briefcase className="h-5 w-5 shrink-0 text-emerald-800" aria-hidden />
+          <div>
+            <p className="font-medium text-slate-900">Open matters</p>
+            <p className="text-xs text-slate-600">{matters.length} in caseload</p>
+          </div>
+        </Link>
+        <Link
+          href="/templates#firm-memory"
+          className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-amber-200 hover:bg-amber-50/40"
+        >
+          <Sparkles className="h-5 w-5 shrink-0 text-amber-800" aria-hidden />
+          <div>
+            <p className="font-medium text-slate-900">Firm Memory</p>
+            <p className="text-xs text-slate-600">
+              {firmMemory.configured ? "Style profile configured" : "Set up before first pilot"}
+            </p>
+          </div>
+        </Link>
+      </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard

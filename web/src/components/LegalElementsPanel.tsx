@@ -43,23 +43,21 @@ export function LegalElementsPanel({
   const [newElementName, setNewElementName] = useState("");
   const [fetchedPayload, setFetchedPayload] = useState<AssessmentOcrPayload | null>(null);
   const [seeding, setSeeding] = useState(false);
-  const [fetchedDocId, setFetchedDocId] = useState<string | null>(null);
 
   const templates = useMemo(
     () => legalElementTemplatesForMatter(matter.caseType),
     [matter.caseType],
   );
   const assessmentDoc = useMemo(() => findCaseAssessmentDocument(documents), [documents]);
+  const assessmentDocId = assessmentDoc?.id ?? null;
   const payload = assessmentDoc ? fetchedPayload : null;
   const facts = useMemo(() => normalizeExtractedFacts(payload?.facts), [payload]);
 
-  if (assessmentDoc?.id !== fetchedDocId) {
-    setFetchedDocId(assessmentDoc?.id ?? null);
-    if (!assessmentDoc) setFetchedPayload(null);
-  }
-
   useEffect(() => {
-    if (!assessmentDoc) return;
+    if (!assessmentDocId) {
+      setFetchedPayload(null);
+      return;
+    }
     void fetch(`/api/matters/${matter.matterId}/case-assessment-document`)
       .then((r) => r.json())
       .then((data: { payload?: AssessmentOcrPayload | null; note?: { content?: string } }) => {
@@ -68,7 +66,7 @@ export function LegalElementsPanel({
         else setFetchedPayload(null);
       })
       .catch(() => setFetchedPayload(null));
-  }, [matter.matterId, assessmentDoc?.id]);
+  }, [matter.matterId, assessmentDocId]);
 
   async function saveElement(row: LegalElementRow) {
     const resp = await fetch(`/api/matters/${matter.matterId}/legal-elements`, {

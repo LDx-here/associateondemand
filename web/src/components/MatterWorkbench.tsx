@@ -234,7 +234,7 @@ export function MatterWorkbench({
         ) : null}
       </header>
 
-      <MatterWorkflowStrip notes={notes} documents={documents} assignments={assignments} />
+      <MatterWorkflowStrip notes={notes} documents={documents} assignments={assignments} showNextAction />
 
       <AttorneyInstructionsPanel
         matterId={matter.matterId}
