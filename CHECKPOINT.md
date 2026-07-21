@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-21 (CDT) — fact extraction QC + case assessment display  
+**Last updated:** 2026-07-21 (CDT) — matter workbench reorg + close matter  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -523,6 +523,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Matter workbench reorg (2026-07-21):** Close/reopen matter (Airtable status Closed); matters list active-only default + Show closed. Tabs: Overview | Documents | Case activity | Procedural timeline | Legal elements | Tasks. Procedural milestones in Notes (type Procedural); legal elements with practice-area templates + extracted fact mapping; task templates from deliverable catalog. Workflow strip aligned. Runbook: `docs/runbooks/firm-memory-legal-elements.md`. Commit `9299349`; pytest 46; next build; Vercel prod.
 - **Fact extraction QC (2026-07-21):** Attorney verify/edit panel for extracted facts on case assessment upload; honest OCR confidence labels; case assessment summary on matter header; case-type extraction hints wired to Strong Reader intake. Runbook: `docs/runbooks/fact-extraction-and-accuracy.md`. Verified: pytest (46), test:assessment-docs, next build, smoke-production PASS.
 - **Document upload UX fix (2026-07-21):** Matter Documents tab is primary upload surface (list → upload → assessment). Airtable document query matches linked record id + matter code. View PDF + preview cache wired on intake, assignment attachments, and legacy `/intake/upload` paths; assignment with files redirects to matter Documents tab. PII tier 0 policy moved to Settings admin section. QA screenshots: `docs/qa/*.png`.
 - **Pass 18 (2026-07-21):** Gap closure — `smoke-assignment-e2e.sh`, Matters+Contacts conflict check with UI matches, assignment transition helpers + Delivered on export, abandoned intake session API + Vercel cron, `stripe-setup-checklist.sh`, Settings Phase 3+ locks. Verified: pytest (43), test:matter-stage, test:assignment-transitions, next build, smoke-production, smoke-assignment-e2e PASS.
@@ -548,12 +549,11 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Attorney verify on prod** — upload case assessment on a pilot matter → edit/verify extracted facts → confirm case assessment summary matches your form.
-2. **One attorney action batch (optional before pilot):** set Stripe + Resend env vars on Vercel — see gap table above and `bash scripts/stripe-setup-checklist.sh`.
-3. **First pilot matter (ops — main priority)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): pick pilot attorney, conflict check, live intake → inbox → approve → export.
-3. **Verify pass 18 on prod** — conflict match list on intake; export marks Delivered; dashboard resume banner.
-4. **Legal OS local smoke (optional)** — `cd legal-os && docker compose up -d && npm run dev`.
-5. **Roadmap Phase 3** — Firm Memory depth + style QC per Master Implementation Roadmap §5.
+1. **Pilot matter on new workbench** — close/reopen a test matter; fill procedural timeline; load legal elements; verify Show closed on `/matters`.
+2. **Upload immigration book excerpts** — `brain/03_Firm_Knowledge/` + Firm Memory per `docs/runbooks/firm-memory-legal-elements.md`.
+3. **First pilot matter (ops)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): intake → inbox → approve → export.
+4. **Optional:** Stripe + Resend env vars — `bash scripts/stripe-setup-checklist.sh`.
+5. **Roadmap Phase 3** — Firm Memory depth + style QC.
 
 ## Blockers
 

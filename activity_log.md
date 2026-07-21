@@ -1,3 +1,5 @@
+### [2026-07-21] CHECKPOINT: matter workbench reorg — close matter, tab restructure (Case activity / Procedural timeline / Legal elements), task templates, workflow strip; commit 9299349; pytest 46; next build; Vercel prod
+
 ### [2026-07-21] CHECKPOINT: fact extraction QC — attorney verify/edit extracted facts, OCR confidence honesty, case assessment summary on matter header, case-type extraction hints; pytest 46; next build; smoke pass; Fly + Vercel prod
 
 ### [2026-07-21] CHECKPOINT: document upload UX — Matter Documents tab primary; Airtable list filter fix; View PDF on all upload paths; PII tier 0 in Settings; pytest 43; next build; Vercel prod
