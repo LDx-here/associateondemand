@@ -139,13 +139,15 @@ def format_assessment_document(raw: Any) -> str:
         lines.append(f"- OCR text:\n{str(ocr).strip()[:3000]}")
     facts = data.get("facts")
     if isinstance(facts, list) and facts:
-        lines.append("- Extracted fields:")
+        lines.append("- Extracted fields (attorney-verified values preferred):")
         for fact in facts[:24]:
             if not isinstance(fact, dict):
                 continue
-            val = str(fact.get("value") or "").strip()
+            edited = str(fact.get("editedValue") or "").strip()
+            val = edited or str(fact.get("value") or "").strip()
             if val:
-                lines.append(f"  - {fact.get('fact_type', 'fact')}: {val}")
+                tag = " [verified]" if fact.get("verified") else " [needs review]"
+                lines.append(f"  - {fact.get('fact_type', 'fact')}: {val}{tag}")
     return "\n".join(lines) if len(lines) > 1 else ""
 
 

@@ -11,6 +11,7 @@ import {
   createNoteForMatter,
   getAssessmentOcrNote,
   registerAssessmentDocument,
+  saveAssessmentOcrPayload,
 } from "@/lib/data-store";
 
 type Ctx = { params: Promise<{ matterId: string }> };
@@ -30,6 +31,9 @@ export async function POST(req: Request, ctx: Ctx) {
     airtableDocumentId?: string;
     ocrText?: string;
     facts?: AssessmentOcrPayload["facts"];
+    ocrConfidence?: number;
+    practiceArea?: string;
+    deliverableId?: string;
   };
 
   try {
@@ -57,6 +61,9 @@ export async function POST(req: Request, ctx: Ctx) {
       ocrText: body.ocrText,
       facts: body.facts,
       uploadedAt: doc.uploadedAt,
+      ocrConfidence: body.ocrConfidence,
+      practiceArea: body.practiceArea,
+      deliverableId: body.deliverableId,
     };
 
     await createNoteForMatter(
@@ -69,6 +76,33 @@ export async function POST(req: Request, ctx: Ctx) {
     return NextResponse.json({ ok: true, document: doc, payload });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Registration failed";
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+}
+
+export async function PUT(req: Request, ctx: Ctx) {
+  const { matterId } = await ctx.params;
+  let body: { payload?: AssessmentOcrPayload; verifiedBy?: string };
+
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  if (!body.payload || body.payload.v !== 1) {
+    return NextResponse.json({ error: "payload with v:1 is required" }, { status: 400 });
+  }
+
+  try {
+    const saved = await saveAssessmentOcrPayload(
+      matterId,
+      body.payload,
+      body.verifiedBy ?? "Attorney",
+    );
+    return NextResponse.json({ ok: true, payload: saved });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Save failed";
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

@@ -16,6 +16,7 @@ import {
   documentViewLabel,
 } from "@/lib/document-display";
 import { getBlobPreview, getCachedDocumentPreview } from "@/lib/document-preview-cache";
+import { formatOcrConfidence } from "@/lib/extraction-confidence";
 import type { DocumentRow } from "@/lib/types";
 import { btnSecondary } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
@@ -321,8 +322,10 @@ function DocumentPreviewPanel({
         ) : null}
         {preview?.confidence != null ? (
           <div>
-            <dt className="text-slate-500">Confidence</dt>
-            <dd>{Math.round(preview.confidence * 100)}%</dd>
+            <dt className="text-slate-500">{formatOcrConfidence(preview.confidence)?.label ?? "Confidence"}</dt>
+            <dd title={formatOcrConfidence(preview.confidence)?.tooltip}>
+              {formatOcrConfidence(preview.confidence)?.shortLabel ?? `${Math.round(preview.confidence * 100)}%`}
+            </dd>
           </div>
         ) : null}
         {doc.uploadedBy ? (

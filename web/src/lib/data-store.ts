@@ -61,6 +61,8 @@ import {
   FIRM_TEMPLATE_MATTER_ID,
   isAssessmentTemplateDocument,
   isFirmSampleDocument,
+  serializeAssessmentOcrPayload,
+  type AssessmentOcrPayload,
 } from "./assessment-documents";
 import type {
   AssignmentStatus,
@@ -767,4 +769,43 @@ export async function getAssessmentOcrNote(matterId: string): Promise<Note | nul
     return matches[0] ?? null;
   }
   return findLatestAssessmentOcrNoteForMatter(matterId);
+}
+
+export async function saveAssessmentOcrPayload(
+  matterId: string,
+  payload: AssessmentOcrPayload,
+  author = "Attorney",
+): Promise<AssessmentOcrPayload> {
+  const content = serializeAssessmentOcrPayload(payload);
+
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const existing = seed.notes
+      .filter((n) => n.matterId === matterId && n.type === ASSESSMENT_DOCUMENT_NOTE_TYPE)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    if (existing) {
+      existing.content = content;
+      existing.author = author;
+    } else {
+      seed.notes.push({
+        id: `note-${Date.now()}`,
+        matterId,
+        author,
+        content,
+        createdAt: new Date().toISOString(),
+        type: ASSESSMENT_DOCUMENT_NOTE_TYPE,
+      });
+    }
+    const { persistSeed } = await import("./demo-store-mutable");
+    await persistSeed();
+    return payload;
+  }
+
+  const existing = await findLatestAssessmentOcrNoteForMatter(matterId);
+  if (existing) {
+    await updateNoteInAirtable(existing.id, matterId, content, author);
+  } else {
+    await createNoteInAirtable(matterId, content, author, ASSESSMENT_DOCUMENT_NOTE_TYPE);
+  }
+  return payload;
 }

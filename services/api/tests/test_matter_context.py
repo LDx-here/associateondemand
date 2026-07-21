@@ -95,3 +95,22 @@ def test_format_assessment_document_uploaded_scan() -> None:
 def test_format_assessment_document_empty() -> None:
     assert format_assessment_document(None) == ""
     assert format_assessment_document({"v": 2}) == ""
+
+
+def test_format_assessment_document_prefers_verified_edited_value() -> None:
+    raw = {
+        "v": 1,
+        "documentId": "doc-1",
+        "title": "scan.pdf",
+        "facts": [
+            {
+                "fact_type": "qualifyingRelative",
+                "value": "U.S. citzen spuse",
+                "editedValue": "U.S. citizen spouse Maria Lopez",
+                "verified": True,
+            }
+        ],
+    }
+    text = format_assessment_document(raw)
+    assert "Maria Lopez" in text
+    assert "[verified]" in text

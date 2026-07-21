@@ -5,7 +5,10 @@ import assert from "node:assert/strict";
 
 import {
   CASE_ASSESSMENT_CATEGORY,
+  buildCaseAssessmentSummaryRows,
+  buildExtractionContext,
   encodeAssessmentTemplateCategory,
+  factDisplayValue,
   findCaseAssessmentDocument,
   formatAssessmentOcrForAgents,
   isCaseAssessmentDocument,
@@ -77,12 +80,57 @@ function testAssessmentOcrPayloadRoundTrip() {
   assert.match(block, /entry_date/);
 }
 
+function testFactDisplayValuePrefersEdited() {
+  assert.equal(
+    factDisplayValue({ fact_type: "date", value: "2019", editedValue: "March 2019" }),
+    "March 2019",
+  );
+}
+
+function testBuildExtractionContext() {
+  const ctx = buildExtractionContext({
+    practiceArea: "immigration",
+    caseType: "Immigration - AOS",
+    deliverableId: "aos-discretionary-brief",
+    legalElements: ["Extreme hardship"],
+  });
+  assert.equal(ctx.document_category, "case_assessment");
+  assert.ok(Array.isArray(ctx.fact_field_hints));
+  assert.ok(ctx.fact_field_hints.length >= 5);
+}
+
+function testCaseAssessmentSummaryRows() {
+  const rows = buildCaseAssessmentSummaryRows({
+    payload: {
+      v: 1,
+      documentId: "d1",
+      title: "scan.pdf",
+      facts: [
+        {
+          fact_type: "qualifyingRelative",
+          value: "U.S. citizen spouse",
+          fieldId: "qualifyingRelative",
+          verified: true,
+        },
+      ],
+    },
+    caseType: "Immigration - AOS",
+    deliverableId: "aos-discretionary-brief",
+  });
+  const qualifying = rows.find((r) => r.fieldId === "qualifyingRelative");
+  assert.ok(qualifying);
+  assert.equal(qualifying?.status, "verified");
+}
+
 function main() {
   testParseDocumentCategory();
   testTemplateCategoryEncoding();
   testFindCaseAssessmentDocument();
   testPracticeAreaFromCaseType();
   testAssessmentOcrPayloadRoundTrip();
+  testFactDisplayValuePrefersEdited();
+  testBuildExtractionContext();
+  testCaseAssessmentSummaryRows();
   console.log("verify-assessment-documents: all checks passed");
 }
 

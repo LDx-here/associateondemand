@@ -1,3 +1,5 @@
+import type { FactFieldDef } from "./practice-area-facts";
+import { fieldsForDeliverable, resolvePracticeArea } from "./practice-area-facts";
 import type { DocumentRow, Matter } from "./types";
 
 /** Encoded in Documents.category — no schema migration required. */
@@ -12,13 +14,41 @@ export type ParsedDocumentCategory = {
   practiceArea?: string;
 };
 
+export type ExtractedFactRecord = {
+  id?: string;
+  fact_type: string;
+  value: string;
+  confidence?: number;
+  context?: string;
+  /** Attorney-reviewed value; falls back to `value` when unset. */
+  editedValue?: string;
+  verified?: boolean;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  /** Maps to practice-area-facts field id when known. */
+  fieldId?: string;
+};
+
 export type AssessmentOcrPayload = {
   v: 1;
   documentId: string;
   title: string;
   ocrText?: string;
-  facts?: Array<{ fact_type: string; value: string; confidence?: number }>;
+  facts?: ExtractedFactRecord[];
   uploadedAt?: string;
+  /** Pipeline OCR confidence (not fact accuracy). */
+  ocrConfidence?: number;
+  practiceArea?: string;
+  deliverableId?: string;
+};
+
+export type CaseAssessmentElementRow = {
+  fieldId: string;
+  label: string;
+  feedsSection?: string;
+  extractedValue?: string;
+  attorneyValue?: string;
+  status: "verified" | "needs_review" | "missing" | "manual";
 };
 
 export const ASSESSMENT_DOCUMENT_NOTE_TYPE = "Assessment Document";
@@ -118,6 +148,128 @@ export function parseAssessmentOcrPayload(raw: string): AssessmentOcrPayload | n
   return null;
 }
 
+export function factDisplayValue(fact: ExtractedFactRecord): string {
+  const edited = fact.editedValue?.trim();
+  if (edited) return edited;
+  return (fact.value ?? "").trim();
+}
+
+export function normalizeExtractedFacts(
+  facts: ExtractedFactRecord[] | undefined,
+): ExtractedFactRecord[] {
+  return (facts ?? []).map((fact, index) => ({
+    ...fact,
+    id: fact.id ?? `${fact.fact_type}-${index}`,
+    value: fact.value ?? "",
+  }));
+}
+
+export function buildExtractionContext(input: {
+  practiceArea: string;
+  caseType: string;
+  deliverableId?: string;
+  legalElements?: string[];
+}): Record<string, unknown> {
+  const area = resolvePracticeArea(input.caseType);
+  const defs = fieldsForDeliverable(input.deliverableId, area);
+  return {
+    practice_area: input.practiceArea,
+    case_type: input.caseType,
+    deliverable_id: input.deliverableId,
+    document_category: CASE_ASSESSMENT_CATEGORY,
+    legal_elements: input.legalElements ?? [],
+    fact_field_hints: defs.map((d) => ({
+      id: d.id,
+      label: d.label,
+      feedsSection: d.feedsSection,
+      required: Boolean(d.required),
+    })),
+  };
+}
+
+export function buildCaseAssessmentSummaryRows(input: {
+  payload: AssessmentOcrPayload | null;
+  caseType: string;
+  deliverableId?: string;
+  draftingFields?: Record<string, string | string[]>;
+}): CaseAssessmentElementRow[] {
+  const area = resolvePracticeArea(input.caseType);
+  const defs = fieldsForDeliverable(input.deliverableId ?? input.payload?.deliverableId, area);
+  const facts = normalizeExtractedFacts(input.payload?.facts);
+  const byFieldId = new Map<string, ExtractedFactRecord>();
+  for (const fact of facts) {
+    if (fact.fieldId) byFieldId.set(fact.fieldId, fact);
+  }
+
+  return defs.map((def) => {
+    const matched = byFieldId.get(def.id) ?? matchFactToField(def, facts, input.payload?.ocrText);
+    const attorneyRaw = input.draftingFields?.[def.id];
+    const attorneyValue = Array.isArray(attorneyRaw)
+      ? attorneyRaw.join("; ")
+      : typeof attorneyRaw === "string"
+        ? attorneyRaw.trim()
+        : "";
+
+    if (attorneyValue) {
+      return {
+        fieldId: def.id,
+        label: def.label,
+        feedsSection: def.feedsSection,
+        attorneyValue,
+        extractedValue: matched ? factDisplayValue(matched) : undefined,
+        status: "manual",
+      };
+    }
+
+    if (matched) {
+      const val = factDisplayValue(matched);
+      return {
+        fieldId: def.id,
+        label: def.label,
+        feedsSection: def.feedsSection,
+        extractedValue: val,
+        status: matched.verified ? "verified" : val ? "needs_review" : "missing",
+      };
+    }
+
+    return {
+      fieldId: def.id,
+      label: def.label,
+      feedsSection: def.feedsSection,
+      status: "missing",
+    };
+  });
+}
+
+function matchFactToField(
+  def: FactFieldDef,
+  facts: ExtractedFactRecord[],
+  ocrText?: string,
+): ExtractedFactRecord | undefined {
+  const labelLower = def.label.toLowerCase();
+  for (const fact of facts) {
+    if (fact.fieldId === def.id) return fact;
+    const ctx = `${fact.context ?? ""} ${fact.value} ${fact.editedValue ?? ""}`.toLowerCase();
+    if (ctx.includes(labelLower.slice(0, Math.min(12, labelLower.length)))) return fact;
+  }
+  if (ocrText?.trim()) {
+    const idx = ocrText.toLowerCase().indexOf(labelLower.slice(0, 10));
+    if (idx >= 0) {
+      const snippet = ocrText.slice(idx, idx + 180).trim();
+      if (snippet.length > 8) {
+        return {
+          id: `ocr-${def.id}`,
+          fact_type: def.id,
+          value: snippet,
+          fieldId: def.id,
+          verified: false,
+        };
+      }
+    }
+  }
+  return undefined;
+}
+
 export function formatAssessmentOcrForAgents(payload: AssessmentOcrPayload): string {
   const lines = ["## Case assessment document (uploaded scan)"];
   lines.push(`- Document: ${payload.title}`);
@@ -126,10 +278,12 @@ export function formatAssessmentOcrForAgents(payload: AssessmentOcrPayload): str
     lines.push(`- OCR text:\n${preview}`);
   }
   if (payload.facts?.length) {
-    lines.push("- Extracted fields:");
+    lines.push("- Extracted fields (attorney-verified values preferred):");
     for (const fact of payload.facts.slice(0, 24)) {
-      const val = (fact.value ?? "").trim();
-      if (val) lines.push(`  - ${fact.fact_type}: ${val}`);
+      const val = factDisplayValue(fact);
+      if (!val) continue;
+      const tag = fact.verified ? " [verified]" : " [needs review]";
+      lines.push(`  - ${fact.fact_type}: ${val}${tag}`);
     }
   }
   return lines.length > 1 ? lines.join("\n") : "";

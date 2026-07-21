@@ -27,6 +27,7 @@ import { MatterAssignmentReview } from "./MatterAssignmentReview";
 import { MatterAgentAlertReview } from "./MatterAgentAlertReview";
 import { MATTER_REVIEW_REFRESH_EVENT } from "@/lib/matter-review-events";
 import { CaseAssessmentPanel } from "./CaseAssessmentPanel";
+import { CaseAssessmentSummary } from "./CaseAssessmentSummary";
 import { AssessmentOnFileChip } from "./AssessmentOnFileChip";
 import { DraftingFactsCompletenessChip } from "./PracticeAreaFactGuide";
 import { MatterEventsPanel } from "./MatterEventsPanel";
@@ -274,6 +275,8 @@ export function MatterWorkbench({
           </div>
         ) : null}
       </header>
+
+      <CaseAssessmentSummary matter={matterHeader} documents={documents} />
 
       <MatterWorkflowStrip notes={notes} documents={documents} assignments={assignments} />
 

@@ -10,6 +10,7 @@ import {
   documentViewLabel,
 } from "@/lib/document-display";
 import { cacheDocumentPreview, getBlobPreview, setBlobPreview } from "@/lib/document-preview-cache";
+import { formatOcrConfidence } from "@/lib/extraction-confidence";
 import { btnSecondary } from "@/lib/ui-classes";
 
 const TIER = Number(process.env.NEXT_PUBLIC_PII_TIER ?? "0");
@@ -97,7 +98,7 @@ export async function uploadDocument(
   file: File,
   manualApproved: boolean,
   endpoint: "single" | "batch" = "single",
-  options?: { documentCategory?: string },
+  options?: { documentCategory?: string; extractionContext?: Record<string, unknown> },
 ): Promise<UploadResult> {
   const fd = new FormData();
   fd.set("matter_id", matterId);
@@ -108,6 +109,9 @@ export async function uploadDocument(
   }
   if (options?.documentCategory) {
     fd.set("document_category", options.documentCategory);
+  }
+  if (options?.extractionContext) {
+    fd.set("extraction_context", JSON.stringify(options.extractionContext));
   }
   if (manualApproved) {
     fd.set("manual_review_approved", "true");
@@ -187,7 +191,10 @@ export function UploadProgressList({
               {item.status === "pending" && "Queued"}
               {item.status === "uploading" && "Processing OCR…"}
               {item.status === "done" &&
-                `${item.result?.processing_status ?? "done"} · ${item.result?.ocr_method ?? ""} · ${Math.round((item.result?.confidence ?? 0) * 100)}%`}
+                (() => {
+                  const ocr = formatOcrConfidence(item.result?.confidence);
+                  return `${item.result?.processing_status ?? "done"} · ${item.result?.ocr_method ?? ""}${ocr ? ` · ${ocr.shortLabel}` : ""}`;
+                })()}
               {item.status === "error" && (item.result?.error ?? "Failed")}
             </span>
           </div>
@@ -294,7 +301,12 @@ function UploadProgressRow({
         <td className="px-3 py-2">{result?.category ?? "n/a"}</td>
         <td className="px-3 py-2 text-xs text-slate-600">
           {result?.ocr_method ?? "n/a"}
-          {result?.confidence != null ? ` · ${Math.round(result.confidence * 100)}%` : ""}
+          {(() => {
+            const ocr = formatOcrConfidence(result?.confidence);
+            return ocr ? (
+              <span title={ocr.tooltip}> · {ocr.shortLabel}</span>
+            ) : null;
+          })()}
         </td>
         {matterId ? (
           <td className="px-3 py-2">

@@ -56,6 +56,7 @@ async def _process_single(
     db: Session,
     manual_review_approved: bool,
     document_category: str | None = None,
+    extraction_context: str | None = None,
 ) -> dict[str, Any]:
     require_strong_reader(manual_review_approved=manual_review_approved)
 
@@ -67,6 +68,8 @@ async def _process_single(
     content = await file.read()
     dest.write_bytes(content)
 
+    from app.services.intake_processor import _parse_extraction_context
+
     result = process_uploaded_document(
         db,
         external_id=matter_id,
@@ -74,6 +77,7 @@ async def _process_single(
         stored_path=dest,
         mime_type=file.content_type,
         document_category=document_category,
+        extraction_context=_parse_extraction_context(extraction_context),
     )
     result["tier_gate"] = {"manual_review_approved": manual_review_approved}
     return result
@@ -131,6 +135,7 @@ async def upload_document(
     file: UploadFile = File(...),
     manual_review_approved: str | None = Form(default=None),
     document_category: str | None = Form(default=None),
+    extraction_context: str | None = Form(default=None),
     x_manual_review_approved: str | None = Header(default=None, alias="X-Manual-Review-Approved"),
     settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
@@ -143,6 +148,7 @@ async def upload_document(
         db=db,
         manual_review_approved=approved,
         document_category=document_category,
+        extraction_context=extraction_context,
     )
 
 
@@ -152,6 +158,7 @@ async def batch_upload(
     files: list[UploadFile] = File(...),
     manual_review_approved: str | None = Form(default=None),
     document_category: str | None = Form(default=None),
+    extraction_context: str | None = Form(default=None),
     x_manual_review_approved: str | None = Header(default=None, alias="X-Manual-Review-Approved"),
     settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
@@ -170,6 +177,7 @@ async def batch_upload(
                     db=db,
                     manual_review_approved=approved,
                     document_category=document_category,
+                    extraction_context=extraction_context,
                 )
             )
         except Exception as exc:

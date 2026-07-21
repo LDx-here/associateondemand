@@ -13,8 +13,10 @@ import {
 } from "@/components/IntakeUploadShared";
 import type { DocumentUploadPayload } from "@/components/MatterDocumentUpload";
 import { useToast } from "@/components/Toast";
+import { ExtractedFactsReview } from "@/components/ExtractedFactsReview";
 import { PracticeAreaFactGuide } from "@/components/PracticeAreaFactGuide";
 import {
+  buildExtractionContext,
   CASE_ASSESSMENT_CATEGORY,
   defaultTemplateHref,
   findAssessmentTemplate,
@@ -34,6 +36,9 @@ async function registerCaseAssessmentDocument(
     airtableDocumentId?: string;
     ocrText?: string;
     facts?: AssessmentOcrPayload["facts"];
+    ocrConfidence?: number;
+    practiceArea?: string;
+    deliverableId?: string;
   },
 ): Promise<void> {
   const resp = await fetch(`/api/matters/${matterId}/case-assessment-document`, {
@@ -106,6 +111,11 @@ export function CaseAssessmentPanel({
     try {
       const data = await uploadDocument(matter.matterId, file, attorneyUploadApproved(), "single", {
         documentCategory: CASE_ASSESSMENT_CATEGORY,
+        extractionContext: buildExtractionContext({
+          practiceArea,
+          caseType: matter.caseType,
+          deliverableId: "aos-discretionary-brief",
+        }),
       });
       if (data.error) {
         setError(data.error);
@@ -117,6 +127,9 @@ export function CaseAssessmentPanel({
         airtableDocumentId: data.airtable_document_id,
         ocrText: data.text_preview,
         facts: data.facts,
+        ocrConfidence: data.confidence,
+        practiceArea,
+        deliverableId: "aos-discretionary-brief",
       });
       showToast(
         "Case assessment saved → Documents list above. OCR feeds drafts automatically.",
@@ -177,21 +190,21 @@ export function CaseAssessmentPanel({
             View extracted facts
           </button>
           {showExtracted && ocrPreview ? (
-            <div className="mt-2 space-y-2 rounded border border-slate-100 bg-slate-50 p-2 text-xs text-slate-700">
-              {ocrPreview.facts?.length ? (
-                <ul className="list-disc space-y-1 pl-4">
-                  {ocrPreview.facts.map((f, i) => (
-                    <li key={`${f.fact_type}-${i}`}>
-                      <span className="font-medium">{f.fact_type}:</span> {f.value}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
+            <div className="mt-2 space-y-2">
+              <ExtractedFactsReview
+                matterId={matter.matterId}
+                payload={ocrPreview}
+                onSaved={() => {
+                  void loadExtractedFacts();
+                  onUpdated?.();
+                }}
+              />
               {ocrPreview.ocrText ? (
-                <p className="whitespace-pre-wrap border-t border-slate-200 pt-2">{ocrPreview.ocrText}</p>
-              ) : (
-                <p className="text-slate-500">No OCR text stored for this document.</p>
-              )}
+                <details className="rounded border border-slate-100 bg-slate-50 p-2 text-xs text-slate-700">
+                  <summary className="cursor-pointer font-medium">OCR text preview</summary>
+                  <p className="mt-2 whitespace-pre-wrap">{ocrPreview.ocrText}</p>
+                </details>
+              ) : null}
             </div>
           ) : null}
         </div>

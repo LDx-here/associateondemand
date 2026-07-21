@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from pathlib import Path
 from typing import Any
@@ -36,6 +37,16 @@ def _assessment_ocr_note_payload(
     return json.dumps(payload)
 
 
+def _parse_extraction_context(raw: str | None) -> dict[str, Any] | None:
+    if not raw or not str(raw).strip():
+        return None
+    try:
+        data = json.loads(str(raw))
+    except json.JSONDecodeError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
 def process_uploaded_document(
     db: Session,
     *,
@@ -44,6 +55,7 @@ def process_uploaded_document(
     stored_path: Path,
     mime_type: str | None = None,
     document_category: str | None = None,
+    extraction_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Run OCR pipeline, agents, persist Document + ExtractedFact rows."""
 
@@ -53,7 +65,10 @@ def process_uploaded_document(
     combined_confidence = round((ocr.confidence + quality) / 2, 3)
 
     cat = categorizer_agent.categorize(ocr_text, filename)
-    fact_records = fact_extraction_agent.extract(ocr_text)
+    ctx = extraction_context or {}
+    if document_category == "case_assessment" and not ctx.get("document_category"):
+        ctx = {**ctx, "document_category": "case_assessment"}
+    fact_records = fact_extraction_agent.extract(ocr_text, context=ctx or None)
     facts_payload = [f.to_dict() for f in fact_records]
 
     doc_id = str(uuid.uuid4())
@@ -133,4 +148,5 @@ def process_uploaded_document(
         "obsidian_path": str(obsidian),
         "airtable_document_id": (airtable_doc or {}).get("id"),
         "metadata": ocr.metadata,
+        "extraction_context_applied": bool(ctx),
     }
