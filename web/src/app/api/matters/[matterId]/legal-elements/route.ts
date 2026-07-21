@@ -33,6 +33,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
     assessment?: string;
     keyGap?: string;
     nextAction?: string;
+    supportingFacts?: string;
   };
   const row = await updateLegalElementRow(body.id, body);
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });

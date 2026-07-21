@@ -18,12 +18,14 @@ import { StatusBadge } from "@/components/StatusBadge";
 import type { Matter } from "@/lib/types";
 import { linkMatter } from "@/lib/ui-classes";
 import { EMPTY_CELL, formatDate } from "@/lib/utils";
+import { isActiveMatterStatus } from "@/lib/matter-status";
 
 const columnHelper = createColumnHelper<Matter>();
 
 export function MattersTable({ matters }: { matters: Matter[] }) {
   const router = useRouter();
   const [globalFilter, setGlobalFilter] = useState("");
+  const [showClosed, setShowClosed] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [caseTypeFilter, setCaseTypeFilter] = useState("");
   const [countryFilter, setCountryFilter] = useState("");
@@ -45,13 +47,14 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
 
   const filteredData = useMemo(() => {
     return matters.filter((m) => {
+      if (!showClosed && !isActiveMatterStatus(m.status)) return false;
       if (statusFilter && m.status !== statusFilter) return false;
       if (caseTypeFilter && m.caseType !== caseTypeFilter) return false;
       if (countryFilter && m.country !== countryFilter) return false;
       if (postureFilter && m.posture !== postureFilter) return false;
       return true;
     });
-  }, [matters, statusFilter, caseTypeFilter, countryFilter, postureFilter]);
+  }, [matters, showClosed, statusFilter, caseTypeFilter, countryFilter, postureFilter]);
 
   const columns = useMemo(
     () => [
@@ -129,6 +132,14 @@ export function MattersTable({ matters }: { matters: Matter[] }) {
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
         />
+        <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={showClosed}
+            onChange={(e) => setShowClosed(e.target.checked)}
+          />
+          Show closed
+        </label>
         <select
           aria-label="Filter matters by status"
           className="rounded-md border border-slate-300 px-3 py-2 text-sm"

@@ -7,6 +7,7 @@ import {
   findLatestAgentNoteForMatter,
   findLatestAssessmentOcrNoteForMatter,
   findLatestDraftingFactsNoteForMatter,
+  findLatestProceduralTimelineNoteForMatter,
   getCaseAssessmentFromAirtable,
   listDocumentsFromAirtable,
   listAssessmentTemplatesFromAirtable,
@@ -36,6 +37,13 @@ import {
   isDemoMode,
 } from "./airtable/queries";
 import { emptyCaseAssessment } from "./case-assessment";
+import {
+  emptyProceduralTimeline,
+  parseProceduralTimeline,
+  PROCEDURAL_TIMELINE_NOTE_TYPE,
+  serializeProceduralTimeline,
+  type ProceduralTimelinePayload,
+} from "./procedural-timeline";
 import {
   emptyDraftingFacts,
   parseDraftingFactsNote,
@@ -244,7 +252,7 @@ export async function createLegalElement(
 
 export async function updateLegalElementRow(
   id: string,
-  patch: Partial<Pick<LegalElementRow, "assessment" | "keyGap" | "nextAction">>,
+  patch: Partial<Pick<LegalElementRow, "assessment" | "keyGap" | "nextAction" | "supportingFacts">>,
 ): Promise<LegalElementRow | null> {
   if (isDemoMode()) {
     const { updateLegalElement } = await import("./demo-store-mutable");
@@ -373,6 +381,66 @@ export async function saveDraftingFactsForMatter(
     await updateNoteInAirtable(existing.id, matterId, content, "Attorney");
   } else {
     await createNoteInAirtable(matterId, content, "Attorney", "Facts");
+  }
+  return normalized;
+}
+
+export async function getProceduralTimelineForMatter(
+  matterId: string,
+): Promise<ProceduralTimelinePayload> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const note = seed.notes
+      .filter((n) => n.matterId === matterId && n.type === PROCEDURAL_TIMELINE_NOTE_TYPE)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    if (!note) return emptyProceduralTimeline(matterId);
+    return parseProceduralTimeline(note.content, matterId) ?? emptyProceduralTimeline(matterId);
+  }
+  const note = await findLatestProceduralTimelineNoteForMatter(matterId);
+  if (!note) return emptyProceduralTimeline(matterId);
+  return parseProceduralTimeline(note.content, matterId) ?? emptyProceduralTimeline(matterId);
+}
+
+export async function saveProceduralTimelineForMatter(
+  matterId: string,
+  payload: ProceduralTimelinePayload,
+): Promise<ProceduralTimelinePayload> {
+  const matter = await getMatterByCode(matterId);
+  if (!matter) throw new Error(`Matter not found: ${matterId}`);
+  const normalized: ProceduralTimelinePayload = {
+    ...payload,
+    v: 1,
+    matterId,
+    updatedAt: new Date().toISOString(),
+  };
+  const content = serializeProceduralTimeline(normalized);
+
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const existing = seed.notes
+      .filter((n) => n.matterId === matterId && n.type === PROCEDURAL_TIMELINE_NOTE_TYPE)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    if (existing) {
+      existing.content = content;
+      existing.author = "Attorney";
+      return normalized;
+    }
+    seed.notes.push({
+      id: `note-${Date.now()}`,
+      matterId,
+      author: "Attorney",
+      content,
+      createdAt: new Date().toISOString(),
+      type: PROCEDURAL_TIMELINE_NOTE_TYPE,
+    });
+    return normalized;
+  }
+
+  const existing = await findLatestProceduralTimelineNoteForMatter(matterId);
+  if (existing) {
+    await updateNoteInAirtable(existing.id, matterId, content, "Attorney");
+  } else {
+    await createNoteInAirtable(matterId, content, "Attorney", PROCEDURAL_TIMELINE_NOTE_TYPE);
   }
   return normalized;
 }

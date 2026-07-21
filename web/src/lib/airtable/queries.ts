@@ -317,13 +317,14 @@ export async function saveCaseAssessmentInAirtable(
 
 export async function updateLegalElementInAirtable(
   elementId: string,
-  patch: Partial<Pick<LegalElementRow, "assessment" | "keyGap" | "nextAction">>,
+  patch: Partial<Pick<LegalElementRow, "assessment" | "keyGap" | "nextAction" | "supportingFacts">>,
 ): Promise<LegalElementRow | null> {
   const le = F.legalElements;
   const fields: RawFields = {};
   if (patch.assessment !== undefined) fields[le.assessment] = patch.assessment;
   if (patch.keyGap !== undefined) fields[le.key_gap] = patch.keyGap;
   if (patch.nextAction !== undefined) fields[le.next_action] = patch.nextAction;
+  if (patch.supportingFacts !== undefined) fields[le.supporting_facts] = patch.supportingFacts;
   const rec = await airtablePatch(TABLES.legalElements, elementId, fields);
   const matterLinks = linkedIds(rec.fields[le.matter_id]);
   const matterId = matterLinks[0] ?? "";
@@ -440,6 +441,15 @@ export async function findLatestAgentNoteForMatter(matterCode: string): Promise<
     .filter((note) => note.type === "Agent")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return agentNotes[0] ?? null;
+}
+
+/** Latest procedural timeline note (type Procedural, JSON body). */
+export async function findLatestProceduralTimelineNoteForMatter(matterCode: string): Promise<Note | null> {
+  const notes = await listNotesForMatterFromAirtable(matterCode);
+  const procedural = notes
+    .filter((note) => note.type === "Procedural")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return procedural[0] ?? null;
 }
 
 /** Latest structured drafting-facts note (type Facts, JSON body). */

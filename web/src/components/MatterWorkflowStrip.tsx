@@ -5,7 +5,7 @@ import { Check, Circle } from "lucide-react";
 import type { DocumentRow, InboxItem, Note } from "@/lib/types";
 import { CASE_ASSESSMENT_CATEGORY } from "@/lib/assessment-documents";
 
-type StepId = "intake" | "documents" | "draft" | "review" | "export";
+type StepId = "intake" | "documents" | "facts" | "draft" | "review" | "export";
 
 type Step = {
   id: StepId;
@@ -24,6 +24,7 @@ function deriveSteps(
   const hasAssessment =
     documents.some((d) => d.category === CASE_ASSESSMENT_CATEGORY) ||
     notes.some((n) => n.type === "Assessment Document");
+  const hasProcedural = notes.some((n) => n.type === "Procedural");
   const hasDocuments = documents.length > 0 || hasAssessment;
   const hasAgentOutput = notes.some((n) => n.type === "Agent" || n.type === "Research");
 
@@ -34,6 +35,7 @@ function deriveSteps(
 
   const intakeDone = hasAssignment || hasFacts;
   const documentsDone = hasDocuments;
+  const factsDone = hasFacts || hasAssessment || hasProcedural;
   const draftDone =
     hasAgentOutput ||
     assignments.some((a) => ["In progress", "Ready for review", "Returned", "Approved"].includes(a.status));
@@ -44,6 +46,7 @@ function deriveSteps(
   if (exportDone) current = "export";
   else if (reviewDone) current = "review";
   else if (draftDone) current = "draft";
+  else if (factsDone) current = "facts";
   else if (documentsDone) current = "documents";
   else if (intakeDone) current = "documents";
 
@@ -54,6 +57,7 @@ function deriveSteps(
   return [
     { id: "intake", label: "Intake", done: intakeDone, current: current === "intake" },
     { id: "documents", label: "Documents", done: documentsDone, current: current === "documents" },
+    { id: "facts", label: "Facts / Elements", done: factsDone, current: current === "facts" },
     { id: "draft", label: "Draft", done: draftDone, current: current === "draft" },
     { id: "review", label: "Review", done: reviewDone, current: current === "review" },
     { id: "export", label: "Export", done: exportDone, current: current === "export" },
