@@ -142,3 +142,10 @@
 - **Files Affected:** `scripts/smoke-assignment-e2e.sh`, `scripts/stripe-setup-checklist.sh`, `web/src/lib/conflict-check.ts`, `web/src/lib/assignment-transitions.ts`, `web/src/lib/intake-session-store.ts`, `web/src/app/api/cron/abandoned-intake/`, `web/vercel.json`, `CHECKPOINT.md`
 - **Command Executed:** `pytest` (43), `npm run build`, `bash scripts/smoke-production.sh`, `bash scripts/smoke-assignment-e2e.sh`
 - **Reason/Context:** Close BUILD_SPEC gaps with minimal attorney involvement; only Stripe/Resend secrets remain user-side.
+
+## 2026-07-21 — Document UX + QA screenshots
+
+- **Action:** Fixed matter document listing (Airtable linked-record filter), clickable matter rows, PII tier copy moved to Settings, View PDF on all upload paths; added `docs/qa/` screenshots; deployed Vercel prod.
+- **Files Affected:** `web/src/lib/airtable/queries.ts`, `MattersTable.tsx`, `IntakeUploadShared.tsx`, `PiiTierComplianceSection.tsx`, `docs/qa/*`, `docs/runbooks/local-dev.md`, `CHECKPOINT.md`
+- **Command Executed:** `pytest` (43), `npm run build`, `bash scripts/smoke-production.sh`, `vercel deploy --prod`
+- **Reason/Context:** User-reported UX issues on matters/documents/intake PII messaging.
