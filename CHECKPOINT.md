@@ -5,12 +5,18 @@
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
 
-## Dual-track status
+## Dual track
 
-| Track | Location | Stack | Production |
-|-------|----------|-------|------------|
-| **AOD (live)** | `web/` + `services/api/` | Next.js + FastAPI + Airtable | https://aod-next.vercel.app |
-| **Legal OS (greenfield)** | `legal-os/` | React 19 + Express + tRPC 11 + Drizzle + MySQL | Local/dev — not deployed |
+| Track | Location | Stack | Status |
+|-------|----------|-------|--------|
+| **Production** | `web/` + `services/api/` | Next.js + FastAPI + Airtable + **Supabase Auth** | Live — https://aod-next.vercel.app |
+| **Greenfield** | `legal-os/` | React 19 + Express + tRPC 11 + Drizzle + MySQL | Local/dev — Steps 1–18 done (`9e76e7f`); not deployed |
+
+**Next (user choice):** improve **drafting quality on prod AOD** *or* run a **Legal OS local pilot** (`docker compose up -d` → `/associate` + `/admin`).
+
+**Stripe on prod:** checkout code ships (pass 16); still needs `STRIPE_*` env vars on Vercel — see [`docs/runbooks/stripe-activation.md`](docs/runbooks/stripe-activation.md).
+
+**Legal OS auth decision:** Supabase (not Manus OAuth) — converge with prod AOD; dev uses `ADMIN_API_KEY` until JWT middleware wired.
 
 Legal OS blueprint: [`legal-os/docs/`](legal-os/docs/) · [`.aod-context/technical/legal-os/`](.aod-context/technical/legal-os/)
 

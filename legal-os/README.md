@@ -64,11 +64,18 @@ intake → conflict_check → quote → engagement → drafting → review → d
 npm test
 ```
 
+## Auth roadmap: Supabase (not Manus OAuth)
+
+Production AOD (`web/`) already uses **Supabase Auth** (magic link + password). Legal OS will converge on the same identity layer for a unified product — **not** Manus OAuth.
+
+- **Today (local dev):** Admin routes authenticate via `ADMIN_API_KEY` header until Supabase JWT middleware is wired in `server/_core/trpc.ts`.
+- **Next:** Add Supabase JWT verification (same project as prod AOD), map `auth.users` → Legal OS `users` table, retire the admin key banner for deployed environments.
+- **Prod deploy:** Shared Supabase session across AOD web and Legal OS admin; role claims gate `/admin` vs intake surfaces.
+
 ## Production notes
 
 - MySQL/TiDB required (schema uses Drizzle MySQL dialect — SQLite not supported without schema rewrite)
 - Clio: per `LEGAL_BOUNDARIES.md`, no production connector until paying subscription + scoped need
-- Manus OAuth: replace `ADMIN_API_KEY` auth with Manus OAuth when deploying to Manus Autoscale
 
 ## Dual-track relationship
 
