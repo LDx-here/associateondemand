@@ -7,6 +7,7 @@ Legacy index: **[`docs/strategy/`](docs/strategy/README.md)** — cross-links to
 **Quick links**
 
 - [Strategic context index](.aod-context/README.md)
+- [Architecture diagrams](docs/architecture/README.md) — internal efficiency engine + overflow counsel workflow
 - [Strategic lock & phasing](docs/strategy/README.md#strategic-lock-2026-07-05)
 - [Phase 0 launch runbook](docs/runbooks/phase0-b2b-overflow-launch.md)
 - [Live platform checkpoint](CHECKPOINT.md)

@@ -16,6 +16,14 @@ Read this index before architecture or product changes. Constitution + `LEGAL_BO
 
 Full lock: [`docs/strategy/README.md`](../docs/strategy/README.md) · live status: [`CHECKPOINT.md`](../CHECKPOINT.md)
 
+## Architecture diagrams
+
+Visual maps of the internal engine and partner-facing overflow counsel flow:
+
+- [`docs/architecture/README.md`](../docs/architecture/README.md) — overview and links
+- [Internal efficiency system](../docs/architecture/aod-internal-efficiency-system.png) — Matter Workbench, agents, Firm Memory, Airtable
+- [Overflow counsel workflow](../docs/architecture/aod-overflow-counsel-workflow.png) — partner journey from intake to verified deliverable
+
 ## Directory map
 
 ### `strategy/` — why and what
