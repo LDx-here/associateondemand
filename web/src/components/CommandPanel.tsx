@@ -101,15 +101,18 @@ export function CommandPanel({ demoMode = false }: { demoMode?: boolean }) {
   const [query, setQuery] = useState("");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
-  const [matter, setMatter] = useState<Matter | null>(null);
-  const [assignments, setAssignments] = useState<InboxItem[]>([]);
+  const [matterData, setMatterData] = useState<{
+    id: string;
+    matter: Matter | null;
+    assignments: InboxItem[];
+  } | null>(null);
+
+  const matter = contextMatter && matterData?.id === contextMatter ? matterData.matter : null;
+  const assignments =
+    contextMatter && matterData?.id === contextMatter ? matterData.assignments : [];
 
   useEffect(() => {
-    if (!contextMatter) {
-      setMatter(null);
-      setAssignments([]);
-      return;
-    }
+    if (!contextMatter) return;
 
     let cancelled = false;
     void (async () => {
@@ -119,18 +122,20 @@ export function CommandPanel({ demoMode = false }: { demoMode?: boolean }) {
           fetch(`/api/matters/${encodeURIComponent(contextMatter)}/assignments`),
         ]);
         if (cancelled) return;
-        if (matterResp.ok) {
-          const data = (await matterResp.json()) as { matter?: Matter };
-          setMatter(data.matter ?? null);
-        }
-        if (assignResp.ok) {
-          const data = (await assignResp.json()) as { assignments?: InboxItem[] };
-          setAssignments(data.assignments ?? []);
-        }
+        const nextMatter = matterResp.ok
+          ? ((await matterResp.json()) as { matter?: Matter }).matter ?? null
+          : null;
+        const nextAssignments = assignResp.ok
+          ? ((await assignResp.json()) as { assignments?: InboxItem[] }).assignments ?? []
+          : [];
+        setMatterData({
+          id: contextMatter,
+          matter: nextMatter,
+          assignments: nextAssignments,
+        });
       } catch {
         if (!cancelled) {
-          setMatter(null);
-          setAssignments([]);
+          setMatterData({ id: contextMatter, matter: null, assignments: [] });
         }
       }
     })();

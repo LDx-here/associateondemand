@@ -26,10 +26,12 @@ export function MatterTasksPanel({
   const [tasks, setTasks] = useState(initialTasks);
   const [deliverableId, setDeliverableId] = useState<string | undefined>();
   const [creating, setCreating] = useState(false);
+  const [prevInitialTasks, setPrevInitialTasks] = useState(initialTasks);
 
-  useEffect(() => {
+  if (initialTasks !== prevInitialTasks) {
+    setPrevInitialTasks(initialTasks);
     setTasks(initialTasks);
-  }, [initialTasks]);
+  }
 
   useEffect(() => {
     void fetch(`/api/matters/${matterId}/drafting-facts`)

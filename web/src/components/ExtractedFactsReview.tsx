@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, CircleAlert, RefreshCw, Save, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { useToast } from "@/components/Toast";
 import {
@@ -43,12 +43,14 @@ export function ExtractedFactsReview({
   const [saving, setSaving] = useState(false);
   const [reanalyzing, setReanalyzing] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [prevInitialPayload, setPrevInitialPayload] = useState(initialPayload);
 
-  useEffect(() => {
+  if (initialPayload !== prevInitialPayload) {
+    setPrevInitialPayload(initialPayload);
     setPayload(initialPayload);
     setFacts(normalizeExtractedFacts(initialPayload?.facts));
     setDirty(false);
-  }, [initialPayload]);
+  }
 
   const stats = factVerificationStats(facts);
   const grouped = useMemo(() => groupFactsByLegalElement(facts), [facts]);

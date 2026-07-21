@@ -48,21 +48,25 @@ export function CaseAssessmentSummary({
   documents: DocumentRow[];
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [payload, setPayload] = useState<AssessmentOcrPayload | null>(null);
+  const [fetchedPayload, setFetchedPayload] = useState<AssessmentOcrPayload | null>(null);
   const [draftingFacts, setDraftingFacts] = useState<DraftingFactsPayload | null>(null);
+  const [fetchedDocId, setFetchedDocId] = useState<string | null>(null);
 
   const assessmentDoc = useMemo(() => findCaseAssessmentDocument(documents), [documents]);
   const practiceArea = matterPracticeArea(matter);
+  const payload = assessmentDoc ? fetchedPayload : null;
+
+  if (assessmentDoc?.id !== fetchedDocId) {
+    setFetchedDocId(assessmentDoc?.id ?? null);
+    if (!assessmentDoc) setFetchedPayload(null);
+  }
 
   useEffect(() => {
-    if (!assessmentDoc) {
-      setPayload(null);
-      return;
-    }
+    if (!assessmentDoc) return;
     void fetch(`/api/matters/${matter.matterId}/case-assessment-document`)
       .then((r) => r.json())
-      .then((data: { payload?: AssessmentOcrPayload | null }) => setPayload(data.payload ?? null))
-      .catch(() => setPayload(null));
+      .then((data: { payload?: AssessmentOcrPayload | null }) => setFetchedPayload(data.payload ?? null))
+      .catch(() => setFetchedPayload(null));
   }, [matter.matterId, assessmentDoc?.id]);
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { Gavel, Plus, Save, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
@@ -21,24 +21,34 @@ export function ProceduralTimelinePanel({ matterId }: { matterId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [loadedMatterId, setLoadedMatterId] = useState(matterId);
 
-  const load = useCallback(async () => {
+  if (matterId !== loadedMatterId) {
+    setLoadedMatterId(matterId);
     setLoading(true);
-    try {
-      const resp = await fetch(`/api/matters/${matterId}/procedural-timeline`);
-      const data = (await resp.json()) as { timeline?: ProceduralTimelinePayload | null };
-      setPayload(data.timeline ?? emptyProceduralTimeline(matterId));
-      setDirty(false);
-    } catch {
-      setPayload(emptyProceduralTimeline(matterId));
-    } finally {
-      setLoading(false);
-    }
-  }, [matterId]);
+  }
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const resp = await fetch(`/api/matters/${matterId}/procedural-timeline`);
+        const data = (await resp.json()) as { timeline?: ProceduralTimelinePayload | null };
+        if (cancelled) return;
+        setPayload(data.timeline ?? emptyProceduralTimeline(matterId));
+        setDirty(false);
+      } catch {
+        if (!cancelled) setPayload(emptyProceduralTimeline(matterId));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [matterId]);
 
   function updateStep(id: string, patch: Partial<ProceduralStep>) {
     setPayload((prev) => ({

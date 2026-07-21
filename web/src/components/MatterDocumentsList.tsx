@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronRight, Eye, FileText, FolderOpen } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import type { UploadResult } from "@/components/IntakeUploadShared";
 import { EmptyState } from "@/components/EmptyState";
@@ -32,12 +32,17 @@ export function MatterDocumentsList({
   highlightId?: string | null;
   uploadPreviews?: Record<string, UploadResult>;
 }) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(highlightId ?? null);
+  const [prevHighlightId, setPrevHighlightId] = useState(highlightId);
   const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
 
-  useEffect(() => {
+  if (highlightId !== prevHighlightId) {
+    setPrevHighlightId(highlightId);
+    if (highlightId) setExpandedId(highlightId);
+  }
+
+  useLayoutEffect(() => {
     if (!highlightId) return;
-    setExpandedId(highlightId);
     const row = rowRefs.current[highlightId];
     if (row) {
       window.requestAnimationFrame(() => {
@@ -365,39 +370,44 @@ function DocumentFilePreview({
   blobUrl?: string;
 }) {
   const serverUrl = documentFilePreviewUrl(matterId, documentId, title, postgresDocumentId);
-  const [status, setStatus] = useState<"checking" | "ready" | "unavailable">(blobUrl ? "ready" : "checking");
-  const [errorDetail, setErrorDetail] = useState<string | null>(null);
+  const [headState, setHeadState] = useState<{
+    forUrl: string;
+    status: "checking" | "ready" | "unavailable";
+    errorDetail: string | null;
+  } | null>(null);
+
+  if (!blobUrl && headState?.forUrl !== serverUrl) {
+    setHeadState({ forUrl: serverUrl, status: "checking", errorDetail: null });
+  }
 
   useEffect(() => {
-    if (blobUrl) {
-      setStatus("ready");
-      setErrorDetail(null);
-      return;
-    }
+    if (blobUrl) return;
 
     let cancelled = false;
-    setStatus("checking");
-    setErrorDetail(null);
 
     fetch(serverUrl, { method: "HEAD" })
       .then(async (resp) => {
         if (cancelled) return;
         if (resp.ok) {
-          setStatus("ready");
+          setHeadState({ forUrl: serverUrl, status: "ready", errorDetail: null });
           return;
         }
-        setStatus("unavailable");
+        let errorDetail = `HTTP ${resp.status}`;
         try {
           const body = (await fetch(serverUrl).then((r) => r.json())) as { error?: string };
-          setErrorDetail(body.error ?? `HTTP ${resp.status}`);
+          errorDetail = body.error ?? errorDetail;
         } catch {
-          setErrorDetail(`HTTP ${resp.status}`);
+          // keep HTTP status message
         }
+        setHeadState({ forUrl: serverUrl, status: "unavailable", errorDetail });
       })
       .catch(() => {
         if (!cancelled) {
-          setStatus("unavailable");
-          setErrorDetail("Document service unavailable");
+          setHeadState({
+            forUrl: serverUrl,
+            status: "unavailable",
+            errorDetail: "Document service unavailable",
+          });
         }
       });
 
@@ -405,6 +415,14 @@ function DocumentFilePreview({
       cancelled = true;
     };
   }, [serverUrl, blobUrl]);
+
+  const status = blobUrl
+    ? "ready"
+    : headState?.forUrl === serverUrl
+      ? headState.status
+      : "checking";
+  const errorDetail =
+    blobUrl || headState?.forUrl !== serverUrl ? null : headState.errorDetail;
 
   const displayUrl = blobUrl ?? serverUrl;
   const previewLabel = previewKind === "pdf" ? "PDF preview" : "Image preview";

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight, Check, Sparkles, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import {
   advanceOnboardingStep,
@@ -20,36 +20,30 @@ import {
 import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 
 export function OnboardingWizard() {
-  const [open, setOpen] = useState(false);
-  const [state, setState] = useState<OnboardingState | null>(null);
+  const [state] = useState<OnboardingState>(() => readOnboardingState());
+  const [open, setOpen] = useState(() => shouldShowWizard(readOnboardingState()));
 
-  useEffect(() => {
-    const initial = readOnboardingState();
-    setState(initial);
-    setOpen(shouldShowWizard(initial));
-  }, []);
+  const [onboardingState, setOnboardingState] = useState(state);
 
   const persist = useCallback((next: OnboardingState) => {
     writeOnboardingState(next);
-    setState(next);
+    setOnboardingState(next);
     if (!shouldShowWizard(next)) setOpen(false);
   }, []);
 
-  if (!state) return null;
-
-  const progress = onboardingProgress(state);
-  const meta = ONBOARDING_STEP_META[state.currentStep];
+  const progress = onboardingProgress(onboardingState);
+  const meta = ONBOARDING_STEP_META[onboardingState.currentStep];
 
   function handleNext() {
-    persist(advanceOnboardingStep(state!));
+    persist(advanceOnboardingStep(onboardingState));
   }
 
   function handleDismiss() {
-    persist(dismissWizard(state!));
+    persist(dismissWizard(onboardingState));
   }
 
   function handleStepClick(step: OnboardingStepId) {
-    persist(goToOnboardingStep(state!, step));
+    persist(goToOnboardingStep(onboardingState, step));
   }
 
   if (!open) return null;
@@ -94,8 +88,8 @@ export function OnboardingWizard() {
 
           <ol className="mt-4 flex flex-wrap gap-2">
             {ONBOARDING_STEP_ORDER.map((step) => {
-              const done = state.completedSteps.includes(step);
-              const active = state.currentStep === step;
+              const done = onboardingState.completedSteps.includes(step);
+              const active = onboardingState.currentStep === step;
               return (
                 <li key={step}>
                   <button
@@ -121,7 +115,7 @@ export function OnboardingWizard() {
             <Link
               href={meta.href}
               className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-sky-800 hover:underline"
-              onClick={() => persist(markStepOnNavigate(state, state.currentStep))}
+              onClick={() => persist(markStepOnNavigate(onboardingState, onboardingState.currentStep))}
             >
               {meta.cta}
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -134,15 +128,15 @@ export function OnboardingWizard() {
             Skip for now
           </button>
           <div className="flex gap-2">
-            {stepIndex(state.currentStep) > 0 ? (
+            {stepIndex(onboardingState.currentStep) > 0 ? (
               <button
                 type="button"
                 className={btnSecondary}
                 onClick={() =>
                   persist(
                     goToOnboardingStep(
-                      state,
-                      ONBOARDING_STEP_ORDER[stepIndex(state.currentStep) - 1]!,
+                      onboardingState,
+                      ONBOARDING_STEP_ORDER[stepIndex(onboardingState.currentStep) - 1]!,
                     ),
                   )
                 }
@@ -151,7 +145,7 @@ export function OnboardingWizard() {
               </button>
             ) : null}
             <button type="button" className={`${btnPrimary} px-4 py-2`} onClick={handleNext}>
-              {state.currentStep === "review" ? "Finish" : "Next"}
+              {onboardingState.currentStep === "review" ? "Finish" : "Next"}
             </button>
           </div>
         </div>
@@ -173,12 +167,10 @@ function markStepOnNavigate(state: OnboardingState, step: OnboardingStepId): Onb
 
 /** Compact 4-step card after wizard dismissed — site reviewer overflow journey. */
 export function GettingStartedBanner() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
+  const [visible] = useState(() => {
     const state = readOnboardingState();
-    setVisible(state.dismissed && state.completedSteps.length < ONBOARDING_STEP_ORDER.length);
-  }, []);
+    return state.dismissed && state.completedSteps.length < ONBOARDING_STEP_ORDER.length;
+  });
 
   if (!visible) return null;
 

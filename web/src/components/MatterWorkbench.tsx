@@ -48,6 +48,21 @@ const tabs = [
 
 type Tab = (typeof tabs)[number];
 
+function readInitialTabFromUrl(): Tab {
+  if (typeof window === "undefined") return "Overview";
+  const params = new URLSearchParams(window.location.search);
+  const highlightDoc = params.get("highlightDoc")?.trim();
+  const tabParam = params.get("tab")?.trim();
+  if (highlightDoc) return "Documents";
+  if (tabParam && tabs.includes(tabParam as Tab)) return tabParam as Tab;
+  return "Overview";
+}
+
+function readInitialHighlightDocFromUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("highlightDoc")?.trim() || null;
+}
+
 export function MatterWorkbench({
   matter,
   initialTasks,
@@ -71,7 +86,7 @@ export function MatterWorkbench({
   initialAgentAlerts?: InboxItem[];
   demoMode?: boolean;
 }) {
-  const [tab, setTab] = useState<Tab>("Overview");
+  const [tab, setTab] = useState<Tab>(readInitialTabFromUrl);
   const [matterHeader, setMatterHeader] = useState(matter);
   const [editOpen, setEditOpen] = useState(false);
   const [tasks, setTasks] = useState(initialTasks);
@@ -86,7 +101,9 @@ export function MatterWorkbench({
   const [assignments, setAssignments] = useState(initialAssignments);
   const [agentAlerts, setAgentAlerts] = useState(initialAgentAlerts);
   const [firmTemplates, setFirmTemplates] = useState<DocumentRow[]>([]);
-  const [highlightDocumentId, setHighlightDocumentId] = useState<string | null>(null);
+  const [highlightDocumentId, setHighlightDocumentId] = useState<string | null>(
+    readInitialHighlightDocFromUrl,
+  );
   const [uploadPreviews, setUploadPreviews] = useState<Record<string, UploadResult>>({});
 
   useEffect(() => {
@@ -95,18 +112,6 @@ export function MatterWorkbench({
       .then((data: { templates?: DocumentRow[] }) => setFirmTemplates(data.templates ?? []))
       .catch(() => setFirmTemplates([]));
   }, [refreshKey]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const highlightDoc = params.get("highlightDoc")?.trim();
-    const tabParam = params.get("tab")?.trim();
-    if (highlightDoc) {
-      setHighlightDocumentId(highlightDoc);
-      setTab("Documents");
-    } else if (tabParam && tabs.includes(tabParam as Tab)) {
-      setTab(tabParam as Tab);
-    }
-  }, []);
 
   const refresh = useCallback(async () => {
     const [t, n, tl, el, m, docs, asgn, alerts] = await Promise.all([

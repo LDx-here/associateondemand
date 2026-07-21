@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import {
   hasResumableIntake,
@@ -11,11 +11,7 @@ import {
 } from "@/lib/intake-session";
 
 export function ResumeIntakeBanner() {
-  const [session, setSession] = useState<IntakeSession | null>(null);
-
-  useEffect(() => {
-    setSession(loadIntakeSession());
-  }, []);
+  const [session] = useState<IntakeSession | null>(() => loadIntakeSession());
 
   if (!hasResumableIntake(session)) return null;
 
