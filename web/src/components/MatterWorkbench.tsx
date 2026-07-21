@@ -31,6 +31,7 @@ import { AssessmentOnFileChip } from "./AssessmentOnFileChip";
 import { DraftingFactsCompletenessChip } from "./PracticeAreaFactGuide";
 import { MatterEventsPanel } from "./MatterEventsPanel";
 import { NoteComposer } from "./NoteComposer";
+import { MatterStageChip } from "./MatterStageChip";
 import { StatusBadge } from "./StatusBadge";
 import { AttorneyInstructionsPanel } from "./AttorneyInstructionsPanel";
 import { MatterWorkflowStrip } from "./MatterWorkflowStrip";
@@ -204,6 +205,7 @@ export function MatterWorkbench({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <MatterStageChip assignments={assignments} />
             <AssessmentOnFileChip
               matterId={matterHeader.matterId}
               documents={documents}

@@ -143,6 +143,9 @@ export async function createAssignmentDemo(payload: {
   stripeSessionId?: string;
   amountCents?: number;
   deliverableCatalogId?: string;
+  conflictReviewRequired?: boolean;
+  opposingParty?: string;
+  opposingCounsel?: string;
 }): Promise<InboxItem> {
   const seed = await getMutableSeed();
   if (!seed.inboxItems) seed.inboxItems = [];
@@ -172,6 +175,9 @@ export async function createAssignmentDemo(payload: {
     stripeSessionId: payload.stripeSessionId,
     amountCents: payload.amountCents,
     deliverableCatalogId: payload.deliverableCatalogId,
+    conflictReviewRequired: payload.conflictReviewRequired,
+    opposingParty: payload.opposingParty,
+    opposingCounsel: payload.opposingCounsel,
     history: [
       {
         status: "Submitted",

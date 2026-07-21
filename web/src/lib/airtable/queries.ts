@@ -519,6 +519,9 @@ type ParsedInboxOptions = {
   stripeSessionId?: string;
   amountCents?: number;
   deliverableCatalogId?: string;
+  conflictReviewRequired?: boolean;
+  opposingParty?: string;
+  opposingCounsel?: string;
   history?: Array<{ status: string; note?: string; at: string; by?: string }>;
 };
 
@@ -573,6 +576,9 @@ function parsePmInboxOptions(raw: unknown): ParsedInboxOptions {
       stripeSessionId: o.stripeSessionId ? String(o.stripeSessionId) : undefined,
       amountCents: typeof o.amountCents === "number" ? o.amountCents : undefined,
       deliverableCatalogId: o.deliverableCatalogId ? String(o.deliverableCatalogId) : undefined,
+      conflictReviewRequired: Boolean(o.conflictReviewRequired),
+      opposingParty: o.opposingParty ? String(o.opposingParty) : undefined,
+      opposingCounsel: o.opposingCounsel ? String(o.opposingCounsel) : undefined,
       history,
     };
   }
@@ -636,6 +642,9 @@ function mapInbox(rec: { id: string; fields: RawFields }): InboxItem {
     stripeSessionId: parsed.stripeSessionId,
     amountCents: parsed.amountCents,
     deliverableCatalogId: parsed.deliverableCatalogId,
+    conflictReviewRequired: parsed.conflictReviewRequired,
+    opposingParty: parsed.opposingParty,
+    opposingCounsel: parsed.opposingCounsel,
     history: parsed.history,
   };
 }
@@ -683,6 +692,9 @@ function serializeAssignmentOptions(payload: {
   stripeSessionId?: string;
   amountCents?: number;
   deliverableCatalogId?: string;
+  conflictReviewRequired?: boolean;
+  opposingParty?: string;
+  opposingCounsel?: string;
   history: Array<{ status: string; note?: string; at: string; by?: string }>;
 }): string {
   return JSON.stringify({
@@ -698,6 +710,9 @@ function serializeAssignmentOptions(payload: {
     stripeSessionId: payload.stripeSessionId,
     amountCents: payload.amountCents,
     deliverableCatalogId: payload.deliverableCatalogId,
+    conflictReviewRequired: payload.conflictReviewRequired ?? false,
+    opposingParty: payload.opposingParty,
+    opposingCounsel: payload.opposingCounsel,
     history: payload.history,
   });
 }
@@ -715,6 +730,9 @@ function assignmentOptionsFromItem(item: InboxItem, history: InboxItem["history"
     stripeSessionId: item.stripeSessionId,
     amountCents: item.amountCents,
     deliverableCatalogId: item.deliverableCatalogId,
+    conflictReviewRequired: item.conflictReviewRequired,
+    opposingParty: item.opposingParty,
+    opposingCounsel: item.opposingCounsel,
     history: history ?? [],
   };
 }
@@ -733,6 +751,9 @@ export async function createAssignmentInAirtable(payload: {
   stripeSessionId?: string;
   amountCents?: number;
   deliverableCatalogId?: string;
+  conflictReviewRequired?: boolean;
+  opposingParty?: string;
+  opposingCounsel?: string;
 }): Promise<InboxItem> {
   const resolved = await resolveMatterRecordId(payload.matterCode);
   if (!resolved) throw new Error(`Matter not found: ${payload.matterCode}`);
@@ -764,6 +785,9 @@ export async function createAssignmentInAirtable(payload: {
       stripeSessionId: payload.stripeSessionId,
       amountCents: payload.amountCents,
       deliverableCatalogId: payload.deliverableCatalogId,
+      conflictReviewRequired: payload.conflictReviewRequired,
+      opposingParty: payload.opposingParty,
+      opposingCounsel: payload.opposingCounsel,
       history,
     }),
     [i.status]: "Submitted",

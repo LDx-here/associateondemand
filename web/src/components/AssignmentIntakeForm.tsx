@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   TierZeroBanner,
@@ -42,12 +42,38 @@ import {
 } from "@/lib/deliverable-catalog";
 import { formatUsdFromCents, quoteFromCatalogEntry } from "@/lib/stripe-pricing";
 import { isStripeCheckoutEnabled } from "@/lib/stripe-client";
+import {
+  clearIntakeSession,
+  loadIntakeSession,
+  saveIntakeSession,
+} from "@/lib/intake-session";
+import type { ConflictCheckResult } from "@/lib/conflict-check";
 import type { AssignmentTier, Matter } from "@/lib/types";
 import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 
 const CUSTOM_OPTION = "custom-other-free-text";
 const PRIORITIES = ["Urgent", "High", "Medium", "Low"];
 const MIN_FACTS_LENGTH = 20;
+
+const INTAKE_STEPS = ["Matter", "Deliverable", "Facts", "Attachments", "Review"] as const;
+
+function IntakeStepProgress({ activeIndex }: { activeIndex: number }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-1" aria-hidden>
+        {INTAKE_STEPS.map((_, i) => (
+          <div
+            key={INTAKE_STEPS[i]}
+            className={`h-1 flex-1 rounded ${i <= activeIndex ? "bg-slate-800" : "bg-slate-200"}`}
+          />
+        ))}
+      </div>
+      <p className="text-xs text-slate-500">
+        Step {activeIndex + 1} of {INTAKE_STEPS.length}: {INTAKE_STEPS[activeIndex]}
+      </p>
+    </div>
+  );
+}
 
 type QueueItem = { name: string; status: "pending" | "uploading" | "done" | "error"; result?: UploadResult };
 
@@ -99,12 +125,46 @@ export function AssignmentIntakeForm({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
 
+  const [opposingParty, setOpposingParty] = useState("");
+  const [opposingCounsel, setOpposingCounsel] = useState("");
+  const [conflictResult, setConflictResult] = useState<ConflictCheckResult | null>(null);
+  const [conflictDetails, setConflictDetails] = useState<string | null>(null);
+  const [checkingConflict, setCheckingConflict] = useState(false);
+
   const selectedCatalog = useMemo(
     () => (deliverableId === CUSTOM_OPTION ? undefined : deliverableById(deliverableId)),
     [deliverableId],
   );
   const deliverableType = selectedCatalog ? selectedCatalog.name : customDeliverableName.trim();
   const tier: AssignmentTier = selectedCatalog ? selectedCatalog.tier : customTier;
+
+  const activeStepIndex = useMemo(() => {
+    if (!disclaimerAcknowledged && (facts.trim() || structuredFacts)) return 4;
+    if (files.length > 0 || applySampleDiscount) return 3;
+    if (structuredFacts || facts.trim()) return 2;
+    if (deliverableType) return 1;
+    return 0;
+  }, [disclaimerAcknowledged, facts, structuredFacts, files.length, applySampleDiscount, deliverableType]);
+
+  useEffect(() => {
+    const saved = loadIntakeSession();
+    if (!saved) return;
+    if (saved.deliverableId) setDeliverableId(saved.deliverableId);
+    if (saved.matterMode) setMatterMode(saved.matterMode);
+    if (saved.existingMatterId) setExistingMatterId(saved.existingMatterId);
+    if (saved.newTitle) setNewTitle(saved.newTitle);
+  }, []);
+
+  useEffect(() => {
+    saveIntakeSession({
+      deliverableId,
+      matterMode,
+      existingMatterId: matterMode === "existing" ? existingMatterId : undefined,
+      newTitle: matterMode === "new" ? newTitle : undefined,
+      deliverableType,
+      step: activeStepIndex,
+    });
+  }, [deliverableId, matterMode, existingMatterId, newTitle, deliverableType, activeStepIndex]);
 
   const existingMatter = useMemo(
     () => matters.find((m) => m.matterId === existingMatterId),
@@ -278,6 +338,33 @@ export function AssignmentIntakeForm({
     return errors;
   }
 
+  async function runConflictCheck() {
+    const party = opposingParty.trim();
+    if (!party) {
+      showToast("Enter an opposing party name to run conflict check.", "error");
+      return;
+    }
+    setCheckingConflict(true);
+    try {
+      const resp = await fetch("/api/conflicts/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ opposingParty: party, opposingCounsel: opposingCounsel.trim() || undefined }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        showToast(data.error || "Conflict check failed.", "error");
+        return;
+      }
+      setConflictResult(data.result as ConflictCheckResult);
+      setConflictDetails(data.details as string);
+    } catch {
+      showToast("Conflict check unavailable — RMV will review manually.", "error");
+    } finally {
+      setCheckingConflict(false);
+    }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
@@ -305,6 +392,9 @@ export function AssignmentIntakeForm({
           dueDate: dueDate || null,
           sampleDiscountEligible: sampleEligible,
           discountApplied: applySampleDiscount && sampleEligible,
+          opposingParty: opposingParty.trim() || undefined,
+          opposingCounsel: opposingCounsel.trim() || undefined,
+          conflictReviewRequired: conflictResult === "review_required",
         }),
       });
       const data = await resp.json();
@@ -377,6 +467,7 @@ export function AssignmentIntakeForm({
             ? " Saved to Submitted lane — agent dispatch will run when API is online."
             : "";
       showToast(`Assignment submitted for ${matterId}.${dispatchNote}`, "success");
+      clearIntakeSession();
       router.push("/inbox");
       router.refresh();
     } catch (err) {
@@ -391,6 +482,7 @@ export function AssignmentIntakeForm({
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
       <form onSubmit={onSubmit} className="space-y-6 min-w-0" noValidate>
+      <IntakeStepProgress activeIndex={activeStepIndex} />
       {demoMode ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           Demo mode — this assignment will be saved to the local sample data, not live Airtable.
@@ -474,6 +566,58 @@ export function AssignmentIntakeForm({
           </div>
         )}
         {fieldErrors.matter ? <p className="text-sm text-rose-700">{fieldErrors.matter}</p> : null}
+        <p className="text-xs text-slate-500">
+          Use your firm work email when signed in — RMV sends assignment updates to your account email.
+        </p>
+        <div className="rounded-md border border-slate-100 bg-slate-50 p-3 space-y-3">
+          <p className="text-xs font-medium text-slate-700">Optional conflict check</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="text-slate-700">Opposing party</span>
+              <input
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+                placeholder="e.g. USCIS, opposing employer"
+                value={opposingParty}
+                onChange={(e) => {
+                  setOpposingParty(e.target.value);
+                  setConflictResult(null);
+                  setConflictDetails(null);
+                }}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-slate-700">Opposing counsel (optional)</span>
+              <input
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+                value={opposingCounsel}
+                onChange={(e) => {
+                  setOpposingCounsel(e.target.value);
+                  setConflictResult(null);
+                }}
+              />
+            </label>
+          </div>
+          {opposingParty.trim() ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                className={btnSecondary}
+                disabled={checkingConflict}
+                onClick={() => void runConflictCheck()}
+              >
+                {checkingConflict ? "Checking…" : "Run conflict check"}
+              </button>
+              {conflictResult === "clear" ? (
+                <span className="text-xs font-medium text-emerald-800">Clear — no matches in firm matters</span>
+              ) : null}
+              {conflictResult === "review_required" ? (
+                <span className="text-xs font-medium text-rose-800">
+                  Manual conflict review required{conflictDetails ? ` — ${conflictDetails}` : ""}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </section>
 
       <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

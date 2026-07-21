@@ -578,6 +578,55 @@ def fetch_latest_drafting_facts(matter_code: str) -> dict[str, Any] | None:
     return None
 
 
+def list_firm_memory_patterns(*, max_records: int = 20) -> list[dict[str, Any]]:
+    """Return Strategy Patterns rows tagged as firm_memory style preferences."""
+
+    if not is_configured():
+        return []
+    rows: list[dict[str, Any]] = []
+    try:
+        with _client() as client:
+            offset: str | None = None
+            while len(rows) < max_records:
+                params: dict[str, str] = {"pageSize": str(min(100, max_records))}
+                if offset:
+                    params["offset"] = offset
+                resp = client.get(_base_url(TABLE_STRATEGY_PATTERNS), params=params)
+                if resp.status_code >= 400:
+                    LOGGER.warning("firm memory list failed: %s", resp.status_code)
+                    break
+                data = resp.json()
+                for rec in data.get("records") or []:
+                    fields = rec.get("fields") or {}
+                    strategy = str(fields.get(FIELDS_STRATEGY_PATTERNS["strategy_used"]) or "").lower()
+                    pattern = str(fields.get(FIELDS_STRATEGY_PATTERNS["fact_pattern"]) or "").lower()
+                    detail = str(fields.get(FIELDS_STRATEGY_PATTERNS["outcome"]) or "")
+                    if (
+                        strategy == "firm_memory"
+                        or "firm_memory" in pattern
+                        or "[firm_memory]" in pattern
+                    ):
+                        rows.append(
+                            {
+                                "id": rec.get("id"),
+                                "fact_pattern": fields.get(FIELDS_STRATEGY_PATTERNS["fact_pattern"]),
+                                "fact_pattern_detail": fields.get(
+                                    FIELDS_STRATEGY_PATTERNS["fact_pattern_detail"]
+                                ),
+                                "strategy_used": fields.get(FIELDS_STRATEGY_PATTERNS["strategy_used"]),
+                                "outcome": detail,
+                            }
+                        )
+                        if len(rows) >= max_records:
+                            break
+                offset = data.get("offset")
+                if not offset:
+                    break
+    except httpx.HTTPError:
+        LOGGER.exception("firm memory patterns fetch failed")
+    return rows
+
+
 def create_strategy_pattern(
     *,
     fact_pattern: str,

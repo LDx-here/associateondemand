@@ -201,6 +201,10 @@ export type InboxItem = {
   stripeSessionId?: string;
   amountCents?: number;
   deliverableCatalogId?: string;
+  /** Lightweight conflict check flag from intake (manual RMV review). */
+  conflictReviewRequired?: boolean;
+  opposingParty?: string;
+  opposingCounsel?: string;
   history?: Array<{ status: string; note?: string; at: string; by?: string }>;
 };
 

@@ -32,6 +32,9 @@ type AssignmentRequest = {
   dueDate?: string | null;
   sampleDiscountEligible?: boolean;
   discountApplied?: boolean;
+  opposingParty?: string;
+  opposingCounsel?: string;
+  conflictReviewRequired?: boolean;
 };
 
 /**
@@ -54,6 +57,9 @@ export async function POST(req: Request) {
   const structuredFacts = body.structuredFacts;
   const facts = rawFacts || mergeFactsForDispatch(structuredFacts, "");
   const discountApplied = Boolean(body.discountApplied);
+  const opposingParty = (body.opposingParty ?? "").trim() || undefined;
+  const opposingCounsel = (body.opposingCounsel ?? "").trim() || undefined;
+  const conflictReviewRequired = Boolean(body.conflictReviewRequired);
 
   const errors: string[] = [];
   if (!deliverableType) errors.push("Deliverable type is required.");
@@ -117,6 +123,13 @@ export async function POST(req: Request) {
       "Attorney",
     );
 
+    if (opposingParty) {
+      const conflictNote = conflictReviewRequired
+        ? `Manual conflict review required — opposing party: ${opposingParty}${opposingCounsel ? `; opposing counsel: ${opposingCounsel}` : ""}.`
+        : `Opposing party noted: ${opposingParty}${opposingCounsel ? `; opposing counsel: ${opposingCounsel}` : ""} (conflict check clear).`;
+      await createNoteForMatter(matterId, conflictNote, "System");
+    }
+
     let inboxItem = await createAssignment({
       matterId,
       deliverableType,
@@ -130,6 +143,9 @@ export async function POST(req: Request) {
       paymentStatus: payBeforeDispatch ? "pending" : "invoice",
       amountCents: quote?.amountCents,
       deliverableCatalogId,
+      conflictReviewRequired,
+      opposingParty,
+      opposingCounsel,
     });
 
     let dispatch = null as Awaited<ReturnType<typeof dispatchAssignmentToPm>> | null;

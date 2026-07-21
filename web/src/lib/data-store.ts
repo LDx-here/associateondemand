@@ -493,6 +493,9 @@ export async function createAssignment(payload: {
   stripeSessionId?: string;
   amountCents?: number;
   deliverableCatalogId?: string;
+  conflictReviewRequired?: boolean;
+  opposingParty?: string;
+  opposingCounsel?: string;
 }): Promise<InboxItem> {
   if (isDemoMode()) return createAssignmentDemo(payload);
   return createAssignmentInAirtable({ matterCode: payload.matterId, ...payload });

@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-21 (CDT) — Legal OS greenfield track (`legal-os/`) Steps 1–18  
+**Last updated:** 2026-07-21 (CDT) — pass 17: Legal OS wins ported to production AOD  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -12,7 +12,9 @@
 | **Production** | `web/` + `services/api/` | Next.js + FastAPI + Airtable + **Supabase Auth** | Live — https://aod-next.vercel.app |
 | **Greenfield** | `legal-os/` | React 19 + Express + tRPC 11 + Drizzle + MySQL | Local/dev — Steps 1–18 done (`9e76e7f`); not deployed |
 
-**Next (user choice):** improve **drafting quality on prod AOD** *or* run a **Legal OS local pilot** (`docker compose up -d` → `/associate` + `/admin`).
+**Next (user choice):** run **first pilot matter** on prod (`/assignments/new` → inbox → approve → export) *or* Legal OS local pilot.
+
+**Pass 17 (2026-07-21):** Ported Legal OS functional wins to production AOD — Firm Memory in drafting prompts, matter stage chip, conflict check on intake, intake step progress + abandoned session recovery. `pytest` 43 passed; `next build` green; smoke pass.
 
 **Stripe on prod:** checkout code ships (pass 16); still needs `STRIPE_*` env vars on Vercel — see [`docs/runbooks/stripe-activation.md`](docs/runbooks/stripe-activation.md).
 
@@ -501,6 +503,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 17 (2026-07-21):** Legal OS → production AOD port — drafting prompt assembly (Firm Memory + assessment + structured facts + anti-filler rules), per-deliverable model config, matter stage chip on workbench, lightweight conflict check on intake, intake step progress + localStorage resume banner on dashboard. Verified: pytest (43), test:matter-stage, next build, smoke-production PASS.
 - **Legal OS greenfield (2026-07-21):** Full `legal-os/` app — Matter Engine state machine, 10 tRPC routers (matters/leads/conflicts/agents/firmMemory/services/drafting/clio/files/payments), Stripe webhook, abandoned-session cron, /associate landing + intake funnel + admin dashboard, Vitest (22 tests). Production AOD untouched.
 - **Document upload UX (2026-07-21):** Documents list moved above upload controls with breadcrumb, status badges, expandable OCR preview, post-upload toast + row highlight; clarifies Airtable storage location (no file-system folder).
 - **Upload blocker fix (2026-07-21):** Documents create no longer writes `ocr_status`/`pii_tier`/`file_path` to Airtable (live base lacks those columns — caused 422). Westlaw research paste panel, attorney instructions, workflow strip, and Associate panel "Show your work" shipped on matter workbench.
@@ -522,11 +525,10 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Legal OS local smoke** — `cd legal-os && docker compose up -d && cp .env.example .env && npm run db:setup && npm run dev` + `npx vite`; open `/associate` and `/admin`.
-2. **Verify document upload UX on prod** — matter Documents tab → upload PDF; confirm toast, highlighted row in list above, expandable OCR preview.
+1. **Verify pass 17 on prod** — `/assignments/new` conflict check + step progress; matter workbench stage chip; dashboard resume banner after partial intake.
 2. **First pilot matter (ops — main priority)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): pick pilot attorney, conflict check, live intake → inbox → approve → export.
-3. **Activate Stripe on Vercel (optional before pilot)** — follow [`docs/runbooks/stripe-activation.md`](docs/runbooks/stripe-activation.md) (three env vars, webhook, test card 4242…); without keys, invoice-after-delivery fallback still works.
-4. **Site Reviewer cycle** — checklist in [`docs/runbooks/site-reviewer-agent.md`](docs/runbooks/site-reviewer-agent.md).
+3. **Legal OS local smoke (optional)** — `cd legal-os && docker compose up -d && npm run dev`.
+4. **Activate Stripe on Vercel (optional before pilot)** — follow [`docs/runbooks/stripe-activation.md`](docs/runbooks/stripe-activation.md).
 5. **Roadmap Phase 3** — Firm Memory depth + style QC per Master Implementation Roadmap §5.
 
 ## Blockers

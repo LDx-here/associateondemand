@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { GettingStartedBanner, OnboardingWizard } from "@/components/OnboardingWizard";
+import { ResumeIntakeBanner } from "@/components/ResumeIntakeBanner";
 import { EmptyState } from "@/components/EmptyState";
 import { DashboardCharts } from "@/components/DashboardCharts";
 import { KpiCard } from "@/components/KpiCard";
@@ -141,6 +142,7 @@ export default async function DashboardPage() {
 
       <OnboardingWizard />
       <GettingStartedBanner />
+      <ResumeIntakeBanner />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard

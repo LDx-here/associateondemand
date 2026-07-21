@@ -95,6 +95,9 @@ def run_skill_llm(
     summary_prefix: str = "",
     max_tokens: int = 8192,
     confidence: float = 0.78,
+    system_prompt: str | None = None,
+    model: str | None = None,
+    temperature: float = 0.2,
 ) -> AgentResult:
     skill = load_skill_text(skill_path)
     if not skill:
@@ -119,7 +122,16 @@ def run_skill_llm(
     matter_ctx = fetch_matter_context(matter_id)
     firm_rules = load_firm_rules(max_chars=1500)
     constitution = load_constitution(max_chars_per_file=2500)
-    system = build_system_prompt(role=role, skill=skill, extra_rules=extra_rules)
+    if system_prompt:
+        system = (
+            f"{system_prompt.strip()}\n\n"
+            f"--- SKILL ---\n{skill[:28000]}\n\n"
+            f"{OUTPUT_RULES}"
+        )
+        if extra_rules.strip():
+            system += f"\n{extra_rules.strip()}"
+    else:
+        system = build_system_prompt(role=role, skill=skill, extra_rules=extra_rules)
     user = build_user_prompt(
         matter_id=matter_id,
         instruction=instruction,
@@ -135,7 +147,13 @@ def run_skill_llm(
             )
         ),
     )
-    raw = generate_text(system=system, user=user, max_tokens=max_tokens, temperature=0.2)
+    raw = generate_text(
+        system=system,
+        user=user,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        model=model,
+    )
     if not raw:
         return AgentResult(
             agent=agent,

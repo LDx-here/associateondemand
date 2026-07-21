@@ -1,3 +1,5 @@
+### [2026-07-21] CHECKPOINT: pass 17 — port Legal OS drafting + workflow wins to production AOD (Firm Memory prompts, matter stage chip, conflict check, intake UX); pytest 43; next build; smoke pass; Fly + Vercel prod
+
 ### [2026-07-20] CHECKPOINT: pass 16: Stripe checkout, pay-before-dispatch, billing UX finish
 
 ### [2026-07-06] CHECKPOINT: pass 16 — Stripe Checkout + webhook, pay-before-dispatch, billing UX (Settings/Inbox/Dashboard), Firm Memory count KPI; Vercel prod; smoke pass

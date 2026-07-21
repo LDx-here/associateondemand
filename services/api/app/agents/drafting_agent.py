@@ -15,6 +15,12 @@ from app.drafting.citation_package import build_citation_package
 from app.drafting.classify import classify_draft_type
 from app.models.agent_result import AgentResult
 from app.services.document_linter import lint_document
+from app.services.drafting_prompt import (
+    build_drafting_context_block,
+    build_drafting_system_prompt,
+    fetch_firm_memory_profile,
+    resolve_task_config,
+)
 from app.services.matter_context import fetch_matter_context, format_assessment_data
 
 _DRAFTING_SKILL = resolve_skill_path("05-Drafting-SKILL.md", "AOD_DRAFTING_SKILL_PATH")
@@ -54,10 +60,15 @@ def _draft_extra_context(doc_type: str, matter_id: str) -> str:
     citation_skill = load_skill_text(_CITATION_SKILL)
     if citation_skill and doc_type in {"aos_discretionary_brief", "brief_section", "general"}:
         parts.append("## Citation Verification Skill (mandatory for cited drafts)\n" + citation_skill[:12000])
+
+    context_block = build_drafting_context_block(matter_id)
+    if context_block:
+        parts.append(context_block)
+
     ctx = fetch_matter_context(matter_id)
     if ctx and ctx.get("assessment_data"):
         assessment_block = format_assessment_data(ctx["assessment_data"])
-        if assessment_block:
+        if assessment_block and assessment_block not in (context_block or ""):
             parts.append(
                 "## Case assessment data\n"
                 "Weave structured assessment fields into factor analysis and argument sections.\n\n"
@@ -122,6 +133,9 @@ def _post_process_draft(
 def run_drafting(matter_id: str, instruction: str) -> AgentResult:
     doc_type = classify_draft_type(instruction)
     matter_ctx = fetch_matter_context(matter_id)
+    firm_profile = fetch_firm_memory_profile()
+    task_config = resolve_task_config(doc_type, instruction)
+    system_prompt = build_drafting_system_prompt(matter_ctx=matter_ctx, firm_profile=firm_profile)
 
     result = run_skill_llm(
         agent="drafting",
@@ -132,8 +146,11 @@ def run_drafting(matter_id: str, instruction: str) -> AgentResult:
         extra_rules=_draft_extra_rules(doc_type),
         extra_context=_draft_extra_context(doc_type, matter_id),
         summary_prefix=f"[{doc_type}] ",
-        max_tokens=12000 if doc_type == "aos_discretionary_brief" else 8192,
+        max_tokens=int(task_config.get("max_tokens", 8192)),
+        temperature=float(task_config.get("temperature", 0.2)),
         confidence=0.82 if doc_type == "aos_discretionary_brief" else 0.8,
+        system_prompt=system_prompt,
+        model=str(task_config.get("model")) if task_config.get("model") else None,
     )
 
     if not result.complete:
