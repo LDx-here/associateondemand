@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { AgentCommandResult } from "@/lib/agent-dispatch";
 import { DeliverableReadyInline } from "@/components/DeliverableReadyInline";
 import { EditableOutputMemo } from "@/components/EditableOutputMemo";
+import { useToast } from "@/components/Toast";
 import { btnSecondary } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ export function AgentResultMemoSection({
   demoMode?: boolean;
   onReviewUpdated?: () => void;
 }) {
+  const { showToast } = useToast();
   const initialMemo = result.fullMemo?.trim() ?? "";
   const [memoOpen, setMemoOpen] = useState(false);
   const [copyDone, setCopyDone] = useState(false);
@@ -53,8 +55,8 @@ export function AgentResultMemoSection({
       const isAosBrief = result.draftType === "aos_discretionary_brief";
       const endpoint = isAosBrief ? "/api/drafting/aos-brief-export" : "/api/research/memo-export";
       const payload = isAosBrief
-        ? { matterId: result.matterId, memo: fullMemo, format: "docx" }
-        : { matterId: result.matterId, memo: fullMemo, format: "docx" };
+        ? { matterId: result.matterId, memo: fullMemo, format: "docx", assignmentId }
+        : { matterId: result.matterId, memo: fullMemo, format: "docx", assignmentId };
       const r = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,6 +92,10 @@ export function AgentResultMemoSection({
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
+      if (assignmentId) {
+        showToast("Export complete — deliverable marked Delivered.", "success");
+        onReviewUpdated?.();
+      }
     } finally {
       setDownloadBusy(false);
     }

@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 
+import { recordAssignmentExport } from "@/lib/record-assignment-export";
+
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 /** Proxy research memo export: prefers FastAPI .docx (BUILD_SPEC §11), surfaces linter 422. */
 export async function POST(req: Request) {
-  let body: { matterId?: string; memo?: string; format?: "docx" | "txt" };
+  let body: { matterId?: string; memo?: string; format?: "docx" | "txt"; assignmentId?: string };
   try {
     body = await req.json();
   } catch {
@@ -37,6 +39,7 @@ export async function POST(req: Request) {
       const cd = upstream.headers.get("Content-Disposition");
       if (ct) headers.set("Content-Type", ct);
       if (cd) headers.set("Content-Disposition", cd);
+      await recordAssignmentExport(body.assignmentId, format === "txt" ? "research-memo-txt" : "research-memo-docx");
       return new NextResponse(buf, { status: 200, headers });
     }
 
@@ -61,6 +64,8 @@ export async function POST(req: Request) {
 
   const safe = matterId.replace(/[^a-zA-Z0-9-_]/g, "_") || "memo";
   const filename = `${safe}_research_memo.txt`;
+
+  await recordAssignmentExport(body.assignmentId, "research-memo-txt-fallback");
 
   return new NextResponse(memo, {
     status: 200,

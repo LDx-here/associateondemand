@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import type { AgentCommandResult } from "@/lib/agent-dispatch";
 import { AgentResultMemoSection } from "@/components/AgentResultMemoSection";
+import { useToast } from "@/components/Toast";
 import { btnSecondary, linkMatter } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "./StatusBadge";
@@ -28,6 +29,7 @@ export function AgentResultPanel({
   demoMode?: boolean;
   onReviewUpdated?: () => void;
 }) {
+  const { showToast } = useToast();
   const [citationBusy, setCitationBusy] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -59,7 +61,7 @@ export function AgentResultPanel({
       const r = await fetch("/api/drafting/citation-package", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ matterId: result.matterId, memo: fullMemo }),
+        body: JSON.stringify({ matterId: result.matterId, memo: fullMemo, assignmentId }),
       });
       if (!r.ok) {
         let message = `Citation package failed (${r.status})`;
@@ -85,6 +87,10 @@ export function AgentResultPanel({
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
+      if (assignmentId) {
+        showToast("Citation package downloaded — deliverable marked Delivered.", "success");
+        onReviewUpdated?.();
+      }
     } finally {
       setCitationBusy(false);
     }

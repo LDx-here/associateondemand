@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 
+import { recordAssignmentExport } from "@/lib/record-assignment-export";
+
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 /** Proxy citation verification package as a ZIP download. */
 export async function POST(req: Request) {
-  let body: { matterId?: string; memo?: string; matterLabel?: string };
+  let body: { matterId?: string; memo?: string; matterLabel?: string; assignmentId?: string };
   try {
     body = await req.json();
   } catch {
@@ -36,6 +38,7 @@ export async function POST(req: Request) {
       const cd = upstream.headers.get("Content-Disposition");
       if (ct) headers.set("Content-Type", ct);
       if (cd) headers.set("Content-Disposition", cd);
+      await recordAssignmentExport(body.assignmentId, "citation-package-zip");
       return new NextResponse(buf, { status: 200, headers });
     }
 

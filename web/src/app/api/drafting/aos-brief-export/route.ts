@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 
+import { recordAssignmentExport } from "@/lib/record-assignment-export";
+
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export async function POST(req: Request) {
-  let body: { matterId?: string; memo?: string; clientName?: string; aNumber?: string; caseTheme?: string };
+  let body: {
+    matterId?: string;
+    memo?: string;
+    clientName?: string;
+    aNumber?: string;
+    caseTheme?: string;
+    assignmentId?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -36,6 +45,7 @@ export async function POST(req: Request) {
       const cd = upstream.headers.get("Content-Disposition");
       if (ct) headers.set("Content-Type", ct);
       if (cd) headers.set("Content-Disposition", cd);
+      await recordAssignmentExport(body.assignmentId, "aos-brief-docx");
       return new NextResponse(buf, { status: 200, headers });
     }
     const err = await upstream.text();

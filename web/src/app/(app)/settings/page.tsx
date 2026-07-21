@@ -128,6 +128,12 @@ export default async function SettingsPage() {
             </a>
           </Row>
         ) : null}
+        <Row label="Roadmap">
+          $99/mo self-serve AI tier is Phase 3+ only — requires bar counsel approval before any UI or checkout ships.
+        </Row>
+        <Row label="Associate marketplace">
+          Contract-associate marketplace is Phase 3+ — year one is RMV-verified overflow counsel only.
+        </Row>
       </SettingsSection>
 
       <SettingsSection title="Privacy and security">

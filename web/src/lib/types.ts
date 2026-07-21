@@ -205,6 +205,8 @@ export type InboxItem = {
   conflictReviewRequired?: boolean;
   opposingParty?: string;
   opposingCounsel?: string;
+  /** ISO timestamp when attorney exported an approved deliverable. */
+  deliveredAt?: string;
   history?: Array<{ status: string; note?: string; at: string; by?: string }>;
 };
 

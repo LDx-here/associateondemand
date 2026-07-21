@@ -3,6 +3,7 @@
  * Ported from legal-os MATTER_STAGES, mapped to production AOD assignment lifecycle.
  */
 
+import { isAssignmentDelivered } from "@/lib/assignment-transitions";
 import type { InboxItem } from "@/lib/types";
 
 export type MatterWorkflowStage =
@@ -72,15 +73,8 @@ export function deriveMatterStage(input: MatterStageInput): MatterWorkflowStage 
       return "In progress";
     case "Ready for review":
       return "Ready for review";
-    case "Approved": {
-      const delivered = active.history?.some(
-        (h) =>
-          h.status === "Delivered" ||
-          (h.note ?? "").toLowerCase().includes("delivered") ||
-          (h.note ?? "").toLowerCase().includes("exported"),
-      );
-      return delivered ? "Delivered" : "Approved";
-    }
+    case "Approved":
+      return isAssignmentDelivered(active) ? "Delivered" : "Approved";
     default:
       return "Intake";
   }

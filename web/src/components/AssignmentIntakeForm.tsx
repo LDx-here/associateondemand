@@ -44,10 +44,11 @@ import { formatUsdFromCents, quoteFromCatalogEntry } from "@/lib/stripe-pricing"
 import { isStripeCheckoutEnabled } from "@/lib/stripe-client";
 import {
   clearIntakeSession,
+  intakeSessionId,
   loadIntakeSession,
   saveIntakeSession,
 } from "@/lib/intake-session";
-import type { ConflictCheckResult } from "@/lib/conflict-check";
+import type { ConflictCheckResult, ConflictMatch } from "@/lib/conflict-check";
 import type { AssignmentTier, Matter } from "@/lib/types";
 import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 
@@ -129,6 +130,8 @@ export function AssignmentIntakeForm({
   const [opposingCounsel, setOpposingCounsel] = useState("");
   const [conflictResult, setConflictResult] = useState<ConflictCheckResult | null>(null);
   const [conflictDetails, setConflictDetails] = useState<string | null>(null);
+  const [conflictMatches, setConflictMatches] = useState<ConflictMatch[]>([]);
+  const [contactEmail, setContactEmail] = useState("");
   const [checkingConflict, setCheckingConflict] = useState(false);
 
   const selectedCatalog = useMemo(
@@ -153,10 +156,13 @@ export function AssignmentIntakeForm({
     if (saved.matterMode) setMatterMode(saved.matterMode);
     if (saved.existingMatterId) setExistingMatterId(saved.existingMatterId);
     if (saved.newTitle) setNewTitle(saved.newTitle);
+    if (saved.email) setContactEmail(saved.email);
   }, []);
 
   useEffect(() => {
     saveIntakeSession({
+      sessionId: intakeSessionId(),
+      email: contactEmail.trim() || undefined,
       deliverableId,
       matterMode,
       existingMatterId: matterMode === "existing" ? existingMatterId : undefined,
@@ -164,7 +170,26 @@ export function AssignmentIntakeForm({
       deliverableType,
       step: activeStepIndex,
     });
-  }, [deliverableId, matterMode, existingMatterId, newTitle, deliverableType, activeStepIndex]);
+  }, [contactEmail, deliverableId, matterMode, existingMatterId, newTitle, deliverableType, activeStepIndex]);
+
+  useEffect(() => {
+    const email = contactEmail.trim();
+    if (!email || !email.includes("@")) return;
+    const timer = window.setTimeout(() => {
+      void fetch("/api/intake/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: intakeSessionId(),
+          email,
+          step: activeStepIndex,
+          deliverableId,
+          matterId: matterMode === "existing" ? existingMatterId : undefined,
+        }),
+      }).catch(() => undefined);
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [contactEmail, activeStepIndex, deliverableId, matterMode, existingMatterId]);
 
   const existingMatter = useMemo(
     () => matters.find((m) => m.matterId === existingMatterId),
@@ -358,6 +383,7 @@ export function AssignmentIntakeForm({
       }
       setConflictResult(data.result as ConflictCheckResult);
       setConflictDetails(data.details as string);
+      setConflictMatches(Array.isArray(data.matches) ? (data.matches as ConflictMatch[]) : []);
     } catch {
       showToast("Conflict check unavailable — RMV will review manually.", "error");
     } finally {
@@ -567,8 +593,19 @@ export function AssignmentIntakeForm({
         )}
         {fieldErrors.matter ? <p className="text-sm text-rose-700">{fieldErrors.matter}</p> : null}
         <p className="text-xs text-slate-500">
-          Use your firm work email when signed in — RMV sends assignment updates to your account email.
+          Optional: save progress for follow-up if you leave before submitting.
         </p>
+        <label className="block text-sm">
+          <span className="text-slate-700">Work email (optional — resume link if you leave)</span>
+          <input
+            type="email"
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            placeholder="you@lawfirm.com"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            autoComplete="email"
+          />
+        </label>
         <div className="rounded-md border border-slate-100 bg-slate-50 p-3 space-y-3">
           <p className="text-xs font-medium text-slate-700">Optional conflict check</p>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -582,6 +619,7 @@ export function AssignmentIntakeForm({
                   setOpposingParty(e.target.value);
                   setConflictResult(null);
                   setConflictDetails(null);
+                  setConflictMatches([]);
                 }}
               />
             </label>
@@ -593,6 +631,7 @@ export function AssignmentIntakeForm({
                 onChange={(e) => {
                   setOpposingCounsel(e.target.value);
                   setConflictResult(null);
+                  setConflictMatches([]);
                 }}
               />
             </label>
@@ -616,6 +655,17 @@ export function AssignmentIntakeForm({
                 </span>
               ) : null}
             </div>
+          ) : null}
+          {conflictMatches.length > 0 ? (
+            <ul className="space-y-1 rounded border border-rose-100 bg-white p-2 text-xs text-rose-950">
+              {conflictMatches.map((match) => (
+                <li key={`${match.source}-${match.matterId}-${match.reason}`}>
+                  <span className="font-medium">{match.title}</span>
+                  <span className="text-rose-800"> — {match.reason}</span>
+                  <span className="text-slate-500"> ({match.source === "contact" ? "Contact" : "Matter"})</span>
+                </li>
+              ))}
+            </ul>
           ) : null}
         </div>
       </section>

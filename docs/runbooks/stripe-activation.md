@@ -43,7 +43,28 @@ Automated checks in repo:
 
 ```bash
 cd web && npm run test:stripe-pricing && npm run test:stripe-webhook
+bash scripts/stripe-setup-checklist.sh
 ```
+
+## Local webhook testing (Stripe CLI)
+
+For development before Vercel secrets exist:
+
+```bash
+# Terminal 1 — Next.js (demo or with test keys in web/.env.local)
+cd web && npm run dev
+
+# Terminal 2 — forward webhooks to local route
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+# Copy whsec_… from CLI output into STRIPE_WEBHOOK_SECRET (web/.env.local, not committed)
+
+# Terminal 3 — trigger test event after a checkout session
+stripe trigger checkout.session.completed
+```
+
+Production webhook URL remains `https://aod-next.vercel.app/api/stripe/webhook`.
+
+Abandoned intake follow-up cron (separate): set `RESEND_API_KEY` + optional `CRON_SECRET` on Vercel; schedule in `web/vercel.json` hits `/api/cron/abandoned-intake`.
 
 ## 4. Pay-before-dispatch flow (when keys are set)
 

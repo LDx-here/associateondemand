@@ -13,6 +13,7 @@ export function isAirtableConfigured(): boolean {
 }
 
 export function isDemoMode(): boolean {
+  if ((process.env.AOD_FORCE_DEMO_MODE ?? "").toLowerCase() === "true") return true;
   return !isAirtableConfigured();
 }
 

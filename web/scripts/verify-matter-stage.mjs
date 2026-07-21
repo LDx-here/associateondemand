@@ -62,4 +62,14 @@ const clear = checkConflictAgainstMatters("Unknown Party XYZ", [
 ]);
 assert.equal(clear.result, "clear");
 
+const delivered = deriveMatterStage({
+  assignments: [
+    assignment({
+      status: "Approved",
+      deliveredAt: "2026-07-21T18:00:00.000Z",
+    }),
+  ],
+});
+assert.equal(delivered, "Delivered");
+
 console.log("verify-matter-stage: OK");

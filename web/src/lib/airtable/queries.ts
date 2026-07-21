@@ -20,6 +20,7 @@ import {
 } from "./client";
 import { buildDocumentCreateFields } from "./document-create";
 import { SPEC_FIELDS as F, TABLES } from "./fields";
+import { ASSIGNMENT_TRANSITIONS, buildDeliveredHistory, isValidAssignmentTransition } from "../assignment-transitions";
 import { emptyCaseAssessment, parseCaseAssessment, serializeCaseAssessment } from "../case-assessment";
 import type {
   AssignmentStatus,
@@ -522,6 +523,7 @@ type ParsedInboxOptions = {
   conflictReviewRequired?: boolean;
   opposingParty?: string;
   opposingCounsel?: string;
+  deliveredAt?: string;
   history?: Array<{ status: string; note?: string; at: string; by?: string }>;
 };
 
@@ -579,6 +581,7 @@ function parsePmInboxOptions(raw: unknown): ParsedInboxOptions {
       conflictReviewRequired: Boolean(o.conflictReviewRequired),
       opposingParty: o.opposingParty ? String(o.opposingParty) : undefined,
       opposingCounsel: o.opposingCounsel ? String(o.opposingCounsel) : undefined,
+      deliveredAt: o.deliveredAt ? String(o.deliveredAt) : undefined,
       history,
     };
   }
@@ -645,6 +648,7 @@ function mapInbox(rec: { id: string; fields: RawFields }): InboxItem {
     conflictReviewRequired: parsed.conflictReviewRequired,
     opposingParty: parsed.opposingParty,
     opposingCounsel: parsed.opposingCounsel,
+    deliveredAt: parsed.deliveredAt,
     history: parsed.history,
   };
 }
@@ -695,6 +699,7 @@ function serializeAssignmentOptions(payload: {
   conflictReviewRequired?: boolean;
   opposingParty?: string;
   opposingCounsel?: string;
+  deliveredAt?: string;
   history: Array<{ status: string; note?: string; at: string; by?: string }>;
 }): string {
   return JSON.stringify({
@@ -713,6 +718,7 @@ function serializeAssignmentOptions(payload: {
     conflictReviewRequired: payload.conflictReviewRequired ?? false,
     opposingParty: payload.opposingParty,
     opposingCounsel: payload.opposingCounsel,
+    deliveredAt: payload.deliveredAt,
     history: payload.history,
   });
 }
@@ -733,6 +739,7 @@ function assignmentOptionsFromItem(item: InboxItem, history: InboxItem["history"
     conflictReviewRequired: item.conflictReviewRequired,
     opposingParty: item.opposingParty,
     opposingCounsel: item.opposingCounsel,
+    deliveredAt: item.deliveredAt,
     history: history ?? [],
   };
 }
@@ -797,18 +804,9 @@ export async function createAssignmentInAirtable(payload: {
   return mapInbox(rec);
 }
 
-const ASSIGNMENT_TRANSITIONS: Record<AssignmentStatus, AssignmentStatus[]> = {
-  Submitted: ["In progress"],
-  "In progress": ["Ready for review"],
-  "Ready for review": ["Approved", "Returned"],
-  Returned: ["In progress"],
-  Approved: [],
-};
+const ASSIGNMENT_TRANSITIONS_EXPORT = ASSIGNMENT_TRANSITIONS;
 
-export function isValidAssignmentTransition(from: string, to: AssignmentStatus): boolean {
-  const allowed = ASSIGNMENT_TRANSITIONS[from as AssignmentStatus];
-  return Array.isArray(allowed) && allowed.includes(to);
-}
+export { isValidAssignmentTransition, ASSIGNMENT_TRANSITIONS_EXPORT as ASSIGNMENT_TRANSITIONS };
 
 export async function updateAssignmentStatusInAirtable(
   recordId: string,
@@ -832,6 +830,28 @@ export async function updateAssignmentStatusInAirtable(
   };
   if (options?.note?.trim()) fields[i.resolution] = options.note.trim();
   if (nextStatus === "Approved" || nextStatus === "Returned") fields[i.resolved_at] = now;
+  const rec = await airtablePatch(TABLES.pmInbox, recordId, fields);
+  return mapInbox(rec);
+}
+
+/** Record export/download on an approved assignment (stage → Delivered). */
+export async function markAssignmentDeliveredInAirtable(
+  recordId: string,
+  options?: { exportKind?: string; by?: string },
+): Promise<InboxItem | null> {
+  const existing = await airtableGetRecord<RawFields>(TABLES.pmInbox, recordId);
+  const current = mapInbox(existing);
+  if (current.kind !== "assignment" || current.status !== "Approved") return null;
+  if (current.deliveredAt) return current;
+
+  const { deliveredAt, history } = buildDeliveredHistory(current, options);
+  const i = F.pmInbox;
+  const fields: RawFields = {
+    [i.options]: serializeAssignmentOptions({
+      ...assignmentOptionsFromItem(current, history),
+      deliveredAt,
+    }),
+  };
   const rec = await airtablePatch(TABLES.pmInbox, recordId, fields);
   return mapInbox(rec);
 }

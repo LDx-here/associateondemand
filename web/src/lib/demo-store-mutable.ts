@@ -2,6 +2,7 @@ import { readFile, writeFile } from "fs/promises";
 import path from "path";
 
 import type { AssignmentStatus, AssignmentTier, DevSeed, DocumentRow, InboxItem, LegalElementRow, Note, Task } from "./types";
+import { ASSIGNMENT_TRANSITIONS, buildDeliveredHistory } from "./assignment-transitions";
 
 let cache: DevSeed | null = null;
 
@@ -116,13 +117,7 @@ export async function addDocument(
   return doc;
 }
 
-const ASSIGNMENT_TRANSITIONS: Record<AssignmentStatus, AssignmentStatus[]> = {
-  Submitted: ["In progress"],
-  "In progress": ["Ready for review"],
-  "Ready for review": ["Approved", "Returned"],
-  Returned: ["In progress"],
-  Approved: [],
-};
+const ASSIGNMENT_TRANSITIONS_DEMO = ASSIGNMENT_TRANSITIONS;
 
 export async function listInboxItemsDemo(): Promise<InboxItem[]> {
   const seed = await getMutableSeed();
@@ -237,7 +232,7 @@ export async function updateAssignmentStatusDemo(
   const seed = await getMutableSeed();
   const item = (seed.inboxItems ?? []).find((i) => i.id === itemId);
   if (!item) return null;
-  const allowed = ASSIGNMENT_TRANSITIONS[item.status as AssignmentStatus];
+  const allowed = ASSIGNMENT_TRANSITIONS_DEMO[item.status as AssignmentStatus];
   if (!Array.isArray(allowed) || !allowed.includes(nextStatus)) {
     throw new Error(`Cannot move assignment from "${item.status}" to "${nextStatus}"`);
   }
@@ -249,6 +244,22 @@ export async function updateAssignmentStatusDemo(
     ...(item.history ?? []),
     { status: nextStatus, note: options?.note?.trim() || undefined, at: now, by: options?.by ?? "Attorney" },
   ];
+  await persistSeed();
+  return item;
+}
+
+export async function markAssignmentDeliveredDemo(
+  itemId: string,
+  options?: { exportKind?: string; by?: string },
+): Promise<InboxItem | null> {
+  const seed = await getMutableSeed();
+  const item = (seed.inboxItems ?? []).find((i) => i.id === itemId);
+  if (!item || item.kind !== "assignment" || item.status !== "Approved") return null;
+  if (item.deliveredAt) return item;
+
+  const { deliveredAt, history } = buildDeliveredHistory(item, options);
+  item.deliveredAt = deliveredAt;
+  item.history = history;
   await persistSeed();
   return item;
 }

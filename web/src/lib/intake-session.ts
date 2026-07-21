@@ -6,7 +6,9 @@
 const INTAKE_SESSION_KEY = "aod:intake-session-v1";
 
 export type IntakeSession = {
+  sessionId?: string;
   savedAt: string;
+  email?: string;
   deliverableId?: string;
   matterMode?: "existing" | "new";
   existingMatterId?: string;
@@ -14,6 +16,17 @@ export type IntakeSession = {
   deliverableType?: string;
   step?: number;
 };
+
+export function intakeSessionId(): string {
+  if (typeof window === "undefined") return `sess-${Date.now()}`;
+  const key = "aod:intake-session-id";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = `sess-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
 
 export function loadIntakeSession(): IntakeSession | null {
   if (typeof window === "undefined") return null;

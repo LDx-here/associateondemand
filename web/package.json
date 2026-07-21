@@ -14,6 +14,7 @@
     "test:document-create": "tsx scripts/verify-document-create.mjs",
     "test:onboarding": "tsx scripts/verify-onboarding-state.mjs",
     "test:matter-stage": "tsx scripts/verify-matter-stage.mjs",
+    "test:assignment-transitions": "tsx scripts/verify-assignment-transitions.mjs",
     "test:intake-prefill": "tsx scripts/verify-intake-prefill.mjs",
     "test:stripe-pricing": "tsx scripts/verify-stripe-pricing.mjs",
     "test:stripe-webhook": "tsx scripts/verify-stripe-webhook.mjs"

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { checkConflictAgainstMatters } from "@/lib/conflict-check";
+import { listContactsFromAirtable } from "@/lib/airtable/queries";
 import { listMatters, isDemoMode } from "@/lib/data-store";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
 
@@ -20,7 +21,22 @@ export async function POST(req: Request) {
 
   const opposingCounsel = (body.opposingCounsel ?? "").trim() || undefined;
 
-  let matters: Array<{ matterId: string; title?: string; summary?: string; clientName?: string }> = [];
+  let matters: Array<{
+    matterId: string;
+    title?: string;
+    summary?: string;
+    clientName?: string;
+    opposingParty?: string;
+    opposingCounsel?: string;
+  }> = [];
+  let contacts: Array<{
+    id: string;
+    displayName?: string;
+    email?: string;
+    organization?: string;
+    notes?: string;
+  }> = [];
+
   if (isDemoMode()) {
     const seed = await getMutableSeed();
     matters = seed.matters.map((m) => ({
@@ -37,8 +53,20 @@ export async function POST(req: Request) {
       summary: m.summary,
       clientName: m.clientName,
     }));
+    try {
+      const contactRows = await listContactsFromAirtable();
+      contacts = contactRows.map((c) => ({
+        id: c.id,
+        displayName: c.displayName,
+        email: c.email,
+        organization: c.organization,
+        notes: c.notes,
+      }));
+    } catch {
+      contacts = [];
+    }
   }
 
-  const result = checkConflictAgainstMatters(opposingParty, matters, opposingCounsel);
+  const result = checkConflictAgainstMatters(opposingParty, matters, opposingCounsel, contacts);
   return NextResponse.json(result);
 }

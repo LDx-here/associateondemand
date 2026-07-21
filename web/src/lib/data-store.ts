@@ -26,6 +26,7 @@ import {
   saveCaseAssessmentInAirtable,
   updateAssignmentStatusInAirtable,
   updateAssignmentPaymentInAirtable,
+  markAssignmentDeliveredInAirtable,
   getInboxItemByIdFromAirtable,
   updateLegalElementInAirtable,
   updateMatterDeadlineInAirtable,
@@ -48,6 +49,7 @@ import {
   persistSeed,
   updateAssignmentStatusDemo,
   updateAssignmentPaymentDemo,
+  markAssignmentDeliveredDemo,
   getInboxItemByIdDemo,
   updateNote as updateNoteDemo,
 } from "./demo-store-mutable";
@@ -525,6 +527,14 @@ export async function updateAssignmentStatus(
 ): Promise<InboxItem | null> {
   if (isDemoMode()) return updateAssignmentStatusDemo(itemId, nextStatus, options);
   return updateAssignmentStatusInAirtable(itemId, nextStatus, options);
+}
+
+export async function markAssignmentDelivered(
+  itemId: string,
+  options?: { exportKind?: string; by?: string },
+): Promise<InboxItem | null> {
+  if (isDemoMode()) return markAssignmentDeliveredDemo(itemId, options);
+  return markAssignmentDeliveredInAirtable(itemId, options);
 }
 
 /** Assignment-kind PM Inbox rows linked to a matter code (e.g. AOD-1001). */

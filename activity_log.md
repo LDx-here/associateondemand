@@ -133,3 +133,10 @@
 - **Files Affected:** `MatterDocumentsList.tsx`, `document-display.ts`, `MatterDocumentUpload.tsx`, `MatterWorkbench.tsx`, `CaseAssessmentPanel.tsx`, `StatusBadge.tsx`
 - **Command Executed:** `npm run build`, commit, push, `vercel deploy --prod`
 - **Reason/Context:** Upload showed green success but users could not find where files went or preview them.
+
+### [2026-07-21] CHECKPOINT: Pass 18 gap closure — E2E, conflicts, delivered, abandoned intake
+
+- **Action:** Shipped assignment pilot E2E script, full conflict check (Matters+Contacts), Delivered stage on export, abandoned intake session API + cron, Stripe setup checklist; deferred marketplace/$99 tier to Phase 3+ docs.
+- **Files Affected:** `scripts/smoke-assignment-e2e.sh`, `scripts/stripe-setup-checklist.sh`, `web/src/lib/conflict-check.ts`, `web/src/lib/assignment-transitions.ts`, `web/src/lib/intake-session-store.ts`, `web/src/app/api/cron/abandoned-intake/`, `web/vercel.json`, `CHECKPOINT.md`
+- **Command Executed:** `pytest` (43), `npm run build`, `bash scripts/smoke-production.sh`, `bash scripts/smoke-assignment-e2e.sh`
+- **Reason/Context:** Close BUILD_SPEC gaps with minimal attorney involvement; only Stripe/Resend secrets remain user-side.

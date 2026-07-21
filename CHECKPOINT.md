@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-21 (CDT) — pass 17: Legal OS wins ported to production AOD  
+**Last updated:** 2026-07-21 (CDT) — pass 18: gap closure (E2E, conflicts, delivered, abandoned intake)  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -13,6 +13,24 @@
 | **Greenfield** | `legal-os/` | React 19 + Express + tRPC 11 + Drizzle + MySQL | Local/dev — Steps 1–18 done (`9e76e7f`); not deployed |
 
 **Next (user choice):** run **first pilot matter** on prod (`/assignments/new` → inbox → approve → export) *or* Legal OS local pilot.
+
+**Pass 18 (2026-07-21):** Closed BUILD_SPEC gap items without attorney action where possible — assignment E2E script (demo mode), full conflict check (Matters + Contacts), stage transitions + Delivered on export, abandoned intake cron + session API, Stripe checklist runbook. `pytest` 43 passed; `next build` green; `smoke-production` + `smoke-assignment-e2e` PASS.
+
+| Gap | Status | Notes |
+|-----|--------|-------|
+| Live pilot E2E | **Shipped** | `bash scripts/smoke-assignment-e2e.sh` (demo, no login) |
+| Stripe checkout live | **Needs keys** | `bash scripts/stripe-setup-checklist.sh` — see runbook |
+| Abandoned intake email | **Shipped** | `/api/intake/session` + `/api/cron/abandoned-intake`; needs `RESEND_API_KEY` to send |
+| Conflict DB (no Clio) | **Shipped** | Matters + Contacts search; match list on intake |
+| Stage transitions | **Shipped** | Payment→dispatch, dispatch→review, approve, export→Delivered |
+| Delivered / export event | **Shipped** | Export routes + toast; matter stage chip |
+| Marketplace / portal | **Deferred** | Phase 3+ lock in Settings + strategy docs |
+| $99 self-serve tier | **Deferred** | Bar counsel gate in Settings; no UI promise |
+
+**One-command pilot verify (no login):**
+```bash
+bash scripts/smoke-assignment-e2e.sh
+```
 
 **Pass 17 (2026-07-21):** Ported Legal OS functional wins to production AOD — Firm Memory in drafting prompts, matter stage chip, conflict check on intake, intake step progress + abandoned session recovery. `pytest` 43 passed; `next build` green; smoke pass.
 
@@ -481,7 +499,9 @@ Enable Cloud Agents: https://cursor.com/dashboard?tab=cloud-agents
 
 ```bash
 bash scripts/smoke-production.sh
+bash scripts/smoke-assignment-e2e.sh
 bash scripts/smoke-docker-e2e.sh
+bash scripts/stripe-setup-checklist.sh
 cd web && npm run test:airtable
 cd services/api && python -m pytest tests/ -q
 cd web && npm run build
@@ -503,6 +523,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 18 (2026-07-21):** Gap closure — `smoke-assignment-e2e.sh`, Matters+Contacts conflict check with UI matches, assignment transition helpers + Delivered on export, abandoned intake session API + Vercel cron, `stripe-setup-checklist.sh`, Settings Phase 3+ locks. Verified: pytest (43), test:matter-stage, test:assignment-transitions, next build, smoke-production, smoke-assignment-e2e PASS.
 - **Pass 17 (2026-07-21):** Legal OS → production AOD port — drafting prompt assembly (Firm Memory + assessment + structured facts + anti-filler rules), per-deliverable model config, matter stage chip on workbench, lightweight conflict check on intake, intake step progress + localStorage resume banner on dashboard. Verified: pytest (43), test:matter-stage, next build, smoke-production PASS.
 - **Legal OS greenfield (2026-07-21):** Full `legal-os/` app — Matter Engine state machine, 10 tRPC routers (matters/leads/conflicts/agents/firmMemory/services/drafting/clio/files/payments), Stripe webhook, abandoned-session cron, /associate landing + intake funnel + admin dashboard, Vitest (22 tests). Production AOD untouched.
 - **Document upload UX (2026-07-21):** Documents list moved above upload controls with breadcrumb, status badges, expandable OCR preview, post-upload toast + row highlight; clarifies Airtable storage location (no file-system folder).
@@ -525,10 +546,10 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Verify pass 17 on prod** — `/assignments/new` conflict check + step progress; matter workbench stage chip; dashboard resume banner after partial intake.
+1. **One attorney action batch (optional before pilot):** set Stripe + Resend env vars on Vercel — see gap table above and `bash scripts/stripe-setup-checklist.sh`.
 2. **First pilot matter (ops — main priority)** — follow [`docs/runbooks/phase0-b2b-overflow-launch.md`](docs/runbooks/phase0-b2b-overflow-launch.md): pick pilot attorney, conflict check, live intake → inbox → approve → export.
-3. **Legal OS local smoke (optional)** — `cd legal-os && docker compose up -d && npm run dev`.
-4. **Activate Stripe on Vercel (optional before pilot)** — follow [`docs/runbooks/stripe-activation.md`](docs/runbooks/stripe-activation.md).
+3. **Verify pass 18 on prod** — conflict match list on intake; export marks Delivered; dashboard resume banner.
+4. **Legal OS local smoke (optional)** — `cd legal-os && docker compose up -d && npm run dev`.
 5. **Roadmap Phase 3** — Firm Memory depth + style QC per Master Implementation Roadmap §5.
 
 ## Blockers
@@ -541,8 +562,9 @@ All remaining blockers are **attorney-side** (no code work required):
 | Bar counsel for B2B overflow + $99 self-serve tier | La'Dajia | Required before self-serve AI tier ships (Phase 3+ gate) |
 | Supabase custom SMTP (Resend) | La'Dajia | Magic link / password reset — **password sign-in works**; see `docs/runbooks/auth-email-setup.md` |
 | Assignment notify email on Vercel | La'Dajia | `ASSIGNMENT_NOTIFY_EMAIL` + `RESEND_API_KEY` unset — **in-app inbox works** |
-| **Stripe env vars on Vercel** | La'Dajia | See [`stripe-activation.md`](docs/runbooks/stripe-activation.md) — code ships; checkout live after config |
-| Live Airtable assignment E2E | La'Dajia | Manual pilot verify — see Phase 0 runbook step 2–3 |
+| **Stripe env vars on Vercel** | La'Dajia | `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` — run `bash scripts/stripe-setup-checklist.sh` |
+| **Abandoned intake email** | La'Dajia | `RESEND_API_KEY` (+ optional `CRON_SECRET`, `INTAKE_FOLLOWUP_FROM`) — cron ships; emails skip gracefully without key |
+| Live Airtable assignment E2E | La'Dajia | Automated demo E2E: `bash scripts/smoke-assignment-e2e.sh`; live pilot still manual with Supabase login |
 | Consultation booking link | La'Dajia | `NEXT_PUBLIC_BOOKING_URL` unset — `/book` shows setup prompt |
 | Off-platform invoicing | La'Dajia | Stripe Payment Links / LawPay manual — see invoicing runbook |
 
