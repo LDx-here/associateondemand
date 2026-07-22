@@ -1,13 +1,15 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-21 (CDT) — Pass 20 partner funnel + drafting hardening  
+**Last updated:** 2026-07-21 (CDT) — Pass 21 top nav + site guide  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
 
+**Pass 21 (2026-07-21):** Removed left sidebar (overflow/layout fix). Compact top header: Dashboard, New assignment, Inbox, Matters, Templates, Settings + **More** dropdown; mobile hamburger (no persistent sidebar). Site guide at `/help` (plain-English cards for each area); linked from dashboard and Settings. Master Roadmap + Site Reviewer nav checklist updated. Associate panel unchanged.
+
 **Pass 20 (2026-07-21):** External partner funnel `/partner/submit` + `POST /api/partner/assignments` (Stripe when `STRIPE_CHECKOUT_ENABLED=true`; inbox `source: partner` badge; dashboard/settings partner link copy). Drafting prompt context hardening + pytest integration tests (53). Also: matter navigation fix (setState-during-render loops); dashboard operator quick actions; smoke E2E asserts `/matters/{id}` HTTP 200.
 
-**Next (user choice):** run **first pilot matter** on prod (operator: `/assignments/new` → inbox → approve → export) *or* share **partner funnel** `/partner/submit` with a friendly external firm *or* Legal OS local pilot.
+**Next (user choice):** run **first pilot matter** on prod (operator: `/assignments/new` → inbox → approve → export) *or* share **partner funnel** `/partner/submit` with a friendly external firm *or* read **`/help`** with a pilot firm.
 
 ## Dual track
 
@@ -525,6 +527,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 21 (2026-07-21):** UX — removed left sidebar; top header nav + More dropdown; mobile hamburger; `/help` site guide (dashboard + Settings links); full-width main content; Associate panel unchanged. Verified: pytest (53), next build, smoke-production PASS.
 - **Pass 20 (2026-07-21):** External partner funnel `/partner/submit`; Stripe checkout on partner path; inbox partner badge; partner link copy on dashboard/settings; drafting prompt hardening (53 pytest). Matter navigation fix + operator UX polish; smoke E2E matter detail 200.
 - **Pass 19 (2026-07-21):** Partner-firm billing model — disabled operator-side Stripe Checkout on internal `/assignments/new`; restored submit → dispatch → inbox; partner invoicing copy site-wide; [`overflow-counsel-billing-model.md`](docs/runbooks/overflow-counsel-billing-model.md). Stripe routes kept for external funnel.
 - **Document isolation + smart templates (2026-07-21):** Matter-scoped document list post-filter (`matter-link-filter.ts`); firm template/sample rows excluded from matter Documents; matter_id patched on document register; smart template field maps + telephonic request example; TemplateApplyPanel on matter Overview; Firm Memory badge shows configured status; `POST /api/templates/detect-fields`. pytest 51; next build green.
@@ -555,13 +558,14 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Share partner funnel** — copy link from Dashboard or Settings → `/partner/submit?deliverable=aos-discretionary-brief`; optional: set `STRIPE_CHECKOUT_ENABLED=true` on Vercel for pay-at-submit.
-2. **Verify document isolation on prod** — upload on AOD-1001 vs AOD-1002; confirm Documents tab is matter-specific only.
-3. **Pilot telephonic template** — Matter Overview → Smart templates → save RMV profile → generate preview.
-4. **Pilot matter on new workbench** — upload case assessment; verify enriched facts show element labels (not generic "name"); test **Re-analyze with AI** on Legal elements tab.
-5. **First pilot matter (ops)** — operator path: `/assignments/new` → `/inbox` → approve → export.
-6. **Optional:** Stripe + Resend env vars — `bash scripts/stripe-setup-checklist.sh`.
-7. **Roadmap Phase 3** — Firm Memory depth + style QC.
+1. **Share site guide with pilot firm** — https://aod-next.vercel.app/help (overflow counsel walkthrough).
+2. **Share partner funnel** — copy link from Dashboard or Settings → `/partner/submit?deliverable=aos-discretionary-brief`; optional: set `STRIPE_CHECKOUT_ENABLED=true` on Vercel for pay-at-submit.
+3. **Verify document isolation on prod** — upload on AOD-1001 vs AOD-1002; confirm Documents tab is matter-specific only.
+4. **Pilot telephonic template** — Matter Overview → Smart templates → save RMV profile → generate preview.
+5. **Pilot matter on new workbench** — upload case assessment; verify enriched facts show element labels (not generic "name"); test **Re-analyze with AI** on Legal elements tab.
+6. **First pilot matter (ops)** — operator path: `/assignments/new` → `/inbox` → approve → export.
+7. **Optional:** Stripe + Resend env vars — `bash scripts/stripe-setup-checklist.sh`.
+8. **Roadmap Phase 3** — Firm Memory depth + style QC.
 
 ## Blockers
 

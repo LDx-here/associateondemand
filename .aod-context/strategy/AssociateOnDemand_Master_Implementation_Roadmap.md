@@ -24,8 +24,11 @@ Cursor, your primary directive is to build AssociateOnDemand as an **Overflow Co
 
 ### 3.1. Streamline Navigation
 
-*   **Directive**: Reduce the sidebar navigation to the absolute essentials for a client law firm. Remove internal-facing links (e.g., "PM Inbox," "Tasks," "Calendar," "Knowledge map," "Import") from the primary client view. These functionalities should either be integrated into a simplified workflow or moved to an "Admin" section accessible only to internal AssociateOnDemand staff.
-*   **Proposed Links**: Dashboard, Matters, Submit Project (renamed from "New assignment"), Inbox (for client communications), Settings.
+*   **Directive**: Replace the left sidebar with a compact **top header bar** on app routes. Remove internal-facing links (e.g., "PM Inbox," "Tasks," "Calendar," "Knowledge map," "Import") from the primary client view. These functionalities should either be integrated into a simplified workflow or moved to a **More** dropdown / site guide.
+*   **Proposed primary links (header)**: Dashboard, New assignment, Inbox, Matters, Templates, Settings.
+*   **Secondary links**: Collapsed under **More** (Contacts, Tasks, Calendar, intake upload, etc.) or linked from `/help`.
+*   **Mobile**: Hamburger menu in the header — no persistent sidebar.
+*   **Site guide**: `/help` explains each area in plain English (overflow counsel framing); linked from dashboard and Settings.
 
 ### 3.2. Redesign "Getting Started" Experience
 
