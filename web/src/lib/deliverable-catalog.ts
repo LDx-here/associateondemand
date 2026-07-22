@@ -193,6 +193,30 @@ export function deliverableById(id: string): DeliverableCatalogEntry | undefined
   return DELIVERABLE_CATALOG.find((d) => d.id === id);
 }
 
+/** Practice area for catalog browse / filter on `/templates`. */
+export type CatalogPracticeArea = "immigration" | "personal_injury" | "other";
+
+const PI_DELIVERABLE_IDS = new Set(["demand-letter"]);
+const OTHER_DELIVERABLE_IDS = new Set(["custom-other"]);
+
+export function practiceAreaForDeliverable(id: string): CatalogPracticeArea {
+  if (PI_DELIVERABLE_IDS.has(id)) return "personal_injury";
+  if (OTHER_DELIVERABLE_IDS.has(id)) return "other";
+  return "immigration";
+}
+
+export function catalogPracticeAreaLabel(area: CatalogPracticeArea): string {
+  if (area === "immigration") return "Immigration";
+  if (area === "personal_injury") return "Personal injury";
+  return "Other";
+}
+
+export const CATALOG_PRACTICE_AREAS: CatalogPracticeArea[] = [
+  "immigration",
+  "personal_injury",
+  "other",
+];
+
 export function isPhase0LaunchSku(id: string): id is Phase0LaunchSkuId {
   return (PHASE0_LAUNCH_SKU_IDS as readonly string[]).includes(id);
 }

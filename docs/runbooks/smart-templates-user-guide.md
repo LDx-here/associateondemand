@@ -12,12 +12,13 @@ Until you upload a firm file, you see a clearly labeled **default system outline
 
 ## Smart Templates (interactive)
 
-1. Open **Templates** → **Smart templates** section (or read **How templates work** at the top).
-2. Click **Configure & preview** on any template card (e.g. Telephonic records request).
-3. **Fill violet merge fields** — client-specific data; letterhead/certificate come from Firm profile.
-4. Expand **structure sections** to see built-in outline vs firm-editable blocks (with why labels).
-5. **View default system blank** only when no firm file is on file (never mistaken for your DOCX).
-6. Click **Generate** → review assembled draft → **Copy** or **Download DOCX**.
+1. Open **Templates** — browse by practice area (Cards or List), then **Open preview** (lands on **Structure mapping**).
+2. Architecture / TXDocs explainers live on **Help → How this works** (`/help#templates`), not on the Templates page.
+3. Optional: **Smart field maps** section → **Configure & preview** for interactive merge-field assembly.
+4. **Fill violet merge fields** — client-specific data; letterhead/certificate come from Firm profile.
+5. Expand **structure sections** to see built-in outline vs firm-editable blocks (with why labels).
+6. **View default system blank** only when no firm file is on file (never mistaken for your DOCX).
+7. Click **Generate** → review assembled draft → **Copy** or **Download DOCX**.
 
 On a matter: **Overview** tab → **Smart templates** panel (same flow, prefilled from matter data).
 

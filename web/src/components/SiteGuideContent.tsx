@@ -85,16 +85,15 @@ const GUIDE_SECTIONS: GuideSection[] = [
     title: "Templates, Firm Memory & Firm Knowledge",
     icon: LayoutTemplate,
     summary:
-      "Two feeds for agents: Firm Memory = voice/style; Firm Knowledge = legal-element map from books.",
+      "Browse templates by practice area, open preview for structure mapping, then assemble like TXDocs / eImmigration — with letterhead from Settings.",
     bullets: [
-      "Firm Memory wizard — tone samples and style prefs on Templates (not element checklists).",
-      "Firm Knowledge — knowledge map outlines; on a matter → Legal elements → Load elements for this matter type.",
-      "Document assembly — upload firm DOCX (TXDocs-style); matter facts fill {{merge_fields}}; letterhead from Settings → Firm profile.",
-      "Deliverable catalog — flat-fee ranges and turnaround for launch SKUs; links prefill intake.",
-      "Firm assessment templates — blank forms per practice area for consistent assessment uploads.",
-      "Incomplete Firm Memory? Dashboard and intake nudge you to finish setup before your first pilot.",
+      "Browse → preview → structure mapping — filter Immigration / PI / Other; open preview lands on CREAC roles + feeds-from fact fields.",
+      "How assembly works (TXDocs / HotDocs / eImmigration style): upload your firm’s master DOCX/PDF per SKU (Replace template). The system detects outline / CREAC sections and merge fields like {{qualifying_relative}} and {{hardship_facts}}.",
+      "Matter facts + Settings → Firm profile (letterhead, certificate of service) fill those fields → draft in your format. Until you upload a firm file, you see the default system outline — clearly labeled, never fake letterhead.",
+      "Firm Memory — tone samples and style prefs (secondary on Templates). Firm Knowledge — legal-element map from books on the knowledge map.",
+      "Deliverable catalog shows flat-fee ranges and Built-in vs Firm upload badges. Firm assessment blanks live under Templates for consistent uploads.",
     ],
-    cta: { href: "/knowledge-map#firm-knowledge", label: "Browse Firm Knowledge" },
+    cta: { href: "/templates", label: "Browse templates" },
   },
   {
     id: "export-billing",
@@ -150,6 +149,36 @@ export function SiteGuideContent({ showIntro = true }: { showIntro?: boolean }) 
                 </li>
               ))}
             </ul>
+            {section.id === "templates" ? (
+              <div className="mt-4 rounded-lg border border-sky-100 bg-sky-50/60 p-3 text-sm text-sky-950">
+                <p className="text-xs font-semibold uppercase tracking-wide text-sky-800">
+                  Document assembly (TXDocs / HotDocs / eImmigration)
+                </p>
+                <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-sky-950/90">
+                  <li>
+                    Upload your firm&apos;s master DOCX/PDF per SKU (<strong>Replace template</strong>) — that
+                    becomes the structure.
+                  </li>
+                  <li>
+                    System detects outline / CREAC sections and merge fields such as{" "}
+                    <code className="rounded bg-white/80 px-1 text-xs">{"{{qualifying_relative}}"}</code>,{" "}
+                    <code className="rounded bg-white/80 px-1 text-xs">{"{{hardship_facts}}"}</code>.
+                  </li>
+                  <li>
+                    Matter facts +{" "}
+                    <Link href="/settings#firm-profile" className="font-medium underline underline-offset-2">
+                      Settings → Firm profile
+                    </Link>{" "}
+                    (letterhead, certificate of service) fill those fields → draft in your format.
+                  </li>
+                </ol>
+                <p className="mt-2 text-xs text-sky-900/80">
+                  Until you upload a firm file, you see the <em>default system outline</em> — clearly labeled,
+                  not presented as your firm template. Letterhead stays empty until you set it in Settings
+                  (never fake invented addresses).
+                </p>
+              </div>
+            ) : null}
             {section.cta ? (
               <Link
                 href={section.cta.href}

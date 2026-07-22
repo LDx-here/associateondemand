@@ -1,9 +1,11 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-22 (CDT) — Pass 28 firm letterhead + document assembly  
+**Last updated:** 2026-07-22 (CDT) — Pass 29 templates browse → preview journey  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 29 (2026-07-22):** Templates UX journey — architecture explainer moved to `/help#templates`; `/templates` browse by practice area + Cards/List; Open preview lands on Structure mapping (CREAC + feeds-from); Firm Memory collapsed. next build; smoke PASS.
 
 **Pass 28 (2026-07-22):** Template UX honesty — letterhead from Settings → Firm profile (no invented address); structure sections labeled built-in / firm-editable / preserve (not opaque “locked”); service footer → Certificate of service + merge fields; default HTML blank only when no firm DOCX; How templates work (TXDocs/eImmigration) on `/templates`. pytest 81; next build; smoke PASS.
 
@@ -25,7 +27,7 @@
 
 **Pass 20 (2026-07-21):** External partner funnel `/partner/submit` + drafting prompt hardening.
 
-**Next (user choice):** Settings → Firm profile — enter real letterhead; Templates → confirm How templates work + no fake letterhead; re-upload firm DOCX and confirm Structure (not HTML blank). Then pilot AOS draft.
+**Next (user choice):** Templates → browse Immigration → Open preview on AOS → confirm Structure mapping first; Help → `#templates` for TXDocs copy. Settings → Firm profile letterhead. Then pilot AOS draft.
 
 ## Dual track
 

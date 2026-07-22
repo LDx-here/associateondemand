@@ -49,7 +49,7 @@ export function FirmLetterheadSettings() {
       <p className="text-sm text-slate-600">
         Letterhead and certificate of service feed document assembly (like TXDocs merge fields). Leave blank
         until you add real firm data — templates will show an empty placeholder, never invented addresses.{" "}
-        <Link href="/templates#how-templates-work" className="font-medium text-sky-800 underline-offset-2 hover:underline">
+        <Link href="/help#templates" className="font-medium text-sky-800 underline-offset-2 hover:underline">
           How templates work →
         </Link>
       </p>

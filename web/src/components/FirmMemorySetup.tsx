@@ -52,7 +52,7 @@ const CITATION_OPTIONS = [
   "Inline cites with pinpoints",
 ];
 
-export function FirmMemorySetup() {
+export function FirmMemorySetup({ defaultCollapsed = false }: { defaultCollapsed?: boolean }) {
   const { showToast } = useToast();
   const [status, setStatus] = useState<FirmMemoryStatus | null>(null);
   const [samples, setSamples] = useState<DocumentRow[]>([]);
@@ -65,6 +65,7 @@ export function FirmMemorySetup() {
   const [citationFormat, setCitationFormat] = useState(CITATION_OPTIONS[0]);
   const [headerFormat, setHeaderFormat] = useState("MEMORANDUM / TO-FROM-DATE-RE block");
   const [styleSaved, setStyleSaved] = useState(false);
+  const [expanded, setExpanded] = useState(!defaultCollapsed);
 
   const refresh = useCallback(async () => {
     const [statusResp, samplesResp] = await Promise.all([
@@ -88,11 +89,15 @@ export function FirmMemorySetup() {
         setStatus(statusData);
         setSamples(samplesData.samples ?? []);
         setStyleSaved((statusData.stylePreferenceCount ?? 0) > 0);
+        // Keep setup open when incomplete; collapse when already configured.
+        if (defaultCollapsed) {
+          setExpanded(!statusData.configured);
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [defaultCollapsed]);
 
   async function onSampleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -174,24 +179,35 @@ export function FirmMemorySetup() {
   const step3Done = (status?.stylePreferenceCount ?? 0) > 0;
 
   return (
-    <section id="firm-memory" className="space-y-4 rounded-lg border border-violet-300 bg-violet-50/60 p-4">
-      <div className="flex items-start gap-2">
-        <Brain className="mt-0.5 h-5 w-5 text-violet-800" aria-hidden />
-        <div>
-          <h2 className="text-sm font-semibold text-violet-950">Firm Memory setup</h2>
-          <p className="mt-0.5 text-xs text-violet-900">
-            Save tone and citation prefs (and short redacted voice excerpts) so drafting matches your firm.
-            PDF samples file for discount tracking; paste excerpts here or Save to Firm Memory from an edited draft
-            for voice that agents actually read.
-          </p>
-          {status && !status.configured ? (
-            <p className="mt-2 text-xs font-medium text-amber-900">
-              Firm Memory not configured yet — upload at least one sample or save style preferences below.
+    <section id="firm-memory" className="scroll-mt-24 space-y-3 rounded-lg border border-violet-300 bg-violet-50/60 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex items-start gap-2">
+          <Brain className="mt-0.5 h-5 w-5 text-violet-800" aria-hidden />
+          <div>
+            <h2 className="text-sm font-semibold text-violet-950">Firm Memory setup</h2>
+            <p className="mt-0.5 text-xs text-violet-900">
+              Secondary — tone samples and style prefs for drafting voice. Not required to browse templates.
             </p>
-          ) : null}
+            {status && !status.configured ? (
+              <p className="mt-2 text-xs font-medium text-amber-900">
+                Firm Memory not configured yet — upload at least one sample or save style preferences below.
+              </p>
+            ) : status?.configured ? (
+              <p className="mt-2 text-xs font-medium text-emerald-800">Configured — expand to edit samples or prefs.</p>
+            ) : null}
+          </div>
         </div>
+        <button
+          type="button"
+          className={`${btnSecondary} text-xs`}
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+        >
+          {expanded ? "Collapse" : "Expand"}
+        </button>
       </div>
 
+      {expanded ? (
       <ol className="space-y-4">
         <li className="rounded-md border border-white bg-white p-3 shadow-sm">
           <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
@@ -348,6 +364,7 @@ export function FirmMemorySetup() {
           </form>
         </li>
       </ol>
+      ) : null}
     </section>
   );
 }

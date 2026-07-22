@@ -6,8 +6,15 @@ import {
 } from "@/components/IntakeUploadShared";
 import { useToast } from "@/components/Toast";
 import { FIRM_TEMPLATE_MATTER_ID } from "@/lib/assessment-documents";
+import {
+  CATALOG_PRACTICE_AREAS,
+  catalogPracticeAreaLabel,
+  practiceAreaForDeliverable,
+  type CatalogPracticeArea,
+} from "@/lib/deliverable-catalog";
 import type { DeliverableTemplateCatalogItem } from "@/lib/deliverable-template-sources";
 import { documentFilePreviewUrl } from "@/lib/document-display";
+import { annotateStructureWithMergeHints } from "@/lib/merge-fields";
 import { fieldsForDeliverable } from "@/lib/practice-area-facts";
 import { getTemplateFieldMapByDeliverable } from "@/lib/template-field-maps";
 import {
@@ -21,14 +28,30 @@ import {
 } from "@/lib/template-structure";
 import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 import { cn, formatDate } from "@/lib/utils";
-import { FileText, Pencil, Replace, Eye, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  FileText,
+  LayoutGrid,
+  List,
+  Pencil,
+  Replace,
+} from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 type PreviewTab = "structure" | "file" | "ocr" | "tweaks";
+type ViewMode = "cards" | "list";
+type AreaFilter = "all" | CatalogPracticeArea;
+type AvailabilityFilter = "all" | "launch" | "coming";
+
+function isFirmUpload(item: DeliverableTemplateCatalogItem): boolean {
+  return item.meta?.source === "firm_uploaded" || Boolean(item.document);
+}
 
 function sourceLabel(item: DeliverableTemplateCatalogItem): string {
-  if (item.meta?.source === "firm_uploaded" || item.document) {
+  if (isFirmUpload(item)) {
     return `Firm upload v${item.meta?.version ?? 1}${
       item.meta?.filename || item.document?.title
         ? ` — ${item.meta?.filename ?? item.document?.title}`
@@ -36,6 +59,19 @@ function sourceLabel(item: DeliverableTemplateCatalogItem): string {
     }`;
   }
   return item.defaultSource.label;
+}
+
+function sourceBadge(item: DeliverableTemplateCatalogItem): { label: string; className: string } {
+  if (isFirmUpload(item)) {
+    return {
+      label: "Firm upload",
+      className: "bg-violet-50 text-violet-800 ring-violet-600/20",
+    };
+  }
+  return {
+    label: "Built-in",
+    className: "bg-slate-50 text-slate-700 ring-slate-500/20",
+  };
 }
 
 export function DeliverableTemplateCatalog() {
@@ -49,6 +85,9 @@ export function DeliverableTemplateCatalog() {
   const [tweakDraft, setTweakDraft] = useState("");
   const [previewTextDraft, setPreviewTextDraft] = useState("");
   const [previewTab, setPreviewTab] = useState<PreviewTab>("structure");
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [areaFilter, setAreaFilter] = useState<AreaFilter>("all");
+  const [availability, setAvailability] = useState<AvailabilityFilter>("all");
 
   const refresh = useCallback(async () => {
     const resp = await fetch("/api/deliverable-templates");
@@ -63,6 +102,29 @@ export function DeliverableTemplateCatalog() {
 
   const previewItem = items.find((i) => i.deliverableId === previewId) ?? null;
   const editItem = items.find((i) => i.deliverableId === editId) ?? null;
+
+  const filtered = useMemo(() => {
+    return items.filter((item) => {
+      const area = practiceAreaForDeliverable(item.deliverableId);
+      if (areaFilter !== "all" && area !== areaFilter) return false;
+      if (availability === "launch" && !item.phase0) return false;
+      if (availability === "coming" && item.phase0) return false;
+      return true;
+    });
+  }, [items, areaFilter, availability]);
+
+  const grouped = useMemo(() => {
+    const areas =
+      areaFilter === "all" ? CATALOG_PRACTICE_AREAS : ([areaFilter] as CatalogPracticeArea[]);
+    return areas
+      .map((area) => {
+        const inArea = filtered.filter((i) => practiceAreaForDeliverable(i.deliverableId) === area);
+        const launch = inArea.filter((i) => i.phase0);
+        const coming = inArea.filter((i) => !i.phase0);
+        return { area, launch, coming };
+      })
+      .filter((g) => g.launch.length + g.coming.length > 0);
+  }, [filtered, areaFilter]);
 
   async function onReplace(deliverableId: string, file: File) {
     setBusyId(deliverableId);
@@ -146,58 +208,121 @@ export function DeliverableTemplateCatalog() {
     }
   }
 
-  const phase0 = items.filter((i) => i.phase0);
-  const rest = items.filter((i) => !i.phase0);
+  function openPreview(id: string) {
+    setPreviewId(id);
+    setPreviewTab("structure");
+  }
+
+  const cardActions = {
+    busyId,
+    replaceId,
+    viewMode,
+    onPreview: openPreview,
+    onEdit: (item: DeliverableTemplateCatalogItem) => {
+      setEditId(item.deliverableId);
+      setTweakDraft(item.meta?.tweakNotes ?? "");
+      setPreviewTextDraft(item.meta?.textPreview ?? item.defaultSource.defaultPreviewText);
+    },
+    onReplaceToggle: (id: string) => setReplaceId(replaceId === id ? null : id),
+    onReplaceFile: onReplace,
+  };
 
   return (
     <section id="deliverable-templates" className="space-y-4">
-      <div>
-        <h2 className="text-sm font-semibold text-slate-900">Deliverable templates</h2>
-        <p className="mt-0.5 text-xs text-slate-600">
-          Each SKU shows what it is based on, a preview of the current structure/file, and controls to
-          replace or tweak the firm template (PDF or DOCX).
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-900">Browse templates</h2>
+          <p className="mt-0.5 text-xs text-slate-600">
+            Filter by practice area, then open preview to see structure mapping first.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div
+            className="inline-flex rounded-md border border-slate-200 bg-white p-0.5"
+            role="group"
+            aria-label="View mode"
+          >
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium",
+                viewMode === "cards" ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-50",
+              )}
+              onClick={() => setViewMode("cards")}
+              aria-pressed={viewMode === "cards"}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
+              Cards
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium",
+                viewMode === "list" ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-50",
+              )}
+              onClick={() => setViewMode("list")}
+              aria-pressed={viewMode === "list"}
+            >
+              <List className="h-3.5 w-3.5" aria-hidden />
+              List
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <FilterChip active={areaFilter === "all"} onClick={() => setAreaFilter("all")}>
+          All areas
+        </FilterChip>
+        {CATALOG_PRACTICE_AREAS.map((area) => (
+          <FilterChip
+            key={area}
+            active={areaFilter === area}
+            onClick={() => setAreaFilter(area)}
+          >
+            {catalogPracticeAreaLabel(area)}
+          </FilterChip>
+        ))}
+        <span className="mx-1 hidden h-6 w-px bg-slate-200 sm:inline" aria-hidden />
+        <FilterChip active={availability === "all"} onClick={() => setAvailability("all")}>
+          All status
+        </FilterChip>
+        <FilterChip active={availability === "launch"} onClick={() => setAvailability("launch")}>
+          Available now
+        </FilterChip>
+        <FilterChip active={availability === "coming"} onClick={() => setAvailability("coming")}>
+          Coming soon
+        </FilterChip>
       </div>
 
       {!loaded ? (
         <p className="text-sm text-slate-500">Loading templates…</p>
+      ) : filtered.length === 0 ? (
+        <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-600">
+          No templates match these filters.
+        </p>
       ) : (
-        <>
-          <TemplateGroup
-            heading="Phase 0 launch SKUs"
-            items={phase0}
-            busyId={busyId}
-            replaceId={replaceId}
-            onPreview={(id) => {
-              setPreviewId(id);
-              setPreviewTab("structure");
-            }}
-            onEdit={(item) => {
-              setEditId(item.deliverableId);
-              setTweakDraft(item.meta?.tweakNotes ?? "");
-              setPreviewTextDraft(item.meta?.textPreview ?? item.defaultSource.defaultPreviewText);
-            }}
-            onReplaceToggle={(id) => setReplaceId(replaceId === id ? null : id)}
-            onReplaceFile={onReplace}
-          />
-          <TemplateGroup
-            heading="Full catalog"
-            items={rest}
-            busyId={busyId}
-            replaceId={replaceId}
-            onPreview={(id) => {
-              setPreviewId(id);
-              setPreviewTab("structure");
-            }}
-            onEdit={(item) => {
-              setEditId(item.deliverableId);
-              setTweakDraft(item.meta?.tweakNotes ?? "");
-              setPreviewTextDraft(item.meta?.textPreview ?? item.defaultSource.defaultPreviewText);
-            }}
-            onReplaceToggle={(id) => setReplaceId(replaceId === id ? null : id)}
-            onReplaceFile={onReplace}
-          />
-        </>
+        grouped.map(({ area, launch, coming }) => (
+          <div key={area} className="space-y-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {catalogPracticeAreaLabel(area)}
+            </h3>
+            {launch.length ? (
+              <TemplateGroup
+                heading="Available now"
+                items={launch}
+                {...cardActions}
+              />
+            ) : null}
+            {coming.length ? (
+              <TemplateGroup
+                heading="Coming soon / full catalog"
+                items={coming}
+                {...cardActions}
+              />
+            ) : null}
+          </div>
+        ))
       )}
 
       {previewItem ? (
@@ -262,11 +387,38 @@ export function DeliverableTemplateCatalog() {
   );
 }
 
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset",
+        active
+          ? "bg-slate-900 text-white ring-slate-900"
+          : "bg-white text-slate-700 ring-slate-300 hover:bg-slate-50",
+      )}
+      aria-pressed={active}
+    >
+      {children}
+    </button>
+  );
+}
+
 function TemplateGroup({
   heading,
   items,
   busyId,
   replaceId,
+  viewMode,
   onPreview,
   onEdit,
   onReplaceToggle,
@@ -276,6 +428,7 @@ function TemplateGroup({
   items: DeliverableTemplateCatalogItem[];
   busyId: string | null;
   replaceId: string | null;
+  viewMode: ViewMode;
   onPreview: (id: string) => void;
   onEdit: (item: DeliverableTemplateCatalogItem) => void;
   onReplaceToggle: (id: string) => void;
@@ -283,116 +436,172 @@ function TemplateGroup({
 }) {
   if (!items.length) return null;
   return (
-    <div className="space-y-3">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{heading}</h3>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((item) => {
-          const hasFile = Boolean(item.document || item.meta?.airtableDocumentId);
-          const hasInteractive = Boolean(getTemplateFieldMapByDeliverable(item.deliverableId));
-          return (
-            <article
+    <div className="space-y-2">
+      <h4 className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{heading}</h4>
+      {viewMode === "cards" ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((item) => (
+            <TemplateCard
               key={item.deliverableId}
-              className={cn(
-                "flex flex-col gap-3 rounded-lg border bg-white p-4 shadow-sm",
-                item.phase0 ? "border-emerald-200 ring-1 ring-emerald-600/10" : "border-slate-200",
-              )}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <h4 className="text-sm font-semibold text-slate-900">{item.name}</h4>
-                <span
-                  className={cn(
-                    "inline-flex shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset",
-                    item.phase0
-                      ? "bg-emerald-50 text-emerald-800 ring-emerald-600/20"
-                      : "bg-slate-50 text-slate-600 ring-slate-500/20",
-                  )}
-                >
-                  {item.phase0 ? "Available now" : item.tier}
-                </span>
-              </div>
-              <p className="text-sm text-slate-600">{item.description}</p>
-              <p className="text-xs text-slate-700">
-                <span className="font-medium">Source:</span> {sourceLabel(item)}
-              </p>
-              <p className="text-sm font-medium text-slate-800">{item.pricingLabel}</p>
-              {hasFile ? (
-                <p className="text-xs text-emerald-800">
-                  File on file
-                  {item.meta?.uploadedAt || item.document?.uploadedAt
-                    ? ` · ${formatDate(item.meta?.uploadedAt ?? item.document?.uploadedAt ?? "")}`
-                    : ""}
-                  {item.meta?.version ? ` · v${item.meta.version}` : ""}
-                </p>
-              ) : (
-                <p className="text-xs text-amber-900">
-                  No file on file — upload PDF or DOCX to set template
-                </p>
-              )}
-              {item.meta?.tweakNotes ? (
-                <p className="line-clamp-2 text-xs text-violet-800">Tweaks: {item.meta.tweakNotes}</p>
-              ) : null}
-
-              <div className="mt-auto flex flex-wrap gap-2 pt-1">
-                <button
-                  type="button"
-                  className={`${btnSecondary} inline-flex items-center gap-1 text-xs`}
-                  onClick={() => onPreview(item.deliverableId)}
-                >
-                  <Eye className="h-3.5 w-3.5" aria-hidden />
-                  View preview
-                </button>
-                <button
-                  type="button"
-                  className={`${btnSecondary} inline-flex items-center gap-1 text-xs`}
-                  onClick={() => onReplaceToggle(item.deliverableId)}
-                >
-                  <Replace className="h-3.5 w-3.5" aria-hidden />
-                  Replace template
-                </button>
-                <button
-                  type="button"
-                  className={`${btnSecondary} inline-flex items-center gap-1 text-xs`}
-                  onClick={() => onEdit(item)}
-                >
-                  <Pencil className="h-3.5 w-3.5" aria-hidden />
-                  Edit notes
-                </button>
-                {hasInteractive ? (
-                  <Link href="/templates#smart-templates" className={`${btnSecondary} text-xs`}>
-                    Smart fields
-                  </Link>
-                ) : null}
-                <Link
-                  href={`/assignments/new?deliverable=${item.deliverableId}`}
-                  className={`${btnPrimary} text-xs`}
-                >
-                  Start assignment
-                </Link>
-              </div>
-
-              {replaceId === item.deliverableId ? (
-                <label className="block rounded-md border border-dashed border-slate-300 bg-slate-50 p-3 text-xs">
-                  <span className="font-medium text-slate-700">Upload PDF or DOCX replacement</span>
-                  <input
-                    type="file"
-                    accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    className="mt-2 w-full"
-                    disabled={busyId === item.deliverableId}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) void onReplaceFile(item.deliverableId, file);
-                    }}
-                  />
-                  {busyId === item.deliverableId ? (
-                    <p className="mt-1 text-slate-600">Uploading & extracting text…</p>
-                  ) : null}
-                </label>
-              ) : null}
-            </article>
-          );
-        })}
-      </div>
+              item={item}
+              busyId={busyId}
+              replaceId={replaceId}
+              layout="card"
+              onPreview={onPreview}
+              onEdit={onEdit}
+              onReplaceToggle={onReplaceToggle}
+              onReplaceFile={onReplaceFile}
+            />
+          ))}
+        </div>
+      ) : (
+        <ul className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 bg-white">
+          {items.map((item) => (
+            <li key={item.deliverableId}>
+              <TemplateCard
+                item={item}
+                busyId={busyId}
+                replaceId={replaceId}
+                layout="list"
+                onPreview={onPreview}
+                onEdit={onEdit}
+                onReplaceToggle={onReplaceToggle}
+                onReplaceFile={onReplaceFile}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
+  );
+}
+
+function TemplateCard({
+  item,
+  busyId,
+  replaceId,
+  layout,
+  onPreview,
+  onEdit,
+  onReplaceToggle,
+  onReplaceFile,
+}: {
+  item: DeliverableTemplateCatalogItem;
+  busyId: string | null;
+  replaceId: string | null;
+  layout: "card" | "list";
+  onPreview: (id: string) => void;
+  onEdit: (item: DeliverableTemplateCatalogItem) => void;
+  onReplaceToggle: (id: string) => void;
+  onReplaceFile: (deliverableId: string, file: File) => Promise<void>;
+}) {
+  const area = practiceAreaForDeliverable(item.deliverableId);
+  const badge = sourceBadge(item);
+  const hasInteractive = Boolean(getTemplateFieldMapByDeliverable(item.deliverableId));
+  const isList = layout === "list";
+
+  return (
+    <article
+      className={cn(
+        isList
+          ? "flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          : cn(
+              "flex flex-col gap-3 rounded-lg border bg-white p-4 shadow-sm",
+              item.phase0 ? "border-emerald-200 ring-1 ring-emerald-600/10" : "border-slate-200",
+            ),
+      )}
+    >
+      <div className={cn("min-w-0", isList && "flex-1")}>
+        <div className="flex flex-wrap items-start gap-2">
+          <h4 className="text-sm font-semibold text-slate-900">{item.name}</h4>
+          <span
+            className={cn(
+              "inline-flex shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset",
+              item.phase0
+                ? "bg-emerald-50 text-emerald-800 ring-emerald-600/20"
+                : "bg-slate-50 text-slate-600 ring-slate-500/20",
+            )}
+          >
+            {item.phase0 ? "Available now" : item.tier}
+          </span>
+          <span
+            className={cn(
+              "inline-flex shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset",
+              badge.className,
+            )}
+          >
+            {badge.label}
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-slate-600">
+          {catalogPracticeAreaLabel(area)}
+          {item.pricingLabel ? ` · ${item.pricingLabel}` : ""}
+        </p>
+        {!isList ? <p className="mt-2 text-sm text-slate-600 line-clamp-2">{item.description}</p> : null}
+      </div>
+
+      <div className={cn("flex flex-wrap gap-2", isList ? "shrink-0" : "mt-auto pt-1")}>
+        <button
+          type="button"
+          className={`${btnPrimary} inline-flex items-center gap-1 text-xs`}
+          onClick={() => onPreview(item.deliverableId)}
+        >
+          <Eye className="h-3.5 w-3.5" aria-hidden />
+          Open preview
+        </button>
+        <button
+          type="button"
+          className={`${btnSecondary} inline-flex items-center gap-1 text-xs`}
+          onClick={() => onReplaceToggle(item.deliverableId)}
+        >
+          <Replace className="h-3.5 w-3.5" aria-hidden />
+          Replace
+        </button>
+        <button
+          type="button"
+          className={`${btnSecondary} inline-flex items-center gap-1 text-xs`}
+          onClick={() => onEdit(item)}
+        >
+          <Pencil className="h-3.5 w-3.5" aria-hidden />
+          Notes
+        </button>
+        {hasInteractive ? (
+          <Link href="/templates#smart-templates" className={`${btnSecondary} text-xs`}>
+            Smart fields
+          </Link>
+        ) : null}
+        <Link
+          href={`/assignments/new?deliverable=${item.deliverableId}`}
+          className={`${btnSecondary} text-xs`}
+        >
+          Start assignment
+        </Link>
+      </div>
+
+      {replaceId === item.deliverableId ? (
+        <label
+          className={cn(
+            "block rounded-md border border-dashed border-slate-300 bg-slate-50 p-3 text-xs",
+            isList && "sm:col-span-2 w-full",
+          )}
+        >
+          <span className="font-medium text-slate-700">Upload PDF or DOCX replacement</span>
+          <input
+            type="file"
+            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            className="mt-2 w-full"
+            disabled={busyId === item.deliverableId}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void onReplaceFile(item.deliverableId, file);
+            }}
+          />
+          {busyId === item.deliverableId ? (
+            <p className="mt-1 text-slate-600">Uploading & extracting text…</p>
+          ) : null}
+        </label>
+      ) : null}
+    </article>
   );
 }
 
@@ -444,7 +653,6 @@ function PreviewModal({
     return [];
   }, [item.deliverableId, item.meta?.sections, ocrText]);
 
-  // Firm PDF → preview URL. Never fall back to unrelated default HTML when a firm file exists.
   const fileUrl =
     docId && isPdf
       ? documentFilePreviewUrl(
@@ -458,6 +666,8 @@ function PreviewModal({
         : null;
 
   const htmlPreview = item.meta?.htmlPreview?.trim() || "";
+  const area = practiceAreaForDeliverable(item.deliverableId);
+  const badge = sourceBadge(item);
 
   return (
     <div
@@ -472,9 +682,19 @@ function PreviewModal({
             <h3 id="preview-template-title" className="text-sm font-semibold text-slate-900">
               {item.name}
             </h3>
-            <p className="mt-0.5 text-xs text-slate-600">
-              <FileText className="mr-1 inline h-3.5 w-3.5" aria-hidden />
-              Source: {sourceLabel(item)}
+            <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+              <FileText className="h-3.5 w-3.5" aria-hidden />
+              {catalogPracticeAreaLabel(area)}
+              <span
+                className={cn(
+                  "inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset",
+                  badge.className,
+                )}
+              >
+                {badge.label}
+              </span>
+              <span className="text-slate-400">·</span>
+              {sourceLabel(item)}
             </p>
           </div>
           <button type="button" className={btnSecondary} onClick={onClose}>
@@ -484,8 +704,8 @@ function PreviewModal({
         <div className="flex flex-wrap gap-2 border-b border-slate-100 px-4 py-2">
           {(
             [
-              ["structure", "Structure"],
-              ["file", isDocx && !isPdf ? "DOCX preview" : "PDF / sample"],
+              ["structure", "Structure mapping"],
+              ["file", isDocx && !isPdf ? "DOCX / file" : "PDF / sample"],
               ["ocr", "Extracted text"],
               ["tweaks", "Notes"],
             ] as const
@@ -528,31 +748,16 @@ function PreviewModal({
             ) : docId && isDocx ? (
               <div className="space-y-2 text-xs text-slate-600">
                 <p>
-                  Firm file <strong>{title}</strong> is DOCX. Structure is auto-detected — use the{" "}
-                  <button
-                    type="button"
-                    className="font-medium text-slate-900 underline"
-                    onClick={() => onTabChange("structure")}
-                  >
-                    Structure
-                  </button>{" "}
-                  tab (primary) or{" "}
-                  <button
-                    type="button"
-                    className="font-medium text-slate-900 underline"
-                    onClick={() => onTabChange("ocr")}
-                  >
-                    Extracted text
-                  </button>
-                  . PDF conversion is not required on Vercel; optional HTML preview appears here when
-                  the Fly API returns rich DOCX HTML.
+                  Firm file <strong>{title}</strong> is DOCX. Structure mapping is primary — switch to that
+                  tab, or view Extracted text. Optional HTML preview appears when the API returns rich DOCX
+                  HTML.
                 </p>
               </div>
             ) : (
               <p className="text-xs text-amber-900">
                 {hasFirmFile
-                  ? "Firm file is on file — use the Structure or Extracted text tab (this is your template, not the default system blank)."
-                  : "No PDF or HTML sample on file for this SKU yet. Upload a PDF/DOCX with Replace template, then open Structure for the outline preview."}
+                  ? "Firm file is on file — use Structure mapping or Extracted text."
+                  : "No PDF/HTML sample on file yet. Upload with Replace, then open Structure mapping."}
               </p>
             )
           ) : null}
@@ -564,9 +769,8 @@ function PreviewModal({
             ) : (
               <div className="space-y-2">
                 <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-                  No extracted text on file for this template. Re-upload a .docx (not legacy .doc) or a
-                  PDF with a text layer. Structure preview will still show the default CREAC outline for
-                  AOS briefs until extraction succeeds.
+                  No extracted text on file. Re-upload a .docx or text-layer PDF. Structure mapping still
+                  shows the default outline when available.
                 </p>
                 <pre className="max-h-[40vh] overflow-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-500">
                   {ocrDisplay}
@@ -578,7 +782,7 @@ function PreviewModal({
             item.meta?.tweakNotes ? (
               <p className="whitespace-pre-wrap text-sm">{item.meta.tweakNotes}</p>
             ) : (
-              <p className="text-xs text-slate-500">No attorney notes yet. Use Edit notes on the card.</p>
+              <p className="text-xs text-slate-500">No attorney notes yet. Use Notes on the card.</p>
             )
           ) : null}
         </div>
@@ -597,62 +801,62 @@ function StructureTab({
   hasFirmText: boolean;
 }) {
   const [openId, setOpenId] = useState<string | null>(sections[0]?.id ?? null);
+  const area = practiceAreaForDeliverable(item.deliverableId);
   const isAos = item.deliverableId === "aos-discretionary-brief";
-  const factFields = isAos
-    ? fieldsForDeliverable("aos-discretionary-brief", "immigration")
-    : [];
+  const factFields = fieldsForDeliverable(
+    item.deliverableId,
+    area === "personal_injury" ? "personal_injury" : area === "other" ? "generic" : "immigration",
+  );
+
+  const factsForRole = (role: CreacRole) => {
+    if (isAos) {
+      return factFields.filter((f) => (AOS_FACT_CREAC_MAP[f.id] ?? "analysis") === role);
+    }
+    if (role === "analysis") {
+      return factFields.filter((f) =>
+        /analysis|argument|fact|hardship|equity|damage|liability/i.test(
+          `${f.id} ${f.label} ${f.feedsSection ?? ""}`,
+        ),
+      );
+    }
+    return factFields.filter((f) =>
+      (f.feedsSection ?? "").toLowerCase().includes(CREAC_ROLE_LABELS[role].toLowerCase().slice(0, 8)),
+    );
+  };
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-slate-500">{item.defaultSource.detail}</p>
-      {item.defaultSource.skillDoc ? (
-        <p className="text-xs">
-          SKILL: <code className="rounded bg-slate-100 px-1">{item.defaultSource.skillDoc}</code>
+      <div>
+        <h4 className="text-sm font-semibold text-slate-900">Structure mapping</h4>
+        <p className="mt-1 text-xs text-slate-600">
+          Sections with CREAC roles. Analysis slots show which matter facts feed them; Rule / Explanation
+          stay from the template.
         </p>
-      ) : null}
+      </div>
 
-      {isAos ? (
-        <div className="rounded-md border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-950">
-          <p className="font-medium">CREAC brief structure</p>
-          <p className="mt-1 text-indigo-900/90">
-            Conclusion → Rule → Explanation → Analysis → Conclusion. Rule/Explanation stay from the firm
-            template; Analysis is filled from matter facts. Upload is auto-detected — no special
-            formatting required beyond normal headings or CREAC labels.
-          </p>
-        </div>
-      ) : null}
-
-      {!hasFirmText && isAos ? (
+      {!hasFirmText ? (
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-          <strong>Default system outline</strong> — upload firm DOCX to replace. Merge fields like{" "}
-          <code className="rounded bg-white/80 px-1">{"{{qualifying_relative}}"}</code> /{" "}
-          <code className="rounded bg-white/80 px-1">{"{{hardship_facts}}"}</code> fill Analysis from matter
-          facts.
-        </p>
-      ) : null}
-
-      {!hasFirmText && !isAos ? (
-        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-          <strong>Default system outline</strong> — not your firm template. Use Replace template to upload
-          master DOCX (TXDocs-style assembly).
+          <strong>Default system outline</strong> — upload a firm DOCX with Replace to pin your structure.
         </p>
       ) : null}
 
       <div className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Outline ({sections.length} section{sections.length === 1 ? "" : "s"})
+          Sections ({sections.length})
         </p>
         {sections.length === 0 ? (
           <p className="text-xs text-slate-500">No sections detected yet.</p>
         ) : (
-          <ul className="space-y-1.5">
+          <ul className="space-y-2">
             {sections.map((sec) => {
               const open = openId === sec.id;
+              const feeds = factsForRole(sec.role);
+              const mergeHints = annotateStructureWithMergeHints(sec.label, sec.role);
               return (
                 <li key={sec.id} className="rounded-md border border-slate-200 bg-white">
                   <button
                     type="button"
-                    className="flex w-full items-start gap-2 px-3 py-2 text-left"
+                    className="flex w-full items-start gap-2 px-3 py-2.5 text-left"
                     onClick={() => setOpenId(open ? null : sec.id)}
                     aria-expanded={open}
                   >
@@ -661,16 +865,30 @@ function StructureTab({
                     ) : (
                       <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
                     )}
-                    <span className="min-w-0 flex-1">
-                      <span className="text-sm font-medium text-slate-900">{sec.label}</span>
-                      <span
-                        className={cn(
-                          "ml-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset",
-                          roleBadgeClass(sec.role),
-                        )}
-                      >
-                        {CREAC_ROLE_LABELS[sec.role] ?? sec.role}
+                    <span className="min-w-0 flex-1 space-y-1.5">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-medium text-slate-900">{sec.label}</span>
+                        <span
+                          className={cn(
+                            "inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset",
+                            roleBadgeClass(sec.role),
+                          )}
+                        >
+                          {CREAC_ROLE_LABELS[sec.role] ?? sec.role}
+                        </span>
                       </span>
+                      {feeds.length > 0 || mergeHints.length > 0 ? (
+                        <span className="block text-xs text-slate-600">
+                          <span className="font-medium text-slate-700">Feeds from: </span>
+                          {feeds.length
+                            ? feeds.map((f) => f.label).join(", ")
+                            : mergeHints.join(", ")}
+                        </span>
+                      ) : sec.role === "rule" || sec.role === "explanation" ? (
+                        <span className="block text-xs text-indigo-800">
+                          Preserved from template (not overwritten by matter facts)
+                        </span>
+                      ) : null}
                     </span>
                   </button>
                   {open ? (
@@ -687,13 +905,9 @@ function StructureTab({
         )}
       </div>
 
-      {isAos ? (
+      {isAos && factFields.length > 0 ? (
         <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50/80 p-3">
-          <p className="text-xs font-semibold text-slate-800">CREAC map — facts → Analysis</p>
-          <p className="text-xs text-slate-600">
-            Template <strong>Rule</strong> / <strong>Explanation</strong> text is preserved. These
-            drafting facts feed <strong>Analysis</strong> (and conclusion guidance):
-          </p>
+          <p className="text-xs font-semibold text-slate-800">Fact → CREAC summary</p>
           <ul className="space-y-1 text-xs text-slate-700">
             {factFields.map((f) => {
               const slot = AOS_FACT_CREAC_MAP[f.id] ?? "analysis";
@@ -714,6 +928,14 @@ function StructureTab({
           </ul>
         </div>
       ) : null}
+
+      <p className="text-[11px] text-slate-400">
+        Architecture / TXDocs-style assembly explained in{" "}
+        <Link href="/help#templates" className="underline underline-offset-2">
+          How this works
+        </Link>
+        .
+      </p>
     </div>
   );
 }
