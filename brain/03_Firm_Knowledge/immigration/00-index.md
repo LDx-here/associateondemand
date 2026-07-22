@@ -1,7 +1,7 @@
 # Immigration knowledge map — index
 
 Map of curated legal-element files for AssociateOnDemand agents.
-Agents load `.md` files in this folder (except `README.md`, `00-index.md`, `_source/`) into prompts — **char-capped** (~3.5–6k total, max ~8 files, currently alphabetical). Keep each file short and structured.
+Agents load `.md` files in this folder (except `README.md`, `00-index.md`, `_PROPOSAL*`, `_source/`) into prompts — **char-capped** (~3.5–6k total, max ~8 files), selected by matter case type / deliverable SKU / facts keywords (see `firm_context.select_immigration_knowledge_files`). Keep each file short and structured.
 
 **Sources (local only, not committed):** CLINIC *Introduction to Immigration Law*; *Immigration Procedures Handbook*; *Immigration Law and Crimes*; *Office Keeper* → see `_source/` and sibling `../firm_ops/`.
 

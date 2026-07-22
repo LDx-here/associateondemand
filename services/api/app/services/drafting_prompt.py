@@ -315,7 +315,22 @@ def build_drafting_context_block(
     try:
         from app.agents.firm_context import load_firm_knowledge_excerpts
 
-        knowledge = load_firm_knowledge_excerpts(max_chars=3500)
+        case_type = str((ctx or {}).get("case_type") or "")
+        query_bits: list[str] = []
+        for key in ("title", "summary", "posture"):
+            val = (ctx or {}).get(key)
+            if val:
+                query_bits.append(str(val))
+        if drafting_block:
+            query_bits.append(drafting_block[:1500])
+        if assessment_doc_block:
+            query_bits.append(assessment_doc_block[:1500])
+        knowledge = load_firm_knowledge_excerpts(
+            max_chars=3500,
+            case_type=case_type,
+            deliverable=deliverable_hint,
+            query_text=" ".join(query_bits),
+        )
         if knowledge:
             parts.append(knowledge)
     except Exception:

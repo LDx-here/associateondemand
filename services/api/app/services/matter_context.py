@@ -305,6 +305,34 @@ def format_firm_memory_block(*, max_patterns: int = 8) -> str:
     return "\n".join(lines) if len(lines) > 1 else ""
 
 
+def _knowledge_query_from_matter(ctx: dict[str, Any] | None) -> tuple[str, str]:
+    """Return (case_type, query_text) for topic-aware immigration knowledge selection."""
+
+    if not ctx:
+        return "", ""
+    case_type = str(ctx.get("case_type") or "")
+    parts: list[str] = []
+    for key in ("title", "summary", "posture", "country", "status"):
+        val = ctx.get(key)
+        if val:
+            parts.append(str(val))
+    assessment = ctx.get("assessment_data")
+    if isinstance(assessment, dict):
+        for key in (
+            "claimType",
+            "legalStandard",
+            "overallAssessment",
+            "claimElementsNotes",
+            "areasToStrengthen",
+        ):
+            val = assessment.get(key)
+            if val:
+                parts.append(str(val)[:800])
+    elif isinstance(assessment, str) and assessment.strip():
+        parts.append(assessment[:1200])
+    return case_type, " ".join(parts)
+
+
 def format_matter_context(ctx: dict[str, Any] | None, *, matter_code: str | None = None) -> str:
     if not ctx:
         base = "No live matter row found in Airtable for this matter_id."
@@ -349,7 +377,17 @@ def format_matter_context(ctx: dict[str, Any] | None, *, matter_code: str | None
     try:
         from app.agents.firm_context import load_firm_knowledge_excerpts
 
-        knowledge = load_firm_knowledge_excerpts(max_chars=4000)
+        case_type, query_text = _knowledge_query_from_matter(ctx)
+        # Include drafting facts / assessment OCR snippets in keyword haystack.
+        if drafting_block:
+            query_text = f"{query_text} {drafting_block[:1500]}".strip()
+        if assessment_doc_block:
+            query_text = f"{query_text} {assessment_doc_block[:1500]}".strip()
+        knowledge = load_firm_knowledge_excerpts(
+            max_chars=4000,
+            case_type=case_type,
+            query_text=query_text,
+        )
         if knowledge:
             lines.append(knowledge)
     except Exception:

@@ -14,7 +14,7 @@ Curated immigration `.md` files added 2026-07-21. Suggested product wiring (part
 
 ## Proposed follow-ups (not all coded)
 
-1. **Topic-aware excerpt loader** — `firm_context.load_firm_knowledge_excerpts` currently takes the first 8 `.md` files alphabetically. Prefer selecting by matter practice area / legal-element ids (e.g., waiver matter → hardship + 212 waiver + UL presence).
+1. **Topic-aware excerpt loader** — **Done:** `firm_context.select_immigration_knowledge_files` scores by case type / deliverable SKU / facts keywords (core boosts for AOS, waiver, asylum, removal, criminal).
 2. **Add templates** for high-frequency RMV work:
    - `unlawful-presence` → `unlawful-presence-bars.md`
    - `false-claim-usc` → `false-claim-usc.md`
