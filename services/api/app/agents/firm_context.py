@@ -39,7 +39,9 @@ def load_firm_knowledge_excerpts(*, max_chars: int = 6000, max_files: int = 8) -
     used = 0
     paths = sorted(IMMIGRATION_KNOWLEDGE_DIR.glob("*.md"))
     for path in paths:
-        if path.name.lower() == "readme.md":
+        name_l = path.name.lower()
+        # Skip index/meta docs — they are for humans/Cursor, not prompt injection.
+        if name_l in {"readme.md", "00-index.md"} or name_l.startswith("_"):
             continue
         if len(chunks) >= max_files or used >= max_chars:
             break

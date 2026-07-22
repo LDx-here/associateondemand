@@ -97,6 +97,11 @@ brain/.obsidian/workspace*.json
 brain/.obsidian/cache
 brain/.trash/
 
+# Copyrighted / large source books for local Cursor conversion only
+brain/03_Firm_Knowledge/immigration/_source/*
+!brain/03_Firm_Knowledge/immigration/_source/.gitkeep
+!brain/03_Firm_Knowledge/immigration/_source/README.md
+
 # Uploads / runtime data
 data/uploads/
 data/qdrant/

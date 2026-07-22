@@ -33,10 +33,12 @@ Short runbook for wiring practice reference material into AssociateOnDemand lega
 
 ## Attorney workflow
 
-1. Drop or sync immigration book → `brain/03_Firm_Knowledge/`.
-2. Upload element-focused excerpts → Firm Memory (Templates page).
-3. On matter → **Legal elements** → Load practice-area elements → review extracted facts → set strategy status per element.
-4. **Procedural timeline** tab tracks filings/posture; **Case activity** tab holds notes and agent chronology.
+1. Put the master book PDF in `brain/03_Firm_Knowledge/immigration/_source/` (local; gitignored — do not commit copyrighted books).
+2. Ask Cursor to convert by element into short `.md` files under `brain/03_Firm_Knowledge/immigration/` (see that folder’s README + `00-index.md`). Do **not** dump the whole PDF into Firm Memory.
+3. Optional: upload short style snippets / redacted samples → Firm Memory (`/templates#firm-memory`) for drafting voice.
+4. Redeploy the API after adding brain `.md` files (Fly image copies `brain/03_Firm_Knowledge`).
+5. On matter → **Legal elements** → Load practice-area elements → review extracted facts → set strategy status per element.
+6. **Procedural timeline** tab tracks filings/posture; **Case activity** tab holds notes and agent chronology.
 
 ## Related code
 
