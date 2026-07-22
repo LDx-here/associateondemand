@@ -1,9 +1,11 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-21 (CDT) — Pass 23 template catalog preview + DOCX upload  
+**Last updated:** 2026-07-21 (CDT) — Pass 23b auto-create FIRM-TEMPLATES matter  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 23b (2026-07-21):** Fix `/templates` replace — auto-create Closed Matter `FIRM-TEMPLATES` on first deliverable template upload (web + Fly API); clearer Airtable permission errors; demo mode provisions without PAT. pytest 66; next build green.
 
 **Pass 23 (2026-07-21):** DOCX text extraction in OCR pipeline (clear errors); `/templates` cards show source, View preview, Replace template (PDF/DOCX), Edit notes; Airtable `deliverable_template:{sku}`; drafting injects firm template excerpt when present. pytest 65; next build green.
 
@@ -13,7 +15,7 @@
 
 **Pass 20 (2026-07-21):** External partner funnel `/partner/submit` + drafting prompt hardening.
 
-**Next (user choice):** On prod `/templates`, preview Phase 0 SKUs → upload firm DOCX/PDF for AOS brief if desired → pilot draft and confirm Draft QC “Firm Memory applied”.
+**Next (user choice):** On prod `/templates`, replace AOS brief with firm DOCX (should succeed without Matter not found) → pilot draft and confirm Draft QC “Firm Memory applied”.
 
 ## Dual track
 

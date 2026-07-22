@@ -22,6 +22,7 @@ import {
   listMattersFromAirtable,
   getMatterFromAirtable,
   createMatterInAirtable,
+  ensureFirmTemplateMatterInAirtable,
   listAllNotesFromAirtable,
   listAllTasksFromAirtable,
   listNotesForMatterFromAirtable,
@@ -155,6 +156,52 @@ export async function createMatter(payload: {
     return matter;
   }
   return createMatterInAirtable(payload);
+}
+
+/** Closed administrative matter for firm-wide templates (demo + Airtable). */
+export async function ensureFirmTemplateMatter(): Promise<Matter> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const existing = seed.matters.find(
+      (m) => m.matterId === FIRM_TEMPLATE_MATTER_ID || m.id === FIRM_TEMPLATE_MATTER_ID,
+    );
+    if (existing) return existing;
+    const matter: Matter = {
+      id: "recFirmTemplates",
+      matterId: FIRM_TEMPLATE_MATTER_ID,
+      clientName: "Firm Templates",
+      title: "Firm Templates",
+      caseType: "Other",
+      status: "Closed",
+      proceduralPosture: "",
+      fidelityScore: 0,
+      nextDeadline: null,
+      vulnerabilityFlags: [],
+      assignedAttorney: "",
+      summary:
+        "Administrative matter for firm-wide deliverable templates and assessment forms. Not an active client case.",
+    };
+    seed.matters.push(matter);
+    await persistSeed();
+    return matter;
+  }
+  const resolved = await ensureFirmTemplateMatterInAirtable();
+  return (
+    (await getMatterByCode(resolved.matterId)) ?? {
+      id: resolved.recordId,
+      matterId: resolved.matterId,
+      clientName: "Firm Templates",
+      title: "Firm Templates",
+      caseType: "Other",
+      status: "Closed",
+      proceduralPosture: "",
+      fidelityScore: 0,
+      nextDeadline: null,
+      vulnerabilityFlags: [],
+      assignedAttorney: "",
+      summary: "",
+    }
+  );
 }
 
 export async function getMatterByCode(matterId: string): Promise<Matter | null> {
@@ -778,6 +825,7 @@ export async function saveAssessmentTemplate(payload: {
   practiceArea: string;
   airtableDocumentId?: string;
 }): Promise<DocumentRow> {
+  await ensureFirmTemplateMatter();
   const category = encodeAssessmentTemplateCategory(payload.practiceArea);
   if (isDemoMode()) {
     const seed = await loadDemoSeed();
@@ -838,6 +886,7 @@ export async function saveFirmSample(payload: {
   docType?: string;
   airtableDocumentId?: string;
 }): Promise<DocumentRow> {
+  await ensureFirmTemplateMatter();
   const category = encodeFirmSampleCategory(
     payload.practiceArea,
     payload.docType as FirmSampleDocType | undefined,
@@ -983,6 +1032,8 @@ export async function saveDeliverableTemplate(payload: {
   if (!deliverableId || !DELIVERABLE_CATALOG.some((d) => d.id === deliverableId)) {
     throw new Error("Unknown deliverableId");
   }
+  // Notes require a linked Matter; provision FIRM-TEMPLATES on first upload.
+  await ensureFirmTemplateMatter();
   const category = encodeDeliverableTemplateCategory(deliverableId);
   const existingItem = (await listDeliverableTemplateCatalog()).find(
     (c) => c.deliverableId === deliverableId,

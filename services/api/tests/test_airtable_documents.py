@@ -19,3 +19,10 @@ def test_live_document_create_fields_excludes_drift_columns() -> None:
     assert at.FIELDS_DOCUMENTS["pii_tier"] not in fields
     assert at.FIELDS_DOCUMENTS["file_type"] not in fields
     assert at.FIELDS_DOCUMENTS["file_path"] not in fields
+
+
+def test_ensure_firm_template_matter_noop_without_pat(monkeypatch) -> None:
+    monkeypatch.delenv("AIRTABLE_PAT", raising=False)
+    monkeypatch.delenv("AIRTABLE_BASE_ID", raising=False)
+    assert at.ensure_firm_template_matter() is None
+    assert at.FIRM_TEMPLATE_MATTER_ID == "FIRM-TEMPLATES"

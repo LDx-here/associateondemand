@@ -1,3 +1,5 @@
+### [2026-07-21] CHECKPOINT: pass 23b FIRM-TEMPLATES auto-create — fix Matter not found on /templates replace; Closed administrative matter on first upload; pytest 66; next build; Fly + Vercel prod
+
 ### [2026-07-21] CHECKPOINT: pass 23 template catalog + DOCX — OCR DOCX extract, /templates source+preview+replace+tweaks, deliverable_template Airtable role, drafting excerpt inject; pytest 65; next build; Fly + Vercel prod
 
 ### [2026-07-21] CHECKPOINT: pass 22 draft QC + immigration knowledge — Associate Draft QC checklist, Firm Memory in matter_context, brain immigration .md excerpts, linter chatbot checks, draft-quality-control runbook; pytest 59; next build; Vercel prod

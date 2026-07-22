@@ -283,6 +283,9 @@ def create_agent_task(
     return _create_record(TABLE_TASKS, fields)
 
 
+FIRM_TEMPLATE_MATTER_ID = "FIRM-TEMPLATES"
+
+
 def _resolve_matter_record_id(matter_code: str) -> str | None:
     """Look up the Airtable rec id for the given Matter ID code."""
 
@@ -304,6 +307,41 @@ def _resolve_matter_record_id(matter_code: str) -> str | None:
             return records[0]["id"] if records else None
     except httpx.HTTPError:
         return None
+
+
+def ensure_firm_template_matter() -> str | None:
+    """Create closed administrative Matter FIRM-TEMPLATES if missing.
+
+    Firm deliverable templates upload against this matter id. Documents can
+    omit a matter link, but Notes require one for template metadata.
+    Returns the Airtable record id, or None when Airtable is not configured.
+    """
+
+    if not is_configured():
+        return None
+    existing = _resolve_matter_record_id(FIRM_TEMPLATE_MATTER_ID)
+    if existing:
+        return existing
+
+    fm = FIELDS_MATTERS
+    now = _now_iso()
+    fields: dict[str, Any] = {
+        fm["matter_id"]: FIRM_TEMPLATE_MATTER_ID,
+        fm["title"]: "Firm Templates",
+        fm["case_type"]: "Other",
+        fm["status"]: "Closed",
+        fm["summary"]: (
+            "Administrative matter for firm-wide deliverable templates and "
+            "assessment forms. Not an active client case."
+        ),
+        fm["created_at"]: now,
+        fm["updated_at"]: now,
+    }
+    rec = _create_record(TABLE_MATTERS, fields)
+    if rec and rec.get("id"):
+        return str(rec["id"])
+    # Concurrent create or permission failure — re-resolve before giving up.
+    return _resolve_matter_record_id(FIRM_TEMPLATE_MATTER_ID)
 
 
 def _list_records(table: str, *, max_records: int = 100, fields: list[str] | None = None) -> list[dict[str, Any]]:
@@ -478,6 +516,8 @@ def create_document(
         FIELDS_DOCUMENTS["uploaded_by"]: uploaded_by[:120],
     }
     rec_id = _resolve_matter_record_id(matter_code)
+    if not rec_id and matter_code == FIRM_TEMPLATE_MATTER_ID:
+        rec_id = ensure_firm_template_matter()
     if rec_id:
         fields[FIELDS_DOCUMENTS["matter_id"]] = [rec_id]
     elif matter_code.startswith("rec"):
@@ -496,6 +536,8 @@ def create_matter_note(
     """Create a matter note (agent output or correction)."""
 
     rec_id = _resolve_matter_record_id(matter_code)
+    if not rec_id and matter_code == FIRM_TEMPLATE_MATTER_ID:
+        rec_id = ensure_firm_template_matter()
     if not rec_id:
         return None
     fields: dict[str, Any] = {

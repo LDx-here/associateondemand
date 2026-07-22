@@ -25,10 +25,12 @@ import {
   recordMatchesMatterLink,
 } from "./matter-link-filter";
 import {
+  FIRM_TEMPLATE_MATTER_ID,
   isAssessmentTemplateDocument,
   isFirmSampleDocument,
   parseDocumentCategory,
 } from "../assessment-documents";
+import { MATTER_STATUS_CLOSED } from "../matter-status";
 import { ASSIGNMENT_TRANSITIONS, buildDeliveredHistory, isValidAssignmentTransition } from "../assignment-transitions";
 import { emptyCaseAssessment, parseCaseAssessment, serializeCaseAssessment } from "../case-assessment";
 import type {
@@ -256,6 +258,91 @@ export async function resolveMatterRecordId(
   return { recordId: rec.id, matterId: String(rec.fields[F.matters.matter_id] ?? matterCode) };
 }
 
+function formatAirtablePermissionError(context: string, err: unknown): Error {
+  const msg = err instanceof Error ? err.message : String(err);
+  const permissionHint =
+    /401|403|INVALID_PERMISSIONS|NOT_AUTHORIZED|forbidden|unauthorized/i.test(msg)
+      ? " Check that the Airtable PAT has create/update permission on the required table."
+      : "";
+  return new Error(`${context}.${permissionHint} ${msg}`.trim());
+}
+
+/**
+ * Ensure the closed administrative Matter used for firm-wide templates exists.
+ * Documents may omit a matter link, but Notes require one — create on first use.
+ */
+export async function ensureFirmTemplateMatterInAirtable(): Promise<{
+  recordId: string;
+  matterId: string;
+}> {
+  const existing = await resolveMatterRecordId(FIRM_TEMPLATE_MATTER_ID);
+  if (existing) return existing;
+
+  // Prefer an existing row titled "Firm Templates" if matter_id was never set.
+  try {
+    const byTitle = await airtableFetch<{ records: Array<{ id: string; fields: RawFields }> }>(
+      TABLES.matters,
+      {
+        filterByFormula: `{${F.matters.title}} = 'Firm Templates'`,
+        maxRecords: "1",
+      },
+    );
+    const titled = byTitle.records[0];
+    if (titled) {
+      const currentCode = String(titled.fields[F.matters.matter_id] ?? "");
+      if (!currentCode || currentCode === FIRM_TEMPLATE_MATTER_ID) {
+        if (currentCode !== FIRM_TEMPLATE_MATTER_ID) {
+          await airtablePatch(TABLES.matters, titled.id, {
+            [F.matters.matter_id]: FIRM_TEMPLATE_MATTER_ID,
+            [F.matters.status]: MATTER_STATUS_CLOSED,
+            [F.matters.updated_at]: new Date().toISOString(),
+          });
+        }
+        return { recordId: titled.id, matterId: FIRM_TEMPLATE_MATTER_ID };
+      }
+    }
+  } catch {
+    // Fall through to create.
+  }
+
+  const m = F.matters;
+  const now = new Date().toISOString();
+  try {
+    const rec = await airtableCreate(TABLES.matters, {
+      [m.matter_id]: FIRM_TEMPLATE_MATTER_ID,
+      [m.title]: "Firm Templates",
+      [m.case_type]: "Other",
+      [m.status]: MATTER_STATUS_CLOSED,
+      [m.summary]:
+        "Administrative matter for firm-wide deliverable templates and assessment forms. Not an active client case.",
+      [m.created_at]: now,
+      [m.updated_at]: now,
+    });
+    return { recordId: rec.id, matterId: FIRM_TEMPLATE_MATTER_ID };
+  } catch (err) {
+    const raced = await resolveMatterRecordId(FIRM_TEMPLATE_MATTER_ID);
+    if (raced) return raced;
+    throw formatAirtablePermissionError(
+      `Could not create firm template storage matter (${FIRM_TEMPLATE_MATTER_ID})`,
+      err,
+    );
+  }
+}
+
+/** Resolve a matter for writes; auto-provision FIRM-TEMPLATES when missing. */
+async function resolveMatterRecordIdForWrite(
+  matterCode: string,
+): Promise<{ recordId: string; matterId: string }> {
+  let resolved = await resolveMatterRecordId(matterCode);
+  if (!resolved && matterCode === FIRM_TEMPLATE_MATTER_ID) {
+    resolved = await ensureFirmTemplateMatterInAirtable();
+  }
+  if (!resolved) {
+    throw new Error(`Matter not found: ${matterCode}`);
+  }
+  return resolved;
+}
+
 function isFirmWideDocumentCategory(category: string): boolean {
   const doc = { category };
   return (
@@ -428,17 +515,26 @@ export async function createNoteInAirtable(
   author: string,
   type: string = "Attorney",
 ): Promise<Note> {
-  const resolved = await resolveMatterRecordId(matterCode);
-  if (!resolved) throw new Error(`Matter not found: ${matterCode}`);
+  const resolved = await resolveMatterRecordIdForWrite(matterCode);
   const n = F.notes;
-  const rec = await airtableCreate(TABLES.notes, {
-    [n.content]: content,
-    [n.author]: author,
-    [n.matter_id]: [resolved.recordId],
-    [n.created_at]: new Date().toISOString(),
-    [n.type]: type,
-  });
-  return mapNote(rec, resolved.matterId);
+  try {
+    const rec = await airtableCreate(TABLES.notes, {
+      [n.content]: content,
+      [n.author]: author,
+      [n.matter_id]: [resolved.recordId],
+      [n.created_at]: new Date().toISOString(),
+      [n.type]: type,
+    });
+    return mapNote(rec, resolved.matterId);
+  } catch (err) {
+    if (matterCode === FIRM_TEMPLATE_MATTER_ID) {
+      throw formatAirtablePermissionError(
+        `Could not save firm template note for ${FIRM_TEMPLATE_MATTER_ID}`,
+        err,
+      );
+    }
+    throw err;
+  }
 }
 
 export async function updateNoteInAirtable(
@@ -447,8 +543,7 @@ export async function updateNoteInAirtable(
   content: string,
   author?: string,
 ): Promise<Note> {
-  const resolved = await resolveMatterRecordId(matterCode);
-  if (!resolved) throw new Error(`Matter not found: ${matterCode}`);
+  const resolved = await resolveMatterRecordIdForWrite(matterCode);
   const n = F.notes;
   const fields: RawFields = { [n.content]: content.slice(0, 8000) };
   if (author) fields[n.author] = author.slice(0, 120);
@@ -1270,7 +1365,10 @@ export async function registerAssessmentDocumentInAirtable(
   matterCode: string,
   payload: { title: string; category: string; airtableDocumentId?: string },
 ): Promise<DocumentRow> {
-  const resolved = await resolveMatterRecordId(matterCode);
+  const resolved =
+    matterCode === FIRM_TEMPLATE_MATTER_ID
+      ? await ensureFirmTemplateMatterInAirtable()
+      : await resolveMatterRecordId(matterCode);
   const d = F.documents;
   if (payload.airtableDocumentId) {
     const patchFields: RawFields = {
