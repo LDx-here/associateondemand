@@ -1086,15 +1086,36 @@ export async function saveDeliverableTemplate(payload: {
     }
   }
 
-  const textPreview =
-    payload.textPreview?.slice(0, 12_000) ?? existingMeta?.textPreview;
+  const incomingText = payload.textPreview;
+  const sourceCharCount =
+    typeof incomingText === "string" ? incomingText.length : (existingMeta?.textCharCount ?? 0);
 
   let sections = payload.sections ?? existingMeta?.sections;
-  if ((!sections || !sections.length) && textPreview) {
-    sections = parseTemplateStructure(textPreview, { deliverableId });
+  if ((!sections || !sections.length) && incomingText) {
+    sections = parseTemplateStructure(incomingText, { deliverableId });
   }
 
-  const meta: DeliverableTemplateMetaPayload = {
+  // Prefer full extracted text. Airtable long-text max is 100k for the whole meta JSON —
+  // keep structure/briefTemplate, then fit textPreview (drop htmlPreview if needed).
+  const AIRTABLE_NOTE_MAX = 100_000;
+  const TEXT_SOFT_MAX = 80_000;
+
+  let textPreview =
+    incomingText !== undefined
+      ? incomingText.slice(0, TEXT_SOFT_MAX)
+      : existingMeta?.textPreview;
+  let htmlPreview: string | undefined =
+    payload.htmlPreview?.slice(0, 40_000) ??
+    (payload.textPreview ? undefined : existingMeta?.htmlPreview);
+  let textPreviewTruncated =
+    Boolean(incomingText && incomingText.length > TEXT_SOFT_MAX) ||
+    Boolean(existingMeta?.textPreviewTruncated && incomingText === undefined);
+
+  const buildMeta = (
+    text: string | undefined,
+    html: string | undefined,
+    truncated: boolean,
+  ): DeliverableTemplateMetaPayload => ({
     v: 1,
     deliverableId,
     role: "deliverable_template",
@@ -1105,20 +1126,38 @@ export async function saveDeliverableTemplate(payload: {
     postgresDocumentId: payload.postgresDocumentId ?? existingMeta?.postgresDocumentId,
     filename: payload.title,
     fileType: payload.fileType ?? existingMeta?.fileType,
-    textPreview,
+    textPreview: text,
+    textPreviewTruncated: truncated || undefined,
+    textCharCount: sourceCharCount || (text?.length ?? undefined),
     sections: sections?.slice(0, 80),
     briefTemplate:
       (payload.briefTemplate as Record<string, unknown> | undefined) ??
       existingMeta?.briefTemplate,
     briefType: payload.briefType ?? existingMeta?.briefType,
-    htmlPreview:
-      payload.htmlPreview?.slice(0, 100_000) ??
-      (payload.textPreview ? undefined : existingMeta?.htmlPreview),
+    htmlPreview: html,
     tweakNotes: payload.tweakNotes?.slice(0, 4000) ?? existingMeta?.tweakNotes,
     uploadedAt: new Date().toISOString(),
-  };
+  });
 
-  const content = serializeDeliverableTemplateMeta(meta);
+  let meta = buildMeta(textPreview, htmlPreview, textPreviewTruncated);
+  let content = serializeDeliverableTemplateMeta(meta);
+
+  // Fit into Airtable note long-text: drop HTML first, then shrink textPreview.
+  if (content.length > AIRTABLE_NOTE_MAX && htmlPreview) {
+    htmlPreview = undefined;
+    meta = buildMeta(textPreview, htmlPreview, textPreviewTruncated);
+    content = serializeDeliverableTemplateMeta(meta);
+  }
+  while (content.length > AIRTABLE_NOTE_MAX && textPreview && textPreview.length > 4_000) {
+    const nextLen = Math.max(4_000, Math.floor(textPreview.length * 0.85));
+    textPreview = textPreview.slice(0, nextLen);
+    textPreviewTruncated = true;
+    meta = buildMeta(textPreview, htmlPreview, true);
+    content = serializeDeliverableTemplateMeta(meta);
+  }
+  meta = { ...meta, textPreviewTruncated: textPreviewTruncated || undefined };
+  content = serializeDeliverableTemplateMeta(meta);
+
   if (isDemoMode()) {
     const seed = await loadDemoSeed();
     const existing = seed.notes.find(

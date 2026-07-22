@@ -23,6 +23,8 @@ import {
   CREAC_ROLE_LABELS,
   DEFAULT_AOS_CREAC_SECTIONS,
   classificationBadgeClass,
+  classificationNodeClass,
+  inferSectionDepth,
   parseTemplateStructure,
   roleBadgeClass,
   type CreacRole,
@@ -31,14 +33,19 @@ import {
 import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 import { cn, formatDate } from "@/lib/utils";
 import {
+  BookOpen,
   ChevronDown,
   ChevronRight,
   Eye,
   FileText,
   LayoutGrid,
   List,
+  Lock,
   Pencil,
   Replace,
+  Scale,
+  Stamp,
+  Variable,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -647,11 +654,15 @@ function PreviewModal({
         contentExcerpt: s.contentExcerpt || "",
         order: s.order ?? i,
         classification: s.classification,
+        depth: inferSectionDepth({ id: s.id || `sec-${i}`, label: s.label }),
         slots: s.slots,
       }));
     }
     if (ocrText) {
-      return parseTemplateStructure(ocrText, { deliverableId: item.deliverableId });
+      return parseTemplateStructure(ocrText, { deliverableId: item.deliverableId }).map((s) => ({
+        ...s,
+        depth: inferSectionDepth(s),
+      }));
     }
     if (item.deliverableId === "aos-discretionary-brief") {
       return DEFAULT_AOS_CREAC_SECTIONS;
@@ -674,6 +685,8 @@ function PreviewModal({
   const htmlPreview = item.meta?.htmlPreview?.trim() || "";
   const area = practiceAreaForDeliverable(item.deliverableId);
   const badge = sourceBadge(item);
+  const textCharCount = item.meta?.textCharCount ?? ocrText.length;
+  const textTruncatedAtStore = Boolean(item.meta?.textPreviewTruncated);
 
   return (
     <div
@@ -729,7 +742,7 @@ function PreviewModal({
             </button>
           ))}
         </div>
-        <div className="overflow-auto p-4 text-sm text-slate-700">
+        <div className="min-h-0 flex-1 overflow-auto p-4 text-sm text-slate-700">
           {tab === "structure" ? (
             <StructureTab
               item={item}
@@ -768,21 +781,12 @@ function PreviewModal({
             )
           ) : null}
           {tab === "ocr" ? (
-            hasOcr ? (
-              <pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs">
-                {ocrDisplay}
-              </pre>
-            ) : (
-              <div className="space-y-2">
-                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-                  No extracted text on file. Re-upload a .docx or text-layer PDF. Structure mapping still
-                  shows the default outline when available.
-                </p>
-                <pre className="max-h-[40vh] overflow-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-500">
-                  {ocrDisplay}
-                </pre>
-              </div>
-            )
+            <ExtractedTextPanel
+              text={hasOcr ? ocrText : ocrDisplay}
+              hasOcr={hasOcr}
+              charCount={hasOcr ? textCharCount || ocrText.length : 0}
+              truncatedAtStore={textTruncatedAtStore}
+            />
           ) : null}
           {tab === "tweaks" ? (
             item.meta?.tweakNotes ? (
@@ -797,6 +801,67 @@ function PreviewModal({
   );
 }
 
+function ExtractedTextPanel({
+  text,
+  hasOcr,
+  charCount,
+  truncatedAtStore,
+}: {
+  text: string;
+  hasOcr: boolean;
+  charCount: number;
+  truncatedAtStore: boolean;
+}) {
+  const displayCount = charCount || text.length;
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <h4 className="text-sm font-semibold text-slate-900">Full document</h4>
+          <p className="text-xs text-slate-500">
+            {hasOcr
+              ? `${displayCount.toLocaleString()} characters extracted`
+              : "No extracted text on file yet"}
+          </p>
+        </div>
+        {truncatedAtStore ? (
+          <p className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-950">
+            Prior save was capped — re-upload DOCX to store the full text
+          </p>
+        ) : null}
+      </div>
+      {!hasOcr ? (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+          No extracted text on file. Re-upload a .docx or text-layer PDF. Structure mapping still shows
+          the default outline when available.
+        </p>
+      ) : null}
+      <pre className="min-h-[320px] max-h-[min(70vh,640px)] overflow-y-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs leading-relaxed text-slate-800">
+        {text}
+      </pre>
+    </div>
+  );
+}
+
+function structureSectionIcon(classification?: string, role?: CreacRole) {
+  if (classification === "PRESERVE" || role === "rule") {
+    return Lock;
+  }
+  if (classification === "CAPTION" || role === "caption") {
+    return FileText;
+  }
+  if (classification === "BOILERPLATE") {
+    return Stamp;
+  }
+  if (classification === "FILL") {
+    return Variable;
+  }
+  if (role === "explanation") {
+    return BookOpen;
+  }
+  return Scale;
+}
+
 function StructureTab({
   item,
   sections,
@@ -806,7 +871,7 @@ function StructureTab({
   sections: TemplateSection[];
   hasFirmText: boolean;
 }) {
-  const [openId, setOpenId] = useState<string | null>(sections[0]?.id ?? null);
+  const [openId, setOpenId] = useState<string | null>(null);
   const area = practiceAreaForDeliverable(item.deliverableId);
   const isAos = item.deliverableId === "aos-discretionary-brief";
   const factFields = fieldsForDeliverable(
@@ -815,6 +880,7 @@ function StructureTab({
   );
   const briefType = (item.meta?.briefType as string | undefined) || (isAos ? "AOS_DISCRETIONARY" : undefined);
   const hasClassification = sections.some((s) => s.classification);
+  const usingDefaultOutline = !hasFirmText && isAos;
 
   const factsForRole = (role: CreacRole) => {
     if (isAos) {
@@ -840,144 +906,242 @@ function StructureTab({
         .map((k) => k.replace(/_/g, "").toLowerCase()),
     );
     if (keys.size === 0) return factsForRole(sec.role);
-    return factFields.filter((f) => keys.has(f.id.toLowerCase()) || keys.has(f.id.replace(/_/g, "").toLowerCase()));
+    return factFields.filter(
+      (f) => keys.has(f.id.toLowerCase()) || keys.has(f.id.replace(/_/g, "").toLowerCase()),
+    );
   };
 
+  const numberedSections = sections.map((sec, i) => ({
+    sec,
+    step: i + 1,
+    depth: inferSectionDepth(sec),
+  }));
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div>
-        <h4 className="text-sm font-semibold text-slate-900">Structure mapping</h4>
-        <p className="mt-1 text-xs text-slate-600">
+        <h4 className="text-sm font-semibold text-slate-900">Brief structure map</h4>
+        <p className="mt-1 text-xs leading-relaxed text-slate-600">
           {isAos
-            ? "AOS brief architecture — like eImmigration/TXDocs for this brief type: PRESERVE sections copy law verbatim; FILL sections pull matter facts."
-            : "Sections with CREAC roles. Analysis slots show which matter facts feed them; Rule / Explanation stay from the template."}
+            ? "Outline of this AOS discretionary brief — PRESERVE sections copy law verbatim; FILL sections pull matter facts."
+            : "Vertical map of template sections with CREAC roles and fact feeds."}
         </p>
         {briefType ? (
-          <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
+          <p className="mt-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-500">
             Brief type: {briefType}
           </p>
         ) : null}
       </div>
 
-      {!hasFirmText ? (
+      {usingDefaultOutline ? (
+        <p className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-950">
+          <strong>Default system outline</strong> from the AOS System Guide. Re-upload DOCX to refine from
+          firm file.
+        </p>
+      ) : !hasFirmText ? (
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-          <strong>Default system outline</strong> — upload a firm DOCX with Replace to pin your structure
+          <strong>Default system outline</strong> — Re-upload DOCX to refine from firm file
           {isAos ? " and run the PRESERVE/FILL parser" : ""}.
         </p>
       ) : null}
 
-      <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Sections ({sections.length})
-        </p>
-        {sections.length === 0 ? (
-          <p className="text-xs text-slate-500">No sections detected yet.</p>
-        ) : (
-          <ul className="space-y-2">
-            {sections.map((sec) => {
+      {/* Legend */}
+      <div className="flex flex-wrap gap-2 text-[10px] font-medium uppercase tracking-wide">
+        {(
+          [
+            ["CAPTION", "Caption"],
+            ["PRESERVE", "Preserve (law)"],
+            ["FILL", "Fill (facts)"],
+            ["BOILERPLATE", "Boilerplate"],
+          ] as const
+        ).map(([key, label]) => (
+          <span
+            key={key}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 ring-1 ring-inset",
+              classificationBadgeClass(key),
+            )}
+          >
+            <span
+              className={cn("h-1.5 w-1.5 rounded-full", classificationNodeClass(key).rail)}
+              aria-hidden
+            />
+            {label}
+          </span>
+        ))}
+      </div>
+
+      {numberedSections.length === 0 ? (
+        <p className="text-xs text-slate-500">No sections detected yet.</p>
+      ) : (
+        <div className="relative pl-2">
+          {/* Vertical connector */}
+          <div
+            className="absolute bottom-3 left-[1.15rem] top-3 w-px bg-gradient-to-b from-slate-300 via-slate-200 to-slate-100"
+            aria-hidden
+          />
+          <ol className="relative space-y-0">
+            {numberedSections.map(({ sec, step, depth }, idx) => {
               const open = openId === sec.id;
               const classification = sec.classification;
-              const feeds = classification === "FILL" || !classification ? factsForSlots(sec) : [];
+              const node = classificationNodeClass(classification);
+              const Icon = structureSectionIcon(classification, sec.role);
+              const feeds =
+                classification === "FILL" || !classification ? factsForSlots(sec) : [];
               const mergeHints = annotateStructureWithMergeHints(sec.label, sec.role);
               const slotKeys = (sec.slots || [])
                 .map((s) => s.replacement_key || s.label)
                 .filter(Boolean) as string[];
+              const feedLabels = slotKeys.length
+                ? slotKeys
+                : feeds.length
+                  ? feeds.map((f) => f.label)
+                  : mergeHints;
+              const excerpt = (sec.contentExcerpt || "").trim();
+              const excerptPreview =
+                excerpt.length > 220 ? `${excerpt.slice(0, 220).trim()}…` : excerpt;
+              const isLast = idx === numberedSections.length - 1;
+
               return (
-                <li key={sec.id} className="rounded-md border border-slate-200 bg-white">
-                  <button
-                    type="button"
-                    className="flex w-full items-start gap-2 px-3 py-2.5 text-left"
-                    onClick={() => setOpenId(open ? null : sec.id)}
-                    aria-expanded={open}
-                  >
-                    {open ? (
-                      <ChevronDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
-                    ) : (
-                      <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+                <li
+                  key={sec.id}
+                  className={cn("relative flex gap-3", depth > 0 ? "ml-6 pl-1" : "")}
+                >
+                  <div className="relative z-[1] flex w-7 shrink-0 flex-col items-center">
+                    <span
+                      className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold text-white shadow-sm ring-2 ring-white",
+                        node.rail,
+                      )}
+                      title={`Step ${step}`}
+                    >
+                      {depth > 0 ? (
+                        <span className="text-[9px]">{sec.label.match(/^([A-E])\./)?.[1] ?? "·"}</span>
+                      ) : (
+                        step
+                      )}
+                    </span>
+                    {!isLast ? <span className="mt-0 w-px flex-1 bg-transparent" aria-hidden /> : null}
+                  </div>
+
+                  <div
+                    className={cn(
+                      "mb-3 min-w-0 flex-1 overflow-hidden rounded-lg border shadow-sm",
+                      node.card,
+                      depth > 0 && "border-dashed",
                     )}
-                    <span className="min-w-0 flex-1 space-y-1.5">
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-slate-900">{sec.label}</span>
-                        {classification ? (
+                  >
+                    <button
+                      type="button"
+                      className="flex w-full items-start gap-2.5 px-3 py-2.5 text-left"
+                      onClick={() => setOpenId(open ? null : sec.id)}
+                      aria-expanded={open}
+                    >
+                      <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", node.icon)} aria-hidden />
+                      <span className="min-w-0 flex-1 space-y-1.5">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-semibold text-slate-900">{sec.label || "(untitled)"}</span>
+                          {classification ? (
+                            <span
+                              className={cn(
+                                "inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset",
+                                classificationBadgeClass(classification),
+                              )}
+                            >
+                              {CLASSIFICATION_LABELS[classification] ?? classification}
+                            </span>
+                          ) : null}
                           <span
                             className={cn(
-                              "inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset",
-                              classificationBadgeClass(classification),
+                              "inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset",
+                              roleBadgeClass(sec.role),
                             )}
                           >
-                            {CLASSIFICATION_LABELS[classification] ?? classification}
+                            {CREAC_ROLE_LABELS[sec.role] ?? sec.role}
+                          </span>
+                        </span>
+
+                        {classification === "PRESERVE" ? (
+                          <span className="block text-xs text-slate-600">
+                            Stable law — copied verbatim; does not change with matter facts
+                          </span>
+                        ) : classification === "CAPTION" ? (
+                          <span className="block text-xs text-sky-800">
+                            Case identifying info — replace each filing
+                          </span>
+                        ) : classification === "BOILERPLATE" ? (
+                          <span className="block text-xs text-stone-600">
+                            Procedural language — firm name / date only
                           </span>
                         ) : null}
-                        <span
-                          className={cn(
-                            "inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset",
-                            roleBadgeClass(sec.role),
-                          )}
-                        >
-                          {CREAC_ROLE_LABELS[sec.role] ?? sec.role}
-                        </span>
+
+                        {feedLabels.length > 0 &&
+                        (classification === "FILL" || !classification) ? (
+                          <span className="flex flex-wrap items-center gap-1 pt-0.5">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                              Feeds from
+                            </span>
+                            {feedLabels.slice(0, 8).map((label) => (
+                              <span
+                                key={label}
+                                className="inline-flex rounded-md bg-teal-50/90 px-1.5 py-0.5 text-[10px] font-medium text-teal-900 ring-1 ring-inset ring-teal-600/20"
+                              >
+                                {label}
+                              </span>
+                            ))}
+                            {feedLabels.length > 8 ? (
+                              <span className="text-[10px] text-slate-500">
+                                +{feedLabels.length - 8} more
+                              </span>
+                            ) : null}
+                          </span>
+                        ) : null}
+
+                        {!open && excerptPreview ? (
+                          <span className="block text-xs leading-relaxed text-slate-600 line-clamp-3">
+                            {excerptPreview}
+                          </span>
+                        ) : null}
                       </span>
-                      {classification === "PRESERVE" ? (
-                        <span className="block text-xs text-indigo-900">
-                          Copied verbatim — law does not change
-                        </span>
-                      ) : classification === "FILL" && (feeds.length > 0 || slotKeys.length > 0) ? (
-                        <span className="block text-xs text-slate-600">
-                          <span className="font-medium text-slate-700">Feeds from: </span>
-                          {slotKeys.length
-                            ? slotKeys.join(", ")
-                            : feeds.map((f) => f.label).join(", ")}
-                        </span>
-                      ) : feeds.length > 0 || mergeHints.length > 0 ? (
-                        <span className="block text-xs text-slate-600">
-                          <span className="font-medium text-slate-700">Feeds from: </span>
-                          {feeds.length
-                            ? feeds.map((f) => f.label).join(", ")
-                            : mergeHints.join(", ")}
-                        </span>
-                      ) : sec.role === "rule" || sec.role === "explanation" ? (
-                        <span className="block text-xs text-indigo-800">
-                          Preserved from template (not overwritten by matter facts)
-                        </span>
-                      ) : classification === "CAPTION" ? (
-                        <span className="block text-xs text-sky-800">Case identifying info — replace each filing</span>
-                      ) : classification === "BOILERPLATE" ? (
-                        <span className="block text-xs text-slate-600">
-                          Procedural language — firm name / date only
-                        </span>
-                      ) : null}
-                    </span>
-                  </button>
-                  {open ? (
-                    <div className="border-t border-slate-100 px-3 py-2">
-                      <pre className="max-h-48 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-slate-700">
-                        {sec.contentExcerpt || "(no excerpt)"}
-                      </pre>
-                    </div>
-                  ) : null}
+                      {open ? (
+                        <ChevronDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      ) : (
+                        <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      )}
+                    </button>
+                    {open ? (
+                      <div className="border-t border-slate-200/70 bg-white/60 px-3 py-2.5">
+                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                          Excerpt
+                        </p>
+                        <pre className="max-h-56 overflow-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-slate-700">
+                          {excerpt || "(no excerpt)"}
+                        </pre>
+                      </div>
+                    ) : null}
+                  </div>
                 </li>
               );
             })}
-          </ul>
-        )}
-      </div>
+          </ol>
+        </div>
+      )}
 
       {isAos && hasClassification ? (
-        <div className="rounded-md border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-950">
+        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
           <p className="font-medium">How this brief type works</p>
-          <p className="mt-0.5 text-indigo-900/90">
-            Re-upload your Sakkhi (or firm) DOCX via Replace — the parser classifies every section.
-            On draft, PRESERVE law is injected verbatim; FILL sections use AOS architecture facts from the
-            matter checklist.
+          <p className="mt-0.5 text-slate-600">
+            Re-upload your firm DOCX via Replace — the parser classifies every section. On draft, PRESERVE
+            law is injected verbatim; FILL sections use AOS architecture facts from the matter checklist.
           </p>
         </div>
       ) : null}
 
-      {isAos && factFields.length > 0 ? (
+      {isAos && factFields.length > 0 && !hasClassification ? (
         <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50/80 p-3">
           <p className="text-xs font-semibold text-slate-800">Fact → section summary</p>
           <ul className="space-y-1 text-xs text-slate-700">
-            {factFields.map((f) => {
+            {factFields.slice(0, 12).map((f) => {
               const slot = AOS_FACT_CREAC_MAP[f.id] ?? "analysis";
               return (
                 <li key={f.id} className="flex flex-wrap items-baseline gap-2">
@@ -998,7 +1162,7 @@ function StructureTab({
       ) : null}
 
       <p className="text-[11px] text-slate-400">
-        Architecture / TXDocs-style assembly explained in{" "}
+        Architecture explained in{" "}
         <Link href="/help#templates" className="underline underline-offset-2">
           How this works
         </Link>

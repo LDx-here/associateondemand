@@ -1,3 +1,5 @@
+### [2026-07-22] CHECKPOINT: pass 32 templates full text + structure map — raise text_preview/Airtable caps; Extracted text Full document scroll; vertical brief Structure map; pytest AOS 21; next build; Fly + Vercel
+
 ### [2026-07-22] CHECKPOINT: pass 31 AOS brief PRESERVE/FILL pipeline — brief_parser + aos_brief_generator; firm DOCX → briefTemplate meta; architecture intake; Structure badges; drafting validator; pytest 102; next build; Fly + Vercel
 
 ### [2026-07-22] CHECKPOINT: pass 30 auto legal elements + Firm Memory home — core elements auto-seed by matter type; optional dropdown; Firm Memory → /firm-memory + Settings; USCIS autofill future; test:firm-knowledge; pytest 81; next build; Vercel prod

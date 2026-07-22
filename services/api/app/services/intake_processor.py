@@ -197,9 +197,11 @@ def process_uploaded_document(
             note_type="Assessment Document",
         )
 
-    # Longer preview for firm deliverable templates (structure parsing needs more than 500 chars).
+    # Firm deliverable templates need the full extracted body for Structure + Extracted text tabs.
+    # (Previously capped at 12k — AOS briefs routinely exceed that and appeared cut off in preview.)
     is_deliverable_tmpl = str(document_category or "").startswith("deliverable_template:")
-    preview_limit = 12_000 if is_deliverable_tmpl else 500
+    preview_limit = 500_000 if is_deliverable_tmpl else 500
+    text_for_preview = (ocr_text or "")[:preview_limit] if ocr_text else ""
     result: dict[str, Any] = {
         "document_id": doc_id,
         "external_id": external_id,
@@ -216,7 +218,9 @@ def process_uploaded_document(
         "enrichment_status": enrichment_result.get("enrichmentStatus"),
         "enrichment_warning": enrichment_result.get("enrichmentWarning"),
         "enrichment_summary": enrichment_result.get("enrichmentSummary"),
-        "text_preview": ocr_text[:preview_limit] if ocr_text else "",
+        "text_preview": text_for_preview,
+        "text_char_count": len(ocr_text or ""),
+        "text_preview_truncated": bool(ocr_text) and len(ocr_text) > preview_limit,
         "obsidian_path": str(obsidian),
         "airtable_document_id": (airtable_doc or {}).get("id"),
         "metadata": ocr.metadata,

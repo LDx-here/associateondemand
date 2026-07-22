@@ -30,6 +30,8 @@ export type DeliverableTemplateSection = {
   order: number;
   /** PRESERVE | FILL | CAPTION | BOILERPLATE when brief parser ran. */
   classification?: string;
+  /** Nesting depth for structure map (0 = top, 1 = A–E). */
+  depth?: number;
   slots?: Array<{
     slot_type?: string;
     label?: string;
@@ -50,7 +52,12 @@ export type DeliverableTemplateMetaPayload = {
   postgresDocumentId?: string;
   filename?: string;
   fileType?: string;
+  /** Full or near-full extracted DOCX/OCR text for Structure + Extracted text tabs. */
   textPreview?: string;
+  /** True when textPreview was capped to fit Airtable note long-text (100k). */
+  textPreviewTruncated?: boolean;
+  /** Character count of source text before any store-side cap. */
+  textCharCount?: number;
   /** Parsed outline (CREAC / headings) from firm upload. */
   sections?: DeliverableTemplateSection[];
   /**

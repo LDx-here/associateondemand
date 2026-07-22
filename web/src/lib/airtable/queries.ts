@@ -548,7 +548,9 @@ export async function updateNoteInAirtable(
 ): Promise<Note> {
   const resolved = await resolveMatterRecordIdForWrite(matterCode);
   const n = F.notes;
-  const fields: RawFields = { [n.content]: content.slice(0, 8000) };
+  // Airtable long-text max is 100k; prior 8k cap was truncating deliverable-template meta
+  // (full extracted DOCX text + briefTemplate JSON) on every template Replace update.
+  const fields: RawFields = { [n.content]: content.slice(0, 100_000) };
   if (author) fields[n.author] = author.slice(0, 120);
   const rec = await airtablePatch(TABLES.notes, noteId, fields);
   return mapNote(rec, resolved.matterId);
