@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { CommandPanel } from "@/components/CommandPanel";
 import { InboxBadge } from "@/components/InboxBadge";
 import { SessionAccount } from "@/components/SessionAccount";
 import { SidebarNav } from "@/components/SidebarNav";
@@ -51,10 +50,7 @@ export async function AppShell({
               <SessionAccount compact />
             </div>
           </aside>
-          <div className="flex min-w-0 flex-1 overflow-hidden">
-            <main className="flex-1 overflow-y-auto px-6 py-8">{children}</main>
-            <CommandPanel demoMode={demoMode} />
-          </div>
+          <main className="min-w-0 flex-1 overflow-y-auto px-6 py-8">{children}</main>
         </div>
       </div>
     </ToastProvider>

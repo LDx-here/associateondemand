@@ -7,6 +7,7 @@ import {
   ChevronDown,
   FilePlus2,
   FileUp,
+  HelpCircle,
   Inbox,
   LayoutDashboard,
   LayoutTemplate,
@@ -40,6 +41,7 @@ const PRIMARY_NAV: SidebarNavItem[] = [
 
 /** Secondary / admin tools — collapsed by default for client firms. */
 const SECONDARY_NAV: SidebarNavItem[] = [
+  { href: "/help", label: "How this works", icon: HelpCircle },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/contacts", label: "Contacts", icon: Users },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
