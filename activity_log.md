@@ -193,3 +193,5 @@
 ### [2026-07-21] CHECKPOINT: Pass 21 UX — removed sidebar; top header nav + More dropdown; `/help` site guide; full-width layout; pytest 53; next build; smoke-production PASS; Vercel prod
 
 ### [2026-07-21] CHECKPOINT: pass 22 — draft QC checklist + Firm Memory/brain knowledge wiring honesty; linter chatbot/placeholder rules; runbooks; pytest + next build
+
+### [2026-07-22] CHECKPOINT: Pass 33 AOS drafting quality — full Part 8.1 system prompt + extended thinking (8192) + Part 8.2 full client facts; drafting primary path aos_brief_generator; pytest 108; Fly API

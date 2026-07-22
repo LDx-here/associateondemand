@@ -1,9 +1,11 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-22 (CDT) — Pass 32 templates preview: full extracted text + structure map  
+**Last updated:** 2026-07-22 (CDT) — Pass 33 AOS drafting: full Part 8.1 + thinking + full Part 8.2 facts  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 33 (2026-07-22):** AOS draft quality — store full Part 8.1 system prompt (`aos_system_prompt.py`); Part 8.2 `build_section_prompt` with all client facts; Anthropic extended thinking (`budget_tokens=8192`); drafting agent primary path = `aos_brief_generator` (`use_api=True`). Env: `AOD_AOS_MODEL`, `AOD_AOS_THINKING_BUDGET`, `AOD_AOS_MAX_TOKENS`. pytest 108. Fly API redeploy.
 
 **Pass 32 (2026-07-22):** Templates preview fix — removed 12k/8k truncation (API text_preview 500k for deliverable templates; Airtable note update 100k; meta fits text with truncate flag); Extracted text tab = Full document + char count + scroll-all; Structure mapping redesigned as vertical brief map (Cover→I–IV→A–E, classification colors, feeds chips). pytest AOS 21; next build. Re-upload DOCX to refresh stored full text.
 
@@ -11,7 +13,7 @@
 
 **Pass 30 (2026-07-22):** Legal Elements auto-seed core Firm Knowledge by matter type (no Load button / applied badge); optional elements via dropdown; case-type change merge prompt. Firm Memory moved to `/firm-memory` + Settings (out of Templates). USCIS form autofill noted as future. `test:firm-knowledge`; pytest 81; next build; Vercel prod (web only).
 
-**Next:** Re-upload Sakkhi AOS DOCX on `/templates` → verify Extracted text is full + Structure map. Fill AOS architecture facts → draft. Later: asylum / hearing-packet `brief_type`s.
+**Next:** Fill AOS architecture facts on a matter → dispatch drafting for aos-discretionary-brief → confirm gaps show Part 8.1 char count + thinking + model; compare DOCX FILL quality to Cowork. Later: asylum / hearing-packet `brief_type`s.
 
 **Pass 29 (2026-07-22):** Templates UX journey — architecture explainer moved to `/help#templates`; `/templates` browse by practice area + Cards/List; Open preview lands on Structure mapping (CREAC + feeds-from); Firm Memory collapsed. next build; smoke PASS.
 

@@ -26,23 +26,47 @@ def generate_text(
     max_tokens: int = 8192,
     temperature: float = 0.2,
     model: str | None = None,
+    thinking: dict[str, Any] | None = None,
 ) -> str | None:
-    """Return assistant text or None if Anthropic is not configured / call fails."""
+    """Return assistant text or None if Anthropic is not configured / call fails.
+
+    thinking: optional Anthropic extended thinking, e.g.
+      {"type": "enabled", "budget_tokens": 8192}
+    When set, temperature is omitted (API requirement) and max_tokens must exceed budget.
+    """
 
     api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
     if not api_key:
         return None
 
+    resolved_max = max_tokens
+    if thinking and thinking.get("type") == "enabled":
+        budget = int(thinking.get("budget_tokens") or 0)
+        if budget and resolved_max <= budget:
+            resolved_max = budget + max(2048, max_tokens)
+            LOGGER.debug(
+                "raised max_tokens from %s to %s for thinking budget %s",
+                max_tokens,
+                resolved_max,
+                budget,
+            )
+
     payload: dict[str, Any] = {
         "model": model or os.getenv("LLM_DEFAULT_MODEL", DEFAULT_MODEL),
-        "max_tokens": max_tokens,
-        "temperature": temperature,
+        "max_tokens": resolved_max,
         "system": system,
         "messages": [{"role": "user", "content": user}],
     }
+    # Anthropic rejects temperature when extended thinking is enabled.
+    if thinking and thinking.get("type") == "enabled":
+        payload["thinking"] = thinking
+    else:
+        payload["temperature"] = temperature
 
     try:
-        with httpx.Client(timeout=httpx.Timeout(120.0, connect=10.0)) as client:
+        # Thinking + long AOS sections can exceed 2 minutes.
+        timeout = 300.0 if (thinking and thinking.get("type") == "enabled") else 120.0
+        with httpx.Client(timeout=httpx.Timeout(timeout, connect=10.0)) as client:
             resp = client.post(
                 ANTHROPIC_API_URL,
                 headers={
@@ -63,3 +87,29 @@ def generate_text(
     except httpx.HTTPError:
         LOGGER.exception("anthropic request failed")
         return None
+
+
+def aos_thinking_kwargs() -> dict[str, Any]:
+    """Extended thinking config for AOS FILL section calls."""
+    try:
+        budget = int(os.getenv("AOD_AOS_THINKING_BUDGET", "8192").strip() or "8192")
+    except ValueError:
+        budget = 8192
+    return {"type": "enabled", "budget_tokens": budget}
+
+
+def aos_model_name() -> str:
+    """Model for AOS FILL — must support extended thinking. Override via AOD_AOS_MODEL."""
+    return (
+        os.getenv("AOD_AOS_MODEL", "").strip()
+        or os.getenv("AOD_DRAFTING_MODEL_AOS_DISCRETIONARY_BRIEF", "").strip()
+        or os.getenv("LLM_DEFAULT_MODEL", "").strip()
+        or DEFAULT_MODEL
+    )
+
+
+def aos_max_tokens() -> int:
+    try:
+        return int(os.getenv("AOD_AOS_MAX_TOKENS", "16000").strip() or "16000")
+    except ValueError:
+        return 16000

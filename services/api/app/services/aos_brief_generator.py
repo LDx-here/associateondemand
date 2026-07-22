@@ -2,54 +2,29 @@
 
 Parser and Generator are SEPARATE. Legal logic lives in rules; LLM only enhances FILL.
 Without API: structurally correct brief with placeholders.
-With API: polished FILL sections.
+With API: polished FILL sections using full Part 8.1 system prompt + extended thinking.
 """
 
 from __future__ import annotations
 
-import os
+import logging
 import re
 from datetime import date
 from pathlib import Path
 from typing import Any
 
+from app.services.aos_section_prompts import build_section_prompt, fact_keys_included
+from app.services.aos_system_prompt import SYSTEM_PROMPT_PART_8_1
 from app.services.brief_parser.aos_discretionary import (
     BRIEF_TYPE,
     build_default_aos_template,
 )
 from app.services.brief_parser.classification import slugify
 
-# System Guide Part 8.1 — condensed for prompt injection (full rules encoded).
-AOS_SYSTEM_PROMPT = """You are a legal brief drafting assistant for an immigration law practice.
-You are drafting a section of an AOS Discretionary Memorandum (Form I-485 support brief).
+LOGGER = logging.getLogger(__name__)
 
-LEGAL FRAMEWORK (apply accurately; cite in footnotes only):
-1. INA §245(a), 8 U.S.C. §1255(a) — three eligibility prongs; immediate relatives have visa availability under INA §201(b)(2)(A)(i).
-2. Matter of Patel, 17 I&N Dec. 597 (BIA 1980) — administrative grace; applicant bears burden.
-3. Matter of Marin, 16 I&N Dec. 581, 584-85 (BIA 1978) — balancing test; elevated standard only for serious adverse factors.
-4. Matter of Arai, 13 I&N Dec. 494, 496 (BIA 1970) — absent serious adverse factors, adjustment ordinarily granted.
-5. Matter of Mendez-Morales, 21 I&N Dec. 296, 301 (BIA 1996) — quality of family relationships (when relevant).
-6. Matter of Edwards, 20 I&N Dec. 191, 196 (BIA 1990) — rehabilitation (criminal history only).
-7. 1 USCIS-PM E.8 — cite alongside BIA when presenting favorable factors.
-8. INA §212(a)(9)(B) — unlawful presence bars triggered by DEPARTURE, not continued presence.
-
-WRITING RULES:
-1. Case theme appears in Argument opening, balancing close, and Conclusion.
-2. Section headings are argument claims — not category labels.
-3. Bundle minor equities; do not give each its own heading.
-4. Adverse heading MUST NOT contain "Immigration Violations", "Overstay", or "Unlawful Presence".
-5. All citations in footnotes only — no in-text parenthetical citations.
-6. Use verbatim quotes from the authorities above; do not paraphrase.
-7. Never use "rebuttal". Never apologize ("unfortunately", "we acknowledge", "while it is true that").
-8. Every factual claim must come from the provided intake. Mark uncertain facts [LIKE THIS].
-9. Balancing must close with: "This is not a case about [adverse]. It is a case about [theme]. A favorable exercise of discretion is both legally supported and compelled by the facts of this record."
-
-OUTPUT FORMAT:
-HEADING: ...
-BODY: ...
-FOOTNOTES:
-1. ...
-"""
+# Full Part 8.1 — never truncate when sending to Anthropic.
+AOS_SYSTEM_PROMPT = SYSTEM_PROMPT_PART_8_1
 
 
 def flatten_facts(d: dict[str, Any], prefix: str = "") -> dict[str, Any]:
@@ -424,8 +399,39 @@ def build_output_docx(
     return out
 
 
+def _infer_pronouns(fields: dict[str, Any], name: str) -> tuple[str, str, str]:
+    """Best-effort pronouns from explicit fields or honorifics; default they/them/their."""
+    subj = str(fields.get("pronounSubject") or fields.get("pronoun_subject") or "").strip().lower()
+    obj = str(fields.get("pronounObject") or fields.get("pronoun_object") or "").strip().lower()
+    poss = str(fields.get("pronounPossessive") or fields.get("pronoun_possessive") or "").strip().lower()
+    if subj and obj and poss:
+        return subj, obj, poss
+    gender = str(fields.get("gender") or fields.get("applicantGender") or "").strip().upper()
+    if gender in {"F", "FEMALE"}:
+        return "she", "her", "her"
+    if gender in {"M", "MALE"}:
+        return "he", "him", "his"
+    low = (name or "").lower()
+    if low.startswith(("ms.", "mrs.", "miss ")):
+        return "she", "her", "her"
+    if low.startswith("mr."):
+        return "he", "him", "his"
+    return "they", "them", "their"
+
+
+def _adverse_type(description: str) -> str:
+    d = (description or "").lower()
+    if "overstay" in d or "unlawful presence" in d or "overstay" in d:
+        return "overstay"
+    if "remov" in d or "deport" in d:
+        return "prior_removal"
+    if "convict" in d or "criminal" in d or "arrest" in d:
+        return "criminal"
+    return "other"
+
+
 def _facts_from_drafting_fields(fields: dict[str, Any] | None, matter_id: str = "") -> dict[str, Any]:
-    """Map practice-area fact field ids → generator case_facts shape."""
+    """Map practice-area fact field ids → full Part 6 case_facts shape."""
     f = fields or {}
 
     def g(*keys: str) -> str:
@@ -438,6 +444,34 @@ def _facts_from_drafting_fields(fields: dict[str, Any] | None, matter_id: str = 
                 return str(v).strip()
         return ""
 
+    full_name = g("applicantName", "applicant_full_name")
+    pronoun_s, pronoun_o, pronoun_p = _infer_pronouns(f, full_name)
+    adverse_desc = g("adverseFacts", "adverseFactors", "adverse_facts")
+    section_a_facts = g("sectionAFacts", "section_a_facts", "positiveEquities")
+    section_b_facts = g("sectionBFacts", "section_b_facts")
+    positive_inventory = g("balancingInventory", "positiveEquities", "balancing_inventory")
+    hardship = g("extremeHardshipFactors", "hardship", "humanitarianFactors")
+    petitioner = g("petitionerName", "qualifyingRelative", "petitioner_name")
+    relationship = g("petitionerRelationship", "petitioner_relationship")
+
+    # Seed family_ties from petitioner + narrative equities (Part 6 shape).
+    family_members: list[dict[str, Any]] = []
+    if petitioner:
+        family_members.append(
+            {
+                "name": petitioner,
+                "relationship": relationship or "qualifying relative",
+                "status": (
+                    "U.S. citizen"
+                    if "citizen" in (relationship or "").lower()
+                    else g("petitionerStatus") or "see petition facts"
+                ),
+                "dependence": g("familyDependence") or "see Section A facts",
+                "quality_description": section_a_facts[:500] if section_a_facts else "",
+            }
+        )
+    family_notes = g("familyTies", "family_ties", "positiveEquities")
+
     return {
         "case_facts": {
             "meta": {
@@ -447,75 +481,124 @@ def _facts_from_drafting_fields(fields: dict[str, Any] | None, matter_id: str = 
                 "brief_type": BRIEF_TYPE,
             },
             "applicant": {
-                "full_name": g("applicantName", "applicant_full_name"),
+                "full_name": full_name,
                 "a_number": g("aNumber", "applicant_a_number"),
                 "date_of_birth": g("applicantDob", "date_of_birth"),
                 "country_of_birth": g("countryOfBirth"),
                 "country_of_citizenship": g("countryOfCitizenship"),
+                "gender": g("gender", "applicantGender") or "X",
+                "pronoun_subject": pronoun_s,
+                "pronoun_object": pronoun_o,
+                "pronoun_possessive": pronoun_p,
             },
             "entry_and_immigration_history": {
                 "last_entry_date": g("entryDate", "entry_date"),
                 "last_entry_port": g("portOfEntry", "port_of_entry"),
                 "last_entry_visa_type": g("entryVisaType", "entry_visa_type"),
                 "authorized_stay_expiration": g("authorizedStayExpiration"),
+                "overstay_start_date": g("overstayStartDate"),
+                "prior_removal_orders": bool(g("priorRemovalOrders")),
+                "prior_immigration_violations": g("priorFilings", "priorImmigrationViolations") or None,
+                "departure_would_trigger_bar": True,
             },
             "petition": {
-                "petitioner_name": g("petitionerName", "qualifyingRelative", "petitioner_name"),
-                "petitioner_relationship": g("petitionerRelationship", "petitioner_relationship"),
+                "petitioner_name": petitioner,
+                "petitioner_us_citizen_date": g("petitionerUscDate", "petitionerUsCitizenDate"),
+                "petitioner_relationship": relationship,
                 "i130_approved_date": g("i130ApprovedDate", "i130_approved_date"),
                 "i485_filed_date": g("i485FiledDate", "i485_filed_date"),
                 "i130_filed_date": g("i130FiledDate"),
+                "i130_receipt_number": g("i130ReceiptNumber"),
+                "i485_receipt_number": g("i485ReceiptNumber"),
             },
             "attorney": {
                 "attorney_name": g("attorneyName", "attorney_name"),
                 "firm_name": g("firmName", "firm_name"),
                 "bar_number": g("attorneyBar", "barNumber", "attorney_bar"),
+                "email": g("attorneyEmail"),
+                "phone": g("attorneyPhone"),
+                "address": g("attorneyAddress"),
             },
             "case_architecture": {
                 "case_theme": g("caseTheme", "case_theme"),
-                "case_theme_brief": g("caseThemeBrief", "case_theme_brief"),
+                "case_theme_brief": g("caseThemeBrief", "case_theme_brief") or g("caseTheme"),
                 "adverse_factor_brief": g("adverseFactorBrief", "adverse_factor_brief"),
                 "section_a_heading": g("sectionAHeading", "section_a_heading"),
-                "section_a_facts": g("sectionAFacts", "section_a_facts", "positiveEquities"),
+                "section_a_facts": section_a_facts,
                 "section_b_heading": g("sectionBHeading", "section_b_heading"),
-                "section_b_facts": g("sectionBFacts", "section_b_facts"),
+                "section_b_facts": section_b_facts,
                 "adverse_heading": g("adverseHeading", "adverse_heading"),
-                "balancing_inventory": g("balancingInventory", "positiveEquities", "balancing_inventory"),
+                "balancing_inventory": positive_inventory,
+                "include_aos_mechanism": True,
+                "include_edwards": "criminal" in adverse_desc.lower(),
+                "include_mendez": True,
+            },
+            "positive_factors": {
+                "family_ties": {
+                    "members": family_members,
+                    "quality_notes": family_notes or section_a_facts,
+                },
+                "humanitarian": {
+                    "hardship_if_denied": hardship,
+                    "narrative": hardship,
+                    "health_conditions": [hardship] if hardship else [],
+                },
+                "employment_and_economic": {
+                    "narrative": section_b_facts or positive_inventory,
+                    "us_employment_history": [section_b_facts] if section_b_facts else [],
+                    "tax_history": g("taxHistory"),
+                },
+                "community_and_moral_character": {
+                    "narrative": section_b_facts or positive_inventory,
+                    "service_activities": [section_b_facts] if section_b_facts else [],
+                    "criminal_record": "criminal" in adverse_desc.lower(),
+                    "criminal_record_details": adverse_desc if "criminal" in adverse_desc.lower() else "",
+                },
             },
             "adverse_factors": {
                 "primary_adverse": {
-                    "description": g("adverseFacts", "adverseFactors", "adverse_facts"),
-                    "context": g("adverseFacts", "adverseFactors"),
-                    "type": "other",
-                    "is_fraud": False,
-                }
+                    "type": _adverse_type(adverse_desc),
+                    "description": adverse_desc,
+                    "context": adverse_desc,
+                    "date_arose": g("adverseDate"),
+                    "is_fraud": "fraud" in adverse_desc.lower() or "misrepresent" in adverse_desc.lower(),
+                    "rehabilitation": g("rehabilitation"),
+                },
+                "additional_adverse": (
+                    [{"type": "other", "description": g("adverseFactors"), "context": g("adverseFactors")}]
+                    if g("adverseFactors") and g("adverseFactors") != adverse_desc
+                    else []
+                ),
             },
             "departure_harm": g("departureHarm", "departure_harm"),
+            "evidence_index": [],
             # Flat aliases for ##TOKEN## substitution
-            "applicant_full_name": g("applicantName", "applicant_full_name"),
+            "applicant_full_name": full_name,
             "applicant_a_number": g("aNumber"),
             "entry_date": g("entryDate"),
             "port_of_entry": g("portOfEntry"),
             "entry_visa_type": g("entryVisaType"),
-            "petitioner_name": g("petitionerName", "qualifyingRelative"),
-            "petitioner_relationship": g("petitionerRelationship"),
+            "petitioner_name": petitioner,
+            "petitioner_relationship": relationship,
             "i130_approved_date": g("i130ApprovedDate"),
             "i485_filed_date": g("i485FiledDate"),
             "case_theme": g("caseTheme"),
             "case_theme_brief": g("caseThemeBrief", "caseTheme"),
             "adverse_factor_brief": g("adverseFactorBrief"),
             "section_a_heading": g("sectionAHeading"),
-            "section_a_facts": g("sectionAFacts", "positiveEquities"),
+            "section_a_facts": section_a_facts,
             "section_b_heading": g("sectionBHeading"),
-            "section_b_facts": g("sectionBFacts"),
+            "section_b_facts": section_b_facts,
             "adverse_heading": g("adverseHeading"),
-            "adverse_facts": g("adverseFacts", "adverseFactors"),
-            "balancing_inventory": g("balancingInventory", "positiveEquities"),
+            "adverse_facts": adverse_desc,
+            "balancing_inventory": positive_inventory,
             "departure_harm": g("departureHarm"),
             "attorney_name": g("attorneyName"),
             "firm_name": g("firmName"),
             "attorney_bar": g("attorneyBar", "barNumber"),
             "date": date.today().isoformat(),
+            # Preserve every raw drafting field under raw_fields for appendix completeness
+            "raw_drafting_fields": {k: v for k, v in f.items() if v not in (None, "", [])},
         },
         "fields": f,
     }
@@ -532,7 +615,8 @@ def generate_aos_brief(
     Generate AOS discretionary brief.
 
     use_api: when True and ANTHROPIC_API_KEY set, FILL sections with api_assistance=required
-    get prose. Otherwise template/placeholder mode.
+    get prose via full Part 8.1 system prompt + Part 8.2 section prompts + extended thinking.
+    Otherwise template/placeholder mode.
     """
     tmpl = template or build_default_aos_template()
     # Accept drafting fields payload
@@ -552,11 +636,23 @@ def generate_aos_brief(
     missing = validate_required_inputs(facts, tmpl)
     # Soft: do not hard-fail generation — placeholders remain for missing fields
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY") if use_api else None
-    api_available = bool(api_key)
+    from app.services.llm import (
+        aos_max_tokens,
+        aos_model_name,
+        aos_thinking_kwargs,
+        generate_text,
+        is_configured as llm_configured,
+    )
+
+    api_available = bool(use_api and llm_configured())
+    thinking_cfg = aos_thinking_kwargs() if api_available else None
+    model_used = aos_model_name() if api_available else None
+    fact_keys = fact_keys_included(facts)
 
     assembled: list[dict[str, Any]] = []
     used_cites: list[str] = []
+    api_sections: list[str] = []
+    api_errors: list[str] = []
 
     for section in tmpl.get("sections") or []:
         classification = section.get("classification")
@@ -579,29 +675,27 @@ def generate_aos_brief(
                 body, _ = apply_simple_substitutions(section["preserved_text"], facts)
             elif classification == "CAPTION":
                 body, _ = apply_simple_substitutions(section.get("fill_template") or "", facts)
-            elif (
-                section.get("api_assistance") == "required"
-                and api_available
-            ):
-                # API path — call Anthropic; fall back on failure
+            elif section.get("api_assistance") == "required" and api_available:
                 try:
-                    from anthropic import Anthropic  # type: ignore[import-not-found]
-
-                    client = Anthropic(api_key=api_key)
-                    user_prompt = _build_section_user_prompt(section, facts)
-                    message = client.messages.create(
-                        model=os.getenv("AOD_AOS_MODEL", "claude-sonnet-4-20250514"),
-                        max_tokens=2048,
+                    user_prompt = build_section_prompt(section, facts)
+                    raw = generate_text(
                         system=AOS_SYSTEM_PROMPT,
-                        messages=[{"role": "user", "content": user_prompt}],
+                        user=user_prompt,
+                        max_tokens=aos_max_tokens(),
+                        model=model_used,
+                        thinking=thinking_cfg,
                     )
-                    raw = message.content[0].text if message.content else ""
+                    if not raw:
+                        raise RuntimeError("empty Anthropic response")
                     parsed = _parse_api_response(raw)
                     body = parsed.get("body") or assemble_fill_section_no_api(section, facts)
                     if parsed.get("heading"):
                         heading = parsed["heading"]
                     used_cites.extend(parsed.get("footnotes") or [])
-                except Exception:
+                    api_sections.append(sid)
+                except Exception as exc:
+                    LOGGER.warning("AOS FILL API failed for %s: %s", sid, exc)
+                    api_errors.append(f"{sid}: {exc}")
                     body = assemble_fill_section_no_api(section, facts)
             else:
                 body = assemble_fill_section_no_api(section, facts)
@@ -630,49 +724,30 @@ def generate_aos_brief(
     return {
         "output_path": path,
         "validation": validation,
-        "api_used": api_available,
+        "api_used": api_available and bool(api_sections),
+        "api_requested": api_available,
+        "api_sections": api_sections,
+        "api_errors": api_errors,
         "sections_generated": len(assembled),
         "footnotes_count": len(footnotes),
         "missing_fields": missing,
         "assembled_sections": assembled,
         "brief_type": BRIEF_TYPE,
+        "prompt_meta": {
+            "system_prompt_chars": len(AOS_SYSTEM_PROMPT),
+            "system_prompt_source": "Part 8.1 SYSTEM_PROMPT_PART_8_1",
+            "thinking": thinking_cfg,
+            "model": model_used,
+            "max_tokens": aos_max_tokens() if api_available else None,
+            "fact_keys_included": fact_keys,
+            "fact_key_count": len(fact_keys),
+        },
     }
 
 
 def _build_section_user_prompt(section: dict[str, Any], facts: dict[str, Any]) -> str:
-    sid = section.get("section_id") or ""
-    ca_theme = get_fact(facts, "case_theme")
-    app = get_fact(facts, "applicant_full_name")
-    if sid == "section_a":
-        narrative = (
-            f"PRIMARY EQUITY SECTION\nHeading (use exactly): {get_fact(facts, 'section_a_heading')}\n"
-            f"Applicant: {app}\nCase theme: {ca_theme}\n"
-            f"Facts:\n{get_fact(facts, 'section_a_facts')}\n"
-            "Length: 2-4 paragraphs. Citations in footnotes only."
-        )
-    elif sid == "section_b":
-        narrative = (
-            f"SECONDARY EQUITY SECTION\nHeading (use exactly): {get_fact(facts, 'section_b_heading')}\n"
-            f"Applicant: {app}\nFacts (bundle):\n{get_fact(facts, 'section_b_facts')}\n"
-            "Length: 2-4 paragraphs."
-        )
-    elif sid == "section_d_adverse":
-        narrative = (
-            f"ADVERSE SECTION\nHeading (use exactly): {get_fact(facts, 'adverse_heading')}\n"
-            f"Applicant: {app}\nAdverse facts:\n{get_fact(facts, 'adverse_facts')}\n"
-            "1-2 paragraphs ONLY. Do NOT use Immigration Violations/Overstay/Unlawful Presence in heading."
-        )
-    elif sid == "section_e_balancing":
-        narrative = (
-            f"BALANCING\nApplicant: {app}\n"
-            f"Adverse factor brief: {get_fact(facts, 'adverse_factor_brief')}\n"
-            f"Inventory: {get_fact(facts, 'balancing_inventory')}\n"
-            f"Theme brief: {get_fact(facts, 'case_theme_brief') or ca_theme}\n"
-            "FINAL SENTENCE must be the 'This is not a case about…' template."
-        )
-    else:
-        narrative = f"Draft section {sid} using available facts for {app}."
-    return f"Draft the following section of the AOS Discretionary Memorandum:\n\n{narrative}"
+    """Backward-compatible alias — Part 8.2 build_section_prompt."""
+    return build_section_prompt(section, facts)
 
 
 def _parse_api_response(response_text: str) -> dict[str, Any]:
@@ -704,7 +779,7 @@ def _parse_api_response(response_text: str) -> dict[str, Any]:
 
 
 def format_aos_writing_rules_for_prompt() -> str:
-    """Inject into drafting agent for AOS SKU."""
+    """Inject into drafting agent for AOS SKU — full Part 8.1, never truncated."""
     return (
         "## AOS Brief Writing Rules (System Guide — PRESERVE vs FILL)\n"
         "- PRESERVE: Legal Standard (Patel/Marin/Arai + 1 USCIS-PM E.8) — copy/adapt only for firm voice; do not invent new law.\n"
@@ -715,5 +790,20 @@ def format_aos_writing_rules_for_prompt() -> str:
         "- Never use 'rebuttal' or apologetic phrasing.\n"
         "- Balancing MUST close: 'This is not a case about [adverse]. It is a case about [theme]. "
         "A favorable exercise of discretion is both legally supported and compelled by the facts of this record.'\n"
-        f"\n{AOS_SYSTEM_PROMPT[:2500]}"
+        "\n## Full Part 8.1 System Prompt (verbatim)\n"
+        f"{AOS_SYSTEM_PROMPT}"
     )
+
+
+def assembled_sections_to_memo(assembled: list[dict[str, Any]]) -> str:
+    """Flatten generator sections into a memo string for agent summary / UI."""
+    parts: list[str] = []
+    for s in assembled:
+        heading = s.get("heading") or ""
+        body = (s.get("body") or "").strip()
+        if heading and heading != "__COVER__":
+            parts.append(f"{heading}\n\n{body}" if body else str(heading))
+        elif body:
+            parts.append(body)
+    return "\n\n".join(parts).strip()
+
