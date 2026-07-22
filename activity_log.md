@@ -1,3 +1,7 @@
+### [2026-07-22] CHECKPOINT: pass 28 firm letterhead + document assembly — Settings Firm profile, certificate of service merge fields, unlock labels, default blank honesty, How templates work; pytest 81; next build; smoke PASS
+
+### [2026-07-22] CHECKPOINT: pass 27 Firm Knowledge → matters — Legal Elements load from knowledge map by case type, needed-facts checklist, Memory vs Knowledge UX, filtered knowledge-map; test:firm-knowledge; pytest 77; next build; Vercel prod
+
 ### [2026-07-22] CHECKPOINT: pass 26 CREAC template structure — DOCX Structure tab + section parser, meta.sections, drafting Rule preserve + FACTS FOR ANALYSIS; pytest 77; next build; Fly + Vercel prod
 
 ### [2026-07-21] CHECKPOINT: pass 25 topic-aware immigration knowledge — select_immigration_knowledge_files by case type/SKU/keywords; core AOS/waiver/asylum sets; pytest 71; Fly API redeploy
@@ -181,5 +185,3 @@
 ### [2026-07-21] CHECKPOINT: Pass 21 UX — removed sidebar; top header nav + More dropdown; `/help` site guide; full-width layout; pytest 53; next build; smoke-production PASS; Vercel prod
 
 ### [2026-07-21] CHECKPOINT: pass 22 — draft QC checklist + Firm Memory/brain knowledge wiring honesty; linter chatbot/placeholder rules; runbooks; pytest + next build
-
-### [2026-07-22] CHECKPOINT: pass 27 Firm Knowledge → matters — Legal Elements load from knowledge map by case type, needed-facts checklist, Memory vs Knowledge UX, filtered knowledge-map; test:firm-knowledge; pytest 77; next build; Vercel prod

@@ -1,9 +1,11 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-22 (CDT) — Pass 27 Firm Knowledge → matters  
+**Last updated:** 2026-07-22 (CDT) — Pass 28 firm letterhead + document assembly  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 28 (2026-07-22):** Template UX honesty — letterhead from Settings → Firm profile (no invented address); structure sections labeled built-in / firm-editable / preserve (not opaque “locked”); service footer → Certificate of service + merge fields; default HTML blank only when no firm DOCX; How templates work (TXDocs/eImmigration) on `/templates`. pytest 81; next build; smoke PASS.
 
 **Pass 27 (2026-07-22):** Matter-type → Firm Knowledge on Legal Elements — load/merge from knowledge map, needed-facts checklist, filtered `/knowledge-map`, Memory vs Knowledge UX, matter badge. `npm run test:firm-knowledge`; pytest 77; next build; Vercel prod (web only).
 
@@ -23,7 +25,7 @@
 
 **Pass 20 (2026-07-21):** External partner funnel `/partner/submit` + drafting prompt hardening.
 
-**Next (user choice):** On a family/Adjustment matter → Legal elements → **Load elements for this matter type** → confirm badge + needed-facts checklist; browse filtered knowledge map. Then pilot AOS draft (agents already topic-aware).
+**Next (user choice):** Settings → Firm profile — enter real letterhead; Templates → confirm How templates work + no fake letterhead; re-upload firm DOCX and confirm Structure (not HTML blank). Then pilot AOS draft.
 
 ## Dual track
 

@@ -39,13 +39,13 @@ const EXTRA_SOURCES: Record<string, Partial<DeliverableTemplateSourceInfo>> = {
   "hearing-packet": {
     label: "Smart template + telephonic records sample",
     detail:
-      "Interactive field map (telephonic-records-request) with locked letterhead/authority boilerplate. Static blank form: web/public/templates/telephonic-records-request.html.",
+      "Interactive merge-field map (telephonic-records-request). Letterhead + certificate of service from Settings → Firm profile. Default system blank HTML is only shown when no firm DOCX is uploaded — upload replaces it.",
     sampleAssetPath: "/templates/telephonic-records-request.html",
   },
   "cover-letter": {
     label: "Drafting SKILL + cover-letter field map",
     detail:
-      "Agent fills letterhead, addressee, RE line, and signature from facts + Firm Memory. Source: docs/constitution/05-Drafting-SKILL.md.",
+      "Agent fills letterhead (Firm profile), addressee, RE line, and signature from facts. Source: docs/constitution/05-Drafting-SKILL.md.",
   },
   "research-memo": {
     label: "Research Memo SKILL",

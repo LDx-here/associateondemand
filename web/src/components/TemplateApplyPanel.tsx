@@ -103,8 +103,8 @@ export function TemplateApplyPanel({
             Smart templates
           </h2>
           <p className="mt-1 text-xs text-sky-900/80">
-            Fill violet-bordered fields — locked sections preserve your firm format. Generate to preview or
-            download DOCX.
+            Fill violet merge fields — letterhead and certificate come from Firm profile; built-in sections
+            preserve outline until you replace the firm DOCX. Generate to assemble or download.
           </p>
         </div>
         {!compact ? (
@@ -219,7 +219,7 @@ export function TemplatePreviewStandalone({
           <p className="text-sm font-semibold text-slate-900">{map.name}</p>
           <p className="text-xs text-slate-600">{map.description}</p>
           <p className="mt-1 text-xs text-violet-800">
-            {editableFieldsForMap(map).length} editable fields · {map.boilerplateSections.length} locked
+            {editableFieldsForMap(map).length} merge fields · {map.boilerplateSections.length} structure
             sections
           </p>
         </div>

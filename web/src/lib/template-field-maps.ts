@@ -1,13 +1,23 @@
 /**
- * Smart template field maps — editable regions vs locked boilerplate.
- * Extend via Firm Memory upload + optional LLM detection on sample docs.
+ * Smart template field maps — editable regions vs built-in / firm-editable structure.
+ * Document assembly model: matter facts + firm profile fill {{merge_fields}} into template outline.
  */
 
 import {
   getDeliverableTemplateSpec,
+  lockKindForSection,
+  SECTION_LOCK_LABELS,
   specForTemplateFieldMap,
   type DeliverableTemplateSpec,
+  type SectionLockKind,
 } from "./deliverable-template-specs";
+import {
+  formatFirmLetterhead,
+  getFirmLetterhead,
+  letterheadMergeValues,
+  type FirmLetterheadProfile,
+} from "./firm-letterhead";
+import { fillMergeFields } from "./merge-fields";
 
 export type TemplateFieldType = "text" | "textarea" | "date" | "select";
 
@@ -33,9 +43,12 @@ export type TemplateFieldMap = {
   deliverableId?: string;
   practiceArea?: string;
   editableFields: TemplateEditableField[];
-  /** Locked sections — structure preserved, not edited in apply flow. */
+  /**
+   * Structure sections — labeled by lock kind (not all truly immutable).
+   * Firm letterhead + certificate are firm-editable via Settings.
+   */
   boilerplateSections: string[];
-  /** Static sample asset under web/public (PDF or HTML). */
+  /** Static sample asset under web/public (PDF or HTML) — default system blank only. */
   sampleAssetPath?: string;
 };
 
@@ -44,14 +57,14 @@ export const TELEPHONIC_REQUEST_FIELD_MAP: TemplateFieldMap = {
   id: "telephonic-records-request",
   name: "Telephonic records request",
   description:
-    "Request sheet for telephonic hearing or records submission. Editable fields are client-specific; RMV header and statutory boilerplate stay locked.",
+    "Request sheet for telephonic hearing or records submission. Fill client fields; letterhead and certificate pull from Settings → Firm profile. Upload firm DOCX to replace the default system outline.",
   deliverableId: "hearing-packet",
   practiceArea: "immigration",
   sampleAssetPath: "/templates/telephonic-records-request.html",
   boilerplateSections: [
     "Firm letterhead block",
     "Statutory authority / regulatory cite",
-    "Service instructions footer",
+    "Certificate of service",
   ],
   editableFields: [
     {
@@ -105,18 +118,26 @@ export const TELEPHONIC_REQUEST_FIELD_MAP: TemplateFieldMap = {
     },
     {
       id: "contact_phone",
-      label: "RMV contact phone",
+      label: "Contact phone",
       type: "text",
       section: "Service",
       editable: true,
     },
     {
-      id: "service_method",
+      id: "method",
       label: "Service method",
       type: "select",
       section: "Service",
       editable: true,
-      options: ["Email", "Fax", "Mail", "Hand delivery"],
+      options: ["Email", "Fax", "Mail", "Hand delivery", "ECF / electronic filing"],
+    },
+    {
+      id: "parties_served",
+      label: "Parties served",
+      placeholder: "Opposing counsel / DHS / EOIR clerk — name and address or email",
+      type: "textarea",
+      section: "Service",
+      editable: true,
     },
   ],
 };
@@ -124,7 +145,8 @@ export const TELEPHONIC_REQUEST_FIELD_MAP: TemplateFieldMap = {
 export const COVER_LETTER_FIELD_MAP: TemplateFieldMap = {
   id: "cover-letter",
   name: "Cover letter",
-  description: "Filing-package cover letter — editable addressee and RE line; letterhead and signature block locked.",
+  description:
+    "Filing-package cover letter — editable addressee and RE line; letterhead and signature from Firm profile.",
   deliverableId: "cover-letter",
   practiceArea: "immigration",
   boilerplateSections: ["Letterhead", "Addressee block", "Signature block"],
@@ -176,15 +198,16 @@ export const AOS_BRIEF_FIELD_MAP: TemplateFieldMap = {
   id: "aos-discretionary-brief",
   name: "AOS discretionary brief",
   description:
-    "Adjustment-of-status discretionary factors brief. Caption and PM-602-0199 framing locked; factor narratives editable.",
+    "CREAC assembly: Rule/Explanation preserved from firm template; Analysis filled from matter facts ({{qualifying_relative}}, {{hardship_facts}}, …).",
   deliverableId: "aos-discretionary-brief",
   practiceArea: "immigration",
   boilerplateSections: [
     "Conclusion (opening)",
-    "Rule (preserve from firm template)",
-    "Explanation (preserve / light tweak)",
-    "Analysis (matter facts)",
+    "Rule",
+    "Explanation",
+    "Analysis",
     "Conclusion (closing)",
+    "Certificate of service",
   ],
   editableFields: [
     {
@@ -212,25 +235,57 @@ export const AOS_BRIEF_FIELD_MAP: TemplateFieldMap = {
       editable: true,
     },
     {
-      id: "positive_factors",
-      label: "Positive discretionary factors",
-      placeholder: "Family ties, community service, rehabilitation…",
+      id: "qualifying_relative",
+      label: "Qualifying relative",
+      placeholder: "{{qualifying_relative}}",
       type: "textarea",
       section: "Analysis",
       editable: true,
     },
     {
-      id: "negative_factors_response",
-      label: "Response to negative factors",
-      placeholder: "Address any adverse history with context and rehabilitation",
+      id: "hardship_facts",
+      label: "Hardship facts",
+      placeholder: "{{hardship_facts}}",
       type: "textarea",
       section: "Analysis",
+      editable: true,
+    },
+    {
+      id: "positive_equities",
+      label: "Positive discretionary factors",
+      placeholder: "{{positive_equities}} — family ties, community service, rehabilitation…",
+      type: "textarea",
+      section: "Analysis",
+      editable: true,
+    },
+    {
+      id: "adverse_factors",
+      label: "Response to negative factors",
+      placeholder: "{{adverse_factors}}",
+      type: "textarea",
+      section: "Analysis",
+      editable: true,
+    },
+    {
+      id: "method",
+      label: "Service method",
+      type: "select",
+      section: "Certificate of service",
+      editable: true,
+      options: ["Email", "Fax", "Mail", "Hand delivery", "ECF / electronic filing"],
+    },
+    {
+      id: "parties_served",
+      label: "Parties served",
+      placeholder: "DHS counsel / USCIS — name and address",
+      type: "textarea",
+      section: "Certificate of service",
       editable: true,
     },
     {
       id: "conclusion",
       label: "Conclusion (optional override)",
-      placeholder: "Leave blank to use standard conclusion boilerplate",
+      placeholder: "Leave blank to use standard conclusion from outline",
       type: "textarea",
       section: "Conclusion",
       editable: true,
@@ -241,7 +296,8 @@ export const AOS_BRIEF_FIELD_MAP: TemplateFieldMap = {
 export const DEMAND_LETTER_FIELD_MAP: TemplateFieldMap = {
   id: "demand-letter",
   name: "Demand letter",
-  description: "Personal injury demand — damages and deadline editable; letterhead and demand paragraph structure locked.",
+  description:
+    "Personal injury demand — damages and deadline editable; letterhead from Firm profile.",
   deliverableId: "demand-letter",
   practiceArea: "personal_injury",
   boilerplateSections: ["Letterhead", "Demand paragraph", "Damages summary", "Deadline / response"],
@@ -365,12 +421,66 @@ function formatMemoHeader(spec: DeliverableTemplateSpec | undefined, values: Rec
   ];
 }
 
-/** Render filled template as structured note with deliverable-specific header. */
+function isLetterheadSection(section: string): boolean {
+  return /letterhead/i.test(section);
+}
+
+function isCertificateSection(section: string): boolean {
+  return /certificate of service|service instruction/i.test(section);
+}
+
+/** Resolve section preview from firm profile + merge fields (never fake invented letterhead). */
+export function resolveSectionPreview(
+  section: string,
+  spec: DeliverableTemplateSpec | undefined,
+  values: Record<string, string>,
+  firm?: FirmLetterheadProfile,
+): { text: string; lockKind: SectionLockKind; lockLabel: string } {
+  const lockKind = lockKindForSection(spec, section);
+  const lockLabel = SECTION_LOCK_LABELS[lockKind];
+  const profile = firm ?? (typeof window !== "undefined" ? getFirmLetterhead() : undefined);
+  const mergeBase = {
+    ...letterheadMergeValues(profile),
+    ...values,
+  };
+
+  if (isLetterheadSection(section)) {
+    return {
+      text: formatFirmLetterhead(profile),
+      lockKind: "firm_editable",
+      lockLabel: SECTION_LOCK_LABELS.firm_editable,
+    };
+  }
+
+  if (isCertificateSection(section)) {
+    const cert =
+      profile?.certificateOfService?.trim() ||
+      spec?.boilerplatePreviews[section] ||
+      spec?.boilerplatePreviews["Certificate of service"] ||
+      "";
+    return {
+      text: fillMergeFields(cert, mergeBase),
+      lockKind: "firm_editable",
+      lockLabel: SECTION_LOCK_LABELS.firm_editable,
+    };
+  }
+
+  const raw = spec?.boilerplatePreviews[section] ?? "";
+  return {
+    text: fillMergeFields(raw, mergeBase),
+    lockKind,
+    lockLabel,
+  };
+}
+
+/** Render filled template as structured note with deliverable-specific header (document assembly). */
 export function renderFilledTemplate(
   map: TemplateFieldMap,
   values: Record<string, string>,
+  options?: { firm?: FirmLetterheadProfile },
 ): string {
   const spec = resolveSpec(map);
+  const firm = options?.firm ?? (typeof window !== "undefined" ? getFirmLetterhead() : undefined);
   const lines: string[] = [];
 
   const headerLines = formatMemoHeader(spec, values);
@@ -381,9 +491,15 @@ export function renderFilledTemplate(
   }
 
   for (const section of map.boilerplateSections) {
-    const preview = spec?.boilerplatePreviews[section];
-    lines.push(`[Locked - ${section}]`);
-    if (preview) lines.push(preview);
+    const resolved = resolveSectionPreview(section, spec, values, firm);
+    const tag =
+      resolved.lockKind === "firm_editable"
+        ? `[Firm profile — ${section}]`
+        : resolved.lockKind === "skill_preserve"
+          ? `[Preserve — ${section}]`
+          : `[Built-in structure — ${section}]`;
+    lines.push(tag);
+    if (resolved.text) lines.push(resolved.text);
     lines.push("");
   }
 
@@ -404,4 +520,25 @@ export function renderFilledTemplate(
 
 export function sampleAssetPathForMap(map: TemplateFieldMap): string | undefined {
   return map.sampleAssetPath ?? resolveSpec(map)?.sampleAssetPath;
+}
+
+/** Count of structure sections that are firm-editable vs built-in (for catalog copy). */
+export function structureSectionCounts(map: TemplateFieldMap): {
+  firmEditable: number;
+  builtIn: number;
+  preserve: number;
+} {
+  const spec = resolveSpec(map);
+  let firmEditable = 0;
+  let builtIn = 0;
+  let preserve = 0;
+  for (const section of map.boilerplateSections) {
+    const kind = isLetterheadSection(section) || isCertificateSection(section)
+      ? "firm_editable"
+      : lockKindForSection(spec, section);
+    if (kind === "firm_editable") firmEditable += 1;
+    else if (kind === "skill_preserve") preserve += 1;
+    else builtIn += 1;
+  }
+  return { firmEditable, builtIn, preserve };
 }

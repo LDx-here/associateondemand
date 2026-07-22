@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { SessionAccount } from "@/components/SessionAccount";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
+import { FirmLetterheadSettings } from "@/components/FirmLetterheadSettings";
 import { PiiTierComplianceSection } from "@/components/PiiTierComplianceSection";
 import { listPeopleFromAirtable } from "@/lib/airtable/queries";
 import { isDemoMode } from "@/lib/data-store";
@@ -81,6 +82,15 @@ export default async function SettingsPage() {
           </Row>
         )}
       </SettingsSection>
+
+      <section id="firm-profile" className="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <header className="border-b border-slate-200 px-4 py-3">
+          <h2 className="font-medium text-slate-900">Firm profile — letterhead &amp; certificate of service</h2>
+        </header>
+        <div className="px-4 py-4">
+          <FirmLetterheadSettings />
+        </div>
+      </section>
 
       <SettingsSection title="Data connection">
         <Row label="Airtable">

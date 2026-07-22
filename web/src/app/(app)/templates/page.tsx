@@ -1,4 +1,4 @@
-import { FlaskConical } from "lucide-react";
+import { FlaskConical, Info } from "lucide-react";
 import Link from "next/link";
 
 import { DeliverableTemplateCatalog } from "@/components/DeliverableTemplateCatalog";
@@ -29,6 +29,12 @@ export default function TemplateCatalogPage() {
               Set up Firm Memory →
             </Link>
             <Link
+              href="/settings#firm-profile"
+              className="text-xs font-medium text-slate-700 underline-offset-2 hover:underline"
+            >
+              Firm letterhead →
+            </Link>
+            <Link
               href="/knowledge-map#firm-knowledge"
               className="text-xs font-medium text-sky-800 underline-offset-2 hover:underline"
             >
@@ -40,6 +46,43 @@ export default function TemplateCatalogPage() {
           New assignment
         </Link>
       </header>
+
+      <section
+        id="how-templates-work"
+        className="rounded-lg border border-sky-200 bg-sky-50/60 p-4 text-sm text-sky-950"
+      >
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-sky-800">
+          <Info className="h-3.5 w-3.5" aria-hidden />
+          How templates work
+        </div>
+        <p className="mt-2 text-sky-950/90">
+          Like <strong>TXDocs / HotDocs</strong> document assembly and <strong>eImmigration</strong> form
+          population — not a separate invented HTML form:
+        </p>
+        <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-sky-950/90">
+          <li>
+            Upload your firm&apos;s master DOCX/PDF per SKU (<strong>Replace template</strong>) — that becomes
+            the structure.
+          </li>
+          <li>
+            System detects outline / CREAC sections and merge fields such as{" "}
+            <code className="rounded bg-white/80 px-1 text-xs">{"{{qualifying_relative}}"}</code>,{" "}
+            <code className="rounded bg-white/80 px-1 text-xs">{"{{hardship_facts}}"}</code>.
+          </li>
+          <li>
+            Matter facts +{" "}
+            <Link href="/settings#firm-profile" className="font-medium underline underline-offset-2">
+              Settings → Firm profile
+            </Link>{" "}
+            (letterhead, certificate of service) fill those fields → draft in your format.
+          </li>
+        </ol>
+        <p className="mt-2 text-xs text-sky-900/80">
+          Until you upload a firm file, you see the <em>default system outline</em> — clearly labeled, not
+          presented as your firm template. Letterhead is empty until you set it in Settings (never fake
+          invented addresses).
+        </p>
+      </section>
 
       <FirmMemorySetup />
 

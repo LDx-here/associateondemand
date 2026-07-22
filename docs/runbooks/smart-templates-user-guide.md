@@ -2,16 +2,33 @@
 
 Quick reference for attorneys using **Smart Templates** and **Firm Memory** on `/templates`.
 
+## How templates work (eImmigration / TXDocs model)
+
+1. Upload your firm’s **master DOCX/PDF** per SKU (**Replace template**) — that is the template.
+2. System detects structure (CREAC / headings) and **merge fields** like `{{qualifying_relative}}`, `{{hardship_facts}}`.
+3. Matter facts + **Settings → Firm profile** (letterhead, certificate of service) fill those fields → draft in your format.
+
+Until you upload a firm file, you see a clearly labeled **default system outline** — not presented as your firm template.
+
 ## Smart Templates (interactive)
 
-1. Open **Templates** → **Smart templates** section.
+1. Open **Templates** → **Smart templates** section (or read **How templates work** at the top).
 2. Click **Configure & preview** on any template card (e.g. Telephonic records request).
-3. **Fill violet-bordered fields** — these are real inputs prefilled when you apply on a matter.
-4. Click **locked sections** to expand read-only boilerplate previews.
-5. Click **View blank form** to open the sample form (HTML/PDF) in a new tab.
-6. Click **Generate** → review in modal → **Copy** or **Download DOCX**.
+3. **Fill violet merge fields** — client-specific data; letterhead/certificate come from Firm profile.
+4. Expand **structure sections** to see built-in outline vs firm-editable blocks (with why labels).
+5. **View default system blank** only when no firm file is on file (never mistaken for your DOCX).
+6. Click **Generate** → review assembled draft → **Copy** or **Download DOCX**.
 
 On a matter: **Overview** tab → **Smart templates** panel (same flow, prefilled from matter data).
+
+## Firm profile (letterhead & certificate)
+
+| Field | Where |
+|-------|--------|
+| Firm name, address, phone, email, bar number | **Settings → Firm profile** |
+| Certificate of service text (`{{date}}`, `{{method}}`, `{{parties_served}}`) | Same page — editable firm template |
+
+Empty letterhead shows a placeholder pointing to Settings — **never invented fake addresses**.
 
 ## Firm Memory
 
@@ -21,11 +38,15 @@ On a matter: **Overview** tab → **Smart templates** panel (same flow, prefille
 | 2 — Case assessment template | Blank XLSX assessment workbook only | Optional — if separate from your motion/brief samples |
 | 3 — Style preferences | Tone, citation format, memo header | Saves to Strategy Patterns — **applied to all agent drafting** |
 
-Upload your firm's **actual telephonic request PDF** in Step 1 (document type: **Form / request sheet**) to replace the built-in HTML placeholder.
+Upload your firm’s **actual telephonic request PDF/DOCX** via **Replace template** on the hearing-packet card to replace the built-in HTML placeholder.
 
 ## Deliverable structure
 
-Each catalog card shows **Includes:** required sections (caption, memo header, certificate of service, etc.). Template-tier SKUs with interactive maps link to **Configure & preview**.
+Each catalog card shows **Includes:** required sections. Structure sections are labeled:
+
+- **Built-in structure** — default outline; replace via firm DOCX
+- **Firm profile** — letterhead / certificate; edit in Settings
+- **Preserve** — Rule/Explanation / statutory wording from firm template or SKILL
 
 ## Export format
 

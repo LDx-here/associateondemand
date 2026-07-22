@@ -418,6 +418,7 @@ function PreviewModal({
   const samplePath = item.defaultSource.sampleAssetPath;
   const ocrText = (item.meta?.textPreview || "").trim();
   const hasOcr = Boolean(ocrText);
+  const hasFirmFile = Boolean(docId || item.meta?.source === "firm_uploaded" || item.document);
   const ocrDisplay =
     ocrText ||
     item.defaultSource.defaultPreviewText ||
@@ -443,6 +444,7 @@ function PreviewModal({
     return [];
   }, [item.deliverableId, item.meta?.sections, ocrText]);
 
+  // Firm PDF → preview URL. Never fall back to unrelated default HTML when a firm file exists.
   const fileUrl =
     docId && isPdf
       ? documentFilePreviewUrl(
@@ -451,7 +453,7 @@ function PreviewModal({
           title,
           item.meta?.postgresDocumentId,
         )
-      : samplePath && samplePath.endsWith(".html")
+      : !hasFirmFile && samplePath && samplePath.endsWith(".html")
         ? samplePath
         : null;
 
@@ -548,8 +550,9 @@ function PreviewModal({
               </div>
             ) : (
               <p className="text-xs text-amber-900">
-                No PDF or HTML sample on file for this SKU yet. Upload a PDF/DOCX with Replace template,
-                then open Structure for the outline preview.
+                {hasFirmFile
+                  ? "Firm file is on file — use the Structure or Extracted text tab (this is your template, not the default system blank)."
+                  : "No PDF or HTML sample on file for this SKU yet. Upload a PDF/DOCX with Replace template, then open Structure for the outline preview."}
               </p>
             )
           ) : null}
@@ -620,8 +623,18 @@ function StructureTab({
       ) : null}
 
       {!hasFirmText && isAos ? (
-        <p className="text-xs text-slate-600">
-          Showing default CREAC outline until a firm DOCX/PDF is uploaded.
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+          <strong>Default system outline</strong> — upload firm DOCX to replace. Merge fields like{" "}
+          <code className="rounded bg-white/80 px-1">{"{{qualifying_relative}}"}</code> /{" "}
+          <code className="rounded bg-white/80 px-1">{"{{hardship_facts}}"}</code> fill Analysis from matter
+          facts.
+        </p>
+      ) : null}
+
+      {!hasFirmText && !isAos ? (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+          <strong>Default system outline</strong> — not your firm template. Use Replace template to upload
+          master DOCX (TXDocs-style assembly).
         </p>
       ) : null}
 
