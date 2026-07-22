@@ -134,6 +134,27 @@ export function buildDraftQcChecklist(result: AgentCommandResult): DraftQcItem[]
     });
   }
 
+  const firmApplied = result.firmMemoryApplied ?? result.draftQc?.firmMemoryApplied;
+  if (typeof firmApplied === "boolean") {
+    items.push({
+      id: "firm-memory",
+      label: "Firm Memory applied to this draft",
+      status: firmApplied ? "pass" : "warn",
+      detail: firmApplied
+        ? "Tone/style preferences were injected"
+        : "Set tone/samples at /templates#firm-memory for firmer voice match",
+    });
+  }
+
+  if (result.draftQc?.matterFactsPresent === false) {
+    items.push({
+      id: "matter-facts",
+      label: "Matter facts in context",
+      status: "warn",
+      detail: "Little structured assessment/summary on the matter — expect more placeholders",
+    });
+  }
+
   items.push({
     id: "attorney-judgment",
     label: "Attorney judgment (legal strategy, posture, client advice)",
