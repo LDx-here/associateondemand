@@ -42,6 +42,32 @@ def test_docx_text_extraction() -> None:
         assert "245(a)" in result.text
 
 
+def test_docx_heading_styles_creac_structure() -> None:
+    from docx import Document
+
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "creac.docx"
+        doc = Document()
+        doc.add_heading("CONCLUSION", level=1)
+        doc.add_paragraph("Grant relief.")
+        doc.add_heading("RULE", level=1)
+        doc.add_paragraph("INA section 245(a) controls.")
+        doc.add_heading("ANALYSIS", level=1)
+        doc.add_paragraph("Hardship to USC spouse is extreme.")
+        doc.save(path)
+
+        result = run_ocr_pipeline(path)
+        assert result.processing_status == "processed"
+        assert "## CONCLUSION" in result.text
+        assert "## RULE" in result.text
+        assert result.metadata.get("sections")
+        roles = [s["role"] for s in result.metadata["sections"]]
+        assert "rule" in roles
+        assert "analysis" in roles
+        assert result.metadata.get("html_preview")
+        assert "<h" in result.metadata["html_preview"]
+
+
 def test_legacy_doc_rejected_clearly() -> None:
     with tempfile.NamedTemporaryFile("wb", suffix=".doc", delete=False) as fh:
         fh.write(b"\xd0\xcf\x11\xe0 binary ole doc stub")

@@ -91,6 +91,14 @@ export type UploadResult = {
   enrichment_summary?: string;
   obsidian_path?: string;
   text_preview?: string;
+  sections?: Array<{
+    id: string;
+    label: string;
+    role: string;
+    contentExcerpt: string;
+    order: number;
+  }>;
+  html_preview?: string;
   error?: string;
   ocr_error?: string;
   ok?: boolean;

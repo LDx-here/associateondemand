@@ -82,34 +82,106 @@ def _ocr_image(path: Path) -> tuple[str, float]:
         return "", 0.0
 
 
-def _extract_docx_text(path: Path) -> tuple[str, str | None]:
-    """Extract readable text from a .docx (OOXML). Returns (text, error)."""
+def _docx_style_is_heading(style_name: str | None) -> bool:
+    name = (style_name or "").strip().lower()
+    if not name:
+        return False
+    return name.startswith("heading") or name in {"title", "subtitle"}
+
+
+def _extract_docx_rich(path: Path) -> tuple[str, str, str | None]:
+    """Extract text + simple HTML from .docx. Returns (text, html, error).
+
+    Heading styles become markdown ``##`` lines so structure parsers can detect CREAC/outline.
+    """
 
     try:
         from docx import Document  # type: ignore[import-not-found]
+        from docx.oxml.ns import qn  # type: ignore[import-not-found]
     except ImportError:
-        return "", "python-docx is not installed on the API server"
+        return "", "", "python-docx is not installed on the API server"
 
     try:
         doc = Document(str(path))
-        parts: list[str] = []
+        text_parts: list[str] = []
+        html_parts: list[str] = [
+            "<article class='aod-docx-preview' "
+            "style='font-family:Georgia,serif;line-height:1.45;padding:1rem;color:#0f172a'>"
+        ]
+
         for paragraph in doc.paragraphs:
             text = (paragraph.text or "").strip()
-            if text:
-                parts.append(text)
+            if not text:
+                continue
+            style_name = ""
+            try:
+                style_name = paragraph.style.name if paragraph.style else ""
+            except Exception:
+                style_name = ""
+            is_heading = _docx_style_is_heading(style_name)
+            # Outline level from Word (0–8) also marks headings
+            if not is_heading:
+                try:
+                    pPr = paragraph._p.get_or_add_pPr()  # noqa: SLF001
+                    outline = pPr.find(qn("w:outlineLvl"))
+                    if outline is not None:
+                        is_heading = True
+                except Exception:
+                    pass
+
+            if is_heading:
+                text_parts.append(f"## {text}")
+                level = 2
+                m = re.search(r"heading\s*(\d)", style_name or "", re.I)
+                if m:
+                    level = min(max(int(m.group(1)), 1), 3)
+                html_parts.append(f"<h{level}>{_escape_html(text)}</h{level}>")
+            else:
+                text_parts.append(text)
+                html_parts.append(f"<p>{_escape_html(text)}</p>")
+
         for table in doc.tables:
+            rows_html: list[str] = []
             for row in table.rows:
                 cells = [(cell.text or "").strip() for cell in row.cells]
                 cells = [c for c in cells if c]
-                if cells:
-                    parts.append(" | ".join(cells))
-        combined = "\n\n".join(parts).strip()
+                if not cells:
+                    continue
+                text_parts.append(" | ".join(cells))
+                tds = "".join(f"<td>{_escape_html(c)}</td>" for c in cells)
+                rows_html.append(f"<tr>{tds}</tr>")
+            if rows_html:
+                html_parts.append(
+                    "<table style='border-collapse:collapse;width:100%;margin:0.75rem 0' border='1'>"
+                    + "".join(rows_html)
+                    + "</table>"
+                )
+
+        html_parts.append("</article>")
+        combined = "\n\n".join(text_parts).strip()
+        html = "\n".join(html_parts)
         if not combined:
-            return "", "DOCX opened but contained no extractable text"
-        return combined, None
+            return "", "", "DOCX opened but contained no extractable text"
+        return combined, html, None
     except Exception as exc:
         LOGGER.warning("DOCX text extraction failed for %s: %s", path.name, exc)
-        return "", f"Could not read DOCX: {exc}"
+        return "", "", f"Could not read DOCX: {exc}"
+
+
+def _escape_html(text: str) -> str:
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def _extract_docx_text(path: Path) -> tuple[str, str | None]:
+    """Extract readable text from a .docx (OOXML). Returns (text, error)."""
+
+    text, _html, err = _extract_docx_rich(path)
+    return text, err
 
 
 def run_ocr_pipeline(stored_path: Path | str) -> OcrResult:
@@ -161,15 +233,26 @@ def run_ocr_pipeline(stored_path: Path | str) -> OcrResult:
             LOGGER.warning("PDF OCR fallback failed: %s", exc)
 
     if suffix == ".docx":
-        text, err = _extract_docx_text(path)
+        text, html, err = _extract_docx_rich(path)
         if text.strip():
+            structure_meta: dict[str, Any] = {}
+            try:
+                from app.services.template_structure import parse_template_structure
+
+                sections = parse_template_structure(text, prefer_creac=True)
+                if sections:
+                    structure_meta["sections"] = sections
+            except Exception as exc:
+                LOGGER.debug("template structure parse skipped: %s", exc)
+            if html.strip():
+                structure_meta["html_preview"] = html[:120_000]
             return OcrResult(
                 text=text,
                 method="docx_text",
                 confidence=0.95,
                 processing_status="processed",
                 page_count=1,
-                metadata=meta,
+                metadata={**meta, **structure_meta},
             )
         return OcrResult(
             text="",

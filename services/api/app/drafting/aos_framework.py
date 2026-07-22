@@ -2,13 +2,27 @@
 
 from __future__ import annotations
 
-AOS_BRIEF_SECTIONS = """
-Required AOS Discretionary Brief structure (PM-602-0199 / 1 USCIS-PM E.8):
+AOS_CREAC_STRUCTURE = """
+Required AOS Discretionary Brief structure (CREAC — firm preference):
 
-I. Introduction and Purpose
+1. Conclusion (opening) — state the requested relief (grant AOS / favorable discretion).
+2. Rule — PRESERVE the firm template’s statement of law (how the rule is framed).
+3. Explanation — PRESERVE or lightly adapt the template’s explanation of that rule.
+4. Analysis — map NEW matter facts onto the Rule (hardship, equities, qualifying relative,
+   adverse factors) the same way the template’s sample facts corresponded to the Rule.
+5. Conclusion (closing) — restate relief guided by the Analysis outcome.
+
+Do not rewrite Rule/Explanation prose from the firm template unless attorney tweaks say so.
+Use bracketed [FACT NEEDED] placeholders for missing client facts.
+"""
+
+AOS_BRIEF_SECTIONS = """
+Also satisfy PM-602-0199 / 1 USCIS-PM E.8 substance within the CREAC shell:
+
+I. Introduction and Purpose (may fold into opening Conclusion / Rule)
    - Frame as I-485 discretionary memorandum; cite PM-602-0199 and 1 USCIS-PM E.8.
 
-II. Legal Standard
+II. Legal Standard (= Rule + Explanation)
    A. Statutory framework (INA §245(a); Patel v. Garland)
    B. Totality-of-the-circumstances / administrative grace (Matter of Patel, Marin, Arai)
    C. Why AOS rather than consular processing (changed circumstances, family unity, CP impracticality)
@@ -16,20 +30,19 @@ II. Legal Standard
 III. Statement of Statutory Eligibility
    - Inspection/admission; visa availability; admissibility/waiver status.
 
-IV. Argument — Totality of the Circumstances
+IV. Argument — Totality of the Circumstances (= Analysis)
    A. Positive equities (family ties, hardship, residence, community, employment, GMC, rehabilitation)
    B. Adverse factors (address candidly; rebut with Marin/Mendez-Morales balancing)
    C. No overwhelmingly negative factors (PM-602-0188 anti-American/terrorism factors absent)
 
-V. Conclusion
+V. Conclusion (closing)
    - Request favorable exercise of discretion; preponderance standard.
 
-Use bracketed placeholders [FACT NEEDED] for missing client facts.
 Never invent citations — use only authorities from matter context or mark [CITE NEEDED].
 """
 
 KEY_LEGAL_PROPOSITIONS = """
-Citation-ready legal propositions (use verbatim in Legal Standard section where applicable):
+Citation-ready legal propositions (use verbatim in Legal Standard / Rule section where applicable):
 
 1. INA §245(a): adjustment "may be adjusted ... in his discretion" when inspected/admitted,
    eligible for visa, admissible, and visa immediately available.
@@ -51,16 +64,15 @@ Citation-ready legal propositions (use verbatim in Legal Standard section where 
 """
 
 ELEMENT_FRAMEWORK_NOTE = """
-Universal factor framework for each equity category:
+Universal factor framework for each equity category (inside Analysis):
 Equity → Authority → Legal Principle → Elements → Facts → Evidence →
 Government Argument → Rebuttal → Weight → Draft paragraph.
-Organize Section IV arguments using this structure.
 """
 
 CASE_THEME_PROMPT = """
-Before drafting Section IV, state a one-sentence case theme (persuasive, not legal jargon).
+Before drafting Analysis, state a one-sentence case theme (persuasive, not legal jargon).
 Example: "A devoted caregiver whose continued presence is essential to her U.S. citizen family."
-Thread the theme through the argument and conclusion.
+Thread the theme through Analysis and both Conclusions.
 """
 
 CITATION_VERIFICATION_RULES = """
@@ -74,6 +86,7 @@ After completing the brief:
 def aos_drafting_context() -> str:
     return "\n\n".join(
         [
+            AOS_CREAC_STRUCTURE.strip(),
             AOS_BRIEF_SECTIONS.strip(),
             KEY_LEGAL_PROPOSITIONS.strip(),
             ELEMENT_FRAMEWORK_NOTE.strip(),

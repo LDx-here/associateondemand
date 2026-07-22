@@ -245,6 +245,17 @@ export function PracticeAreaFactGuide({
         <CompletenessBar {...completeness} />
       </div>
 
+      {activeDeliverableId === "aos-discretionary-brief" ? (
+        <div className="rounded-md border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs text-indigo-950">
+          <p className="font-medium">CREAC map</p>
+          <p className="mt-0.5 text-indigo-900/90">
+            Firm template supplies <strong>Rule</strong> and <strong>Explanation</strong>. These facts feed{" "}
+            <strong>Analysis</strong> (and conclusion guidance). See Templates → View preview → Structure for the
+            outline.
+          </p>
+        </div>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2">
         {defs.map((def) => (
           <label

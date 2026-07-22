@@ -1,3 +1,5 @@
+### [2026-07-22] CHECKPOINT: pass 26 CREAC template structure — DOCX Structure tab + section parser, meta.sections, drafting Rule preserve + FACTS FOR ANALYSIS; pytest 77; next build; Fly + Vercel prod
+
 ### [2026-07-21] CHECKPOINT: pass 25 topic-aware immigration knowledge — select_immigration_knowledge_files by case type/SKU/keywords; core AOS/waiver/asylum sets; pytest 71; Fly API redeploy
 
 ### [2026-07-21] CHECKPOINT: pass 24 knowledge map firm outlines — extend /knowledge-map with Firm knowledge tab (brain MD → committed JSON); sync script; Templates link; next build; Vercel prod

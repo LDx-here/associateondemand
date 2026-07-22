@@ -21,6 +21,14 @@ export async function POST(req: Request) {
     fileType?: string;
     tweakNotes?: string;
     source?: string;
+    sections?: Array<{
+      id: string;
+      label: string;
+      role: string;
+      contentExcerpt: string;
+      order: number;
+    }>;
+    htmlPreview?: string;
   };
   try {
     body = await req.json();
@@ -44,6 +52,8 @@ export async function POST(req: Request) {
       fileType: body.fileType,
       tweakNotes: body.tweakNotes,
       source: body.source ?? "firm_uploaded",
+      sections: body.sections,
+      htmlPreview: body.htmlPreview,
     });
     return NextResponse.json({ ok: true, meta });
   } catch (err) {

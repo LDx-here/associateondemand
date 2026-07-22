@@ -197,6 +197,9 @@ def process_uploaded_document(
             note_type="Assessment Document",
         )
 
+    # Longer preview for firm deliverable templates (structure parsing needs more than 500 chars).
+    is_deliverable_tmpl = str(document_category or "").startswith("deliverable_template:")
+    preview_limit = 12_000 if is_deliverable_tmpl else 500
     result: dict[str, Any] = {
         "document_id": doc_id,
         "external_id": external_id,
@@ -213,13 +216,24 @@ def process_uploaded_document(
         "enrichment_status": enrichment_result.get("enrichmentStatus"),
         "enrichment_warning": enrichment_result.get("enrichmentWarning"),
         "enrichment_summary": enrichment_result.get("enrichmentSummary"),
-        "text_preview": ocr_text[:500],
+        "text_preview": ocr_text[:preview_limit] if ocr_text else "",
         "obsidian_path": str(obsidian),
         "airtable_document_id": (airtable_doc or {}).get("id"),
         "metadata": ocr.metadata,
         "extraction_context_applied": bool(ctx),
     }
+    if isinstance(ocr.metadata, dict):
+        if ocr.metadata.get("sections"):
+            result["sections"] = ocr.metadata["sections"]
+        if ocr.metadata.get("html_preview"):
+            result["html_preview"] = ocr.metadata["html_preview"]
     if ocr_failure_reason:
         result["error"] = ocr_failure_reason
         result["ocr_error"] = ocr_failure_reason
+    elif not (ocr_text or "").strip():
+        result["error"] = (
+            f"No extractable text from {filename}. "
+            "Re-save as .docx (not .doc) or upload a PDF with a text layer."
+        )
+        result["ocr_error"] = result["error"]
     return result

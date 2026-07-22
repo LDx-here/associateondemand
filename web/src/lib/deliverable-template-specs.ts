@@ -61,21 +61,23 @@ export const DELIVERABLE_TEMPLATE_SPECS: DeliverableTemplateSpec[] = [
     exportFormat: "brief",
     templateFieldMapId: "aos-discretionary-brief",
     requiredSections: [
-      "Caption block",
-      "Table of contents",
-      "Introduction",
-      "Discretionary factors (PM-602-0199)",
-      "Conclusion",
-      "Certificate of service",
+      "Conclusion (opening)",
+      "Rule",
+      "Explanation",
+      "Analysis",
+      "Conclusion (closing)",
     ],
     boilerplatePreviews: {
-      "Caption block": "IN THE MATTER OF\n[Client Name], Respondent\nA-Number: [#########]",
-      Introduction:
-        "Respondent respectfully submits this memorandum in support of adjustment of status under INA § 245(a).",
-      "Discretionary factors (PM-602-0199)":
-        "USCIS Policy Memorandum PM-602-0199 (May 21, 2026) — positive and negative discretionary factors.",
-      Conclusion: "For the foregoing reasons, Respondent respectfully requests approval of the I-485 application.",
-      "Certificate of service": "I hereby certify that a true and correct copy was served on [date].",
+      "Conclusion (opening)":
+        "For the reasons below, Respondent respectfully requests that USCIS grant adjustment of status as a matter of discretion.",
+      Rule:
+        "[PRESERVE from firm template] INA §245(a) / PM-602-0199 / Matter of Marin — totality of the circumstances.",
+      Explanation:
+        "[PRESERVE from firm template] Meeting statutory eligibility alone does not entitle the applicant to adjustment; USCIS weighs equities under administrative grace.",
+      Analysis:
+        "[FILL with matter facts] Qualifying relative, hardship, positive equities, and response to adverse factors mapped to the Rule.",
+      "Conclusion (closing)":
+        "For the foregoing reasons, Respondent respectfully requests approval of the I-485 application.",
     },
     memoHeader: {
       title: "MEMORANDUM IN SUPPORT OF ADJUSTMENT OF STATUS",

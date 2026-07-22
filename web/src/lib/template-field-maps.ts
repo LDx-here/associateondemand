@@ -180,12 +180,11 @@ export const AOS_BRIEF_FIELD_MAP: TemplateFieldMap = {
   deliverableId: "aos-discretionary-brief",
   practiceArea: "immigration",
   boilerplateSections: [
-    "Caption block",
-    "Table of contents",
-    "Introduction",
-    "Discretionary factors (PM-602-0199)",
-    "Conclusion",
-    "Certificate of service",
+    "Conclusion (opening)",
+    "Rule (preserve from firm template)",
+    "Explanation (preserve / light tweak)",
+    "Analysis (matter facts)",
+    "Conclusion (closing)",
   ],
   editableFields: [
     {

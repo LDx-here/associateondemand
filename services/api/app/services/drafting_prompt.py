@@ -263,8 +263,44 @@ def fetch_deliverable_template_excerpt(
         lines.append(f"- File: {filename}")
     if tweaks := (best.get("tweakNotes") or "").strip():
         lines.append(f"- Attorney tweaks:\n{tweaks[:1500]}")
-    if excerpt := (best.get("textPreview") or "").strip():
+
+    # Prefer stored sections; else parse textPreview into CREAC/outline.
+    sections = best.get("sections") if isinstance(best.get("sections"), list) else None
+    excerpt = (best.get("textPreview") or "").strip()
+    if not sections and excerpt:
+        try:
+            from app.services.template_structure import parse_template_structure
+
+            sections = parse_template_structure(excerpt, deliverable_id=deliverable_id)
+        except Exception:
+            sections = None
+
+    if sections:
+        try:
+            from app.services.template_structure import format_structure_for_prompt
+
+            structure_block = format_structure_for_prompt(sections, max_chars=max_chars + 500)
+            if structure_block:
+                lines.append(structure_block)
+        except Exception:
+            pass
+    elif excerpt:
         lines.append(f"- Template excerpt:\n{excerpt[:max_chars]}")
+
+    # Explicit RULE preservation when CREAC rule section exists
+    if sections:
+        rule_bits = [
+            str(s.get("contentExcerpt") or "").strip()
+            for s in sections
+            if isinstance(s, dict) and str(s.get("role") or "") in {"rule", "explanation"}
+            and str(s.get("contentExcerpt") or "").strip()
+        ]
+        if rule_bits:
+            lines.append(
+                "## PRESERVE RULE / EXPLANATION (do not rewrite the law statement)\n"
+                + "\n\n".join(rule_bits)[:max_chars]
+            )
+
     if len(lines) <= 3:
         return None
     return "\n".join(lines)
@@ -290,6 +326,24 @@ def build_drafting_context_block(
     drafting_block = format_drafting_facts(drafting)
     if drafting_block:
         parts.append(drafting_block)
+
+    # CREAC fact slotting for AOS (and similar) — Analysis vs Conclusion guidance
+    try:
+        from app.services.template_structure import format_creac_facts_for_prompt
+
+        fields = None
+        if isinstance(drafting, dict):
+            maybe_fields = drafting.get("fields")
+            if isinstance(maybe_fields, dict):
+                fields = maybe_fields
+        creac_facts = format_creac_facts_for_prompt(fields)
+        if creac_facts and (
+            "aos" in (deliverable_hint or "").lower()
+            or (isinstance(drafting, dict) and "aos" in str(drafting.get("deliverableId") or "").lower())
+        ):
+            parts.append(creac_facts)
+    except Exception:
+        pass
 
     assessment_doc = fetch_latest_assessment_document(matter_code)
     assessment_doc_block = format_assessment_document(assessment_doc)

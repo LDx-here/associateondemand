@@ -1,9 +1,5 @@
 "use client";
 
-import { FileText, Pencil, Replace, Eye } from "lucide-react";
-import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-
 import {
   attorneyUploadApproved,
   uploadDocument,
@@ -12,9 +8,22 @@ import { useToast } from "@/components/Toast";
 import { FIRM_TEMPLATE_MATTER_ID } from "@/lib/assessment-documents";
 import type { DeliverableTemplateCatalogItem } from "@/lib/deliverable-template-sources";
 import { documentFilePreviewUrl } from "@/lib/document-display";
+import { fieldsForDeliverable } from "@/lib/practice-area-facts";
 import { getTemplateFieldMapByDeliverable } from "@/lib/template-field-maps";
+import {
+  AOS_FACT_CREAC_MAP,
+  CREAC_ROLE_LABELS,
+  DEFAULT_AOS_CREAC_SECTIONS,
+  parseTemplateStructure,
+  roleBadgeClass,
+  type CreacRole,
+  type TemplateSection,
+} from "@/lib/template-structure";
 import { btnPrimary, btnSecondary } from "@/lib/ui-classes";
 import { cn, formatDate } from "@/lib/utils";
+import { FileText, Pencil, Replace, Eye, ChevronDown, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type PreviewTab = "structure" | "file" | "ocr" | "tweaks";
 
@@ -83,6 +92,8 @@ export function DeliverableTemplateCatalog() {
           textPreview: data.text_preview,
           fileType: file.type || file.name.split(".").pop(),
           source: "firm_uploaded",
+          sections: data.sections,
+          htmlPreview: data.html_preview,
         }),
       });
       if (!resp.ok) {
@@ -90,7 +101,14 @@ export function DeliverableTemplateCatalog() {
         showToast(err.error ?? "Template save failed", "error");
         return;
       }
-      showToast(`Template replaced for ${deliverableId}.`, "success");
+      if (!data.text_preview?.trim()) {
+        showToast(
+          "Template file saved, but no text was extracted. Check Extracted text tab / re-upload DOCX or PDF.",
+          "error",
+        );
+      } else {
+        showToast(`Template replaced for ${deliverableId}. Structure detected automatically.`, "success");
+      }
       setReplaceId(null);
       await refresh();
     } catch (err) {
@@ -393,11 +411,37 @@ function PreviewModal({
   const title = item.meta?.filename ?? item.document?.title ?? item.name;
   const fileType = (item.meta?.fileType ?? item.document?.fileType ?? title).toLowerCase();
   const isPdf = fileType.includes("pdf") || title.toLowerCase().endsWith(".pdf");
+  const isDocx =
+    fileType.includes("word") ||
+    fileType.includes("docx") ||
+    title.toLowerCase().endsWith(".docx");
   const samplePath = item.defaultSource.sampleAssetPath;
-  const ocrText =
-    item.meta?.textPreview ||
+  const ocrText = (item.meta?.textPreview || "").trim();
+  const hasOcr = Boolean(ocrText);
+  const ocrDisplay =
+    ocrText ||
     item.defaultSource.defaultPreviewText ||
-    "No extracted text yet. Upload a PDF or DOCX to populate this tab.";
+    "No extracted text yet. Upload a PDF or DOCX — if extraction fails, you will see a clear error.";
+
+  const sections = useMemo((): TemplateSection[] => {
+    const stored = item.meta?.sections;
+    if (stored?.length) {
+      return stored.map((s, i) => ({
+        id: s.id || `sec-${i}`,
+        label: s.label,
+        role: (s.role as CreacRole) || "other",
+        contentExcerpt: s.contentExcerpt || "",
+        order: s.order ?? i,
+      }));
+    }
+    if (ocrText) {
+      return parseTemplateStructure(ocrText, { deliverableId: item.deliverableId });
+    }
+    if (item.deliverableId === "aos-discretionary-brief") {
+      return DEFAULT_AOS_CREAC_SECTIONS;
+    }
+    return [];
+  }, [item.deliverableId, item.meta?.sections, ocrText]);
 
   const fileUrl =
     docId && isPdf
@@ -410,6 +454,8 @@ function PreviewModal({
       : samplePath && samplePath.endsWith(".html")
         ? samplePath
         : null;
+
+  const htmlPreview = item.meta?.htmlPreview?.trim() || "";
 
   return (
     <div
@@ -437,7 +483,7 @@ function PreviewModal({
           {(
             [
               ["structure", "Structure"],
-              ["file", "PDF / sample"],
+              ["file", isDocx && !isPdf ? "DOCX preview" : "PDF / sample"],
               ["ocr", "Extracted text"],
               ["tweaks", "Notes"],
             ] as const
@@ -457,17 +503,11 @@ function PreviewModal({
         </div>
         <div className="overflow-auto p-4 text-sm text-slate-700">
           {tab === "structure" ? (
-            <div className="space-y-2">
-              <p className="text-xs text-slate-500">{item.defaultSource.detail}</p>
-              {item.defaultSource.skillDoc ? (
-                <p className="text-xs">
-                  SKILL: <code className="rounded bg-slate-100 px-1">{item.defaultSource.skillDoc}</code>
-                </p>
-              ) : null}
-              <pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs">
-                {item.defaultSource.defaultPreviewText || item.description}
-              </pre>
-            </div>
+            <StructureTab
+              item={item}
+              sections={sections}
+              hasFirmText={hasOcr || Boolean(item.meta?.source === "firm_uploaded")}
+            />
           ) : null}
           {tab === "file" ? (
             fileUrl ? (
@@ -476,22 +516,60 @@ function PreviewModal({
                 title={`Preview: ${item.name}`}
                 className="h-[min(480px,60vh)] w-full rounded-md border border-slate-200 bg-white"
               />
-            ) : docId && !isPdf ? (
-              <p className="text-xs text-slate-600">
-                Firm file <strong>{title}</strong> is not a PDF — use the Extracted text tab for the DOCX
-                OCR preview. Re-upload as PDF for an embedded viewer.
-              </p>
+            ) : htmlPreview ? (
+              <iframe
+                srcDoc={htmlPreview}
+                title={`DOCX preview: ${item.name}`}
+                className="h-[min(480px,60vh)] w-full rounded-md border border-slate-200 bg-white"
+                sandbox=""
+              />
+            ) : docId && isDocx ? (
+              <div className="space-y-2 text-xs text-slate-600">
+                <p>
+                  Firm file <strong>{title}</strong> is DOCX. Structure is auto-detected — use the{" "}
+                  <button
+                    type="button"
+                    className="font-medium text-slate-900 underline"
+                    onClick={() => onTabChange("structure")}
+                  >
+                    Structure
+                  </button>{" "}
+                  tab (primary) or{" "}
+                  <button
+                    type="button"
+                    className="font-medium text-slate-900 underline"
+                    onClick={() => onTabChange("ocr")}
+                  >
+                    Extracted text
+                  </button>
+                  . PDF conversion is not required on Vercel; optional HTML preview appears here when
+                  the Fly API returns rich DOCX HTML.
+                </p>
+              </div>
             ) : (
               <p className="text-xs text-amber-900">
-                No PDF or HTML sample on file for this SKU yet. Upload a PDF/DOCX with Replace template, or
-                open Extracted text for the built-in structure preview.
+                No PDF or HTML sample on file for this SKU yet. Upload a PDF/DOCX with Replace template,
+                then open Structure for the outline preview.
               </p>
             )
           ) : null}
           {tab === "ocr" ? (
-            <pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs">
-              {ocrText}
-            </pre>
+            hasOcr ? (
+              <pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs">
+                {ocrDisplay}
+              </pre>
+            ) : (
+              <div className="space-y-2">
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+                  No extracted text on file for this template. Re-upload a .docx (not legacy .doc) or a
+                  PDF with a text layer. Structure preview will still show the default CREAC outline for
+                  AOS briefs until extraction succeeds.
+                </p>
+                <pre className="max-h-[40vh] overflow-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-500">
+                  {ocrDisplay}
+                </pre>
+              </div>
+            )
           ) : null}
           {tab === "tweaks" ? (
             item.meta?.tweakNotes ? (
@@ -502,6 +580,127 @@ function PreviewModal({
           ) : null}
         </div>
       </div>
+    </div>
+  );
+}
+
+function StructureTab({
+  item,
+  sections,
+  hasFirmText,
+}: {
+  item: DeliverableTemplateCatalogItem;
+  sections: TemplateSection[];
+  hasFirmText: boolean;
+}) {
+  const [openId, setOpenId] = useState<string | null>(sections[0]?.id ?? null);
+  const isAos = item.deliverableId === "aos-discretionary-brief";
+  const factFields = isAos
+    ? fieldsForDeliverable("aos-discretionary-brief", "immigration")
+    : [];
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-slate-500">{item.defaultSource.detail}</p>
+      {item.defaultSource.skillDoc ? (
+        <p className="text-xs">
+          SKILL: <code className="rounded bg-slate-100 px-1">{item.defaultSource.skillDoc}</code>
+        </p>
+      ) : null}
+
+      {isAos ? (
+        <div className="rounded-md border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-950">
+          <p className="font-medium">CREAC brief structure</p>
+          <p className="mt-1 text-indigo-900/90">
+            Conclusion → Rule → Explanation → Analysis → Conclusion. Rule/Explanation stay from the firm
+            template; Analysis is filled from matter facts. Upload is auto-detected — no special
+            formatting required beyond normal headings or CREAC labels.
+          </p>
+        </div>
+      ) : null}
+
+      {!hasFirmText && isAos ? (
+        <p className="text-xs text-slate-600">
+          Showing default CREAC outline until a firm DOCX/PDF is uploaded.
+        </p>
+      ) : null}
+
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Outline ({sections.length} section{sections.length === 1 ? "" : "s"})
+        </p>
+        {sections.length === 0 ? (
+          <p className="text-xs text-slate-500">No sections detected yet.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {sections.map((sec) => {
+              const open = openId === sec.id;
+              return (
+                <li key={sec.id} className="rounded-md border border-slate-200 bg-white">
+                  <button
+                    type="button"
+                    className="flex w-full items-start gap-2 px-3 py-2 text-left"
+                    onClick={() => setOpenId(open ? null : sec.id)}
+                    aria-expanded={open}
+                  >
+                    {open ? (
+                      <ChevronDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+                    ) : (
+                      <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="text-sm font-medium text-slate-900">{sec.label}</span>
+                      <span
+                        className={cn(
+                          "ml-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset",
+                          roleBadgeClass(sec.role),
+                        )}
+                      >
+                        {CREAC_ROLE_LABELS[sec.role] ?? sec.role}
+                      </span>
+                    </span>
+                  </button>
+                  {open ? (
+                    <div className="border-t border-slate-100 px-3 py-2">
+                      <pre className="max-h-48 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-slate-700">
+                        {sec.contentExcerpt || "(no excerpt)"}
+                      </pre>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      {isAos ? (
+        <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50/80 p-3">
+          <p className="text-xs font-semibold text-slate-800">CREAC map — facts → Analysis</p>
+          <p className="text-xs text-slate-600">
+            Template <strong>Rule</strong> / <strong>Explanation</strong> text is preserved. These
+            drafting facts feed <strong>Analysis</strong> (and conclusion guidance):
+          </p>
+          <ul className="space-y-1 text-xs text-slate-700">
+            {factFields.map((f) => {
+              const slot = AOS_FACT_CREAC_MAP[f.id] ?? "analysis";
+              return (
+                <li key={f.id} className="flex flex-wrap items-baseline gap-2">
+                  <span className="font-medium">{f.label}</span>
+                  <span
+                    className={cn(
+                      "inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset",
+                      roleBadgeClass(slot),
+                    )}
+                  >
+                    → {CREAC_ROLE_LABELS[slot]}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

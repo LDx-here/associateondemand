@@ -40,7 +40,9 @@ def _draft_extra_rules(doc_type: str) -> str:
     ]
     if doc_type == "aos_discretionary_brief":
         rules.append(
-            "This is an AOS Discretionary Factors Memorandum (I-485). Follow PM-602-0199 framing."
+            "This is an AOS Discretionary Factors Memorandum (I-485). Follow CREAC "
+            "(Conclusion → Rule → Explanation → Analysis → Conclusion) and PM-602-0199 framing. "
+            "Preserve Rule/Explanation from the firm template; put matter facts in Analysis."
         )
         rules.append("Use bracketed [FACT NEEDED] placeholders — never invent client facts.")
         rules.append("Never fabricate case quotes or page pinpoints.")

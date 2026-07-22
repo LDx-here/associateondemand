@@ -34,8 +34,28 @@ def test_fetch_deliverable_template_excerpt_parses_note(monkeypatch) -> None:
         "version": 2,
         "title": "aos-sample.docx",
         "filename": "aos-sample.docx",
-        "textPreview": "IN THE MATTER OF\nRespondent respectfully submits…",
+        "textPreview": (
+            "CONCLUSION\n\nGrant AOS.\n\n"
+            "## RULE\n\nUnder INA § 245(a), adjustment is discretionary.\n\n"
+            "## ANALYSIS\n\nApply equities here.\n"
+        ),
         "tweakNotes": "Prefer shorter introduction.",
+        "sections": [
+            {
+                "id": "rule-1",
+                "label": "RULE",
+                "role": "rule",
+                "contentExcerpt": "Under INA § 245(a), adjustment is discretionary.",
+                "order": 1,
+            },
+            {
+                "id": "analysis-2",
+                "label": "ANALYSIS",
+                "role": "analysis",
+                "contentExcerpt": "Apply equities here.",
+                "order": 2,
+            },
+        ],
     }
 
     monkeypatch.setattr(
@@ -53,4 +73,5 @@ def test_fetch_deliverable_template_excerpt_parses_note(monkeypatch) -> None:
     assert "Firm deliverable template" in text
     assert "aos-sample.docx" in text
     assert "Prefer shorter introduction" in text
-    assert "IN THE MATTER OF" in text
+    assert "TEMPLATE STRUCTURE" in text or "PRESERVE RULE" in text
+    assert "245(a)" in text

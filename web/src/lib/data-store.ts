@@ -86,6 +86,7 @@ import {
   type DeliverableTemplateCatalogItem,
 } from "./deliverable-template-sources";
 import { DELIVERABLE_CATALOG } from "./deliverable-catalog";
+import { parseTemplateStructure } from "./template-structure";
 
 export type { DeliverableTemplateCatalogItem };
 import type {
@@ -320,7 +321,9 @@ export async function createLegalElement(
 
 export async function updateLegalElementRow(
   id: string,
-  patch: Partial<Pick<LegalElementRow, "assessment" | "keyGap" | "nextAction" | "supportingFacts">>,
+  patch: Partial<
+    Pick<LegalElementRow, "assessment" | "keyGap" | "nextAction" | "supportingFacts" | "supportingCases">
+  >,
 ): Promise<LegalElementRow | null> {
   if (isDemoMode()) {
     const { updateLegalElement } = await import("./demo-store-mutable");
@@ -1027,6 +1030,8 @@ export async function saveDeliverableTemplate(payload: {
   fileType?: string;
   tweakNotes?: string;
   source?: string;
+  sections?: DeliverableTemplateMetaPayload["sections"];
+  htmlPreview?: string;
 }): Promise<DeliverableTemplateMetaPayload> {
   const deliverableId = payload.deliverableId.trim();
   if (!deliverableId || !DELIVERABLE_CATALOG.some((d) => d.id === deliverableId)) {
@@ -1079,6 +1084,14 @@ export async function saveDeliverableTemplate(payload: {
     }
   }
 
+  const textPreview =
+    payload.textPreview?.slice(0, 12_000) ?? existingMeta?.textPreview;
+
+  let sections = payload.sections ?? existingMeta?.sections;
+  if ((!sections || !sections.length) && textPreview) {
+    sections = parseTemplateStructure(textPreview, { deliverableId });
+  }
+
   const meta: DeliverableTemplateMetaPayload = {
     v: 1,
     deliverableId,
@@ -1090,7 +1103,11 @@ export async function saveDeliverableTemplate(payload: {
     postgresDocumentId: payload.postgresDocumentId ?? existingMeta?.postgresDocumentId,
     filename: payload.title,
     fileType: payload.fileType ?? existingMeta?.fileType,
-    textPreview: payload.textPreview?.slice(0, 8000) ?? existingMeta?.textPreview,
+    textPreview,
+    sections: sections?.slice(0, 80),
+    htmlPreview:
+      payload.htmlPreview?.slice(0, 100_000) ??
+      (payload.textPreview ? undefined : existingMeta?.htmlPreview),
     tweakNotes: payload.tweakNotes?.slice(0, 4000) ?? existingMeta?.tweakNotes,
     uploadedAt: new Date().toISOString(),
   };

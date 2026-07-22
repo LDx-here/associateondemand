@@ -1,9 +1,11 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-21 (CDT) — Pass 25 topic-aware immigration knowledge  
+**Last updated:** 2026-07-22 (CDT) — Pass 26 CREAC template structure  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 26 (2026-07-22):** DOCX/template Structure tab — CREAC section parser (headings + labels); store `sections` on deliverable template meta; DOCX heading-aware extract + HTML preview; drafting injects TEMPLATE STRUCTURE + preserve Rule + FACTS FOR ANALYSIS; CREAC map on `/templates` preview + AOS fact guide. pytest 77; next build green.
 
 **Pass 25 (2026-07-21):** Topic-aware Firm Knowledge loader — `select_immigration_knowledge_files` scores by case type / deliverable SKU / facts keywords (core boosts for AOS, waiver, asylum, removal, criminal); skips meta files; ~4–6k / max 8. Wired via `format_matter_context` + drafting context. pytest 71; Fly API redeploy.
 
@@ -19,7 +21,7 @@
 
 **Pass 20 (2026-07-21):** External partner funnel `/partner/submit` + drafting prompt hardening.
 
-**Next (user choice):** Pilot AOS discretionary draft on prod — confirm Draft QC / prompts inject topic-relevant Firm Knowledge (hardship/waiver when facts mention them). Optionally browse `/knowledge-map#firm-knowledge`.
+**Next (user choice):** Re-upload `Sakkhi_AOS_Discretionary_Brief.docx` on `/templates` → confirm Structure tab CREAC sections; draft AOS brief on a matter and verify Rule preserved + facts in Analysis.
 
 ## Dual track
 

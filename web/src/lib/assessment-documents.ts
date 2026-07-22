@@ -22,6 +22,14 @@ export type ParsedDocumentCategory = {
 };
 
 /** JSON payload stored on FIRM-TEMPLATES notes (type Deliverable Template Meta). */
+export type DeliverableTemplateSection = {
+  id: string;
+  label: string;
+  role: string;
+  contentExcerpt: string;
+  order: number;
+};
+
 export type DeliverableTemplateMetaPayload = {
   v: 1;
   deliverableId: string;
@@ -34,6 +42,10 @@ export type DeliverableTemplateMetaPayload = {
   filename?: string;
   fileType?: string;
   textPreview?: string;
+  /** Parsed outline (CREAC / headings) from firm upload. */
+  sections?: DeliverableTemplateSection[];
+  /** Simple HTML preview for DOCX (no PDF conversion). */
+  htmlPreview?: string;
   tweakNotes?: string;
   uploadedAt?: string;
 };
