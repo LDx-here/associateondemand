@@ -22,6 +22,7 @@ COPY services/api/app ./app
 COPY services/api/alembic ./alembic
 COPY services/api/alembic.ini .
 COPY docs/constitution ./docs/constitution
+COPY brain/03_Firm_Knowledge ./brain/03_Firm_Knowledge
 COPY data/dev-seed.json ./data/dev-seed.json
 COPY data/templates ./data/templates
 
