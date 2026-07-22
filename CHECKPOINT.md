@@ -1,9 +1,11 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-22 (CDT) — Pass 29 templates browse → preview journey  
+**Last updated:** 2026-07-22 (CDT) — Pass 30 auto legal elements + Firm Memory home  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 30 (2026-07-22):** Legal Elements auto-seed core Firm Knowledge by matter type (no Load button / applied badge); optional elements via dropdown; case-type change merge prompt. Firm Memory moved to `/firm-memory` + Settings (out of Templates). USCIS form autofill noted as future. `test:firm-knowledge`; pytest 81; next build; Vercel prod (web only).
 
 **Pass 29 (2026-07-22):** Templates UX journey — architecture explainer moved to `/help#templates`; `/templates` browse by practice area + Cards/List; Open preview lands on Structure mapping (CREAC + feeds-from); Firm Memory collapsed. next build; smoke PASS.
 
@@ -27,7 +29,7 @@
 
 **Pass 20 (2026-07-21):** External partner funnel `/partner/submit` + drafting prompt hardening.
 
-**Next (user choice):** Templates → browse Immigration → Open preview on AOS → confirm Structure mapping first; Help → `#templates` for TXDocs copy. Settings → Firm profile letterhead. Then pilot AOS draft.
+**Next (user choice):** Open a family AOS matter → Legal elements should already show core topics; try Add optional element… for asylum. Firm Memory at `/firm-memory` or Settings. Letterhead still Settings → Firm profile. USCIS form autofill deferred.
 
 ## Dual track
 

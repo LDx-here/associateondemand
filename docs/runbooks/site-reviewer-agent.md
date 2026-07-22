@@ -23,7 +23,7 @@
 |------|----------------|
 | **Relief / capacity messaging** | Dashboard and nav sell capacity relief, not stress metrics (no prominent “Overdue tasks” for client firms). Copy says overflow counsel / capacity relief — not “associate marketplace.” |
 | **Navigation count** | Primary header: Dashboard, New assignment, Inbox, Matters, Templates, Settings. Secondary tools in **More** dropdown (includes `/help`). Mobile: hamburger menu — no persistent sidebar. |
-| **Firm Memory entry** | Clear path on `/templates#firm-memory`; dashboard CTA when profile incomplete. |
+| **Firm Memory entry** | Clear path on `/firm-memory`; dashboard CTA when profile incomplete. |
 | **No false Stripe** | Phase 0 billing copy only — quoted flat fee, invoice after delivery; no checkout UI. |
 | **Overflow counsel journey** | Single 4-step Getting Started: Firm Memory → Assignment → Assessment upload → Review. |
 | **Associate panel** | Context-aware on matter pages (matter name, deliverable, status); plain-English prompt. |

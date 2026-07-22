@@ -29,7 +29,7 @@ export function FirmMemoryPrompt({ compact = false }: { compact?: boolean }) {
 
   return (
     <Link
-      href="/templates#firm-memory"
+      href="/firm-memory"
       className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-950 ring-1 ring-amber-200 hover:bg-amber-100"
       title="Set up Firm Memory so overflow work matches your firm's style"
     >

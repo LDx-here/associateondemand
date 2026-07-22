@@ -137,56 +137,103 @@ function requiresSection(topic: KnowledgeTopic): string {
   return section?.bullets?.[0] ?? topic.notes ?? "";
 }
 
-function topicIdsForMatter(caseType: string, deliverableId?: string, extraQuery?: string): string[] {
+function toElement(id: string): FirmKnowledgeElement {
+  const topic = TOPIC_BY_ID.get(id)!;
+  return {
+    topicId: id,
+    name: topic.title || topic.topic,
+    cite: topic.cite,
+    description: requiresSection(topic),
+    neededFacts: factsThatProveIt(topic),
+    practiceAreas: topic.practiceAreas,
+    file: topic.file,
+  };
+}
+
+/**
+ * Core topic ids for a matter type (auto-seeded) vs optional add-ons
+ * (attorney picks via "Add optional element…").
+ */
+export function topicIdsForMatter(
+  caseType: string,
+  deliverableId?: string,
+  extraQuery?: string,
+): { core: string[]; optional: string[] } {
   const active = activeKnowledgeTopics(caseType, deliverableId, extraQuery);
-  const ordered: string[] = [];
+  const core: string[] = [];
+  const optional: string[] = [];
   const seen = new Set<string>();
 
-  function push(id: string) {
+  function pushCore(id: string) {
     if (seen.has(id) || !TOPIC_BY_ID.has(id)) return;
     seen.add(id);
-    ordered.push(id);
+    core.push(id);
+  }
+
+  function pushOptional(id: string) {
+    if (seen.has(id) || !TOPIC_BY_ID.has(id)) return;
+    seen.add(id);
+    optional.push(id);
   }
 
   for (const key of active) {
-    for (const id of CORE_BY_TOPIC[key] ?? []) push(id);
+    for (const id of CORE_BY_TOPIC[key] ?? []) pushCore(id);
   }
 
-  if (!ordered.length) {
-    for (const id of DEFAULT_IMMIGRATION_CORE) push(id);
+  if (!core.length) {
+    for (const id of DEFAULT_IMMIGRATION_CORE) pushCore(id);
   }
 
-  // Keyword boost: match topic id / practiceAreas / title against haystack.
+  // Cross-cutting optionals: inactive practice-area cores (e.g. asylum on an AOS matter).
+  const activeSet = new Set(active);
+  for (const [key, ids] of Object.entries(CORE_BY_TOPIC)) {
+    if (activeSet.has(key)) continue;
+    for (const id of ids) pushOptional(id);
+  }
+
+  // Keyword boost → optional (not auto-seeded) so attorney can add without loading everything.
   const h = haystack(caseType, deliverableId, extraQuery);
   for (const [id, topic] of TOPIC_BY_ID) {
     if (seen.has(id)) continue;
     const blob = `${id} ${topic.title} ${topic.practiceAreas} ${topic.notes}`.toLowerCase();
     const tokens = id.split("-").filter((t) => t.length >= 4);
-    if (tokens.some((t) => h.includes(t)) || (h.length > 8 && blob.split(/\s+/).some((w) => w.length >= 5 && h.includes(w)))) {
-      push(id);
+    if (
+      tokens.some((t) => h.includes(t)) ||
+      (h.length > 8 && blob.split(/\s+/).some((w) => w.length >= 5 && h.includes(w)))
+    ) {
+      pushOptional(id);
     }
   }
 
-  return ordered;
+  return { core, optional };
 }
 
+/** Core + optional (browse / backward-compatible full suggestion list). */
 export function firmKnowledgeElementsForMatter(
   caseType: string,
   deliverableId?: string,
   extraQuery?: string,
 ): FirmKnowledgeElement[] {
-  return topicIdsForMatter(caseType, deliverableId, extraQuery).map((id) => {
-    const topic = TOPIC_BY_ID.get(id)!;
-    return {
-      topicId: id,
-      name: topic.title || topic.topic,
-      cite: topic.cite,
-      description: requiresSection(topic),
-      neededFacts: factsThatProveIt(topic),
-      practiceAreas: topic.practiceAreas,
-      file: topic.file,
-    };
-  });
+  const { core, optional } = topicIdsForMatter(caseType, deliverableId, extraQuery);
+  return [...core, ...optional].map(toElement);
+}
+
+/** Auto-seeded elements for the matter type — never wipe attorney edits. */
+export function coreFirmKnowledgeElementsForMatter(
+  caseType: string,
+  deliverableId?: string,
+  extraQuery?: string,
+): FirmKnowledgeElement[] {
+  return topicIdsForMatter(caseType, deliverableId, extraQuery).core.map(toElement);
+}
+
+/** Optional elements for "Add optional element…" (not auto-loaded). */
+export function optionalFirmKnowledgeElementsForMatter(
+  caseType: string,
+  deliverableId?: string,
+  extraQuery?: string,
+): FirmKnowledgeElement[] {
+  return topicIdsForMatter(caseType, deliverableId, extraQuery).optional.map(toElement);
 }
 
 export function knowledgeTopicById(topicId: string): KnowledgeTopic | undefined {
@@ -195,7 +242,7 @@ export function knowledgeTopicById(topicId: string): KnowledgeTopic | undefined 
 
 /** Deep-link to knowledge map filtered/highlighted for this matter. */
 export function firmKnowledgeBrowseHref(caseType: string, deliverableId?: string): string {
-  const topics = firmKnowledgeElementsForMatter(caseType, deliverableId)
+  const topics = coreFirmKnowledgeElementsForMatter(caseType, deliverableId)
     .slice(0, 12)
     .map((e) => e.topicId);
   const params = new URLSearchParams();
@@ -282,16 +329,10 @@ export function formatMissingFactsSummary(statuses: NeededFactStatus[]): string 
   return `Still needed: ${missing.slice(0, 3).join("; ")}${missing.length > 3 ? "…" : ""}`;
 }
 
-/**
- * Merge mode: return knowledge elements not already on the matter
- * (by topic id in supportingCases or by element name).
- */
-export function missingFirmKnowledgeElements(
-  caseType: string,
+function filterMissing(
+  suggested: FirmKnowledgeElement[],
   existing: LegalElementRow[],
-  deliverableId?: string,
 ): FirmKnowledgeElement[] {
-  const suggested = firmKnowledgeElementsForMatter(caseType, deliverableId);
   const existingTopics = new Set(
     existing.map((e) => parseFirmKnowledgeTopicId(e.supportingCases)).filter(Boolean) as string[],
   );
@@ -302,4 +343,37 @@ export function missingFirmKnowledgeElements(
       !existingNames.has(el.name.toLowerCase()) &&
       !existingNames.has(el.topicId.toLowerCase()),
   );
+}
+
+/**
+ * Missing core elements for merge/re-seed when case type changes
+ * (by topic id in supportingCases or by element name).
+ */
+export function missingCoreFirmKnowledgeElements(
+  caseType: string,
+  existing: LegalElementRow[],
+  deliverableId?: string,
+): FirmKnowledgeElement[] {
+  return filterMissing(coreFirmKnowledgeElementsForMatter(caseType, deliverableId), existing);
+}
+
+/** Optional elements not yet on the matter (dropdown). */
+export function missingOptionalFirmKnowledgeElements(
+  caseType: string,
+  existing: LegalElementRow[],
+  deliverableId?: string,
+): FirmKnowledgeElement[] {
+  return filterMissing(optionalFirmKnowledgeElementsForMatter(caseType, deliverableId), existing);
+}
+
+/**
+ * @deprecated Prefer missingCoreFirmKnowledgeElements for merge prompts.
+ * Kept for scripts — returns missing core only.
+ */
+export function missingFirmKnowledgeElements(
+  caseType: string,
+  existing: LegalElementRow[],
+  deliverableId?: string,
+): FirmKnowledgeElement[] {
+  return missingCoreFirmKnowledgeElements(caseType, existing, deliverableId);
 }

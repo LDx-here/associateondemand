@@ -76,7 +76,7 @@ Visual maps of the internal engine and partner-facing overflow counsel flow:
 | Strategy feature | Code location |
 |------------------|---------------|
 | Intelligent Intake v2 | `web/src/lib/practice-area-facts.ts`, `PracticeAreaFactGuide.tsx` |
-| Firm Memory v1 | `POST /api/firm-memory`, Strategy Patterns (`category: firm_memory`), `/templates#firm-memory` |
+| Firm Memory v1 | `POST /api/firm-memory`, Strategy Patterns (`category: firm_memory`), `/firm-memory` |
 | Sample discount | `deliverable-catalog.ts`, `AssignmentIntakeForm.tsx`, assignment `options` JSON |
 | Deliverable catalog | `web/src/lib/deliverable-catalog.ts`, `/templates` |
 | Phase 1 UX (roadmap) | `TopNav.tsx`, `AppShell.tsx`, `SiteGuideContent.tsx`, `dashboard/page.tsx`, `CommandPanel.tsx`, `GettingStartedBanner.tsx` |

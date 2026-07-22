@@ -9,7 +9,6 @@ import { LegalElementsPanel } from "@/components/LegalElementsPanel";
 import { MatterOverviewPanel } from "@/components/MatterOverviewPanel";
 import { MatterTasksPanel } from "@/components/MatterTasksPanel";
 import { ProceduralTimelinePanel } from "@/components/ProceduralTimelinePanel";
-import { firmKnowledgeAppliedCount } from "@/lib/firm-knowledge-for-matter";
 import type {
   CalendarEvent,
   DocumentRow,
@@ -192,16 +191,6 @@ export function MatterWorkbench({
               caseType={matterHeader.caseType}
               onCompleteFacts={() => setTab("Documents")}
             />
-            {firmKnowledgeAppliedCount(elements) > 0 ? (
-              <button
-                type="button"
-                className="rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-900 ring-1 ring-violet-200"
-                onClick={() => setTab("Legal elements")}
-                title="Legal elements loaded from Firm Knowledge for this matter type"
-              >
-                Firm knowledge applied: {firmKnowledgeAppliedCount(elements)} elements
-              </button>
-            ) : null}
             <Link href={`/assignments/new?matterId=${matterHeader.matterId}`} className={btnSecondary}>
               New assignment
             </Link>

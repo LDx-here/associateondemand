@@ -20,7 +20,7 @@ Before **UI, dashboard, navigation, intake, or messaging** changes:
 
 - **Relief / capacity** — not stress-first metrics or “marketplace” language
 - **Navigation** — primary: Dashboard, New assignment, Inbox, Matters, Templates; secondary collapsed
-- **Firm Memory** — `/templates#firm-memory` entry + dashboard CTA when empty
+- **Firm Memory** — `/firm-memory` (also Settings → Firm Memory) + dashboard CTA when empty
 - **No false Stripe** — Phase 0 offline invoicing copy only
 - **Overflow journey** — 4-step Getting Started (Firm Memory → Assignment → Assessment → Review)
 - **Associate panel** — matter + deliverable context; “What would you like RMV to work on?”

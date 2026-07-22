@@ -1,3 +1,5 @@
+### [2026-07-22] CHECKPOINT: pass 30 auto legal elements + Firm Memory home — core elements auto-seed by matter type; optional dropdown; Firm Memory → /firm-memory + Settings; USCIS autofill future; test:firm-knowledge; pytest 81; next build; Vercel prod
+
 ### [2026-07-22] CHECKPOINT: pass 29 templates UX — How-it-works → /help#templates; practice-area browse + Cards/List; Open preview → Structure mapping; Firm Memory collapsed; next build; smoke PASS
 
 ### [2026-07-22] CHECKPOINT: pass 28 firm letterhead + document assembly — Settings Firm profile, certificate of service merge fields, unlock labels, default blank honesty, How templates work; pytest 81; next build; smoke PASS

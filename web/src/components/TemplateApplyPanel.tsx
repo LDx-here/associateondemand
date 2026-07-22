@@ -185,7 +185,7 @@ export function TemplateApplyPanel({
             <p className="text-[11px] text-slate-500">
               Profiles apply on any matter when you select this template. Firm-wide tone and citation prefs
               live in{" "}
-              <Link href="/templates#firm-memory" className="font-medium text-violet-800 underline">
+              <Link href="/firm-memory" className="font-medium text-violet-800 underline">
                 Firm Memory
               </Link>
               .

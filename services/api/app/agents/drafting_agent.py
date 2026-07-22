@@ -189,7 +189,7 @@ def run_drafting(matter_id: str, instruction: str) -> AgentResult:
         gaps.append(f"Citation package: {post['citation_verification_summary']}")
     if not firm_applied:
         gaps.append(
-            "Firm Memory not applied — set tone/samples at /templates#firm-memory for firmer voice match."
+            "Firm Memory not applied — set tone/samples at /firm-memory for firmer voice match."
         )
     gaps.append("Attorney review required before filing or client communication.")
     result.gaps = gaps

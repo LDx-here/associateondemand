@@ -82,7 +82,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "templates",
-    title: "Templates, Firm Memory & Firm Knowledge",
+    title: "Templates & Firm Knowledge",
     icon: LayoutTemplate,
     summary:
       "Browse templates by practice area, open preview for structure mapping, then assemble like TXDocs / eImmigration — with letterhead from Settings.",
@@ -90,10 +90,23 @@ const GUIDE_SECTIONS: GuideSection[] = [
       "Browse → preview → structure mapping — filter Immigration / PI / Other; open preview lands on CREAC roles + feeds-from fact fields.",
       "How assembly works (TXDocs / HotDocs / eImmigration style): upload your firm’s master DOCX/PDF per SKU (Replace template). The system detects outline / CREAC sections and merge fields like {{qualifying_relative}} and {{hardship_facts}}.",
       "Matter facts + Settings → Firm profile (letterhead, certificate of service) fill those fields → draft in your format. Until you upload a firm file, you see the default system outline — clearly labeled, never fake letterhead.",
-      "Firm Memory — tone samples and style prefs (secondary on Templates). Firm Knowledge — legal-element map from books on the knowledge map.",
+      "Firm Memory (voice / style) lives at /firm-memory and Settings — not on Templates. Firm Knowledge — legal-element map; core elements auto-load on a matter by case type.",
       "Deliverable catalog shows flat-fee ranges and Built-in vs Firm upload badges. Firm assessment blanks live under Templates for consistent uploads.",
     ],
     cta: { href: "/templates", label: "Browse templates" },
+  },
+  {
+    id: "firm-memory",
+    title: "Firm Memory",
+    icon: Sparkles,
+    summary:
+      "Teach overflow counsel your firm's voice — tone samples and style preferences, separate from legal-element checklists.",
+    bullets: [
+      "Open Firm Memory (or Settings → Firm Memory) to upload redacted samples and set tone / citation prefs.",
+      "Drafting agents inject Firm Memory into prompts; edit a draft → Save to Firm Memory to refine.",
+      "Keep Firm Knowledge (knowledge map / Legal elements) separate — that is the legal-element map from books.",
+    ],
+    cta: { href: "/firm-memory", label: "Open Firm Memory" },
   },
   {
     id: "export-billing",
@@ -107,7 +120,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       "Partner firms receive flat-fee invoices or Stripe Payment Links after scope is agreed (Phase 1 external funnel).",
       "Settings shows billing status, partner link, and Stripe connection (reserved for external checkout).",
     ],
-    cta: { href: "/settings", label: "View billing settings" },
+    cta: { href: "/settings", label: "Open Settings" },
   },
 ];
 

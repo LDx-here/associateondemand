@@ -102,7 +102,7 @@ export function buildDraftQcChecklist(result: AgentCommandResult): DraftQcItem[]
       id: "firm-memory",
       label: "Firm Memory applied",
       status: "warn",
-      detail: "Not applied — set tone/samples at Templates → Firm Memory",
+      detail: "Not applied — set tone/samples at Firm Memory (/firm-memory)",
     });
   }
 

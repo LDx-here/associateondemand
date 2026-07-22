@@ -1,14 +1,18 @@
 #!/usr/bin/env node
-/** Verify matter-type → Firm Knowledge mapping (Pass 26). */
+/** Verify matter-type → Firm Knowledge mapping (core auto-seed + optional). */
 import assert from "node:assert/strict";
 
 import {
   activeKnowledgeTopics,
+  coreFirmKnowledgeElementsForMatter,
   encodeFirmKnowledgeSource,
   firmKnowledgeBrowseHref,
   firmKnowledgeElementsForMatter,
   firmKnowledgeAppliedCount,
+  missingCoreFirmKnowledgeElements,
   missingFirmKnowledgeElements,
+  missingOptionalFirmKnowledgeElements,
+  optionalFirmKnowledgeElementsForMatter,
   parseFirmKnowledgeTopicId,
   scoreNeededFacts,
 } from "../src/lib/firm-knowledge-for-matter.ts";
@@ -17,22 +21,33 @@ const familyTopics = activeKnowledgeTopics("Immigration - Family AOS");
 assert.ok(familyTopics.includes("aos"), `expected aos in ${familyTopics}`);
 assert.ok(familyTopics.includes("family"), `expected family in ${familyTopics}`);
 
-const familyElements = firmKnowledgeElementsForMatter("Immigration - Family AOS");
-assert.ok(familyElements.length >= 5, `expected ≥5 family elements, got ${familyElements.length}`);
-const ids = new Set(familyElements.map((e) => e.topicId));
-assert.ok(ids.has("marriage-based-aos") || ids.has("family-based-immigration"));
-assert.ok(ids.has("aos-statutory-eligibility") || ids.has("aos-discretionary-checklist"));
-assert.ok(familyElements.some((e) => e.neededFacts.length > 0), "expected needed facts from knowledge MD");
+const familyCore = coreFirmKnowledgeElementsForMatter("Immigration - Family AOS");
+assert.ok(familyCore.length >= 5, `expected ≥5 family core elements, got ${familyCore.length}`);
+const coreIds = new Set(familyCore.map((e) => e.topicId));
+assert.ok(coreIds.has("marriage-based-aos") || coreIds.has("family-based-immigration"));
+assert.ok(coreIds.has("aos-statutory-eligibility") || coreIds.has("aos-discretionary-checklist"));
+assert.ok(familyCore.some((e) => e.neededFacts.length > 0), "expected needed facts from knowledge MD");
 
-const asylum = firmKnowledgeElementsForMatter("General Asylum");
+// Asylum topics are optional on a family AOS matter (not auto-seeded).
+const familyOptional = optionalFirmKnowledgeElementsForMatter("Immigration - Family AOS");
+assert.ok(
+  familyOptional.some((e) => e.topicId === "asylum-elements" || e.topicId.includes("asylum")),
+  "expected asylum as optional on family AOS",
+);
+assert.ok(!coreIds.has("asylum-elements"), "asylum-elements must not be core for family AOS");
+
+const familyAll = firmKnowledgeElementsForMatter("Immigration - Family AOS");
+assert.ok(familyAll.length >= familyCore.length);
+
+const asylum = coreFirmKnowledgeElementsForMatter("General Asylum");
 assert.ok(asylum.some((e) => e.topicId === "asylum-elements"));
 assert.ok(asylum.some((e) => e.topicId === "asylum-bars"));
 
-const removal = firmKnowledgeElementsForMatter("Cancellation of Removal");
+const removal = coreFirmKnowledgeElementsForMatter("Cancellation of Removal");
 assert.ok(removal.some((e) => e.topicId === "cancellation-of-removal"));
 assert.ok(removal.some((e) => e.topicId === "procedural-posture-removal"));
 
-const adjustment = firmKnowledgeElementsForMatter("Adjustment");
+const adjustment = coreFirmKnowledgeElementsForMatter("Adjustment");
 assert.ok(adjustment.length >= 3, "Adjustment case type should map to AOS knowledge");
 
 const href = firmKnowledgeBrowseHref("Immigration - Family");
@@ -44,7 +59,7 @@ assert.equal(parseFirmKnowledgeTopicId(encoded), "extreme-hardship-factors");
 assert.equal(firmKnowledgeAppliedCount([{ supportingCases: encoded }]), 1);
 assert.equal(firmKnowledgeAppliedCount([{ supportingCases: "" }]), 0);
 
-const missing = missingFirmKnowledgeElements(
+const missing = missingCoreFirmKnowledgeElements(
   "Immigration - Family",
   [
     {
@@ -60,6 +75,11 @@ const missing = missingFirmKnowledgeElements(
 );
 assert.ok(!missing.some((m) => m.topicId === "aos-statutory-eligibility"));
 assert.ok(missing.length >= 1);
+assert.equal(
+  missingFirmKnowledgeElements("Immigration - Family", []).length,
+  missingCoreFirmKnowledgeElements("Immigration - Family", []).length,
+);
+assert.ok(missingOptionalFirmKnowledgeElements("Immigration - Family", []).length >= 1);
 
 const scored = scoreNeededFacts(
   ["Medical → diagnoses, caregiver role", "Financial → income share"],

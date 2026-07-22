@@ -186,7 +186,8 @@ export function FirmMemorySetup({ defaultCollapsed = false }: { defaultCollapsed
           <div>
             <h2 className="text-sm font-semibold text-violet-950">Firm Memory setup</h2>
             <p className="mt-0.5 text-xs text-violet-900">
-              Secondary — tone samples and style prefs for drafting voice. Not required to browse templates.
+              Tone samples and style prefs for drafting voice — separate from Firm Knowledge (legal elements)
+              and Templates (DOCX structure).
             </p>
             {status && !status.configured ? (
               <p className="mt-2 text-xs font-medium text-amber-900">

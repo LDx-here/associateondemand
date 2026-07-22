@@ -143,7 +143,7 @@ export function IntakeContextSidebar({
                 </p>
               ) : (
                 <p className="text-xs text-amber-900">
-                  <Link href="/templates#firm-memory" className="font-medium underline-offset-2 hover:underline">
+                  <Link href="/firm-memory" className="font-medium underline-offset-2 hover:underline">
                     Set up Firm Memory
                   </Link>{" "}
                   for closer in-house voice.

@@ -198,7 +198,7 @@ export default async function DashboardPage() {
           </div>
         </Link>
         <Link
-          href="/templates#firm-memory"
+          href="/firm-memory"
           className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-amber-200 hover:bg-amber-50/40"
         >
           <Sparkles className="h-5 w-5 shrink-0 text-amber-800" aria-hidden />
@@ -239,18 +239,18 @@ export default async function DashboardPage() {
           hint={
             firmMemory.configured
               ? `${firmMemory.templateCount} templates · ${firmMemory.sampleCount} samples · ${firmMemory.stylePreferenceCount} style prefs`
-              : "Upload samples on Templates to teach your firm's style"
+              : "Upload samples at Firm Memory to teach your firm's style"
           }
           icon={Sparkles}
           tone={firmMemoryPct >= 66 ? "positive" : "attention"}
-          href="/templates#firm-memory"
+          href="/firm-memory"
         />
       </section>
 
       {!firmMemory.configured ? (
         <section className="rounded-lg border border-amber-200 bg-amber-50/50 px-4 py-3 text-sm text-amber-950">
           <strong>Firm Memory:</strong>{" "}
-          <Link href="/templates#firm-memory" className="font-medium underline-offset-2 hover:underline">
+          <Link href="/firm-memory" className="font-medium underline-offset-2 hover:underline">
             Set up your firm profile
           </Link>{" "}
           so overflow counsel drafts read like your in-house associate.

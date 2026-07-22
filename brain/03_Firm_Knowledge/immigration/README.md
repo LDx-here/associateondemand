@@ -16,7 +16,7 @@ Drop **short markdown checklists and chapter summaries** here (`.md` only). Agen
 - Client PII or sealed materials
 - One giant narrative dump of the entire book
 
-Prefer uploading **style samples + short snippets** to `/templates#firm-memory` for live prod drafting voice. Keep the master book offline or in `_source/` for humans; extract structured excerpts here for agents.
+Prefer uploading **style samples + short snippets** to `/firm-memory` for live prod drafting voice. Keep the master book offline or in `_source/` for humans; extract structured excerpts here for agents.
 
 ---
 
@@ -75,6 +75,6 @@ Rules:
 
 | Purpose | Where |
 |---------|--------|
-| Voice / tone samples | `/templates#firm-memory` (Firm Memory) |
+| Voice / tone samples | `/firm-memory` (Firm Memory) |
 | Legal element knowledge map | `brain/03_Firm_Knowledge/immigration/*.md` (this folder) |
 | Case-specific facts | Matter Documents / assessment upload |

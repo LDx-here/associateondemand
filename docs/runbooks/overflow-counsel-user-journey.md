@@ -5,7 +5,7 @@
 
 ## End-to-end flow (5 steps)
 
-1. **Set up Firm Memory** — [`/templates#firm-memory`](https://aod-next.vercel.app/templates#firm-memory)  
+1. **Set up Firm Memory** — [`/firm-memory`](https://aod-next.vercel.app/firm-memory)  
    Upload your blank assessment template, 1–2 sample briefs in your firm's style, and save tone/citation/header preferences. This teaches the platform your voice before the first assignment.
 
 2. **Submit an assignment** — Partner firms: [`/partner/submit`](https://aod-next.vercel.app/partner/submit) (external funnel). RMV operators: [`/assignments/new`](https://aod-next.vercel.app/assignments/new) (internal — no checkout).
@@ -31,7 +31,7 @@
 
 | Step | URL |
 |------|-----|
-| Firm Memory setup | `/templates#firm-memory` |
+| Firm Memory setup | `/firm-memory` |
 | Firm assessment templates | `/templates#firm-assessment-templates` |
 | **Partner submission (external firms)** | `/partner/submit?deliverable=aos-discretionary-brief` |
 | Internal operator assignment | `/assignments/new?deliverable=aos-discretionary-brief` |

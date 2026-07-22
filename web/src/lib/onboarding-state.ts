@@ -27,7 +27,7 @@ export const ONBOARDING_STEP_META: Record<
   {
     title: string;
     detail: string;
-    href?: "/templates#firm-memory" | "/assignments/new" | "/matters" | "/inbox";
+    href?: "/firm-memory" | "/assignments/new" | "/matters" | "/inbox";
     cta?: string;
   }
 > = {
@@ -40,7 +40,7 @@ export const ONBOARDING_STEP_META: Record<
     title: "Set up Firm Memory",
     detail:
       "Upload style samples so overflow counsel drafts read like your in-house associate. Takes about five minutes.",
-    href: "/templates#firm-memory",
+    href: "/firm-memory",
     cta: "Open Firm Memory setup",
   },
   assignment: {

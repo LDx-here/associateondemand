@@ -66,7 +66,7 @@ export function FirmMemoryBadge({
 
   if (linked) {
     return (
-      <Link href="/templates#firm-memory" className={`${className} hover:opacity-90`} title={title}>
+      <Link href="/firm-memory" className={`${className} hover:opacity-90`} title={title}>
         {inner}
       </Link>
     );

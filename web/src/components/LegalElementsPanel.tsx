@@ -1,8 +1,8 @@
 "use client";
 
-import { BookOpen, Library, Map, Plus, RefreshCw, Sparkles } from "lucide-react";
+import { BookOpen, Library, Map, Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import { EmptyState } from "@/components/EmptyState";
 import { ExtractedFactsReview } from "@/components/ExtractedFactsReview";
@@ -15,13 +15,15 @@ import {
   type AssessmentOcrPayload,
 } from "@/lib/assessment-documents";
 import {
+  coreFirmKnowledgeElementsForMatter,
   encodeFirmKnowledgeSource,
   firmKnowledgeBrowseHref,
   firmKnowledgeElementsForMatter,
   firmKnowledgeTopicHref,
   formatMissingFactsSummary,
   formatNeededFactsChecklist,
-  missingFirmKnowledgeElements,
+  missingCoreFirmKnowledgeElements,
+  missingOptionalFirmKnowledgeElements,
   parseFirmKnowledgeTopicId,
   scoreNeededFacts,
   type FirmKnowledgeElement,
@@ -54,9 +56,20 @@ export function LegalElementsPanel({
   const [newElementName, setNewElementName] = useState("");
   const [fetchedPayload, setFetchedPayload] = useState<AssessmentOcrPayload | null>(null);
   const [seeding, setSeeding] = useState(false);
-  const [seedMode, setSeedMode] = useState<"load" | "merge" | null>(null);
+  const [caseTypePrompt, setCaseTypePrompt] = useState<{
+    missing: FirmKnowledgeElement[];
+  } | null>(null);
 
-  const knowledgeElements = useMemo(
+  const autoSeededForMatter = useRef<string | null>(null);
+  const lastCaseType = useRef<string>(matter.caseType ?? "");
+  const elementsRef = useRef(elements);
+  elementsRef.current = elements;
+
+  const coreElements = useMemo(
+    () => coreFirmKnowledgeElementsForMatter(matter.caseType),
+    [matter.caseType],
+  );
+  const knowledgeLookup = useMemo(
     () => firmKnowledgeElementsForMatter(matter.caseType),
     [matter.caseType],
   );
@@ -69,8 +82,12 @@ export function LegalElementsPanel({
   const assessmentDocId = assessmentDoc?.id ?? null;
   const payload = assessmentDoc ? fetchedPayload : null;
   const facts = useMemo(() => normalizeExtractedFacts(payload?.facts), [payload]);
-  const missingCount = useMemo(
-    () => missingFirmKnowledgeElements(matter.caseType, elements).length,
+  const missingCore = useMemo(
+    () => missingCoreFirmKnowledgeElements(matter.caseType, elements),
+    [matter.caseType, elements],
+  );
+  const optionalAvailable = useMemo(
+    () => missingOptionalFirmKnowledgeElements(matter.caseType, elements),
     [matter.caseType, elements],
   );
 
@@ -132,9 +149,10 @@ export function LegalElementsPanel({
   async function createFromKnowledge(
     knowledge: FirmKnowledgeElement,
     existingNames: Set<string>,
+    currentFacts: ReturnType<typeof normalizeExtractedFacts>,
   ): Promise<LegalElementRow | null> {
     if (existingNames.has(knowledge.name.toLowerCase())) return null;
-    const statuses = scoreNeededFacts(knowledge.neededFacts, facts);
+    const statuses = scoreNeededFacts(knowledge.neededFacts, currentFacts);
     const checklist = formatNeededFactsChecklist(statuses);
     const gap = formatMissingFactsSummary(statuses);
     const presentCount = statuses.filter((s) => s.status === "present").length;
@@ -171,28 +189,30 @@ export function LegalElementsPanel({
     return saved;
   }
 
-  async function seedFromFirmKnowledge(mode: "load" | "merge") {
+  async function seedCoreElements(
+    mode: "empty" | "merge",
+    knowledgeList?: FirmKnowledgeElement[],
+  ) {
     setSeeding(true);
-    setSeedMode(mode);
     try {
+      const current = elementsRef.current;
       const toAdd =
-        mode === "merge"
-          ? missingFirmKnowledgeElements(matter.caseType, elements)
-          : firmKnowledgeElementsForMatter(matter.caseType);
-      const existingNames = new Set(elements.map((e) => e.element.toLowerCase()));
-      if (mode === "merge") {
-        for (const e of elements) {
-          const tid = parseFirmKnowledgeTopicId(e.supportingCases);
-          if (tid) existingNames.add(tid);
-        }
+        knowledgeList ??
+        (mode === "merge"
+          ? missingCoreFirmKnowledgeElements(matter.caseType, current)
+          : coreFirmKnowledgeElementsForMatter(matter.caseType));
+      const existingNames = new Set(current.map((e) => e.element.toLowerCase()));
+      for (const e of current) {
+        const tid = parseFirmKnowledgeTopicId(e.supportingCases);
+        if (tid) existingNames.add(tid);
       }
-      const nextRows: LegalElementRow[] = [...elements];
+      const nextRows: LegalElementRow[] = [...current];
       for (const knowledge of toAdd) {
-        const row = await createFromKnowledge(knowledge, existingNames);
+        const row = await createFromKnowledge(knowledge, existingNames, facts);
         if (row) nextRows.push(row);
       }
-      // Fallback: if knowledge map empty for non-immigration, use practice-area templates.
-      if (!toAdd.length && mode === "load") {
+      // Fallback: practice-area templates when knowledge map empty for this type.
+      if (!toAdd.length && mode === "empty" && !nextRows.length) {
         for (const template of templates) {
           if (existingNames.has(template.name.toLowerCase())) continue;
           const linked = linkFactsToElement(template, facts);
@@ -217,16 +237,66 @@ export function LegalElementsPanel({
       }
       onElementsChange(nextRows);
       onRefresh();
+      setCaseTypePrompt(null);
     } finally {
       setSeeding(false);
-      setSeedMode(null);
     }
   }
 
+  async function addOptionalKnowledge(topicId: string) {
+    const knowledge = optionalAvailable.find((o) => o.topicId === topicId);
+    if (!knowledge || seeding) return;
+    setSeeding(true);
+    try {
+      const current = elementsRef.current;
+      const existingNames = new Set(current.map((e) => e.element.toLowerCase()));
+      for (const e of current) {
+        const tid = parseFirmKnowledgeTopicId(e.supportingCases);
+        if (tid) existingNames.add(tid);
+      }
+      const row = await createFromKnowledge(knowledge, existingNames, facts);
+      if (row) {
+        onElementsChange([...current, row]);
+        onRefresh();
+      }
+    } finally {
+      setSeeding(false);
+    }
+  }
+
+  // Auto-seed core elements when the matter opens empty (do not wipe customized lists).
+  useEffect(() => {
+    const key = `${matter.matterId}::${matter.caseType || ""}`;
+    if (autoSeededForMatter.current === key) return;
+    if (elements.length > 0) {
+      autoSeededForMatter.current = key;
+      return;
+    }
+    if (!matter.caseType?.trim() && !coreElements.length) {
+      autoSeededForMatter.current = key;
+      return;
+    }
+    autoSeededForMatter.current = key;
+    void seedCoreElements("empty");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seed once per matter/caseType when empty
+  }, [matter.matterId, matter.caseType, elements.length]);
+
+  // Case type change: offer merge of missing core (never destroy custom).
+  useEffect(() => {
+    const prev = lastCaseType.current;
+    const next = matter.caseType ?? "";
+    if (prev === next) return;
+    lastCaseType.current = next;
+    if (!prev || !next || elementsRef.current.length === 0) return;
+    const missing = missingCoreFirmKnowledgeElements(next, elementsRef.current);
+    if (missing.length) setCaseTypePrompt({ missing });
+    else setCaseTypePrompt(null);
+  }, [matter.caseType]);
+
   function knowledgeForRow(row: LegalElementRow): FirmKnowledgeElement | undefined {
     const topicId = parseFirmKnowledgeTopicId(row.supportingCases);
-    if (topicId) return knowledgeElements.find((k) => k.topicId === topicId);
-    return knowledgeElements.find((k) => k.name.toLowerCase() === row.element.toLowerCase());
+    if (topicId) return knowledgeLookup.find((k) => k.topicId === topicId);
+    return knowledgeLookup.find((k) => k.name.toLowerCase() === row.element.toLowerCase());
   }
 
   function templateForElement(name: string) {
@@ -242,49 +312,91 @@ export function LegalElementsPanel({
               Legal elements
             </p>
             <p className="text-xs text-slate-600">
-              Load from Firm Knowledge for this matter type · customize · agents use the same map in
-              drafts
+              Core elements auto-load for this matter type from Firm Knowledge. Add optional topics or
+              customize below — your edits are kept.
             </p>
-            {knowledgeElements.length ? (
-              <p className="mt-1 text-[11px] text-violet-800">
-                Suggested for {matter.caseType || "this matter"}: {knowledgeElements.length} knowledge
-                topics
-                {elements.length ? ` · ${missingCount} not yet on matter` : ""}
+            {coreElements.length ? (
+              <p className="mt-1 text-[11px] text-slate-600">
+                {matter.caseType || "This matter"}: {coreElements.length} core
+                {optionalAvailable.length ? ` · ${optionalAvailable.length} optional available` : ""}
+                {seeding ? " · updating…" : ""}
               </p>
             ) : null}
           </div>
-          <button
-            type="button"
-            className={`${btnPrimary} text-xs`}
-            disabled={seeding}
-            onClick={() => void seedFromFirmKnowledge("load")}
-            title="Prefill Legal Elements from the knowledge map for this matter type"
-          >
-            <Sparkles className="mr-1 inline h-3.5 w-3.5" aria-hidden />
-            {seeding && seedMode === "load"
-              ? "Loading…"
-              : "Load elements for this matter type"}
-          </button>
-          {elements.length && missingCount > 0 ? (
+          {optionalAvailable.length ? (
+            <label className="flex flex-col text-xs">
+              <span className="font-semibold uppercase tracking-wide text-slate-500">
+                Add optional element…
+              </span>
+              <select
+                className="mt-1 min-w-[14rem] rounded border border-slate-200 bg-white px-2 py-1.5 text-sm"
+                disabled={seeding}
+                defaultValue=""
+                key={optionalAvailable.map((o) => o.topicId).join(",")}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  e.target.value = "";
+                  if (id) void addOptionalKnowledge(id);
+                }}
+              >
+                <option value="">Choose…</option>
+                {optionalAvailable.map((o) => (
+                  <option key={o.topicId} value={o.topicId}>
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
+
+        {caseTypePrompt?.missing.length ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-950 ring-1 ring-amber-200">
+            <span>
+              Case type updated — {caseTypePrompt.missing.length} core element
+              {caseTypePrompt.missing.length === 1 ? "" : "s"} missing. Add them without removing your
+              edits?
+            </span>
+            <button
+              type="button"
+              className={`${btnPrimary} text-xs`}
+              disabled={seeding}
+              onClick={() => void seedCoreElements("merge", caseTypePrompt.missing)}
+            >
+              <RefreshCw className="mr-1 inline h-3.5 w-3.5" aria-hidden />
+              {seeding ? "Adding…" : "Add missing core"}
+            </button>
+            <button
+              type="button"
+              className={`${btnSecondary} text-xs`}
+              onClick={() => setCaseTypePrompt(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        ) : null}
+
+        {!caseTypePrompt && elements.length > 0 && missingCore.length > 0 ? (
+          <div className="mt-3">
             <button
               type="button"
               className={`${btnSecondary} text-xs`}
               disabled={seeding}
-              onClick={() => void seedFromFirmKnowledge("merge")}
-              title="Add missing firm-knowledge elements without removing your edits"
+              onClick={() => void seedCoreElements("merge")}
+              title="Add missing core firm-knowledge elements without removing your edits"
             >
               <RefreshCw className="mr-1 inline h-3.5 w-3.5" aria-hidden />
-              {seeding && seedMode === "merge" ? "Merging…" : "Re-suggest (keep edits)"}
+              {seeding ? "Adding…" : `Add ${missingCore.length} missing core`}
             </button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3 text-xs">
           <Link href={browseHref as "/knowledge-map"} className={`${btnSecondary} text-xs`}>
             <Map className="mr-1 inline h-3.5 w-3.5" aria-hidden />
             Browse knowledge for this matter type
           </Link>
-          <Link href="/templates#firm-memory" className={`${btnSecondary} text-xs`}>
+          <Link href="/firm-memory" className={`${btnSecondary} text-xs`}>
             <BookOpen className="mr-1 inline h-3.5 w-3.5" aria-hidden />
             Firm Memory (voice / style)
           </Link>
@@ -301,7 +413,7 @@ export function LegalElementsPanel({
           </div>
           <div className="rounded-md bg-slate-50 px-2 py-1.5 ring-1 ring-slate-100">
             <dt className="font-semibold text-slate-800">Firm Memory</dt>
-            <dd>Tone, voice samples, and style prefs on Templates — not element checklists.</dd>
+            <dd>Tone, voice samples, and style prefs — not element checklists.</dd>
           </div>
         </dl>
       </div>
@@ -327,7 +439,7 @@ export function LegalElementsPanel({
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex min-w-[12rem] flex-1 flex-col text-sm">
           <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Add / customize element
+            Add custom element
           </span>
           <input
             className="mt-1 rounded border border-slate-200 px-2 py-1.5"
@@ -523,8 +635,12 @@ export function LegalElementsPanel({
                 <td colSpan={5} className="p-0">
                   <EmptyState
                     icon={Library}
-                    title="No legal elements yet."
-                    description='Click "Load elements for this matter type" to pull Firm Knowledge topics (e.g. family AOS → hardship, affidavit of support), then customize.'
+                    title={seeding ? "Loading legal elements…" : "No legal elements yet."}
+                    description={
+                      seeding
+                        ? "Auto-loading core Firm Knowledge for this matter type."
+                        : "Set a case type on the matter to auto-load core elements, or add a custom element above."
+                    }
                   />
                 </td>
               </tr>

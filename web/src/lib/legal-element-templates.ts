@@ -210,5 +210,5 @@ export function firmMemoryReferenceHref(slug?: string): string | null {
   if (stem) {
     return `/knowledge-map?topics=${encodeURIComponent(stem)}#firm-knowledge&topic=${encodeURIComponent(stem)}`;
   }
-  return `/templates#firm-memory&ref=${encodeURIComponent(slug)}`;
+  return `/firm-memory?ref=${encodeURIComponent(slug)}`;
 }

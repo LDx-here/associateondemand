@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SessionAccount } from "@/components/SessionAccount";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { FirmLetterheadSettings } from "@/components/FirmLetterheadSettings";
+import { FirmMemorySetup } from "@/components/FirmMemorySetup";
 import { PiiTierComplianceSection } from "@/components/PiiTierComplianceSection";
 import { listPeopleFromAirtable } from "@/lib/airtable/queries";
 import { isDemoMode } from "@/lib/data-store";
@@ -90,6 +91,24 @@ export default async function SettingsPage() {
         <div className="px-4 py-4">
           <FirmLetterheadSettings />
         </div>
+      </section>
+
+      <section className="scroll-mt-4">
+        <FirmMemorySetup />
+        <p className="mt-2 text-xs text-slate-500">
+          Full-page view:{" "}
+          <Link href="/firm-memory" className="font-medium text-sky-800 underline-offset-2 hover:underline">
+            /firm-memory
+          </Link>
+          . Firm Knowledge (legal elements) lives on the{" "}
+          <Link
+            href="/knowledge-map#firm-knowledge"
+            className="font-medium text-sky-800 underline-offset-2 hover:underline"
+          >
+            knowledge map
+          </Link>
+          .
+        </p>
       </section>
 
       <SettingsSection title="Data connection">

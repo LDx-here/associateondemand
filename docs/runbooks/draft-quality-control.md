@@ -9,7 +9,7 @@ How AssociateOnDemand sifts draft QC — and what still needs your judgment.
 | **Document linter** (§11) | After drafting + on memo export | Em/en dashes, emoji, endnote-style `[1]` refs, `ENDNOTES`, chatbot filler, many unresolved placeholders |
 | **Citation package** | AOS briefs / cited drafts (≥2 cites) | Matches public DOJ/USCIS sources → REF PDFs; unmatched → VERIFICATION NEEDED cards |
 | **Placeholders** | Prompt rules + QC checklist | `[FACT NEEDED]` / `[CITE NEEDED]` instead of inventing facts or cites |
-| **Firm Memory injection** | Every drafting/research prompt | Tone, citation format, headers, short reference snippets from `/templates#firm-memory` |
+| **Firm Memory injection** | Every drafting/research prompt | Tone, citation format, headers, short reference snippets from `/firm-memory` |
 | **Firm knowledge excerpts** | Agent prompts | Curated `.md` files under `brain/03_Firm_Knowledge/immigration/` (not whole PDFs) |
 | **Attorney review gap** | Every agent result | Explicit “Attorney review required before filing…” |
 
@@ -42,7 +42,7 @@ After a draft lands in the Associate / Command result:
 
 ## This week — operator checklist (La'Dajia)
 
-1. **Upload:** 2–3 redacted sample briefs/motions + tone/citation prefs at `/templates#firm-memory`. Paste a short voice excerpt into style notes (PDF samples alone do not feed the draft prompt).
+1. **Upload:** 2–3 redacted sample briefs/motions + tone/citation prefs at `/firm-memory`. Paste a short voice excerpt into style notes (PDF samples alone do not feed the draft prompt).
 2. **Optional knowledge:** Drop 1–3 short `.md` element checklists into `brain/03_Firm_Knowledge/immigration/` (see that folder’s README). Do **not** upload the whole immigration book PDF.
 3. **Verify:** Run a pilot draft; Draft QC should show Firm Memory applied; memo tone should echo your prefs.
 4. **QC before client delivery:** Draft QC pass → fill placeholders → citation package → your strategy read → export only when linter is clean.
