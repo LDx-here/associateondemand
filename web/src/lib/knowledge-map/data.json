@@ -1,0 +1,1246 @@
+{
+  "generatedAt": "2026-07-22T01:36:24.614Z",
+  "source": "brain/03_Firm_Knowledge",
+  "label": "Firm knowledge map (reference)",
+  "categories": [
+    {
+      "id": "immigration",
+      "title": "Immigration",
+      "description": "Legal elements, relief paths, and inadmissibility checklists.",
+      "topics": [
+        {
+          "id": "aos-discretionary-checklist",
+          "file": "aos-discretionary-checklist.md",
+          "title": "I-485 discretionary factors",
+          "cite": "INA § 245; 8 CFR § 245.1; 1 USCIS-PM E.8 / PM-602-0199 (discretion)",
+          "practiceAreas": "AOS | Family | Employment",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Statutory eligibility under § 245(a) or § 245(i) is necessary but not sufficient",
+                "Favorable exercise of discretion under totality of the circumstances",
+                "Positive equities must outweigh adverse factors when adverse facts exist",
+                "Explain adverse facts; do not ignore them"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Family ties → USC/LPR spouse, children, household dependence",
+                "Residence / community → years of presence, school, church, civic roles",
+                "Employment / taxes → W-2s, returns, letters from employers",
+                "Hardship to relatives → medical, financial, caregiving facts",
+                "Rehabilitation / GMC → counseling, clean record since offense, character letters",
+                "Adverse history → arrests, fraud concerns, immigration violations (with mitigation)"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Treating any single factor as dispositive",
+                "Omitting adverse facts that appear on forms or biometrics",
+                "Inventing pin cites — use `[CITE NEEDED]` for attorney verification",
+                "Leaving `[FACT NEEDED]` gaps unflagged in drafts"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Lead with one-sentence case theme",
+                "“Totality of the circumstances” framing; weigh equities expressly",
+                "Pair each adverse fact with mitigation evidence"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "aos-statutory-eligibility.md",
+            "extreme-hardship-factors.md"
+          ],
+          "topic": "I-485 discretionary factors",
+          "notes": "Totality / equities"
+        },
+        {
+          "id": "aos-statutory-eligibility",
+          "file": "aos-statutory-eligibility.md",
+          "title": "AOS statutory eligibility (§ 245)",
+          "cite": "INA §§ 245(a), 245(c), 245(i); 8 CFR § 245.1; USCIS-PM Vol. 7",
+          "practiceAreas": "AOS | Family | Employment | SIJS | VAWA",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Immigrant visa immediately available (Visa Bulletin / USCIS chart guidance)",
+                "Admissible under INA § 212(a), or eligible for and granted a waiver",
+                "§ 245(a): inspected and admitted or paroled",
+                "§ 245(c) bars (preference categories): unlawful status at filing; failure to maintain status; unauthorized employment; certain VWP/transit/crewman entries",
+                "Immediate relatives / VAWA / SIJS: broad exemptions from most § 245(c) bars",
+                "§ 245(i): grandfathering via approvable-when-filed petition/labor cert on or before Apr 30, 2001 (+ physical presence Dec 21, 2000 if petition after Jan 14, 1998); I-485 Supp. A + penalty fee"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Manner of entry → I-94, passport stamps, parole docs, credible EWI timeline",
+                "Status history → visa, COS/EOS, overstay dates, work authorization",
+                "Petition history → I-130/I-140/I-360/I-526 or labor cert filing date; approval/priority date",
+                "Relationship → marriage/birth certificates; IR vs preference category",
+                "§ 245(i) presence → Dec 21, 2000 evidence (school, medical, tax, affidavits)"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Assuming admission = inspected entry with false USC claim (not a lawful admission)",
+                "Preference beneficiary barred by § 245(c) when IR conversion (e.g., LPR spouse naturalizes) would cure",
+                "Triggering § 212(a)(9)(B) by consular departure without provisional waiver analysis",
+                "Filing without visa availability / wrong Visa Bulletin chart"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "State pathway: “§ 245(a) as immediate relative” vs “§ 245(i) grandfathered”",
+                "Separate eligibility, admissibility, and discretion into distinct sections"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "unlawful-presence-bars.md",
+            "ina-212a-waiver.md",
+            "aos-discretionary-checklist.md"
+          ],
+          "topic": "AOS statutory eligibility (§ 245)",
+          "notes": "245(a)/(c)/(i)"
+        },
+        {
+          "id": "aos-filing-packet",
+          "file": "aos-filing-packet.md",
+          "title": "AOS filing packet & process checklist",
+          "cite": "Form I-485 instructions; INA § 245; USCIS filing guidance",
+          "practiceAreas": "AOS | Family | Employment",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Current form editions + correct filing location/fees",
+                "Core: I-485; civil surgeon I-693 (timing strategy — validity rules change; confirm current PM); identity/status docs; translations",
+                "Family-based: I-130 (concurrent if eligible) or approval + I-864 package",
+                "§ 245(i): I-485 Supp. A + penalty fee + grandfathering proof",
+                "Optional concurrent I-765 / I-131 (EAD/AP) when eligible",
+                "Biometrics → interview → RFE practice; update address within 10 days"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Checklist of forms filed + receipt numbers",
+                "Medical exam date / civil surgeon",
+                "Financial packet date (may need refresh at interview)",
+                "Interview notices / RFE deadlines"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Expired medicals due to long pendency",
+                "Missing certified translations",
+                "Abandonment from missed RFE/interview after address change",
+                "Concurrent filing when priority date not current"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Maintain a living exhibit/form checklist in the matter",
+                "Note what must be updated at interview"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "aos-statutory-eligibility.md",
+            "affidavit-of-support.md",
+            "aos-discretionary-checklist.md"
+          ],
+          "topic": "AOS filing packet checklist",
+          "notes": "Forms / medical / EAD-AP"
+        },
+        {
+          "id": "affidavit-of-support",
+          "file": "affidavit-of-support.md",
+          "title": "Affidavit of support (I-864)",
+          "cite": "INA § 213A; 8 CFR § 213a; Form I-864 / I-864W / I-864A",
+          "practiceAreas": "Family | AOS | Consular | Public charge interface",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Most family-based immigrants need a sufficient Form I-864 sponsor",
+                "Income generally ≥ 125% of Federal Poverty Guidelines (100% for active-duty sponsors of spouse/children — verify current instructions)",
+                "Assets may supplement in some cases; household members via I-864A; joint sponsor if needed",
+                "Sponsor must be USC/LPR (or certain qualifying sponsors) domiciled in U.S.; enforceable support contract",
+                "Exemptions / I-864W in limited categories (e.g., some 40-quarter SSA credit cases, self-petitioning widows/VAWA — confirm current eligibility)"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Tax returns / W-2 / pay stubs matching I-864 figures",
+                "Household size calculation (including intending immigrants)",
+                "Assets docs → ownership, liquidity, valuations if used",
+                "Joint sponsor package if primary insufficient",
+                "Domicile evidence if sponsor abroad temporarily"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Wrong household size → under-income finding",
+                "Using outdated poverty guidelines",
+                "Missing tax transcripts when returns look inconsistent",
+                "Assuming employment-based cases always need I-864 (usually not)"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Show poverty guideline year + math in a short table",
+                "Flag joint-sponsor need early in strategy memo"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "family-based-immigration.md",
+            "aos-statutory-eligibility.md"
+          ],
+          "topic": "Affidavit of support",
+          "notes": "I-864"
+        },
+        {
+          "id": "extreme-hardship-factors",
+          "file": "extreme-hardship-factors.md",
+          "title": "Extreme hardship (qualifying relative)",
+          "cite": "INA §§ 212(h), 212(i), 212(a)(9)(B)(v); 9 USCIS-PM B; Matter of Cervantes-Gonzalez",
+          "practiceAreas": "Waiver | AOS | Consular | Cancellation (related equities)",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Qualifying relative: usually USC/LPR spouse or parent (check waiver statute — § 212(h) also allows child/son/daughter in some paths)",
+                "Hardship if applicant is refused admission / removed — separation or relocation scenarios",
+                "Cumulative weighing — one factor need not alone prove “extreme”",
+                "Distinct from ordinary hardship of family separation; must be elevated"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Medical → diagnoses, treatment plans, caregiver role, country-of-origin care gaps",
+                "Financial → income share, debts, housing, inability to support two households",
+                "Family/caregiving → minor children, elderly parents, special-needs dependents",
+                "Country conditions → safety, employment, education, language barriers for QR",
+                "Emotional/psychological → clinician letters; children’s school/IEP impacts",
+                "Length of residence / community ties of QR in the U.S."
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Arguing applicant’s own hardship as if it were QR hardship",
+                "Listing ordinary inconvenience without elevation evidence",
+                "Ignoring relocation vs separation theory consistency",
+                "No corroboration (medical, school, financial docs)"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Label each factor; end with cumulative totality sentence",
+                "Address both separation and relocation if facts support either path",
+                "Cross-walk exhibits: “See Ex. [letter/medical]”"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "ina-212a-waiver.md",
+            "unlawful-presence-bars.md"
+          ],
+          "topic": "Extreme hardship",
+          "notes": "Waiver QR hardship"
+        },
+        {
+          "id": "ina-212a-waiver",
+          "file": "ina-212a-waiver.md",
+          "title": "INA § 212(a) waivers — common paths",
+          "cite": "INA §§ 212(h), 212(i), 212(a)(9)(B)(v), 212(d)(11), 212(a)(9)(A)(iii); Form I-601 / I-601A / I-212; 9 USCIS-PM",
+          "practiceAreas": "Waiver | AOS | Consular",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Identify exact § 212(a) ground(s) before picking a waiver",
+                "Meet statutory qualifying-relative / rehabilitation / equities test for that waiver",
+                "Separate application (I-601, I-601A provisional UL presence, or I-212 consent to reapply)",
+                "All waivers are discretionary even if extreme hardship is shown"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Ground triggered → convictions, misrepresentation facts, UL presence timeline, prior removal",
+                "Qualifying relative → status proof + relationship docs",
+                "Extreme hardship packet → see `extreme-hardship-factors.md`",
+                "Rehabilitation / equities → employment, taxes, community, remorse, counseling",
+                "I-601A only → UL presence bar anticipated; no other ground that consulate will find"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Seeking waiver for non-waivable grounds (e.g., most false USC claims; drug trafficking; many § 212(a)(9)(C) cases until 10 years abroad + I-212)",
+                "Wrong form (I-601 vs I-601A vs I-212)",
+                "Filing I-601A when other inadmissibility grounds exist",
+                "Skipping discretionary equities after proving hardship"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Open with ground + waiver authority cite",
+                "Hardship section + discrete discretion section",
+                "Flag non-waivable issues for attorney strategy call"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "extreme-hardship-factors.md",
+            "unlawful-presence-bars.md",
+            "misrepresentation-212i.md"
+          ],
+          "topic": "INA § 212(a) waivers",
+          "notes": "I-601 / I-601A / I-212"
+        },
+        {
+          "id": "inadmissibility-overview",
+          "file": "inadmissibility-overview.md",
+          "title": "Inadmissibility vs deportability — overview",
+          "cite": "INA §§ 212(a), 237(a); 8 USCIS-PM; AFM Ch. 40 (as incorporated)",
+          "practiceAreas": "AOS | Removal | Consular | Naturalization screening",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Decide which regime applies: inadmissibility (§ 212) vs deportability (§ 237)",
+                "§ 212: seeking admission / many benefits (including AOS) — includes EWI and parolees as “seeking admission”",
+                "§ 237: inspected and admitted noncitizens (including many overstays)",
+                "Same topic labels (crime, security, public charge) ≠ identical statutory tests",
+                "Screen every matter at intake for both benefit eligibility and removal exposure"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Entry history → inspected/admitted vs EWI vs parole",
+                "Prior orders → removal, expedited removal, in absentia",
+                "Criminal record → dispositions, sentences, controlled substances",
+                "Fraud / claims → visa lies, I-9 USC claims, document misuse",
+                "Status violations → overstay, unauthorized work, COS failures"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Applying deportability exceptions (e.g., ≤30g marijuana) to an EWI client who is under § 212",
+                "Treating parole as admission",
+                "Missing form “yes/no” questions that map to § 212 grounds",
+                "Counseling naturalization without criminal/deportability screen"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "First sentence: “Client is subject to [inadmissibility/deportability] because [entry/admission fact].”",
+                "Map each form answer to a specific INA subsection"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "unlawful-presence-bars.md",
+            "criminal-grounds-overview.md",
+            "ina-212a-waiver.md"
+          ],
+          "topic": "Inadmissibility vs deportability",
+          "notes": "§ 212 vs § 237"
+        },
+        {
+          "id": "unlawful-presence-bars",
+          "file": "unlawful-presence-bars.md",
+          "title": "Unlawful presence bars — § 212(a)(9)(B)/(C)",
+          "cite": "INA §§ 212(a)(9)(B), 212(a)(9)(C); 8 USCIS-PM; AFM 40.9 (as incorporated)",
+          "practiceAreas": "AOS | Consular | Waiver | Provisional I-601A",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "§ 212(a)(9)(B): UL presence >180 days & <1 year → 3-year bar after departure; ≥1 year → 10-year bar after departure",
+                "Bar triggers on departure (and seeking admission) — not while remaining in U.S.",
+                "UL presence: overstay; or EWI; or status violation after official determination",
+                "Key exceptions (B only): under 18; pending asylum (no unauthorized work); TPS/DED/DACA/deferred action; properly filed AOS; timely nonfrivolous EOS/COS; others per PM",
+                "§ 212(a)(9)(C) “permanent bar”: aggregate >1 year UL presence or prior removal, then enter/attempt EWI — generally needs 10 years abroad + I-212; B exceptions do not apply (minors accrue for C)"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Timeline → each entry/exit, authorized stay end date, EWI dates",
+                "Status determinations → NTA, USCIS denial finding status violation",
+                "Exception evidence → age, TPS, pending I-485/I-589, DACA",
+                "Prior orders → expedited removal, IJ order, reinstatement risk (§ 241(a)(5))"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Advising consular processing without modeling 3/10-year trigger",
+                "Assuming minor exception applies to § 212(a)(9)(C)",
+                "Confusing unauthorized work start date with UL presence start (often overstay date unless official determination earlier)",
+                "Ignoring Arrabally/Yerrabelly / advance parole travel issues — verify current USCIS policy before travel advice"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Build a dated UL presence chart",
+                "State whether client can remain and adjust vs must depart with I-601A"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "ina-212a-waiver.md",
+            "aos-statutory-eligibility.md",
+            "procedural-posture-removal.md"
+          ],
+          "topic": "Unlawful presence bars",
+          "notes": "9(B)/9(C)"
+        },
+        {
+          "id": "misrepresentation-212i",
+          "file": "misrepresentation-212i.md",
+          "title": "Misrepresentation & § 212(i) waiver",
+          "cite": "INA §§ 212(a)(6)(C)(i), 212(i); 8 USCIS-PM; 9 FAM 302.9",
+          "practiceAreas": "Waiver | Consular | AOS | Visa fraud",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Willful misrepresentation of a material fact to procure a visa, admission, or other INA benefit",
+                "Materiality: misrepresentation tends to shut off a line of inquiry relevant to eligibility",
+                "Timely voluntary retraction may cure in some inspection contexts (narrow; fact-specific)",
+                "§ 212(i) waiver: extreme hardship to USC/LPR spouse or parent + discretion"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Statement / omission → visa DS-160 answers, border secondary, prior apps",
+                "Benefit sought → tourist visa, EAD, AOS, entry",
+                "Qualifying relative hardship → see `extreme-hardship-factors.md`",
+                "Equities / remorse → corrected statements, consistent later filings"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Confusing § 212(a)(6)(C)(i) misrepresentation with false USC claim (ii) — different waiver rules",
+                "Assuming “honest mistake” always defeats willfulness without record support",
+                "Filing AOS without addressing prior visa fraud disclosed on forms"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Separate: (1) whether ground applies; (2) waiver eligibility; (3) hardship; (4) discretion",
+                "Never coach clients to conceal prior misrepresentations"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "false-claim-usc.md",
+            "ina-212a-waiver.md",
+            "extreme-hardship-factors.md"
+          ],
+          "topic": "Misrepresentation / § 212(i)",
+          "notes": "Fraud waiver"
+        },
+        {
+          "id": "false-claim-usc",
+          "file": "false-claim-usc.md",
+          "title": "False claim to U.S. citizenship",
+          "cite": "INA §§ 212(a)(6)(C)(ii), 237(a)(3)(D), 237(a)(6); USCIS-PM Vol. 8",
+          "practiceAreas": "AOS | Removal | Naturalization | I-9 / benefits fraud",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "False representation of USC status on/after Sep 30, 1996 for any purpose/benefit under INA (incl. § 274A) or federal/state law",
+                "Can include: border claim, I-9 “USC” box, voter registration, some licenses",
+                "Generally no waiver for most applicants",
+                "Narrow statutory exception: both parents USC (or were), permanent U.S. residence before 16, reasonable belief of citizenship",
+                "Timely voluntary retraction may overcome in limited contexts; DOS may still discuss minor-capacity defenses — confirm current USCIS vs DOS policy"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Exact claim → form/version, date, wording, who received it",
+                "Knowledge / capacity → age, advice received, language barriers (policy-sensitive)",
+                "Exception facts → parents’ citizenship; age at claim; residence history",
+                "Voting → separate unlawful voting deportability analysis"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Treating as waivable misrepresentation under § 212(i)",
+                "Missing I-9 false USC claims during AOS/naturalization intake",
+                "Relying on outdated “knowing” / under-18 USCIS policy without checking current PM"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Flag as strategy-critical / possibly fatal early",
+                "Distinguish misrepresentation (i) vs false claim (ii) in writing"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "misrepresentation-212i.md",
+            "inadmissibility-overview.md"
+          ],
+          "topic": "False claim to USC",
+          "notes": "Generally non-waivable"
+        },
+        {
+          "id": "criminal-grounds-overview",
+          "file": "criminal-grounds-overview.md",
+          "title": "Criminal grounds overview (CIMT / controlled substances)",
+          "cite": "INA §§ 212(a)(2), 237(a)(2); § 101(a)(48) (conviction); § 212(h); categorical approach case law",
+          "practiceAreas": "Removal | AOS | Waiver | Padilla screening",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Obtain certified dispositions — statute of conviction, sentence, date",
+                "Apply categorical / modified categorical approach before labeling CIMT or aggravated felony",
+                "Distinguish inadmissibility vs deportability criminal tests (they differ)",
+                "Controlled substances: broad § 212(a)(2)(A)(i)(II); deportability has ≤30g marijuana exception that may not help EWI/inadmissibility clients",
+                "§ 212(h) may waive some CIMTs / single ≤30g marijuana possession — check qualifying relatives / 15-year rehabilitation path; not available for many drug offenses"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Court records → complaint, plea, judgment, sentence minutes",
+                "Record of conviction documents for divisible statutes",
+                "Rehabilitation → time since offense, counseling, employment",
+                "Immigration status at offense / entry mode (drives which INA section)"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Guessing CIMT from charge title without elements analysis",
+                "Ignoring juvenile / vacated / expunged disposition rules (jurisdiction-specific)",
+                "Advising plea without Padilla-quality immigration screen",
+                "Assuming § 212(h) covers drug trafficking"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "“Record of conviction shows [statute]; elements analysis [pending / attorney].”",
+                "Mark `[CITE NEEDED]` for circuit-specific categorical holdings"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "aggravated-felony-overview.md",
+            "ina-212a-waiver.md",
+            "cancellation-of-removal.md"
+          ],
+          "topic": "Criminal grounds / CIMT",
+          "notes": "§ 212(a)(2) / 237(a)(2)"
+        },
+        {
+          "id": "aggravated-felony-overview",
+          "file": "aggravated-felony-overview.md",
+          "title": "Aggravated felony — overview",
+          "cite": "INA § 101(a)(43); §§ 237(a)(2)(A)(iii), 208(b)(2), 241(a)(5) consequences",
+          "practiceAreas": "Removal | Asylum bars | Cancellation | Naturalization",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Offense must match a § 101(a)(43) category after categorical analysis",
+                "Consequences often severe: deportability; asylum bar (AF = particularly serious for asylum); limited relief; permanent § 212(a)(9)(A) bar if removed as AF",
+                "Sentence length sometimes statutory (e.g., theft/crime of violence with ≥1 year) — suspended sentence may still “count” depending on category",
+                "Retroactivity and deportability-trigger dates can be circuit-sensitive — verify before advising"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Exact statute + record of conviction",
+                "Imposed sentence / confinement",
+                "Date of conviction vs entry / adjustment / naturalization filing",
+                "Post-conviction relief status (vacatur grounds matter)"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Equating any felony with aggravated felony",
+                "Missing state misdemeanors that still meet AF definitions via sentence",
+                "Advising asylum/cancellation without AF screen"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "State hypothesized (a)(43) subsection and why elements match/fail",
+                "Separate AF conclusion from CIMT / controlled-substance analysis"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "criminal-grounds-overview.md",
+            "asylum-bars.md",
+            "cancellation-of-removal.md"
+          ],
+          "topic": "Aggravated felony",
+          "notes": "§ 101(a)(43)"
+        },
+        {
+          "id": "asylum-elements",
+          "file": "asylum-elements.md",
+          "title": "Asylum elements",
+          "cite": "INA §§ 101(a)(42), 208; 8 CFR §§ 208, 1208; REAL ID credibility",
+          "practiceAreas": "Asylum | Withholding | CAT (related)",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Refugee definition: past persecution or well-founded fear of future persecution",
+                "On account of protected ground: race, religion, nationality, particular social group, political opinion",
+                "Persecutor: government or private actor government unwilling/unable to control",
+                "Past persecution → presumption of future fear; DHS may rebut via changed circumstances or reasonable internal relocation",
+                "Credibility under totality (demeanor, consistency, plausibility) — REAL ID",
+                "One-year filing deadline unless changed/extraordinary circumstances + filing within reasonable time thereafter"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Harm narrative → dates, actors, injuries, threats, detentions",
+                "Nexus → persecutor statements, pattern evidence, country conditions",
+                "PSG → immutable/fundamental trait, particularity, social distinction (circuit-sensitive)",
+                "Corroboration → medical, police reports, declarations, country reports",
+                "Timeline → U.S. arrival date; reasons for delayed filing"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Conclusory PSG without particularity/social distinction",
+                "Ignoring one-year bar / exception proof",
+                "Inconsistencies across I-589, credible fear, and testimony",
+                "Treating withholding/CAT standards as identical to asylum"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Structure: credibility → past harm → nexus → future fear → relocation → discretion",
+                "Cite country conditions exhibits by name/date"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "asylum-bars.md",
+            "withholding-cat.md",
+            "procedural-posture-removal.md"
+          ],
+          "topic": "Asylum elements",
+          "notes": "Refugee definition / nexus"
+        },
+        {
+          "id": "asylum-bars",
+          "file": "asylum-bars.md",
+          "title": "Asylum bars & withholding distinctions",
+          "cite": "INA §§ 208(a)(2), 208(b)(2), 241(b)(3); 8 CFR §§ 208.13–.16, 1208.16–.18",
+          "practiceAreas": "Asylum | Withholding | CAT",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Screen bars early: persecutor; security danger; terrorist activity; particularly serious crime; serious nonpolitical crime abroad; firm resettlement (asylum)",
+                "Aggravated felony = particularly serious crime for asylum; for withholding, AF with ≥5-year sentence is particularly serious",
+                "Asylum is discretionary; withholding/CAT are mandatory if eligibility met (higher burden for withholding)",
+                "Firm resettlement bars asylum, not withholding",
+                "One-year deadline is a filing bar with limited exceptions"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Criminal history → AF / PSC analysis",
+                "Third-country status → residence offers, permanent resettlement facts",
+                "Security / persecutor allegations → roles, timelines",
+                "Filing clock → arrival, status, trauma, counsel access"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Stopping at asylum denial without evaluating withholding/CAT",
+                "Missing firm resettlement facts from prior safe-third residence",
+                "Assuming every AF bars withholding"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Checklist bars before merits deep-dive",
+                "Explicitly state which protections remain if asylum is barred"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "asylum-elements.md",
+            "withholding-cat.md",
+            "aggravated-felony-overview.md"
+          ],
+          "topic": "Asylum bars",
+          "notes": "PSC / firm resettlement / 1-year"
+        },
+        {
+          "id": "withholding-cat",
+          "file": "withholding-cat.md",
+          "title": "Withholding of removal & CAT",
+          "cite": "INA § 241(b)(3); Convention Against Torture; 8 CFR §§ 1208.16–.18",
+          "practiceAreas": "Withholding | CAT | Removal defense",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Available in removal proceedings (not affirmative USCIS asylum office grants)",
+                "Withholding: clear probability (>50%) of persecution on a protected ground; mandatory if met and not barred",
+                "CAT: more likely than not torture by/with acquiescence of public official; no nexus to protected ground required",
+                "Neither is a path to LPR/citizenship; both can support work authorization",
+                "Bars differ from asylum (e.g., firm resettlement does not bar withholding; PSC thresholds differ)"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Future risk evidence → country conditions, individualized threats",
+                "Torturer identity → government actor or acquiescence facts",
+                "Past torture/persecution as predictive evidence",
+                "Criminal bars screening → AF sentence length for withholding PSC"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Using asylum “well-founded fear” burden language for withholding",
+                "Forgetting CAT when nexus is weak but government torture risk is strong",
+                "Promising green card pathway from withholding/CAT alone"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "State burden of proof explicitly for each form of protection",
+                "Separate nexus analysis (withholding) from CAT acquiescence analysis"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "asylum-elements.md",
+            "asylum-bars.md"
+          ],
+          "topic": "Withholding & CAT",
+          "notes": "Mandatory protection"
+        },
+        {
+          "id": "family-based-immigration",
+          "file": "family-based-immigration.md",
+          "title": "Family-based immigration — IR & preference",
+          "cite": "INA §§ 201(b), 203(a); Form I-130; Visa Bulletin",
+          "practiceAreas": "Family | AOS | Consular",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Qualifying relationship + petitioner status (USC vs LPR)",
+                "Immediate relatives (IR): USC spouse; USC unmarried child <21; USC parent (petitioner ≥21) — no numerical quota",
+                "Preference: F1–F4 categories; subject to Visa Bulletin priority dates",
+                "Two-step: I-130 (or I-360) then AOS or consular immigrant visa",
+                "CSPA / surviving relative rules may preserve age or petition — screen when aging out or petitioner dies"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Relationship docs → marriage, birth, adoption, termination of prior marriages",
+                "Petitioner status → naturalization cert, green card, passport",
+                "Priority date → I-130 receipt/approval; chart A vs B filing eligibility",
+                "Bona fides → for marriages, see `marriage-based-aos.md`"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Filing AOS before priority date allows filing (wrong chart)",
+                "Missing prior marriage terminations",
+                "Assuming LPR petitioner can sponsor parent as IR (cannot)"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "State category + priority date + current bulletin chart used",
+                "Note derivative beneficiaries and aging-out risk"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "marriage-based-aos.md",
+            "aos-statutory-eligibility.md",
+            "affidavit-of-support.md"
+          ],
+          "topic": "Family IR & preference",
+          "notes": "I-130 categories"
+        },
+        {
+          "id": "marriage-based-aos",
+          "file": "marriage-based-aos.md",
+          "title": "Marriage-based AOS / immigrant visa",
+          "cite": "INA §§ 201(b)(2)(A)(i), 204, 216 (conditional residence); 8 CFR § 216; I-130/I-485",
+          "practiceAreas": "Family | AOS | Consular | Stokes interview",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Bona fide marriage at inception (not solely for immigration)",
+                "Petitioner USC or LPR with qualifying status; IR if USC spouse",
+                "Conditional LPR if marriage <2 years at grant — later I-751 joint filing or waiver",
+                "Admissibility / waiver / discretion still required",
+                "Interview readiness: shared life facts, originals, consistent testimony"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Bona fides → joint lease/mortgage, bank accounts, insurance, photos, messages, affidavits, children",
+                "Ceremony / license → civil marriage docs; prior divorce decrees",
+                "Cohabitation timeline → addresses since marriage",
+                "Abuse facts → if I-751 waiver / VAWA path"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Thin bona fides packet for short courtship / large age gap / limited shared language",
+                "Filing without terminating prior marriages",
+                "Travel on advance parole without counseling on risks",
+                "Ignoring conditional residence clock"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Organize exhibits by life domain (finances, residence, social, children)",
+                "Prepare couple for inconsistent secondary details vs core bona fides"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "family-based-immigration.md",
+            "aos-statutory-eligibility.md",
+            "vawa-u-t-overview.md"
+          ],
+          "topic": "Marriage-based AOS",
+          "notes": "Bona fides / I-751"
+        },
+        {
+          "id": "vawa-u-t-overview",
+          "file": "vawa-u-t-overview.md",
+          "title": "VAWA / U / T — humanitarian overview",
+          "cite": "INA §§ 204(a)(1) (VAWA), 101(a)(15)(U), 101(a)(15)(T), 245(m)/(l); Forms I-360, I-918, I-914",
+          "practiceAreas": "VAWA | U visa | T visa | Humanitarian AOS",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "VAWA: battery/extreme cruelty by qualifying USC/LPR relative; good faith marriage if spouse path; residence with abuser (with exceptions); GMC; self-petition I-360 then AOS",
+                "U: qualifying criminal activity; substantial physical/mental abuse; helpfulness to law enforcement; admissible or waivable (broad U waivers)",
+                "T): severe form of trafficking; physically present on account of trafficking; compliance with reasonable LE requests (age/trauma exceptions); extreme hardship if removed",
+                "These paths often bypass standard I-130 petitioner control and some § 245(c) barriers — confirm case type"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Abuse / crime / trafficking narrative + corroboration",
+                "Relationship / abuser status docs (VAWA)",
+                "LE certification I-918B / I-914B where required or strategic",
+                "Harm evidence → medical, mental health, police reports",
+                "Admissibility issues needing I-192 / other waivers"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Forcing AOS through abuser-controlled I-130 when VAWA is safer",
+                "Missing derivative eligibility for children",
+                "Under-documenting helpfulness / LE contact for U"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Safety planning first; never serve papers in ways that endanger client",
+                "Separate eligibility, waiver, and discretion sections"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "aos-statutory-eligibility.md",
+            "marriage-based-aos.md",
+            "ina-212a-waiver.md"
+          ],
+          "topic": "VAWA / U / T overview",
+          "notes": "Humanitarian"
+        },
+        {
+          "id": "procedural-posture-removal",
+          "file": "procedural-posture-removal.md",
+          "title": "Procedural posture — removal & filing history",
+          "cite": "INA §§ 239, 240, 241(a)(5); 8 CFR §§ 1003, 1239; EOIR Practice Manual",
+          "practiceAreas": "Removal | AOS | Asylum | Posture memos",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "State whether client is: not in proceedings; NTA served but not filed; in IJ proceedings; BIA/appeal; post-order; reinstatement",
+                "Proceedings commence when NTA is filed with EOIR, not merely served",
+                "Identify charges: § 212 vs § 237; burden of proof flips accordingly",
+                "Note prior filings: I-485/I-589/I-130, denials, RFEs, motions, voluntary departure, prior orders",
+                "Reinstatement (§ 241(a)(5)) after unlawful reentry post-order sharply limits relief"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "NTA / OSC copies; EOIR case number; hearing notices",
+                "Prior orders → IJ/BIA/circuit; expedited removal",
+                "Receipt notices / FOIA / USCIS account history",
+                "Address history for in absentia / notice issues",
+                "ICE encounters / detainers / bond history"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Filing AOS strategies without checking reinstatement / permanent bar",
+                "Missing that USCIS denial may still lead to NTA for priorities / asylum referrals",
+                "Confusing service of NTA with commencement"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Open every strategy memo with a 3–5 line posture block",
+                "List pending forms + next hearing/action date"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "cancellation-of-removal.md",
+            "unlawful-presence-bars.md",
+            "asylum-elements.md"
+          ],
+          "topic": "Procedural posture",
+          "notes": "NTA / EOIR / reinstatement"
+        },
+        {
+          "id": "cancellation-of-removal",
+          "file": "cancellation-of-removal.md",
+          "title": "Cancellation of removal",
+          "cite": "INA §§ 240A(a) (LPR), 240A(b) (non-LPR); 8 CFR § 1240.20",
+          "practiceAreas": "Removal defense | Cancellation",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "LPR cancellation (§ 240A(a)): LPR ≥5 years; continuous residence ≥7 years after lawful admission; not convicted of aggravated felony; discretion",
+                "Non-LPR cancellation (§ 240A(b)): continuous physical presence ≥10 years; GMC; not barred convictions; exceptional and extremely unusual hardship to USC/LPR spouse, parent, or child; discretion; annual caps",
+                "Stop-time rules for certain offenses / service of NTA — verify current Supreme Court / BIA rules before advising",
+                "Distinct from former § 212(c) (limited legacy cases only)"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Admission / LPR card history; presence evidence (rent, school, medical, taxes)",
+                "Qualifying relative hardship (non-LPR) — elevated standard vs extreme hardship",
+                "Criminal matrix → AF / CIMT / stop-time triggers",
+                "Positive equities for discretion"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Using ordinary extreme-hardship template for § 240A(b) (standard is higher)",
+                "Ignoring stop-time / presence breaks",
+                "Seeking cancellation when reinstatement / other bars apply"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Label LPR vs non-LPR path in the first sentence",
+                "Hardship section must emphasize exceptional and extremely unusual for (b)"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md",
+            "extreme-hardship-factors.md",
+            "criminal-grounds-overview.md",
+            "procedural-posture-removal.md"
+          ],
+          "topic": "Cancellation of removal",
+          "notes": "§ 240A(a)/(b)"
+        }
+      ]
+    },
+    {
+      "id": "firm_ops",
+      "title": "Firm operations",
+      "description": "Intake, files, trust/billing, and calendaring checklists.",
+      "topics": [
+        {
+          "id": "firm-ops-intake-checklist",
+          "file": "firm-ops-intake-checklist.md",
+          "title": "Firm ops — intake checklist",
+          "cite": "Professional conduct (conflicts, competence, communication); Office Keeper Ch. 3 adapted for RMV immigration practice",
+          "practiceAreas": "Firm operations | Intake",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Conflicts check before substantive consult (names, aliases, opposing parties, petitioning relatives, employers)",
+                "Capture immigration posture early: entries/exits, status, prior apps, criminal, fraud/USC claims",
+                "Identify goals + realistic pathways (AOS / consular / relief / not eligible)",
+                "Engagement letter / fee agreement signed; scope clear (what is / isn’t included)",
+                "Collect ID, status docs, prior receipts, court dispositions"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Conflict search result saved to matter",
+                "Intake sheet: biographic, family tree, timeline, prior counsel",
+                "Signed retainer + fee schedule",
+                "Document request list with due dates"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Starting work before conflict clearance",
+                "Missing criminal / false-claim questions that later sink AOS",
+                "Vague scope → disputes over appeals, RFEs, family derivatives"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Use structured intake fields that map to assessment facts",
+                "End consult with written next-steps + document list"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md"
+          ],
+          "topic": "Intake / conflicts / engagement",
+          "notes": ""
+        },
+        {
+          "id": "firm-ops-file-organization",
+          "file": "firm-ops-file-organization.md",
+          "title": "Firm ops — file organization",
+          "cite": "Office Keeper Ch. 3–4 (file systems, naming, closing); adapt to AOD matter IDs",
+          "practiceAreas": "Firm operations | Records",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "One matter ID = one digital file tree; avoid duplicate “working copies” outside CMS",
+                "Naming: `YYYY-MM-DD_doc-type_short-desc.ext` (or firm standard)",
+                "Subfolders: intake/, petitions/, evidence/, correspondence/, court/, billing/",
+                "Save email/PDFs into the matter — not only personal inboxes",
+                "Closing: final accounting, return/retain originals per policy, closing letter, retention schedule"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Matter folder matches AOD matterId",
+                "Index of key filings with receipt numbers",
+                "Closing checklist completed + retention end date"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Version chaos (“final_v7_REAL”)",
+                "Evidence only on staff laptop / WhatsApp",
+                "Closing without trust reconciliation"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Prefer searchable filenames over nested deep trees",
+                "On close: “open items zero; trust balance zero; retention = [date]”"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md"
+          ],
+          "topic": "File organization & closing",
+          "notes": ""
+        },
+        {
+          "id": "firm-ops-trust-billing",
+          "file": "firm-ops-trust-billing.md",
+          "title": "Firm ops — trust & billing basics",
+          "cite": "RPC 1.15 (safekeeping); Office Keeper Ch. 2; jurisdiction-specific IOLTA rules (confirm local)",
+          "practiceAreas": "Firm operations | Billing | Ethics",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Separate operating vs client trust / IOLTA accounts",
+                "Unearned fees / advances in trust until earned; promptly transfer when earned and cleared",
+                "Client ledgers: receipts, disbursements, running balance; monthly three-way reconciliation",
+                "Retain trust records per jurisdictional period (Office Keeper example: 7 years — confirm local rule)",
+                "Written fee agreement; clear flat-fee vs hourly vs hybrid for immigration matters"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Signed fee agreement",
+                "Trust ledger per matter",
+                "Monthly reconciliation reports",
+                "Invoices showing trust applications"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Paying firm expenses directly from trust",
+                "Borrowing between client ledgers",
+                "Flat fees treated as earned before work/ethics rule allows",
+                "Ignoring unclaimed trust funds escheat rules"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "Invoice line: “Applied from trust” vs “Due from client”",
+                "Flag negative trust balance as emergency ethics issue"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md"
+          ],
+          "topic": "Trust accounts & billing",
+          "notes": ""
+        },
+        {
+          "id": "firm-ops-calendaring",
+          "file": "firm-ops-calendaring.md",
+          "title": "Firm ops — calendaring & deadlines",
+          "cite": "Office Keeper Ch. 4 (calendaring / conflicts); EOIR / USCIS deadline practice",
+          "practiceAreas": "Firm operations | Removal | Benefits",
+          "sections": [
+            {
+              "heading": "What this element requires",
+              "bullets": [
+                "Dual calendaring: primary + backup for hard deadlines (RFE, appeal, IJ filing, biometrics, interview)",
+                "Immigration-critical dates: authorized stay end; UL presence thresholds; conditional residence / I-751 window; one-year asylum clock; NTA hearing",
+                "Conflict check integrated with new matter opening",
+                "Ticklers for receipt notices expected, FOIA follow-ups, Visa Bulletin checks"
+              ]
+            },
+            {
+              "heading": "Facts that prove it",
+              "bullets": [
+                "Calendar entries with matterId + responsible attorney",
+                "Deadline source document linked",
+                "Confirmation of backup calendar owner"
+              ]
+            },
+            {
+              "heading": "Common pitfalls",
+              "bullets": [
+                "Single-point-of-failure personal calendar only",
+                "Counting deadlines from wrong trigger (receipt vs decision vs service)",
+                "Missing derivative children’s aging-out dates"
+              ]
+            },
+            {
+              "heading": "Sample language pointers",
+              "bullets": [
+                "“Deadline = [date] / trigger = [event] / responsible = [name] / backup = [name]”"
+              ]
+            }
+          ],
+          "related": [
+            "00-index.md"
+          ],
+          "topic": "Calendaring & deadlines",
+          "notes": ""
+        }
+      ]
+    }
+  ]
+}

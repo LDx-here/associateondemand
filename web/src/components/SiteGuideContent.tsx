@@ -90,6 +90,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       "Firm Memory wizard — upload prior work, set tone preferences, save style edits from agent output.",
       "Deliverable catalog — flat-fee ranges and turnaround for launch SKUs; links prefill intake.",
       "Firm assessment templates — blank forms per practice area for consistent assessment uploads.",
+      "Firm knowledge map — browse immigration and firm-ops outlines on the Knowledge map (More tools).",
       "Incomplete Firm Memory? Dashboard and intake nudge you to finish setup before your first pilot.",
     ],
     cta: { href: "/templates#firm-memory", label: "Set up Firm Memory" },

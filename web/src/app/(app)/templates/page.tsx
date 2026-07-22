@@ -28,6 +28,12 @@ export default function TemplateCatalogPage() {
             >
               Set up Firm Memory →
             </Link>
+            <Link
+              href="/knowledge-map#firm-knowledge"
+              className="text-xs font-medium text-sky-800 underline-offset-2 hover:underline"
+            >
+              Browse knowledge map →
+            </Link>
           </div>
         </div>
         <Link href="/assignments/new" className={btnPrimary}>

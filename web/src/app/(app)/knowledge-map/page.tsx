@@ -1,15 +1,7 @@
-"use client";
-
-import { KnowledgeMapGraph } from "@/components/KnowledgeMapGraph";
+import { KnowledgeMapShell } from "@/components/KnowledgeMapShell";
+import knowledgeMapData from "@/lib/knowledge-map/data.json";
+import type { KnowledgeMapData } from "@/lib/knowledge-map/types";
 
 export default function KnowledgeMapPage() {
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Knowledge map</h1>
-      <p className="text-sm text-slate-600">
-        Pattern agent graph — matters linked to relief types and jurisdictions (Qdrant-backed in production).
-      </p>
-      <KnowledgeMapGraph />
-    </div>
-  );
+  return <KnowledgeMapShell firmKnowledge={knowledgeMapData as KnowledgeMapData} />;
 }

@@ -1,9 +1,13 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-21 (CDT) — Pass 23b auto-create FIRM-TEMPLATES matter  
+**Last updated:** 2026-07-21 (CDT) — Pass 25 topic-aware immigration knowledge  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 25 (2026-07-21):** Topic-aware Firm Knowledge loader — `select_immigration_knowledge_files` scores by case type / deliverable SKU / facts keywords (core boosts for AOS, waiver, asylum, removal, criminal); skips meta files; ~4–6k / max 8. Wired via `format_matter_context` + drafting context. pytest 71; Fly API redeploy.
+
+**Pass 24 (2026-07-21):** Extended existing `/knowledge-map` (Obsidian-style D3) with Firm knowledge tab — committed JSON outlines from `brain/03_Firm_Knowledge`; sync `npm run sync:knowledge-map`; Templates link `#firm-knowledge`. next build green.
 
 **Pass 23b (2026-07-21):** Fix `/templates` replace — auto-create Closed Matter `FIRM-TEMPLATES` on first deliverable template upload (web + Fly API); clearer Airtable permission errors; demo mode provisions without PAT. pytest 66; next build green.
 
@@ -15,7 +19,7 @@
 
 **Pass 20 (2026-07-21):** External partner funnel `/partner/submit` + drafting prompt hardening.
 
-**Next (user choice):** On prod `/templates`, replace AOS brief with firm DOCX (should succeed without Matter not found) → pilot draft and confirm Draft QC “Firm Memory applied”.
+**Next (user choice):** Pilot AOS discretionary draft on prod — confirm Draft QC / prompts inject topic-relevant Firm Knowledge (hardship/waiver when facts mention them). Optionally browse `/knowledge-map#firm-knowledge`.
 
 ## Dual track
 
