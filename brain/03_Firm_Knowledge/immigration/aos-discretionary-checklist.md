@@ -1,26 +1,32 @@
-# I-485 discretionary factors — quick checklist
+# I-485 discretionary factors
 
-Use with PM-602-0199 / 1 USCIS-PM E.8. Agents may cite this structure; attorney verifies facts.
+**Cite:** INA § 245; 8 CFR § 245.1; 1 USCIS-PM E.8 / PM-602-0199 (discretion)
+**Practice areas:** AOS | Family | Employment
 
-## Positive equities (typical)
+## What this element requires
+- Statutory eligibility under § 245(a) or § 245(i) is necessary but not sufficient
+- Favorable exercise of discretion under totality of the circumstances
+- Positive equities must outweigh adverse factors when adverse facts exist
+- Explain adverse facts; do not ignore them
 
-- Family ties (USC/LPR spouse, children)
-- Length of residence / community ties
-- Employment history and tax compliance
-- Hardship to qualifying relatives
-- Rehabilitation / good moral character evidence
-- Military / civic contributions
+## Facts that prove it
+- Family ties → USC/LPR spouse, children, household dependence
+- Residence / community → years of presence, school, church, civic roles
+- Employment / taxes → W-2s, returns, letters from employers
+- Hardship to relatives → medical, financial, caregiving facts
+- Rehabilitation / GMC → counseling, clean record since offense, character letters
+- Adverse history → arrests, fraud concerns, immigration violations (with mitigation)
 
-## Adverse factors (flag explicitly)
+## Common pitfalls
+- Treating any single factor as dispositive
+- Omitting adverse facts that appear on forms or biometrics
+- Inventing pin cites — use `[CITE NEEDED]` for attorney verification
+- Leaving `[FACT NEEDED]` gaps unflagged in drafts
 
-- Criminal history (nature, recency, rehabilitation)
-- Immigration violations / unlawful presence
-- Fraud or misrepresentation concerns
-- Public safety / national security flags
+## Sample language pointers
+- Lead with one-sentence case theme
+- “Totality of the circumstances” framing; weigh equities expressly
+- Pair each adverse fact with mitigation evidence
 
-## Drafting rules
-
-- Case theme first (one sentence)
-- Totality of the circumstances — do not treat any single factor as dispositive
-- Use `[FACT NEEDED]` when the record is incomplete
-- Never invent pin cites; mark `[CITE NEEDED]` for attorney Westlaw check
+## Related files
+- See `00-index.md` → `aos-statutory-eligibility.md`, `extreme-hardship-factors.md`

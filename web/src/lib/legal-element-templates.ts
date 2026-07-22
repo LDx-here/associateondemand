@@ -22,14 +22,20 @@ const IMMIGRATION_CORE: LegalElementTemplate[] = [
   {
     id: "statutory-eligibility",
     name: "Statutory eligibility",
-    description: "Relief type and INA/CFR basis for the requested outcome.",
+    description: "Relief type and INA/CFR basis for the requested outcome (§ 245(a)/(i), etc.).",
     referenceSlug: "immigration-statutory-eligibility",
   },
   {
     id: "admissibility",
     name: "Admissibility / inadmissibility grounds",
-    description: "INA §212(a) triggers and waiver strategy.",
+    description: "INA §212(a) / §237(a) triggers and waiver strategy.",
     referenceSlug: "immigration-admissibility",
+  },
+  {
+    id: "unlawful-presence",
+    name: "Unlawful presence bars (§ 212(a)(9)(B)/(C))",
+    description: "3/10-year bars, permanent bar, and provisional waiver posture.",
+    referenceSlug: "immigration-unlawful-presence",
   },
   {
     id: "extreme-hardship",
@@ -37,6 +43,12 @@ const IMMIGRATION_CORE: LegalElementTemplate[] = [
     fieldId: "extremeHardshipFactors",
     feedsSection: "Extreme hardship analysis",
     referenceSlug: "immigration-extreme-hardship",
+  },
+  {
+    id: "waiver-strategy",
+    name: "Waiver strategy (I-601 / I-601A / I-212)",
+    description: "Match ground → waiver form → qualifying relative → discretion.",
+    referenceSlug: "immigration-waiver-strategy",
   },
   {
     id: "discretionary-factors",
@@ -51,6 +63,12 @@ const IMMIGRATION_CORE: LegalElementTemplate[] = [
     feedsSection: "Procedural posture",
     referenceSlug: "immigration-procedure",
   },
+  {
+    id: "criminal-grounds",
+    name: "Criminal grounds (CIMT / controlled substances / AF)",
+    description: "Categorical analysis and relief impact.",
+    referenceSlug: "immigration-criminal-grounds",
+  },
 ];
 
 const ASYLUM_ELEMENTS: LegalElementTemplate[] = [
@@ -59,6 +77,7 @@ const ASYLUM_ELEMENTS: LegalElementTemplate[] = [
   { id: "psg", name: "Particular social group (if applicable)", referenceSlug: "asylum-psg" },
   { id: "firm-resettlement", name: "Internal relocation / firm resettlement", referenceSlug: "asylum-relocation" },
   { id: "bars", name: "Bars to asylum / withholding", referenceSlug: "asylum-bars" },
+  { id: "withholding-cat", name: "Withholding of removal / CAT", referenceSlug: "asylum-withholding-cat" },
 ];
 
 const PI_CORE: LegalElementTemplate[] = [
