@@ -82,8 +82,38 @@ def _ocr_image(path: Path) -> tuple[str, float]:
         return "", 0.0
 
 
+def _extract_docx_text(path: Path) -> tuple[str, str | None]:
+    """Extract readable text from a .docx (OOXML). Returns (text, error)."""
+
+    try:
+        from docx import Document  # type: ignore[import-not-found]
+    except ImportError:
+        return "", "python-docx is not installed on the API server"
+
+    try:
+        doc = Document(str(path))
+        parts: list[str] = []
+        for paragraph in doc.paragraphs:
+            text = (paragraph.text or "").strip()
+            if text:
+                parts.append(text)
+        for table in doc.tables:
+            for row in table.rows:
+                cells = [(cell.text or "").strip() for cell in row.cells]
+                cells = [c for c in cells if c]
+                if cells:
+                    parts.append(" | ".join(cells))
+        combined = "\n\n".join(parts).strip()
+        if not combined:
+            return "", "DOCX opened but contained no extractable text"
+        return combined, None
+    except Exception as exc:
+        LOGGER.warning("DOCX text extraction failed for %s: %s", path.name, exc)
+        return "", f"Could not read DOCX: {exc}"
+
+
 def run_ocr_pipeline(stored_path: Path | str) -> OcrResult:
-    """Extract text from PDF or image uploads."""
+    """Extract text from PDF, DOCX, image, or plain-text uploads."""
 
     path = Path(stored_path)
     suffix = path.suffix.lower()
@@ -130,6 +160,43 @@ def run_ocr_pipeline(stored_path: Path | str) -> OcrResult:
         except Exception as exc:
             LOGGER.warning("PDF OCR fallback failed: %s", exc)
 
+    if suffix == ".docx":
+        text, err = _extract_docx_text(path)
+        if text.strip():
+            return OcrResult(
+                text=text,
+                method="docx_text",
+                confidence=0.95,
+                processing_status="processed",
+                page_count=1,
+                metadata=meta,
+            )
+        return OcrResult(
+            text="",
+            method="docx_text",
+            confidence=0.0,
+            processing_status="failed",
+            page_count=0,
+            metadata={
+                **meta,
+                "reason": err
+                or "DOCX text extraction failed. Re-save as .docx (not .doc) or upload a PDF.",
+            },
+        )
+
+    if suffix == ".doc":
+        return OcrResult(
+            text="",
+            method="unsupported",
+            confidence=0.0,
+            processing_status="failed",
+            page_count=0,
+            metadata={
+                **meta,
+                "reason": "Legacy .doc is not supported. Save as .docx or PDF and upload again.",
+            },
+        )
+
     if suffix in {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".webp", ".bmp", ".gif"}:
         text, conf = _ocr_image(path)
         return OcrResult(
@@ -141,26 +208,33 @@ def run_ocr_pipeline(stored_path: Path | str) -> OcrResult:
             metadata=meta,
         )
 
-    # Plain text / unknown — read directly when possible
-    try:
-        raw = path.read_text(encoding="utf-8", errors="replace")
-        if raw.strip():
-            return OcrResult(
-                text=raw,
-                method="plain_text",
-                confidence=0.99,
-                processing_status="processed",
-                page_count=1,
-                metadata=meta,
-            )
-    except Exception:
-        pass
+    if suffix in {".txt", ".md", ".csv"}:
+        try:
+            raw = path.read_text(encoding="utf-8", errors="replace")
+            if raw.strip():
+                return OcrResult(
+                    text=raw,
+                    method="plain_text",
+                    confidence=0.99,
+                    processing_status="processed",
+                    page_count=1,
+                    metadata=meta,
+                )
+        except Exception as exc:
+            LOGGER.warning("Plain text read failed for %s: %s", path.name, exc)
 
+    # Avoid treating binary Office/ZIP files as UTF-8 plain text (garbled OCR).
     return OcrResult(
         text="",
         method="unsupported",
         confidence=0.0,
         processing_status="failed",
         page_count=0,
-        metadata={**meta, "reason": f"unsupported type {suffix or 'unknown'}"},
+        metadata={
+            **meta,
+            "reason": (
+                f"Unsupported file type ({suffix or 'unknown'}). "
+                "Upload a PDF, DOCX, image (PNG/JPG), or plain text file."
+            ),
+        },
     )

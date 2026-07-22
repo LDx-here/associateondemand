@@ -61,7 +61,7 @@ def _draft_extra_context(doc_type: str, matter_id: str) -> str:
     if citation_skill and doc_type in {"aos_discretionary_brief", "brief_section", "general"}:
         parts.append("## Citation Verification Skill (mandatory for cited drafts)\n" + citation_skill[:12000])
 
-    context_block = build_drafting_context_block(matter_id)
+    context_block = build_drafting_context_block(matter_id, deliverable_hint=doc_type)
     if context_block:
         parts.append(context_block)
 

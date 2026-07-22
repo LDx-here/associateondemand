@@ -111,6 +111,12 @@ def process_uploaded_document(
     ocr_text, _anon = anonymize_text(ocr.text, tier=current_tier())
     quality = text_quality_score(ocr_text)
     combined_confidence = round((ocr.confidence + quality) / 2, 3)
+    ocr_failure_reason = ""
+    if ocr.processing_status == "failed":
+        ocr_failure_reason = str(
+            (ocr.metadata or {}).get("reason")
+            or f"Could not extract text from {filename}. Try PDF or DOCX."
+        )
 
     cat = categorizer_agent.categorize(ocr_text, filename)
     ctx = extraction_context or {}
@@ -191,7 +197,7 @@ def process_uploaded_document(
             note_type="Assessment Document",
         )
 
-    return {
+    result: dict[str, Any] = {
         "document_id": doc_id,
         "external_id": external_id,
         "filename": filename,
@@ -213,3 +219,7 @@ def process_uploaded_document(
         "metadata": ocr.metadata,
         "extraction_context_applied": bool(ctx),
     }
+    if ocr_failure_reason:
+        result["error"] = ocr_failure_reason
+        result["ocr_error"] = ocr_failure_reason
+    return result

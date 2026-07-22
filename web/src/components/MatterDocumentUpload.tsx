@@ -88,7 +88,7 @@ export function MatterDocumentUpload({
     <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <h3 className="text-sm font-semibold text-slate-900">Upload supporting document</h3>
       <p className="text-xs text-slate-600">
-        PDF, image, or text files upload here and appear immediately in the Documents list above.{" "}
+        PDF, DOCX, image, or text files upload here and appear immediately in the Documents list above.{" "}
         {documentStorageNote(matterId)}.
       </p>
       <UploadSupportingDocsHint context="matter" />
@@ -100,7 +100,7 @@ export function MatterDocumentUpload({
       ) : null}
       <form className="space-y-3" onSubmit={onSubmit}>
         <input
-          accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.txt"
+          accept=".pdf,.docx,.png,.jpg,.jpeg,.tif,.tiff,.txt,.md"
           className="w-full text-sm"
           name="file"
           type="file"

@@ -27,6 +27,7 @@ import {
 import {
   isAssessmentTemplateDocument,
   isFirmSampleDocument,
+  parseDocumentCategory,
 } from "../assessment-documents";
 import { ASSIGNMENT_TRANSITIONS, buildDeliveredHistory, isValidAssignmentTransition } from "../assignment-transitions";
 import { emptyCaseAssessment, parseCaseAssessment, serializeCaseAssessment } from "../case-assessment";
@@ -257,7 +258,11 @@ export async function resolveMatterRecordId(
 
 function isFirmWideDocumentCategory(category: string): boolean {
   const doc = { category };
-  return isAssessmentTemplateDocument(doc) || isFirmSampleDocument(doc);
+  return (
+    isAssessmentTemplateDocument(doc) ||
+    isFirmSampleDocument(doc) ||
+    parseDocumentCategory(category).role === "deliverable_template"
+  );
 }
 
 function filterDocumentsForMatter(
@@ -1231,6 +1236,17 @@ export async function listAssessmentTemplatesFromAirtable(): Promise<DocumentRow
 export async function listFirmSampleDocumentsFromAirtable(): Promise<DocumentRow[]> {
   const d = F.documents;
   const formula = `FIND('firm_sample', {${d.category}})`;
+  try {
+    const records = await airtableListAll<RawFields>(TABLES.documents, { filterByFormula: formula });
+    return records.map((r) => mapDocument(r, "FIRM-TEMPLATES"));
+  } catch {
+    return [];
+  }
+}
+
+export async function listDeliverableTemplateDocumentsFromAirtable(): Promise<DocumentRow[]> {
+  const d = F.documents;
+  const formula = `FIND('deliverable_template', {${d.category}})`;
   try {
     const records = await airtableListAll<RawFields>(TABLES.documents, { filterByFormula: formula });
     return records.map((r) => mapDocument(r, "FIRM-TEMPLATES"));

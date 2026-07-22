@@ -53,6 +53,14 @@ _DELIVERABLE_ALIASES: dict[str, str] = {
     "custom-motion": "brief_section",
 }
 
+# Task type → catalog SKU id (for firm deliverable template lookup).
+_TASK_TO_DELIVERABLE_ID: dict[str, str] = {
+    "aos_discretionary_brief": "aos-discretionary-brief",
+    "cover_letter": "cover-letter",
+    "research_memo": "research-memo",
+    "brief_section": "hearing-packet",
+}
+
 
 def _normalize_task_type(doc_type: str, deliverable_hint: str = "") -> str:
     for key in (deliverable_hint, doc_type):
@@ -175,7 +183,99 @@ def build_drafting_system_prompt(
     return prompt
 
 
-def build_drafting_context_block(matter_code: str, matter_ctx: dict[str, Any] | None = None) -> str:
+def _resolve_catalog_deliverable_id(hint: str) -> str | None:
+    """Map draft task type or free text to a catalog SKU id."""
+
+    raw = (hint or "").strip().lower()
+    if not raw:
+        return None
+    if raw in _TASK_TO_DELIVERABLE_ID:
+        return _TASK_TO_DELIVERABLE_ID[raw]
+    if raw in _DELIVERABLE_ALIASES:
+        # hyphenated catalog id already
+        if "-" in raw:
+            return raw
+        return _TASK_TO_DELIVERABLE_ID.get(_DELIVERABLE_ALIASES[raw])
+    # Free-text instruction may mention a SKU
+    for sku in (
+        "aos-discretionary-brief",
+        "hearing-packet",
+        "research-memo",
+        "cover-letter",
+        "custom-motion",
+        "demand-letter",
+    ):
+        if sku in raw or sku.replace("-", " ") in raw or sku.replace("-", "_") in raw:
+            return sku
+    task = _normalize_task_type(raw, raw)
+    return _TASK_TO_DELIVERABLE_ID.get(task)
+
+
+def fetch_deliverable_template_excerpt(
+    deliverable_id: str,
+    *,
+    max_chars: int = 2500,
+) -> str | None:
+    """Load firm-uploaded deliverable template meta from FIRM-TEMPLATES notes (best-effort)."""
+
+    if not deliverable_id:
+        return None
+    try:
+        notes = at.list_matter_notes("FIRM-TEMPLATES", max_records=80)
+    except Exception:
+        return None
+
+    type_key = at.FIELDS_NOTES.get("type", "type")
+    content_key = at.FIELDS_NOTES.get("content", "content")
+    best: dict[str, Any] | None = None
+    best_version = -1
+    for note in notes:
+        content = str(note.get(content_key) or note.get("content") or "").strip()
+        if not content or "deliverableId" not in content:
+            continue
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(data, dict):
+            continue
+        if data.get("role") != "deliverable_template":
+            continue
+        if data.get("deliverableId") != deliverable_id:
+            continue
+        note_type = str(note.get(type_key) or note.get("type") or "")
+        if note_type and note_type != "Deliverable Template Meta":
+            continue
+        version = int(data.get("version") or 0)
+        if version >= best_version:
+            best = data
+            best_version = version
+
+    if not best:
+        return None
+
+    lines = [
+        f"## Firm deliverable template ({deliverable_id})",
+        f"- Source: {best.get('source') or 'firm_uploaded'}",
+        f"- Version: {best.get('version') or 1}",
+    ]
+    if filename := best.get("filename") or best.get("title"):
+        lines.append(f"- File: {filename}")
+    if tweaks := (best.get("tweakNotes") or "").strip():
+        lines.append(f"- Attorney tweaks:\n{tweaks[:1500]}")
+    if excerpt := (best.get("textPreview") or "").strip():
+        lines.append(f"- Template excerpt:\n{excerpt[:max_chars]}")
+    if len(lines) <= 3:
+        return None
+    return "\n".join(lines)
+
+
+def build_drafting_context_block(
+    matter_code: str,
+    matter_ctx: dict[str, Any] | None = None,
+    *,
+    deliverable_hint: str = "",
+) -> str:
     """Always inject structured facts + assessment OCR + case assessment + Firm Memory for drafting."""
 
     ctx = matter_ctx if matter_ctx is not None else fetch_matter_context(matter_code)
@@ -221,10 +321,21 @@ def build_drafting_context_block(matter_code: str, matter_ctx: dict[str, Any] | 
     except Exception:
         pass
 
+    # Optional firm-uploaded deliverable template (does not break if missing).
+    try:
+        sku = _resolve_catalog_deliverable_id(deliverable_hint)
+        if sku:
+            tmpl = fetch_deliverable_template_excerpt(sku)
+            if tmpl:
+                parts.append(tmpl)
+    except Exception:
+        pass
+
     has_matter_substance = any(
         p.startswith("## Case assessment")
         or p.startswith("## Structured facts")
         or p.startswith("## Firm Memory")
+        or p.startswith("## Firm deliverable template")
         for p in parts
     )
     if not has_matter_substance:

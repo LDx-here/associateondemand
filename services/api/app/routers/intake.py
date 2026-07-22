@@ -96,20 +96,33 @@ async def _process_single(
     safe_name = (file.filename or "upload").replace("/", "-")
     dest = upload_dir / f"{doc_id}-{safe_name}"
     content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
     dest.write_bytes(content)
 
     from app.services.intake_processor import _parse_extraction_context
 
-    result = process_uploaded_document(
-        db,
-        external_id=matter_id,
-        filename=safe_name,
-        stored_path=dest,
-        mime_type=file.content_type,
-        document_category=document_category,
-        extraction_context=_parse_extraction_context(extraction_context),
-    )
+    try:
+        result = process_uploaded_document(
+            db,
+            external_id=matter_id,
+            filename=safe_name,
+            stored_path=dest,
+            mime_type=file.content_type,
+            document_category=document_category,
+            extraction_context=_parse_extraction_context(extraction_context),
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Upload processing failed: {exc}. Try PDF or DOCX, or check the API logs.",
+        ) from exc
     result["tier_gate"] = {"manual_review_approved": manual_review_approved}
+    # Soft-fail OCR still persists the file; surface a clear message for the UI.
+    if result.get("processing_status") == "failed" and result.get("error"):
+        result["ok"] = False
+    else:
+        result["ok"] = True
     return result
 
 

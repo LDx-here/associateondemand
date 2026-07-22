@@ -12,6 +12,7 @@ import {
   listDocumentsFromAirtable,
   listAssessmentTemplatesFromAirtable,
   listFirmSampleDocumentsFromAirtable,
+  listDeliverableTemplateDocumentsFromAirtable,
   countFirmMemoryPatternsFromAirtable,
   registerAssessmentDocumentInAirtable,
   listEventsForMatterFromAirtable,
@@ -64,15 +65,28 @@ import {
 } from "./demo-store-mutable";
 import {
   ASSESSMENT_DOCUMENT_NOTE_TYPE,
+  DELIVERABLE_TEMPLATE_NOTE_TYPE,
   encodeAssessmentTemplateCategory,
+  encodeDeliverableTemplateCategory,
   encodeFirmSampleCategory,
   FIRM_TEMPLATE_MATTER_ID,
   isAssessmentTemplateDocument,
+  isDeliverableTemplateDocument,
   isFirmSampleDocument,
+  parseDeliverableTemplateMeta,
   serializeAssessmentOcrPayload,
+  serializeDeliverableTemplateMeta,
   type AssessmentOcrPayload,
+  type DeliverableTemplateMetaPayload,
   type FirmSampleDocType,
 } from "./assessment-documents";
+import {
+  defaultSourceForDeliverable,
+  type DeliverableTemplateCatalogItem,
+} from "./deliverable-template-sources";
+import { DELIVERABLE_CATALOG } from "./deliverable-catalog";
+
+export type { DeliverableTemplateCatalogItem };
 import type {
   AssignmentStatus,
   AssignmentTier,
@@ -204,7 +218,8 @@ export async function listDocumentsForMatter(matterId: string): Promise<Document
       (d) =>
         d.matterId === matterId &&
         !isAssessmentTemplateDocument(d) &&
-        !isFirmSampleDocument(d),
+        !isFirmSampleDocument(d) &&
+        !isDeliverableTemplateDocument(d),
     );
   }
   return listDocumentsFromAirtable(matterId);
@@ -889,4 +904,215 @@ export async function saveAssessmentOcrPayload(
     await createNoteInAirtable(matterId, content, author, ASSESSMENT_DOCUMENT_NOTE_TYPE);
   }
   return payload;
+}
+
+async function listDeliverableTemplateMetaNotes(): Promise<Note[]> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    return seed.notes.filter(
+      (n) => n.matterId === FIRM_TEMPLATE_MATTER_ID && n.type === DELIVERABLE_TEMPLATE_NOTE_TYPE,
+    );
+  }
+  try {
+    const notes = await listNotesForMatterFromAirtable(FIRM_TEMPLATE_MATTER_ID);
+    return notes.filter((n) => n.type === DELIVERABLE_TEMPLATE_NOTE_TYPE);
+  } catch {
+    return [];
+  }
+}
+
+export async function listDeliverableTemplateDocuments(): Promise<DocumentRow[]> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    return seed.documents.filter(
+      (d) => d.matterId === FIRM_TEMPLATE_MATTER_ID || isDeliverableTemplateDocument(d),
+    );
+  }
+  return listDeliverableTemplateDocumentsFromAirtable();
+}
+
+export async function listDeliverableTemplateCatalog(): Promise<DeliverableTemplateCatalogItem[]> {
+  const { formatCatalogQuote, isPhase0LaunchSku } = await import("./deliverable-catalog");
+  const [docs, notes] = await Promise.all([
+    listDeliverableTemplateDocuments(),
+    listDeliverableTemplateMetaNotes(),
+  ]);
+
+  const metaByDeliverable = new Map<string, DeliverableTemplateMetaPayload>();
+  for (const note of notes) {
+    const parsed = parseDeliverableTemplateMeta(note.content);
+    if (!parsed) continue;
+    const existing = metaByDeliverable.get(parsed.deliverableId);
+    if (!existing || (parsed.version ?? 0) >= (existing.version ?? 0)) {
+      metaByDeliverable.set(parsed.deliverableId, parsed);
+    }
+  }
+
+  return DELIVERABLE_CATALOG.map((entry) => {
+    const category = encodeDeliverableTemplateCategory(entry.id);
+    const matches = docs
+      .filter((d) => d.category === category)
+      .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
+    const document = matches[0] ?? null;
+    const meta = metaByDeliverable.get(entry.id) ?? null;
+    return {
+      deliverableId: entry.id,
+      name: entry.name,
+      tier: entry.tier,
+      description: entry.description,
+      pricingLabel: formatCatalogQuote(entry),
+      phase0: isPhase0LaunchSku(entry.id),
+      defaultSource: defaultSourceForDeliverable(entry),
+      document,
+      meta,
+    };
+  });
+}
+
+export async function saveDeliverableTemplate(payload: {
+  deliverableId: string;
+  title: string;
+  airtableDocumentId?: string;
+  postgresDocumentId?: string;
+  textPreview?: string;
+  fileType?: string;
+  tweakNotes?: string;
+  source?: string;
+}): Promise<DeliverableTemplateMetaPayload> {
+  const deliverableId = payload.deliverableId.trim();
+  if (!deliverableId || !DELIVERABLE_CATALOG.some((d) => d.id === deliverableId)) {
+    throw new Error("Unknown deliverableId");
+  }
+  const category = encodeDeliverableTemplateCategory(deliverableId);
+  const existingItem = (await listDeliverableTemplateCatalog()).find(
+    (c) => c.deliverableId === deliverableId,
+  );
+  const existingMeta = existingItem?.meta;
+  const version = (existingMeta?.version ?? 0) + 1;
+  const resolvedDocId =
+    payload.airtableDocumentId ?? existingMeta?.airtableDocumentId ?? existingItem?.document?.id;
+
+  let docId = resolvedDocId;
+  const shouldRegisterDoc = Boolean(payload.airtableDocumentId) || !resolvedDocId;
+  if (shouldRegisterDoc) {
+    if (isDemoMode()) {
+      const seed = await loadDemoSeed();
+      const existingIdx = seed.documents.findIndex(
+        (d) =>
+          (d.matterId === FIRM_TEMPLATE_MATTER_ID || isDeliverableTemplateDocument(d)) &&
+          d.category === category,
+      );
+      const doc = await addDocumentDemo(FIRM_TEMPLATE_MATTER_ID, {
+        title: payload.title,
+        category,
+        id: payload.airtableDocumentId ?? resolvedDocId,
+        fileType: payload.fileType,
+      });
+      if (existingIdx >= 0) {
+        // addDocumentDemo appended; replace prior row for this SKU
+        seed.documents[existingIdx] = doc;
+        if (seed.documents[seed.documents.length - 1]?.id === doc.id) {
+          seed.documents.pop();
+          seed.documents[existingIdx] = doc;
+        }
+      }
+      await persistSeed();
+      docId = doc.id;
+    } else {
+      const doc = await registerAssessmentDocumentInAirtable(FIRM_TEMPLATE_MATTER_ID, {
+        title: payload.title,
+        category,
+        airtableDocumentId: payload.airtableDocumentId ?? resolvedDocId,
+      });
+      docId = doc.id;
+    }
+  }
+
+  const meta: DeliverableTemplateMetaPayload = {
+    v: 1,
+    deliverableId,
+    role: "deliverable_template",
+    source: payload.source ?? existingMeta?.source ?? "firm_uploaded",
+    version,
+    title: payload.title,
+    airtableDocumentId: docId,
+    postgresDocumentId: payload.postgresDocumentId ?? existingMeta?.postgresDocumentId,
+    filename: payload.title,
+    fileType: payload.fileType ?? existingMeta?.fileType,
+    textPreview: payload.textPreview?.slice(0, 8000) ?? existingMeta?.textPreview,
+    tweakNotes: payload.tweakNotes?.slice(0, 4000) ?? existingMeta?.tweakNotes,
+    uploadedAt: new Date().toISOString(),
+  };
+
+  const content = serializeDeliverableTemplateMeta(meta);
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const existing = seed.notes.find(
+      (n) =>
+        n.matterId === FIRM_TEMPLATE_MATTER_ID &&
+        n.type === DELIVERABLE_TEMPLATE_NOTE_TYPE &&
+        parseDeliverableTemplateMeta(n.content)?.deliverableId === deliverableId,
+    );
+    if (existing) {
+      existing.content = content;
+      existing.author = "Attorney";
+    } else {
+      seed.notes.push({
+        id: `note-tmpl-${Date.now()}`,
+        matterId: FIRM_TEMPLATE_MATTER_ID,
+        author: "Attorney",
+        content,
+        createdAt: new Date().toISOString(),
+        type: DELIVERABLE_TEMPLATE_NOTE_TYPE,
+      });
+    }
+    await persistSeed();
+    return meta;
+  }
+
+  const notes = await listDeliverableTemplateMetaNotes();
+  const existingNote = notes.find(
+    (n) => parseDeliverableTemplateMeta(n.content)?.deliverableId === deliverableId,
+  );
+  if (existingNote) {
+    await updateNoteInAirtable(existingNote.id, FIRM_TEMPLATE_MATTER_ID, content, "Attorney");
+  } else {
+    await createNoteInAirtable(
+      FIRM_TEMPLATE_MATTER_ID,
+      content,
+      "Attorney",
+      DELIVERABLE_TEMPLATE_NOTE_TYPE,
+    );
+  }
+  return meta;
+}
+
+export async function updateDeliverableTemplateTweaks(payload: {
+  deliverableId: string;
+  tweakNotes: string;
+  textPreview?: string;
+}): Promise<DeliverableTemplateMetaPayload> {
+  const catalog = await listDeliverableTemplateCatalog();
+  const item = catalog.find((c) => c.deliverableId === payload.deliverableId);
+  if (!item) throw new Error("Unknown deliverableId");
+
+  const base = item.meta ?? {
+    v: 1 as const,
+    deliverableId: payload.deliverableId,
+    role: "deliverable_template" as const,
+    source: item.defaultSource.label,
+    version: 0,
+    title: item.name,
+  };
+
+  return saveDeliverableTemplate({
+    deliverableId: payload.deliverableId,
+    title: base.title || item.document?.title || item.name,
+    airtableDocumentId: base.airtableDocumentId ?? item.document?.id,
+    postgresDocumentId: base.postgresDocumentId,
+    textPreview: payload.textPreview ?? base.textPreview,
+    fileType: base.fileType ?? item.document?.fileType,
+    tweakNotes: payload.tweakNotes,
+    source: base.source || "firm_uploaded",
+  });
 }

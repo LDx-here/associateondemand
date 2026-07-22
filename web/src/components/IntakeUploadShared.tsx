@@ -19,10 +19,10 @@ const TIER = Number(process.env.NEXT_PUBLIC_PII_TIER ?? "0");
 export function UploadSupportingDocsHint({ context }: { context: "matter" | "assignment" | "assessment" }) {
   const label =
     context === "assignment"
-      ? "Upload supporting documents for this assignment (PDF, image, or text)."
+      ? "Upload supporting documents for this assignment (PDF, DOCX, image, or text)."
       : context === "assessment"
-        ? "Upload a case assessment scan (PDF or image)."
-        : "Upload supporting documents for this matter (PDF, image, or text).";
+        ? "Upload a case assessment scan (PDF, DOCX, or image)."
+        : "Upload supporting documents for this matter (PDF, DOCX, image, or text).";
   return <p className="text-xs text-slate-600">{label}</p>;
 }
 
@@ -92,9 +92,35 @@ export type UploadResult = {
   obsidian_path?: string;
   text_preview?: string;
   error?: string;
+  ocr_error?: string;
+  ok?: boolean;
 };
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+function formatUploadErrorDetail(detail: unknown, fallback: string): string {
+  if (typeof detail === "string" && detail.trim()) return detail.trim();
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (item && typeof item === "object" && "msg" in item) {
+          return String((item as { msg?: string }).msg ?? "");
+        }
+        return "";
+      })
+      .filter(Boolean);
+    if (parts.length) return parts.join("; ");
+  }
+  if (detail && typeof detail === "object") {
+    try {
+      return JSON.stringify(detail);
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
 
 export async function uploadDocument(
   matterId: string,
@@ -122,19 +148,62 @@ export async function uploadDocument(
 
   const url = endpoint === "single" ? `${API}/intake/upload` : `${API}/intake/batch`;
 
-  const resp = await fetch(url, {
-    method: "POST",
-    body: fd,
-    headers: manualApproved ? { "X-Manual-Review-Approved": "true" } : {},
-  });
-  const data = await resp.json();
-  if (!resp.ok) {
-    const detail = typeof data.detail === "string" ? data.detail : JSON.stringify(data);
-    return { error: detail };
+  let resp: Response;
+  try {
+    resp = await fetch(url, {
+      method: "POST",
+      body: fd,
+      headers: manualApproved ? { "X-Manual-Review-Approved": "true" } : {},
+    });
+  } catch {
+    return {
+      error:
+        "Could not reach the document API. Check that the Fly API is online, then retry with PDF or DOCX.",
+    };
   }
-  if (endpoint === "batch" && Array.isArray(data.documents)) {
-    const match = data.documents.find((d: UploadResult) => d.filename === file.name);
-    return match ?? data.documents[data.documents.length - 1] ?? data;
+
+  let data: UploadResult & { detail?: unknown; ok?: boolean; ocr_error?: string };
+  try {
+    data = (await resp.json()) as UploadResult & { detail?: unknown; ok?: boolean; ocr_error?: string };
+  } catch {
+    return {
+      error: resp.ok
+        ? "Upload succeeded but the server returned an unreadable response."
+        : `Upload failed (HTTP ${resp.status}). Try PDF or DOCX.`,
+    };
+  }
+
+  if (!resp.ok) {
+    return {
+      error: formatUploadErrorDetail(
+        data.detail ?? data.error,
+        `Upload failed (HTTP ${resp.status}). Try PDF or DOCX.`,
+      ),
+    };
+  }
+  if (endpoint === "batch" && Array.isArray((data as { documents?: UploadResult[] }).documents)) {
+    const docs = (data as { documents: UploadResult[] }).documents;
+    const match = docs.find((d) => d.filename === file.name);
+    const picked = match ?? docs[docs.length - 1] ?? data;
+    if (picked.processing_status === "failed" || picked.error) {
+      return {
+        ...picked,
+        error:
+          picked.error ||
+          picked.ocr_error ||
+          "Text extraction failed for this file. Try PDF or DOCX.",
+      };
+    }
+    return picked;
+  }
+  if (data.processing_status === "failed" || data.ok === false) {
+    return {
+      ...data,
+      error:
+        data.error ||
+        data.ocr_error ||
+        "Text extraction failed for this file. Try PDF or DOCX.",
+    };
   }
   return data;
 }

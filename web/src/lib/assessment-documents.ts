@@ -6,12 +6,36 @@ import type { DocumentRow, Matter } from "./types";
 export const CASE_ASSESSMENT_CATEGORY = "case_assessment";
 export const ASSESSMENT_TEMPLATE_PREFIX = "assessment_template";
 export const FIRM_SAMPLE_PREFIX = "firm_sample";
+export const DELIVERABLE_TEMPLATE_PREFIX = "deliverable_template";
+export const DELIVERABLE_TEMPLATE_NOTE_TYPE = "Deliverable Template Meta";
 
-export type AssessmentDocumentRole = "case_assessment" | "assessment_template" | "firm_sample";
+export type AssessmentDocumentRole =
+  | "case_assessment"
+  | "assessment_template"
+  | "firm_sample"
+  | "deliverable_template";
 
 export type ParsedDocumentCategory = {
   role: AssessmentDocumentRole | "other";
   practiceArea?: string;
+  deliverableId?: string;
+};
+
+/** JSON payload stored on FIRM-TEMPLATES notes (type Deliverable Template Meta). */
+export type DeliverableTemplateMetaPayload = {
+  v: 1;
+  deliverableId: string;
+  role: "deliverable_template";
+  source: string;
+  version: number;
+  title: string;
+  airtableDocumentId?: string;
+  postgresDocumentId?: string;
+  filename?: string;
+  fileType?: string;
+  textPreview?: string;
+  tweakNotes?: string;
+  uploadedAt?: string;
 };
 
 export type ExtractedFactRecord = {
@@ -86,6 +110,10 @@ export function encodeFirmSampleCategory(practiceArea: string, docType?: FirmSam
   return `${FIRM_SAMPLE_PREFIX}:${practiceArea}`;
 }
 
+export function encodeDeliverableTemplateCategory(deliverableId: string): string {
+  return `${DELIVERABLE_TEMPLATE_PREFIX}:${deliverableId}`;
+}
+
 export function parseDocumentCategory(category: string): ParsedDocumentCategory {
   const normalized = (category ?? "").trim();
   if (!normalized) return { role: "other" };
@@ -106,6 +134,12 @@ export function parseDocumentCategory(category: string): ParsedDocumentCategory 
       practiceArea: practiceArea || rest,
     };
   }
+  if (normalized.startsWith(`${DELIVERABLE_TEMPLATE_PREFIX}:`)) {
+    return {
+      role: "deliverable_template",
+      deliverableId: normalized.slice(DELIVERABLE_TEMPLATE_PREFIX.length + 1),
+    };
+  }
   return { role: "other" };
 }
 
@@ -119,6 +153,26 @@ export function isAssessmentTemplateDocument(doc: Pick<DocumentRow, "category">)
 
 export function isFirmSampleDocument(doc: Pick<DocumentRow, "category">): boolean {
   return parseDocumentCategory(doc.category).role === "firm_sample";
+}
+
+export function isDeliverableTemplateDocument(doc: Pick<DocumentRow, "category">): boolean {
+  return parseDocumentCategory(doc.category).role === "deliverable_template";
+}
+
+export function parseDeliverableTemplateMeta(raw: string): DeliverableTemplateMetaPayload | null {
+  try {
+    const data = JSON.parse(raw) as DeliverableTemplateMetaPayload;
+    if (data?.v === 1 && data.deliverableId && data.role === "deliverable_template") {
+      return data;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+export function serializeDeliverableTemplateMeta(payload: DeliverableTemplateMetaPayload): string {
+  return JSON.stringify(payload);
 }
 
 export function practiceAreaFromCaseType(caseType: string): string {

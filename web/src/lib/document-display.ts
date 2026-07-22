@@ -31,6 +31,11 @@ export function documentCategoryLabel(category: string): string {
       ? `Firm sample (${parsed.practiceArea.replace("_", " ")})`
       : "Firm sample";
   }
+  if (parsed.role === "deliverable_template") {
+    return parsed.deliverableId
+      ? `Deliverable template (${parsed.deliverableId})`
+      : "Deliverable template";
+  }
   if (!category?.trim()) return "General";
   return category.replace(/_/g, " ");
 }
@@ -62,7 +67,16 @@ export function documentPreviewKind(
   const type = (doc.fileType ?? "").toLowerCase();
   if (name.endsWith(".pdf") || type.includes("pdf")) return "pdf";
   if (/\.(png|jpe?g|gif|webp|tif|tiff)$/.test(name) || type.startsWith("image/")) return "image";
-  if (name.endsWith(".txt") || type.startsWith("text/")) return "text";
+  if (
+    name.endsWith(".txt") ||
+    name.endsWith(".md") ||
+    name.endsWith(".docx") ||
+    type.startsWith("text/") ||
+    type.includes("wordprocessingml") ||
+    type.includes("msword")
+  ) {
+    return "text";
+  }
   return "metadata";
 }
 
