@@ -1,11 +1,15 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-22 (CDT) — Pass 30 auto legal elements + Firm Memory home  
+**Last updated:** 2026-07-22 (CDT) — Pass 31 AOS brief PRESERVE/FILL pipeline  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
 
+**Pass 31 (2026-07-22):** Kingdom Counsel AOS brief pipeline live — separate parser (`brief_parser/`) + generator (`aos_brief_generator.py`); PRESERVE/FILL/CAPTION/BOILERPLATE on firm DOCX upload → `briefTemplate` meta; AOS architecture intake (identity → theme/headings → factors); Templates Structure badges; drafting injects System Guide + validator report. pytest 102; next build; Fly + Vercel.
+
 **Pass 30 (2026-07-22):** Legal Elements auto-seed core Firm Knowledge by matter type (no Load button / applied badge); optional elements via dropdown; case-type change merge prompt. Firm Memory moved to `/firm-memory` + Settings (out of Templates). USCIS form autofill noted as future. `test:firm-knowledge`; pytest 81; next build; Vercel prod (web only).
+
+**Next:** Re-upload Sakkhi AOS DOCX on `/templates` → Open preview Structure (PRESERVE/FILL). Fill AOS architecture facts on a matter → draft AOS discretionary brief. Later: register asylum / hearing-packet `brief_type`s on the same registry.
 
 **Pass 29 (2026-07-22):** Templates UX journey — architecture explainer moved to `/help#templates`; `/templates` browse by practice area + Cards/List; Open preview lands on Structure mapping (CREAC + feeds-from); Firm Memory collapsed. next build; smoke PASS.
 
@@ -28,8 +32,6 @@
 **Pass 21 (2026-07-21):** Top nav + site guide (`/help`); sidebar restored in later UX fix. Master Roadmap + Site Reviewer nav checklist updated.
 
 **Pass 20 (2026-07-21):** External partner funnel `/partner/submit` + drafting prompt hardening.
-
-**Next (user choice):** Open a family AOS matter → Legal elements should already show core topics; try Add optional element… for asylum. Firm Memory at `/firm-memory` or Settings. Letterhead still Settings → Firm profile. USCIS form autofill deferred.
 
 ## Dual track
 

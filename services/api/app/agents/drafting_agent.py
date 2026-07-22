@@ -41,9 +41,19 @@ def _draft_extra_rules(doc_type: str) -> str:
     if doc_type == "aos_discretionary_brief":
         rules.append(
             "This is an AOS Discretionary Factors Memorandum (I-485). Follow CREAC "
-            "(Conclusion → Rule → Explanation → Analysis → Conclusion) and PM-602-0199 framing. "
-            "Preserve Rule/Explanation from the firm template; put matter facts in Analysis."
+            "and Kingdom Counsel AOS System Guide: PRESERVE legal standard verbatim; "
+            "FILL equities/adverse/balancing from matter facts."
         )
+        rules.append(
+            "Adverse section heading MUST NOT contain 'Immigration Violations', "
+            "'Overstay', or 'Unlawful Presence' — frame as proportionality."
+        )
+        rules.append(
+            "Balancing MUST close with: 'This is not a case about [adverse]. It is a case "
+            "about [theme]. A favorable exercise of discretion is both legally supported "
+            "and compelled by the facts of this record.'"
+        )
+        rules.append("Citations in footnotes only — no in-text parentheticals. Never use 'rebuttal'.")
         rules.append("Use bracketed [FACT NEEDED] placeholders — never invent client facts.")
         rules.append("Never fabricate case quotes or page pinpoints.")
     rules.extend(
@@ -59,6 +69,12 @@ def _draft_extra_context(doc_type: str, matter_id: str) -> str:
     parts: list[str] = []
     if doc_type == "aos_discretionary_brief":
         parts.append("## AOS Discretionary Brief Framework\n" + aos_drafting_context())
+        try:
+            from app.services.aos_brief_generator import format_aos_writing_rules_for_prompt
+
+            parts.append(format_aos_writing_rules_for_prompt())
+        except Exception:
+            pass
     citation_skill = load_skill_text(_CITATION_SKILL)
     if citation_skill and doc_type in {"aos_discretionary_brief", "brief_section", "general"}:
         parts.append("## Citation Verification Skill (mandatory for cited drafts)\n" + citation_skill[:12000])
@@ -114,20 +130,64 @@ def _post_process_draft(
             if line.lower().startswith("case theme:"):
                 theme = line.split(":", 1)[-1].strip()
                 break
+        # Prefer structured AOS generator (template JSON + facts) when available
         try:
-            docx_bytes = build_aos_brief_docx(
-                client_name=client,
-                matter_id=matter_id,
-                draft_text=doc,
-                case_theme=theme,
-            )
+            from app.services.aos_brief_generator import generate_aos_brief
+            from app.services.brief_parser import build_default_aos_template
+            from app.services.drafting_prompt import fetch_deliverable_template_meta
+            from app.services.matter_context import fetch_drafting_facts
+
+            tmpl_meta = fetch_deliverable_template_meta("aos-discretionary-brief")
+            brief_template = None
+            if isinstance(tmpl_meta, dict):
+                brief_template = tmpl_meta.get("briefTemplate") or tmpl_meta.get("brief_template")
+            if not isinstance(brief_template, dict):
+                brief_template = build_default_aos_template()
+
+            drafting_facts = fetch_drafting_facts(matter_id) or {}
+            fields = drafting_facts.get("fields") if isinstance(drafting_facts, dict) else {}
+            fact_payload = {
+                "fields": fields if isinstance(fields, dict) else {},
+                "matter_id": matter_id,
+            }
+            # Seed applicant name from matter title when missing
+            if isinstance(fact_payload["fields"], dict) and not fact_payload["fields"].get("applicantName"):
+                fact_payload["fields"]["applicantName"] = client
+            if theme and isinstance(fact_payload["fields"], dict):
+                fact_payload["fields"].setdefault("caseTheme", theme)
+
             docx_dir = _upload_root() / "drafts" / matter_id.replace("/", "_")
             docx_dir.mkdir(parents=True, exist_ok=True)
             docx_path = docx_dir / f"{matter_id}_aos_brief.docx"
-            docx_path.write_bytes(docx_bytes)
-            meta["aos_brief_docx"] = str(docx_path)
+            gen = generate_aos_brief(
+                brief_template,
+                fact_payload,
+                docx_path,
+                use_api=False,  # LLM already drafted prose; generator assembles structure
+            )
+            meta["aos_brief_docx"] = str(gen.get("output_path") or docx_path)
+            meta["aos_brief_validation"] = gen.get("validation")
+            meta["aos_brief_missing_fields"] = gen.get("missing_fields")
+            meta["brief_type"] = gen.get("brief_type")
+            # Also keep legacy builder as fallback bytes if generator failed path
+            if not Path(str(gen.get("output_path") or "")).exists():
+                raise RuntimeError("generator output missing")
         except Exception as exc:
-            meta["aos_brief_docx_error"] = str(exc)
+            meta["aos_brief_generator_error"] = str(exc)
+            try:
+                docx_bytes = build_aos_brief_docx(
+                    client_name=client,
+                    matter_id=matter_id,
+                    draft_text=doc,
+                    case_theme=theme,
+                )
+                docx_dir = _upload_root() / "drafts" / matter_id.replace("/", "_")
+                docx_dir.mkdir(parents=True, exist_ok=True)
+                docx_path = docx_dir / f"{matter_id}_aos_brief.docx"
+                docx_path.write_bytes(docx_bytes)
+                meta["aos_brief_docx"] = str(docx_path)
+            except Exception as exc2:
+                meta["aos_brief_docx_error"] = str(exc2)
 
     return meta
 
@@ -187,6 +247,20 @@ def run_drafting(matter_id: str, instruction: str) -> AgentResult:
         gaps.append(f"Document linter: {'; '.join(lint.get('issues', []))}")
     if post.get("citation_verification_summary"):
         gaps.append(f"Citation package: {post['citation_verification_summary']}")
+    aos_val = post.get("aos_brief_validation")
+    if isinstance(aos_val, dict):
+        if aos_val.get("errors"):
+            gaps.append("AOS brief validation: " + "; ".join(aos_val["errors"][:5]))
+        elif aos_val.get("warnings"):
+            gaps.append("AOS brief warnings: " + "; ".join(aos_val["warnings"][:3]))
+        meta_note = (
+            f"AOS validator: {'PASS' if aos_val.get('passed') else 'NEEDS REVIEW'} "
+            f"({aos_val.get('error_count', 0)} errors, {aos_val.get('warning_count', 0)} warnings)"
+        )
+        gaps.append(meta_note)
+    missing = post.get("aos_brief_missing_fields")
+    if isinstance(missing, list) and missing:
+        gaps.append("AOS missing fact slots: " + ", ".join(missing[:12]))
     if not firm_applied:
         gaps.append(
             "Firm Memory not applied — set tone/samples at /firm-memory for firmer voice match."

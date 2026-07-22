@@ -97,8 +97,18 @@ export type UploadResult = {
     role: string;
     contentExcerpt: string;
     order: number;
+    classification?: string;
+    slots?: Array<{
+      slot_type?: string;
+      label?: string;
+      replacement_key?: string;
+      required?: boolean;
+      matched_text?: string;
+    }>;
   }>;
   html_preview?: string;
+  brief_template?: Record<string, unknown>;
+  brief_type?: string;
   error?: string;
   ocr_error?: string;
   ok?: boolean;

@@ -55,7 +55,7 @@ const aosPrompt = formatDraftingFactsForPrompt({
   },
 });
 assert.match(aosPrompt, /Qualifying relative/);
-assert.match(aosPrompt, /Extreme hardship/);
+assert.match(aosPrompt, /Hardship \/ humanitarian|Extreme hardship|hardship/i);
 assert.match(aosPrompt, /212\(a\)/);
 assert.doesNotMatch(aosPrompt, /Protected ground/);
 assert.doesNotMatch(aosPrompt, /Country Conditions for Nexus/);

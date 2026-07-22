@@ -28,6 +28,15 @@ export type DeliverableTemplateSection = {
   role: string;
   contentExcerpt: string;
   order: number;
+  /** PRESERVE | FILL | CAPTION | BOILERPLATE when brief parser ran. */
+  classification?: string;
+  slots?: Array<{
+    slot_type?: string;
+    label?: string;
+    replacement_key?: string;
+    required?: boolean;
+    matched_text?: string;
+  }>;
 };
 
 export type DeliverableTemplateMetaPayload = {
@@ -44,6 +53,12 @@ export type DeliverableTemplateMetaPayload = {
   textPreview?: string;
   /** Parsed outline (CREAC / headings) from firm upload. */
   sections?: DeliverableTemplateSection[];
+  /**
+   * Structured brief template from AOS parser (PRESERVE/FILL/CAPTION/BOILERPLATE).
+   * Part 5 schema — used by generator + Structure preview.
+   */
+  briefTemplate?: Record<string, unknown>;
+  briefType?: string;
   /** Simple HTML preview for DOCX (no PDF conversion). */
   htmlPreview?: string;
   tweakNotes?: string;

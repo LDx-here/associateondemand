@@ -184,12 +184,18 @@ def _extract_docx_text(path: Path) -> tuple[str, str | None]:
     return text, err
 
 
-def run_ocr_pipeline(stored_path: Path | str) -> OcrResult:
+def run_ocr_pipeline(
+    stored_path: Path | str,
+    *,
+    document_category: str | None = None,
+) -> OcrResult:
     """Extract text from PDF, DOCX, image, or plain-text uploads."""
 
     path = Path(stored_path)
     suffix = path.suffix.lower()
     meta: dict[str, Any] = {"filename": path.name}
+    if document_category:
+        meta["document_category"] = document_category
 
     if suffix == ".pdf":
         text, pages = _extract_pdf_text(path)
@@ -236,14 +242,40 @@ def run_ocr_pipeline(stored_path: Path | str) -> OcrResult:
         text, html, err = _extract_docx_rich(path)
         if text.strip():
             structure_meta: dict[str, Any] = {}
-            try:
-                from app.services.template_structure import parse_template_structure
+            brief_sku = ""
+            cat = document_category or ""
+            if cat.startswith("deliverable_template:"):
+                brief_sku = cat.split(":", 1)[1].strip()
+            # AOS discretionary: run sophisticated PRESERVE/FILL parser
+            if brief_sku in {"aos-discretionary-brief", "aos_discretionary_brief"}:
+                try:
+                    from app.services.brief_parser import (
+                        brief_template_to_creac_sections,
+                        parse_aos_brief_docx,
+                    )
 
-                sections = parse_template_structure(text, prefer_creac=True)
-                if sections:
-                    structure_meta["sections"] = sections
-            except Exception as exc:
-                LOGGER.debug("template structure parse skipped: %s", exc)
+                    brief_template = parse_aos_brief_docx(path, source_name=path.name)
+                    structure_meta["brief_template"] = brief_template
+                    structure_meta["brief_type"] = brief_template.get("brief_type")
+                    creac = brief_template_to_creac_sections(brief_template)
+                    if creac:
+                        structure_meta["sections"] = creac
+                except Exception as exc:
+                    LOGGER.debug("AOS brief parser skipped: %s", exc)
+            if not structure_meta.get("sections"):
+                try:
+                    from app.services.template_structure import parse_template_structure
+
+                    prefer = brief_sku in {"aos-discretionary-brief", "aos_discretionary_brief"}
+                    sections = parse_template_structure(
+                        text,
+                        deliverable_id=brief_sku,
+                        prefer_creac=prefer or True,
+                    )
+                    if sections:
+                        structure_meta["sections"] = sections
+                except Exception as exc:
+                    LOGGER.debug("template structure parse skipped: %s", exc)
             if html.strip():
                 structure_meta["html_preview"] = html[:120_000]
             return OcrResult(

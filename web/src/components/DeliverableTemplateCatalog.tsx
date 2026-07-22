@@ -19,8 +19,10 @@ import { fieldsForDeliverable } from "@/lib/practice-area-facts";
 import { getTemplateFieldMapByDeliverable } from "@/lib/template-field-maps";
 import {
   AOS_FACT_CREAC_MAP,
+  CLASSIFICATION_LABELS,
   CREAC_ROLE_LABELS,
   DEFAULT_AOS_CREAC_SECTIONS,
+  classificationBadgeClass,
   parseTemplateStructure,
   roleBadgeClass,
   type CreacRole,
@@ -156,6 +158,8 @@ export function DeliverableTemplateCatalog() {
           source: "firm_uploaded",
           sections: data.sections,
           htmlPreview: data.html_preview,
+          briefTemplate: data.brief_template,
+          briefType: data.brief_type,
         }),
       });
       if (!resp.ok) {
@@ -642,6 +646,8 @@ function PreviewModal({
         role: (s.role as CreacRole) || "other",
         contentExcerpt: s.contentExcerpt || "",
         order: s.order ?? i,
+        classification: s.classification,
+        slots: s.slots,
       }));
     }
     if (ocrText) {
@@ -807,6 +813,8 @@ function StructureTab({
     item.deliverableId,
     area === "personal_injury" ? "personal_injury" : area === "other" ? "generic" : "immigration",
   );
+  const briefType = (item.meta?.briefType as string | undefined) || (isAos ? "AOS_DISCRETIONARY" : undefined);
+  const hasClassification = sections.some((s) => s.classification);
 
   const factsForRole = (role: CreacRole) => {
     if (isAos) {
@@ -824,19 +832,37 @@ function StructureTab({
     );
   };
 
+  const factsForSlots = (sec: TemplateSection) => {
+    const keys = new Set(
+      (sec.slots || [])
+        .map((s) => s.replacement_key || "")
+        .filter(Boolean)
+        .map((k) => k.replace(/_/g, "").toLowerCase()),
+    );
+    if (keys.size === 0) return factsForRole(sec.role);
+    return factFields.filter((f) => keys.has(f.id.toLowerCase()) || keys.has(f.id.replace(/_/g, "").toLowerCase()));
+  };
+
   return (
     <div className="space-y-4">
       <div>
         <h4 className="text-sm font-semibold text-slate-900">Structure mapping</h4>
         <p className="mt-1 text-xs text-slate-600">
-          Sections with CREAC roles. Analysis slots show which matter facts feed them; Rule / Explanation
-          stay from the template.
+          {isAos
+            ? "AOS brief architecture — like eImmigration/TXDocs for this brief type: PRESERVE sections copy law verbatim; FILL sections pull matter facts."
+            : "Sections with CREAC roles. Analysis slots show which matter facts feed them; Rule / Explanation stay from the template."}
         </p>
+        {briefType ? (
+          <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
+            Brief type: {briefType}
+          </p>
+        ) : null}
       </div>
 
       {!hasFirmText ? (
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-          <strong>Default system outline</strong> — upload a firm DOCX with Replace to pin your structure.
+          <strong>Default system outline</strong> — upload a firm DOCX with Replace to pin your structure
+          {isAos ? " and run the PRESERVE/FILL parser" : ""}.
         </p>
       ) : null}
 
@@ -850,8 +876,12 @@ function StructureTab({
           <ul className="space-y-2">
             {sections.map((sec) => {
               const open = openId === sec.id;
-              const feeds = factsForRole(sec.role);
+              const classification = sec.classification;
+              const feeds = classification === "FILL" || !classification ? factsForSlots(sec) : [];
               const mergeHints = annotateStructureWithMergeHints(sec.label, sec.role);
+              const slotKeys = (sec.slots || [])
+                .map((s) => s.replacement_key || s.label)
+                .filter(Boolean) as string[];
               return (
                 <li key={sec.id} className="rounded-md border border-slate-200 bg-white">
                   <button
@@ -868,6 +898,16 @@ function StructureTab({
                     <span className="min-w-0 flex-1 space-y-1.5">
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-medium text-slate-900">{sec.label}</span>
+                        {classification ? (
+                          <span
+                            className={cn(
+                              "inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset",
+                              classificationBadgeClass(classification),
+                            )}
+                          >
+                            {CLASSIFICATION_LABELS[classification] ?? classification}
+                          </span>
+                        ) : null}
                         <span
                           className={cn(
                             "inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset",
@@ -877,7 +917,18 @@ function StructureTab({
                           {CREAC_ROLE_LABELS[sec.role] ?? sec.role}
                         </span>
                       </span>
-                      {feeds.length > 0 || mergeHints.length > 0 ? (
+                      {classification === "PRESERVE" ? (
+                        <span className="block text-xs text-indigo-900">
+                          Copied verbatim — law does not change
+                        </span>
+                      ) : classification === "FILL" && (feeds.length > 0 || slotKeys.length > 0) ? (
+                        <span className="block text-xs text-slate-600">
+                          <span className="font-medium text-slate-700">Feeds from: </span>
+                          {slotKeys.length
+                            ? slotKeys.join(", ")
+                            : feeds.map((f) => f.label).join(", ")}
+                        </span>
+                      ) : feeds.length > 0 || mergeHints.length > 0 ? (
                         <span className="block text-xs text-slate-600">
                           <span className="font-medium text-slate-700">Feeds from: </span>
                           {feeds.length
@@ -887,6 +938,12 @@ function StructureTab({
                       ) : sec.role === "rule" || sec.role === "explanation" ? (
                         <span className="block text-xs text-indigo-800">
                           Preserved from template (not overwritten by matter facts)
+                        </span>
+                      ) : classification === "CAPTION" ? (
+                        <span className="block text-xs text-sky-800">Case identifying info — replace each filing</span>
+                      ) : classification === "BOILERPLATE" ? (
+                        <span className="block text-xs text-slate-600">
+                          Procedural language — firm name / date only
                         </span>
                       ) : null}
                     </span>
@@ -905,9 +962,20 @@ function StructureTab({
         )}
       </div>
 
+      {isAos && hasClassification ? (
+        <div className="rounded-md border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-950">
+          <p className="font-medium">How this brief type works</p>
+          <p className="mt-0.5 text-indigo-900/90">
+            Re-upload your Sakkhi (or firm) DOCX via Replace — the parser classifies every section.
+            On draft, PRESERVE law is injected verbatim; FILL sections use AOS architecture facts from the
+            matter checklist.
+          </p>
+        </div>
+      ) : null}
+
       {isAos && factFields.length > 0 ? (
         <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50/80 p-3">
-          <p className="text-xs font-semibold text-slate-800">Fact → CREAC summary</p>
+          <p className="text-xs font-semibold text-slate-800">Fact → section summary</p>
           <ul className="space-y-1 text-xs text-slate-700">
             {factFields.map((f) => {
               const slot = AOS_FACT_CREAC_MAP[f.id] ?? "analysis";

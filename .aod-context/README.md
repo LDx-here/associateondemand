@@ -49,6 +49,7 @@ Visual maps of the internal engine and partner-facing overflow counsel flow:
 | Document | Purpose |
 |----------|---------|
 | [AssociateOnDemand_Practice_Fact_Mapping.md](./technical/AssociateOnDemand_Practice_Fact_Mapping.md) | Deliverable-aware fact schemas |
+| [aos-brief-pipeline.md](./technical/aos-brief-pipeline.md) | AOS PRESERVE/FILL parser + generator (pointer to brain guides) |
 | [Airtable schema (live)](../docs/strategy/AssociateOnDemand_Associate_Services_Airtable_Schema.md) | Phase 3+ contractor schema sketch |
 | [Associate workflow](../docs/strategy/AssociateOnDemand_Associate_Services_Workflow.md) | Phase 3+ marketplace workflow |
 | [Legal OS implementation strategy](./technical/legal-os/) | Greenfield React+tRPC+MySQL track in `legal-os/` |

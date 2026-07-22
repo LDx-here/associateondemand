@@ -231,6 +231,39 @@ export function PracticeAreaFactGuide({
   }
 
   const areaLabel = payload.practiceArea === "immigration" ? "Immigration" : "Personal injury";
+  const isAos = activeDeliverableId === "aos-discretionary-brief";
+  const identityDefs = defs.filter((d) => !d.stage || d.stage === "identity");
+  const architectureDefs = defs.filter((d) => d.stage === "architecture");
+  const factorDefs = defs.filter((d) => d.stage === "factors");
+  const unstagedDefs = isAos ? [] : defs;
+
+  function renderField(def: FactFieldDef) {
+    return (
+      <label
+        key={def.id}
+        className={`block text-sm ${def.kind === "textarea" || def.kind === "checkboxes" ? "sm:col-span-2" : ""}`}
+      >
+        <span className="text-slate-700">
+          {def.label}
+          {def.required ? <span className="text-rose-600"> *</span> : null}
+        </span>
+        {def.feedsSection ? (
+          <span className="mt-0.5 block text-xs text-sky-700">Feeds: {def.feedsSection}</span>
+        ) : null}
+        {def.hint ? <span className="mt-0.5 block text-xs text-slate-400">{def.hint}</span> : null}
+        <FieldInput
+          def={def}
+          value={payload.fields[def.id] ?? (def.kind === "checkboxes" ? [] : "")}
+          onChange={(next) =>
+            patchPayload((prev) => ({
+              ...prev,
+              fields: { ...prev.fields, [def.id]: next },
+            }))
+          }
+        />
+      </label>
+    );
+  }
 
   return (
     <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -245,46 +278,44 @@ export function PracticeAreaFactGuide({
         <CompletenessBar {...completeness} />
       </div>
 
-      {activeDeliverableId === "aos-discretionary-brief" ? (
+      {isAos ? (
         <div className="rounded-md border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs text-indigo-950">
-          <p className="font-medium">CREAC map</p>
+          <p className="font-medium">AOS brief architecture</p>
           <p className="mt-0.5 text-indigo-900/90">
-            Firm template supplies <strong>Rule</strong> and <strong>Explanation</strong>. These facts feed{" "}
-            <strong>Analysis</strong> (and conclusion guidance). See Templates → View preview → Structure for the
-            outline.
+            Start with identity and petition history. Then add attorney-authored case architecture
+            (theme + Section A/B/adverse headings). PRESERVE legal standard comes from your firm template;
+            these facts fill FILL sections.
           </p>
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {defs.map((def) => (
-          <label
-            key={def.id}
-            className={`block text-sm ${def.kind === "textarea" || def.kind === "checkboxes" ? "sm:col-span-2" : ""}`}
-          >
-            <span className="text-slate-700">
-              {def.label}
-              {def.required ? <span className="text-rose-600"> *</span> : null}
-            </span>
-            {def.feedsSection ? (
-              <span className="mt-0.5 block text-xs text-sky-700">
-                Feeds: {def.feedsSection}
-              </span>
-            ) : null}
-            {def.hint ? <span className="mt-0.5 block text-xs text-slate-400">{def.hint}</span> : null}
-            <FieldInput
-              def={def}
-              value={payload.fields[def.id] ?? (def.kind === "checkboxes" ? [] : "")}
-              onChange={(next) =>
-                patchPayload((prev) => ({
-                  ...prev,
-                  fields: { ...prev.fields, [def.id]: next },
-                }))
-              }
-            />
-          </label>
-        ))}
-      </div>
+      {isAos ? (
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              1. Identity &amp; petition
+            </h4>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">{identityDefs.map(renderField)}</div>
+          </div>
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              2. Case architecture (attorney-authored)
+            </h4>
+            <p className="mt-1 text-xs text-slate-500">
+              Theme and section headings cannot be auto-generated — they require legal judgment.
+            </p>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">{architectureDefs.map(renderField)}</div>
+          </div>
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              3. Equities &amp; adverse detail
+            </h4>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">{factorDefs.map(renderField)}</div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">{unstagedDefs.map(renderField)}</div>
+      )}
 
       <label className="block text-sm">
         <span className="text-slate-700">Anything else the associate should know?</span>

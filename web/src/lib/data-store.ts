@@ -1032,6 +1032,8 @@ export async function saveDeliverableTemplate(payload: {
   source?: string;
   sections?: DeliverableTemplateMetaPayload["sections"];
   htmlPreview?: string;
+  briefTemplate?: Record<string, unknown>;
+  briefType?: string;
 }): Promise<DeliverableTemplateMetaPayload> {
   const deliverableId = payload.deliverableId.trim();
   if (!deliverableId || !DELIVERABLE_CATALOG.some((d) => d.id === deliverableId)) {
@@ -1105,6 +1107,10 @@ export async function saveDeliverableTemplate(payload: {
     fileType: payload.fileType ?? existingMeta?.fileType,
     textPreview,
     sections: sections?.slice(0, 80),
+    briefTemplate:
+      (payload.briefTemplate as Record<string, unknown> | undefined) ??
+      existingMeta?.briefTemplate,
+    briefType: payload.briefType ?? existingMeta?.briefType,
     htmlPreview:
       payload.htmlPreview?.slice(0, 100_000) ??
       (payload.textPreview ? undefined : existingMeta?.htmlPreview),

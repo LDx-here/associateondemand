@@ -19,6 +19,14 @@ export type TemplateSection = {
   role: CreacRole;
   contentExcerpt: string;
   order: number;
+  classification?: string;
+  slots?: Array<{
+    slot_type?: string;
+    label?: string;
+    replacement_key?: string;
+    required?: boolean;
+    matched_text?: string;
+  }>;
 };
 
 const CREAC_PATTERNS: Array<{ re: RegExp; role: CreacRole }> = [
@@ -194,16 +202,58 @@ export const CREAC_ROLE_LABELS: Record<CreacRole, string> = {
 
 /** AOS drafting fact field → CREAC slot. */
 export const AOS_FACT_CREAC_MAP: Record<string, CreacRole> = {
+  applicantName: "caption",
+  aNumber: "caption",
   clientStatus: "analysis",
+  entryDate: "analysis",
+  portOfEntry: "analysis",
+  entryVisaType: "analysis",
+  petitionerName: "analysis",
+  petitionerRelationship: "analysis",
   qualifyingRelative: "analysis",
-  extremeHardshipFactors: "analysis",
-  inadmissibilityGrounds: "analysis",
+  i130ApprovedDate: "analysis",
+  i485FiledDate: "analysis",
+  caseTheme: "conclusion",
+  caseThemeBrief: "conclusion_close",
+  sectionAHeading: "analysis",
+  sectionAFacts: "analysis",
+  sectionBHeading: "analysis",
+  sectionBFacts: "analysis",
+  adverseHeading: "analysis",
+  adverseFacts: "analysis",
+  adverseFactorBrief: "analysis",
   adverseFactors: "analysis",
   positiveEquities: "analysis",
+  balancingInventory: "analysis",
+  departureHarm: "explanation",
+  extremeHardshipFactors: "analysis",
+  inadmissibilityGrounds: "analysis",
   priorFilings: "analysis",
   supportingDocs: "analysis",
   reliefSought: "conclusion",
 };
+
+export const CLASSIFICATION_LABELS: Record<string, string> = {
+  PRESERVE: "PRESERVE",
+  FILL: "FILL",
+  CAPTION: "CAPTION",
+  BOILERPLATE: "BOILERPLATE",
+};
+
+export function classificationBadgeClass(classification: string): string {
+  switch (classification) {
+    case "PRESERVE":
+      return "bg-indigo-50 text-indigo-900 ring-indigo-600/25";
+    case "FILL":
+      return "bg-amber-50 text-amber-950 ring-amber-600/25";
+    case "CAPTION":
+      return "bg-sky-50 text-sky-900 ring-sky-600/25";
+    case "BOILERPLATE":
+      return "bg-slate-100 text-slate-800 ring-slate-500/25";
+    default:
+      return "bg-slate-50 text-slate-700 ring-slate-500/20";
+  }
+}
 
 export function roleBadgeClass(role: CreacRole): string {
   switch (role) {

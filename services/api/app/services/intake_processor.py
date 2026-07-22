@@ -107,7 +107,7 @@ def process_uploaded_document(
 ) -> dict[str, Any]:
     """Run OCR pipeline, agents, persist Document + ExtractedFact rows."""
 
-    ocr = run_ocr_pipeline(stored_path)
+    ocr = run_ocr_pipeline(stored_path, document_category=document_category)
     ocr_text, _anon = anonymize_text(ocr.text, tier=current_tier())
     quality = text_quality_score(ocr_text)
     combined_confidence = round((ocr.confidence + quality) / 2, 3)
@@ -227,6 +227,10 @@ def process_uploaded_document(
             result["sections"] = ocr.metadata["sections"]
         if ocr.metadata.get("html_preview"):
             result["html_preview"] = ocr.metadata["html_preview"]
+        if ocr.metadata.get("brief_template"):
+            result["brief_template"] = ocr.metadata["brief_template"]
+        if ocr.metadata.get("brief_type"):
+            result["brief_type"] = ocr.metadata["brief_type"]
     if ocr_failure_reason:
         result["error"] = ocr_failure_reason
         result["ocr_error"] = ocr_failure_reason

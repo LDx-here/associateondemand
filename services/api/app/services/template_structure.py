@@ -206,17 +206,38 @@ def creac_fact_slot_for_field(field_id: str) -> CreacRole | None:
         "qualifyingRelative",
         "extremeHardshipFactors",
         "adverseFactors",
+        "adverseFacts",
+        "adverseHeading",
+        "adverseFactorBrief",
         "positiveEquities",
+        "balancingInventory",
         "inadmissibilityGrounds",
         "priorFilings",
         "clientStatus",
         "supportingDocs",
+        "entryDate",
+        "portOfEntry",
+        "entryVisaType",
+        "petitionerName",
+        "petitionerRelationship",
+        "i130ApprovedDate",
+        "i485FiledDate",
+        "sectionAHeading",
+        "sectionAFacts",
+        "sectionBHeading",
+        "sectionBFacts",
     }
-    conclusion_fields = {"reliefSought"}
+    conclusion_fields = {"reliefSought", "caseTheme", "caseThemeBrief"}
+    caption_fields = {"applicantName", "aNumber"}
+    explanation_fields = {"departureHarm"}
     if field_id in analysis_fields:
         return "analysis"
     if field_id in conclusion_fields:
         return "conclusion"
+    if field_id in caption_fields:
+        return "caption"
+    if field_id in explanation_fields:
+        return "explanation"
     return None
 
 

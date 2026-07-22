@@ -211,12 +211,8 @@ def _resolve_catalog_deliverable_id(hint: str) -> str | None:
     return _TASK_TO_DELIVERABLE_ID.get(task)
 
 
-def fetch_deliverable_template_excerpt(
-    deliverable_id: str,
-    *,
-    max_chars: int = 2500,
-) -> str | None:
-    """Load firm-uploaded deliverable template meta from FIRM-TEMPLATES notes (best-effort)."""
+def fetch_deliverable_template_meta(deliverable_id: str) -> dict[str, Any] | None:
+    """Return the highest-version Deliverable Template Meta JSON for a catalog SKU."""
 
     if not deliverable_id:
         return None
@@ -250,7 +246,17 @@ def fetch_deliverable_template_excerpt(
         if version >= best_version:
             best = data
             best_version = version
+    return best
 
+
+def fetch_deliverable_template_excerpt(
+    deliverable_id: str,
+    *,
+    max_chars: int = 2500,
+) -> str | None:
+    """Load firm-uploaded deliverable template meta from FIRM-TEMPLATES notes (best-effort)."""
+
+    best = fetch_deliverable_template_meta(deliverable_id)
     if not best:
         return None
 
@@ -263,6 +269,33 @@ def fetch_deliverable_template_excerpt(
         lines.append(f"- File: {filename}")
     if tweaks := (best.get("tweakNotes") or "").strip():
         lines.append(f"- Attorney tweaks:\n{tweaks[:1500]}")
+
+    brief_template = best.get("briefTemplate") or best.get("brief_template")
+    if isinstance(brief_template, dict):
+        lines.append(f"- Brief type: {brief_template.get('brief_type') or 'AOS_DISCRETIONARY'}")
+        preserve_bits: list[str] = []
+        fill_slot_keys: list[str] = []
+        for sec in brief_template.get("sections") or []:
+            if not isinstance(sec, dict):
+                continue
+            classification = str(sec.get("classification") or "")
+            heading = sec.get("heading") or sec.get("section_id") or ""
+            if classification == "PRESERVE":
+                body = (sec.get("preserved_text") or sec.get("contentExcerpt") or "").strip()
+                if body:
+                    preserve_bits.append(f"### {heading}\n{body[:2000]}")
+            elif classification == "FILL":
+                for slot in sec.get("slots") or []:
+                    if isinstance(slot, dict) and slot.get("replacement_key"):
+                        fill_slot_keys.append(str(slot["replacement_key"]))
+        if preserve_bits:
+            lines.append(
+                "## PRESERVE LEGAL STANDARD (copy verbatim — law does not change)\n"
+                + "\n\n".join(preserve_bits)[: max_chars + 1500]
+            )
+        if fill_slot_keys:
+            uniq = list(dict.fromkeys(fill_slot_keys))[:40]
+            lines.append("## FILL slots (matter facts feed these)\n- " + ", ".join(uniq))
 
     # Prefer stored sections; else parse textPreview into CREAC/outline.
     sections = best.get("sections") if isinstance(best.get("sections"), list) else None
@@ -292,10 +325,14 @@ def fetch_deliverable_template_excerpt(
         rule_bits = [
             str(s.get("contentExcerpt") or "").strip()
             for s in sections
-            if isinstance(s, dict) and str(s.get("role") or "") in {"rule", "explanation"}
+            if isinstance(s, dict)
+            and (
+                str(s.get("role") or "") in {"rule", "explanation"}
+                or str(s.get("classification") or "") == "PRESERVE"
+            )
             and str(s.get("contentExcerpt") or "").strip()
         ]
-        if rule_bits:
+        if rule_bits and not any("PRESERVE LEGAL STANDARD" in ln for ln in lines):
             lines.append(
                 "## PRESERVE RULE / EXPLANATION (do not rewrite the law statement)\n"
                 + "\n\n".join(rule_bits)[:max_chars]

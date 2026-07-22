@@ -27,8 +27,12 @@ export async function POST(req: Request) {
       role: string;
       contentExcerpt: string;
       order: number;
+      classification?: string;
+      slots?: Array<Record<string, unknown>>;
     }>;
     htmlPreview?: string;
+    briefTemplate?: Record<string, unknown>;
+    briefType?: string;
   };
   try {
     body = await req.json();
@@ -54,6 +58,8 @@ export async function POST(req: Request) {
       source: body.source ?? "firm_uploaded",
       sections: body.sections,
       htmlPreview: body.htmlPreview,
+      briefTemplate: body.briefTemplate,
+      briefType: body.briefType,
     });
     return NextResponse.json({ ok: true, meta });
   } catch (err) {
