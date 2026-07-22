@@ -1,3 +1,5 @@
+### [2026-07-22] CHECKPOINT: pass 29 templates UX — How-it-works → /help#templates; practice-area browse + Cards/List; Open preview → Structure mapping; Firm Memory collapsed; next build; smoke PASS
+
 ### [2026-07-22] CHECKPOINT: pass 28 firm letterhead + document assembly — Settings Firm profile, certificate of service merge fields, unlock labels, default blank honesty, How templates work; pytest 81; next build; smoke PASS
 
 ### [2026-07-22] CHECKPOINT: pass 27 Firm Knowledge → matters — Legal Elements load from knowledge map by case type, needed-facts checklist, Memory vs Knowledge UX, filtered knowledge-map; test:firm-knowledge; pytest 77; next build; Vercel prod
