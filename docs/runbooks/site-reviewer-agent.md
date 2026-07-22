@@ -27,6 +27,7 @@
 | **No false Stripe** | Phase 0 billing copy only — quoted flat fee, invoice after delivery; no checkout UI. |
 | **Overflow counsel journey** | Single 4-step Getting Started: Firm Memory → Assignment → Assessment upload → Review. |
 | **Associate panel** | Context-aware on matter pages (matter name, deliverable, status); plain-English prompt. |
+| **Draft QC** | Drafting results show Draft QC checklist (linter, citations, Firm Memory, attorney review). See [draft-quality-control.md](./draft-quality-control.md). |
 | **Shipped features preserved** | Do not rebuild: Firm Memory wizard, Documents assessment upload, AOS discretionary facts, sample discount, offline invoicing copy. |
 
 ## Evaluation principles

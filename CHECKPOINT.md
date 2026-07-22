@@ -1,15 +1,17 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-21 (CDT) — Pass 21 top nav + site guide  
+**Last updated:** 2026-07-21 (CDT) — Pass 22 draft QC + knowledge upload guidance  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
 
-**Pass 21 (2026-07-21):** Removed left sidebar (overflow/layout fix). Compact top header: Dashboard, New assignment, Inbox, Matters, Templates, Settings + **More** dropdown; mobile hamburger (no persistent sidebar). Site guide at `/help` (plain-English cards for each area); linked from dashboard and Settings. Master Roadmap + Site Reviewer nav checklist updated. Associate panel unchanged.
+**Pass 22 (2026-07-21):** Draft QC checklist in Associate panel; drafting metadata (`firm_memory_applied`, `draft_qc`); linter catches chatbot filler + many placeholders; SKILL QC section; Firm Memory / `brain/.../immigration/*.md` excerpt injection documented + wired; runbooks `draft-quality-control.md` + firm-memory honesty. pytest green; next build green.
 
-**Pass 20 (2026-07-21):** External partner funnel `/partner/submit` + `POST /api/partner/assignments` (Stripe when `STRIPE_CHECKOUT_ENABLED=true`; inbox `source: partner` badge; dashboard/settings partner link copy). Drafting prompt context hardening + pytest integration tests (53). Also: matter navigation fix (setState-during-render loops); dashboard operator quick actions; smoke E2E asserts `/matters/{id}` HTTP 200.
+**Pass 21 (2026-07-21):** Top nav + site guide (`/help`); sidebar restored in later UX fix. Master Roadmap + Site Reviewer nav checklist updated.
 
-**Next (user choice):** run **first pilot matter** on prod (operator: `/assignments/new` → inbox → approve → export) *or* share **partner funnel** `/partner/submit` with a friendly external firm *or* read **`/help`** with a pilot firm.
+**Pass 20 (2026-07-21):** External partner funnel `/partner/submit` + drafting prompt hardening.
+
+**Next (user choice):** complete Firm Memory style prefs + 2–3 voice excerpts → pilot draft and confirm Draft QC “Firm Memory applied” *or* run first pilot matter on prod.
 
 ## Dual track
 

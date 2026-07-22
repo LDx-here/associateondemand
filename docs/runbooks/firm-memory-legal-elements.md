@@ -6,11 +6,23 @@ Short runbook for wiring practice reference material into AssociateOnDemand lega
 
 | Location | Best for | How AOD uses it |
 |----------|----------|-----------------|
-| **`brain/03_Firm_Knowledge/`** (Obsidian vault) | Long-form prose, playbooks, RMV internal notes | Agent context via future ingestion; good canonical home for the full book |
-| **`/templates#firm-memory`** (Firm Memory upload) | Style exemplars + short reference snippets attorneys want in **drafts** | Already wired — `POST /api/firm-memory` → Strategy Patterns; Legal Elements tab links here |
+| **`brain/03_Firm_Knowledge/immigration/*.md`** | Curated chapter summaries & element checklists | **Wired now** — loaded into agent prompts (char-capped). Skips `README.md`. Not for whole PDFs. |
+| **`/templates#firm-memory`** (Firm Memory upload) | Style exemplars + short reference snippets for **drafts** | **Wired** — `POST /api/firm-memory` → Strategy Patterns → drafting system prompt + matter context |
 | **`.aod-context/features/` or `.aod-context/technical/`** | Structured agent reference (element checklists, INA cites) | Read by Cursor agents + `legal-element-templates.ts` seed lists |
 
-**Recommendation:** Keep the master immigration book in `brain/03_Firm_Knowledge/immigration/` (or similar). Upload **chapter summaries or element checklists** (2–5 page excerpts) to Firm Memory at `/templates#firm-memory` so drafting and the Legal Elements tab can cite them. Add machine-readable element lists under `.aod-context/technical/` when you want agents to auto-seed elements without manual upload.
+### Upload recommendation (clear YES / NO)
+
+| Material | Upload? | Where | Format |
+|----------|---------|-------|--------|
+| Firm brief/motion **style samples** (redacted) | **YES — priority 1** | `/templates#firm-memory` | PDF/DOCX samples + tone/citation/header prefs |
+| Element checklists / 2–5 page chapter summaries | **YES — priority 2** | Firm Memory *and/or* `brain/.../immigration/*.md` | Markdown or short pasted text |
+| Full immigration treatise / book PDF | **NO (as a single upload)** | Keep master offline or in vault for humans | Extract excerpts to `.md` instead |
+| Client files, sealed/confidential books | **NO** | Matter Documents only when case-specific | Never Firm Memory |
+| Machine-readable element lists | **YES — priority 3** | `.aod-context/technical/` | TypeScript / markdown lists for Legal Elements seed |
+
+**Recommendation:** Do **not** dump the whole book into Firm Memory (it will be truncated and dilute style). Extract the chapters you actually cite → `.md` excerpts + Firm Memory snippets.
+
+**Honest wiring (2026-07-21):** Drafting agents **do** inject (1) Firm Memory **style preferences** / Strategy Pattern text, and (2) short `.md` excerpts from `brain/03_Firm_Knowledge/immigration/`. Uploaded PDF “firm samples” are stored for completeness / discount tracking but are **not** auto-read into prompts — paste short redacted voice excerpts into style notes, or Save to Firm Memory after editing a draft. Whole-book PDFs are not ingested. See [draft-quality-control.md](./draft-quality-control.md).
 
 ## How legal elements consume reference material
 

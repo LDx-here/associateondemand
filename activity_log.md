@@ -167,3 +167,5 @@
 ### [2026-07-21] CHECKPOINT: Pass 20 partner funnel — `/partner/submit` + `/api/partner/assignments`; Stripe checkout when enabled; inbox partner badge; drafting prompt hardening; pytest 53; next build; smoke-production + smoke-assignment-e2e PASS; Fly + Vercel prod
 
 ### [2026-07-21] CHECKPOINT: Pass 21 UX — removed sidebar; top header nav + More dropdown; `/help` site guide; full-width layout; pytest 53; next build; smoke-production PASS; Vercel prod
+
+### [2026-07-21] CHECKPOINT: pass 22 — draft QC checklist + Firm Memory/brain knowledge wiring honesty; linter chatbot/placeholder rules; runbooks; pytest + next build

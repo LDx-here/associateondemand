@@ -280,9 +280,48 @@ def fetch_attorney_instructions(matter_code: str) -> list[dict[str, Any]]:
     return _notes_by_type(matter_code, "Instructions", max_records=5)
 
 
+def format_firm_memory_block(*, max_patterns: int = 8) -> str:
+    """Render Airtable Firm Memory (Strategy Patterns) for agent prompts."""
+
+    if not at.is_configured():
+        return ""
+    try:
+        patterns = at.list_firm_memory_patterns(max_records=max_patterns)
+    except Exception:
+        LOGGER.exception("firm memory fetch failed")
+        return ""
+    if not patterns:
+        return ""
+
+    lines = ["## Firm Memory (style + reference snippets)"]
+    for row in patterns[:max_patterns]:
+        trigger = str(row.get("strategy_used") or row.get("fact_pattern") or "").strip()
+        body = str(row.get("outcome") or row.get("fact_pattern_detail") or "").strip()
+        if not body:
+            continue
+        label = trigger if trigger and trigger.lower() not in {"firm_memory", "firm memory"} else "Style"
+        lines.append(f"### {label}")
+        lines.append(body[:1200])
+    return "\n".join(lines) if len(lines) > 1 else ""
+
+
 def format_matter_context(ctx: dict[str, Any] | None, *, matter_code: str | None = None) -> str:
     if not ctx:
-        return "No live matter row found in Airtable for this matter_id."
+        base = "No live matter row found in Airtable for this matter_id."
+        extras: list[str] = [base]
+        firm = format_firm_memory_block()
+        if firm:
+            extras.append(firm)
+        try:
+            from app.agents.firm_context import load_firm_knowledge_excerpts
+
+            knowledge = load_firm_knowledge_excerpts(max_chars=4000)
+            if knowledge:
+                extras.append(knowledge)
+        except Exception:
+            LOGGER.exception("firm knowledge excerpts load failed")
+        return "\n\n".join(extras)
+
     lines = [f"- {k}: {v}" for k, v in ctx.items() if k != "assessment_data"]
     assessment_block = format_assessment_data(ctx.get("assessment_data"))
     if assessment_block:
@@ -303,4 +342,17 @@ def format_matter_context(ctx: dict[str, Any] | None, *, matter_code: str | None
         research_block = format_research_notes(fetch_research_notes(code))
         if research_block:
             lines.append(research_block)
+
+    firm = format_firm_memory_block()
+    if firm:
+        lines.append(firm)
+    try:
+        from app.agents.firm_context import load_firm_knowledge_excerpts
+
+        knowledge = load_firm_knowledge_excerpts(max_chars=4000)
+        if knowledge:
+            lines.append(knowledge)
+    except Exception:
+        LOGGER.exception("firm knowledge excerpts load failed")
+
     return "\n".join(lines)

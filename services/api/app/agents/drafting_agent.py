@@ -158,7 +158,26 @@ def run_drafting(matter_id: str, instruction: str) -> AgentResult:
 
     doc = (result.metadata or {}).get("full_memo") or result.summary
     post = _post_process_draft(doc=str(doc), doc_type=doc_type, matter_id=matter_id, matter_ctx=matter_ctx)
-    result.metadata = {**(result.metadata or {}), **post, "draft_type": doc_type}
+    firm_applied = bool(firm_profile)
+    matter_facts_present = bool(
+        (matter_ctx and matter_ctx.get("assessment_data"))
+        or (matter_ctx and matter_ctx.get("summary"))
+    )
+    qc = {
+        "firm_memory_applied": firm_applied,
+        "matter_context_present": bool(matter_ctx),
+        "matter_facts_present": matter_facts_present,
+        "document_lint_passed": bool((post.get("document_lint") or {}).get("passed")),
+        "citations_checked": bool(post.get("citation_verification_summary") or post.get("citations_found")),
+        "attorney_review_required": True,
+    }
+    result.metadata = {
+        **(result.metadata or {}),
+        **post,
+        "draft_type": doc_type,
+        "firm_memory_applied": firm_applied,
+        "draft_qc": qc,
+    }
 
     lint = post.get("document_lint") or {}
     gaps = list(result.gaps or [])
@@ -166,6 +185,10 @@ def run_drafting(matter_id: str, instruction: str) -> AgentResult:
         gaps.append(f"Document linter: {'; '.join(lint.get('issues', []))}")
     if post.get("citation_verification_summary"):
         gaps.append(f"Citation package: {post['citation_verification_summary']}")
+    if not firm_applied:
+        gaps.append(
+            "Firm Memory not applied — set tone/samples at /templates#firm-memory for firmer voice match."
+        )
     gaps.append("Attorney review required before filing or client communication.")
     result.gaps = gaps
 

@@ -16,3 +16,14 @@ def test_lint_flags_em_dash() -> None:
 
 def test_lint_flags_empty() -> None:
     assert lint_document("   ") == ["Document is empty."]
+
+
+def test_lint_flags_chatbot_filler() -> None:
+    issues = lint_document("Certainly, the client qualifies under INA 245.")
+    assert any("Certainly" in i for i in issues)
+
+
+def test_lint_flags_many_placeholders() -> None:
+    body = " ".join(["[FACT NEEDED]"] * 5)
+    issues = lint_document(body)
+    assert any("placeholder" in i.lower() for i in issues)

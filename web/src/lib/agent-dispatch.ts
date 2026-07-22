@@ -42,6 +42,16 @@ export type AgentCommandResult = {
   citationVerification?: string;
   documentLintPassed?: boolean;
   documentLintIssues?: string[];
+  /** Drafting QC flags from API metadata.draft_qc / firm_memory_applied. */
+  draftQc?: {
+    firmMemoryApplied?: boolean;
+    matterContextPresent?: boolean;
+    matterFactsPresent?: boolean;
+    documentLintPassed?: boolean;
+    citationsChecked?: boolean;
+    attorneyReviewRequired?: boolean;
+  };
+  firmMemoryApplied?: boolean;
   /** PM Inbox row id when agent paused with gaps / escalation. */
   inboxItemId?: string;
   /** True when agent produced a reviewable memo/draft. */

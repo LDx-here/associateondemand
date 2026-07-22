@@ -41,6 +41,15 @@ type AgentDispatchResult = {
     draft_type?: string;
     citation_verification_summary?: string;
     document_lint?: { passed?: boolean; issues?: string[] };
+    firm_memory_applied?: boolean;
+    draft_qc?: {
+      firm_memory_applied?: boolean;
+      matter_context_present?: boolean;
+      matter_facts_present?: boolean;
+      document_lint_passed?: boolean;
+      citations_checked?: boolean;
+      attorney_review_required?: boolean;
+    };
   };
 };
 
@@ -333,6 +342,42 @@ async function dispatchToPm(matterId: string, instruction: string) {
     }
     if (lintMeta?.issues?.length) {
       payload.documentLintIssues = lintMeta.issues;
+    }
+    const firmMemoryApplied =
+      typeof data.metadata?.firm_memory_applied === "boolean"
+        ? data.metadata.firm_memory_applied
+        : undefined;
+    if (typeof firmMemoryApplied === "boolean") {
+      payload.firmMemoryApplied = firmMemoryApplied;
+    }
+    const draftQcRaw = data.metadata?.draft_qc as Record<string, unknown> | undefined;
+    if (draftQcRaw && typeof draftQcRaw === "object") {
+      payload.draftQc = {
+        firmMemoryApplied:
+          typeof draftQcRaw.firm_memory_applied === "boolean"
+            ? draftQcRaw.firm_memory_applied
+            : firmMemoryApplied,
+        matterContextPresent:
+          typeof draftQcRaw.matter_context_present === "boolean"
+            ? draftQcRaw.matter_context_present
+            : undefined,
+        matterFactsPresent:
+          typeof draftQcRaw.matter_facts_present === "boolean"
+            ? draftQcRaw.matter_facts_present
+            : undefined,
+        documentLintPassed:
+          typeof draftQcRaw.document_lint_passed === "boolean"
+            ? draftQcRaw.document_lint_passed
+            : lintMeta?.passed,
+        citationsChecked:
+          typeof draftQcRaw.citations_checked === "boolean"
+            ? draftQcRaw.citations_checked
+            : Boolean(citationSummary),
+        attorneyReviewRequired:
+          typeof draftQcRaw.attorney_review_required === "boolean"
+            ? draftQcRaw.attorney_review_required
+            : true,
+      };
     }
 
     const hasWorkProduct = Boolean(fullMemo?.trim());

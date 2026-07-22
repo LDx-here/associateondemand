@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import type { AgentCommandResult } from "@/lib/agent-dispatch";
 import { AgentResultMemoSection } from "@/components/AgentResultMemoSection";
+import { DraftQcChecklist } from "@/components/DraftQcChecklist";
 import { useToast } from "@/components/Toast";
 import { btnSecondary, linkMatter } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
@@ -125,6 +126,13 @@ export function AgentResultPanel({
         </p>
       ) : null}
 
+      {(result.draftQc ||
+        result.draftType ||
+        typeof result.firmMemoryApplied === "boolean" ||
+        typeof result.documentLintPassed === "boolean") && (
+        <DraftQcChecklist result={result} />
+      )}
+
       {result.documentLintIssues?.length ? (
         <div className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[0.65rem] text-amber-950">
           <p className="font-semibold">Document linter</p>
@@ -150,6 +158,10 @@ export function AgentResultPanel({
             </button>
           ) : null}
         </div>
+      ) : null}
+
+      {hasFullMemo || result.documentLintIssues?.length || result.citationVerification ? (
+        <DraftQcChecklist result={result} compact={variant === "compact"} />
       ) : null}
 
       {exportError ? (

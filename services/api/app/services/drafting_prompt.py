@@ -196,9 +196,11 @@ def build_drafting_context_block(matter_code: str, matter_ctx: dict[str, Any] | 
     if assessment_doc_block:
         parts.append(assessment_doc_block)
 
+    # Firm Memory + immigration knowledge excerpts also inject via format_matter_context
+    # (all agents). Keep a compact style reminder here for the drafting context block.
     firm = fetch_firm_memory_profile()
     if firm:
-        style_lines = ["## Firm Memory (Strategy Patterns)"]
+        style_lines = ["## Firm Memory (drafting style)"]
         for key, label in (
             ("writing_tone", "Tone"),
             ("citation_style", "Citations"),
@@ -210,11 +212,27 @@ def build_drafting_context_block(matter_code: str, matter_ctx: dict[str, Any] | 
                 style_lines.append(f"- {label}: {val}")
         parts.append("\n".join(style_lines))
 
-    if not parts:
-        parts.append(
+    try:
+        from app.agents.firm_context import load_firm_knowledge_excerpts
+
+        knowledge = load_firm_knowledge_excerpts(max_chars=3500)
+        if knowledge:
+            parts.append(knowledge)
+    except Exception:
+        pass
+
+    has_matter_substance = any(
+        p.startswith("## Case assessment")
+        or p.startswith("## Structured facts")
+        or p.startswith("## Firm Memory")
+        for p in parts
+    )
+    if not has_matter_substance:
+        parts.insert(
+            0,
             "## Matter context for drafting\n"
             "No structured facts, case assessment, or Firm Memory on file yet. "
-            "Use [FACT NEEDED] placeholders for any missing client-specific details."
+            "Use [FACT NEEDED] placeholders for any missing client-specific details.",
         )
 
     return "\n\n".join(parts)

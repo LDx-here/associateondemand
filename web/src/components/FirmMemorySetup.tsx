@@ -126,7 +126,7 @@ export function FirmMemorySetup() {
         return;
       }
       showToast(
-        `${FIRM_SAMPLE_DOC_TYPE_LABELS[docType]} sample saved — feeds drafting tone and sample discount.`,
+        `${FIRM_SAMPLE_DOC_TYPE_LABELS[docType]} sample filed. For drafting voice, also paste a short redacted excerpt into style prefs or Save to Firm Memory from an edited draft.`,
         "success",
       );
       await refresh();
@@ -180,8 +180,9 @@ export function FirmMemorySetup() {
         <div>
           <h2 className="text-sm font-semibold text-violet-950">Firm Memory setup</h2>
           <p className="mt-0.5 text-xs text-violet-900">
-            Teach AssociateOnDemand your firm&apos;s voice with real document samples — briefs, motions,
-            letters, or forms. Tone and citation prefs apply automatically to agent drafting.
+            Save tone and citation prefs (and short redacted voice excerpts) so drafting matches your firm.
+            PDF samples file for discount tracking; paste excerpts here or Save to Firm Memory from an edited draft
+            for voice that agents actually read.
           </p>
           {status && !status.configured ? (
             <p className="mt-2 text-xs font-medium text-amber-900">
@@ -198,8 +199,9 @@ export function FirmMemorySetup() {
             Step 1 — Upload firm document samples
           </div>
           <p className="mt-1 text-xs text-slate-600">
-            Any prior work in your style — brief, motion, telephonic request, cover letter, demand letter.
-            Samples teach tone/format and unlock the sample discount at intake.
+            File a prior brief, motion, or letter (redacted). Unlocks sample discount at intake.
+            For drafting voice, also paste a 1–2 page excerpt into Step 3 style notes or Save to Firm Memory
+            after editing an agent draft.
           </p>
           {samples.length > 0 ? (
             <ul className="mt-2 space-y-1 text-xs text-emerald-800">

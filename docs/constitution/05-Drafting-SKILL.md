@@ -118,6 +118,20 @@ Follow `08-Citation-Verification-SKILL.md`:
 - Immigration tone: precise, Sixth Circuit / BIA aware, no overclaiming.
 - AOS briefs: 8–15 pages target; general memos: 1.5–3 pages unless LD requests longer.
 
+## Draft QC checklist (before returning)
+
+Self-check every draft against this list. If an item fails, fix it or flag in
+**Items Requiring Further Development**:
+
+1. **No invented facts** — every client-specific claim is from matter context or marked `[FACT NEEDED]`.
+2. **No invented cites** — every authority is real or marked `[CITE NEEDED]`; Sources Cited lists all used.
+3. **Firm style** — match FIRM STYLE REQUIREMENTS / Firm Memory when provided (tone, headers, citation format).
+4. **Structure** — required header + sections for the document type; AOS briefs include Case Theme.
+5. **Voice** — senior associate tone; no chatbot filler, no AI meta-commentary, no em dashes/emoji.
+6. **Placeholders visible** — unresolved gaps are explicit, not silently omitted.
+
+Attorney judgment still owns legal strategy, equities weighting, and filing readiness.
+
 ## Output
 
 Return the full draft ready for attorney edit in Word. Include `Case Theme:` line for AOS briefs.
