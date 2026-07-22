@@ -87,7 +87,9 @@ export async function completeTask(taskId: string): Promise<Task | null> {
 
 export async function updateLegalElement(
   id: string,
-  patch: Partial<Pick<LegalElementRow, "assessment" | "keyGap" | "nextAction" | "supportingFacts">>,
+  patch: Partial<
+    Pick<LegalElementRow, "assessment" | "keyGap" | "nextAction" | "supportingFacts" | "supportingCases">
+  >,
 ): Promise<LegalElementRow | null> {
   const seed = await getMutableSeed();
   const row = seed.legalElements.find((e) => e.id === id);

@@ -16,16 +16,24 @@ export function KnowledgeMapShell({ firmKnowledge }: { firmKnowledge: KnowledgeM
 
   useEffect(() => {
     const hash = typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "";
-    if (hash === "patterns" || hash === "pattern-graph") setTab("patterns");
-    if (hash === "firm-knowledge" || hash === "firm") setTab("firm");
+    if (hash.startsWith("patterns") || hash === "pattern-graph") setTab("patterns");
+    if (hash.startsWith("firm-knowledge") || hash === "firm" || hash.startsWith("firm&")) setTab("firm");
   }, []);
 
   function selectTab(next: Tab) {
     setTab(next);
-    const hash = next === "firm" ? "firm-knowledge" : "patterns";
-    if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", `#${hash}`);
+    if (typeof window === "undefined") return;
+    if (next === "patterns") {
+      window.history.replaceState(null, "", "#patterns");
+      return;
     }
+    // Preserve topic highlight when switching back to firm knowledge.
+    const current = window.location.hash.replace(/^#/, "");
+    const topicMatch = current.match(/(?:^|&)topic=([^&]+)/);
+    const hash = topicMatch
+      ? `firm-knowledge&topic=${topicMatch[1]}`
+      : "firm-knowledge";
+    window.history.replaceState(null, "", `#${hash}`);
   }
 
   return (

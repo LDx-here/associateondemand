@@ -181,3 +181,5 @@
 ### [2026-07-21] CHECKPOINT: Pass 21 UX — removed sidebar; top header nav + More dropdown; `/help` site guide; full-width layout; pytest 53; next build; smoke-production PASS; Vercel prod
 
 ### [2026-07-21] CHECKPOINT: pass 22 — draft QC checklist + Firm Memory/brain knowledge wiring honesty; linter chatbot/placeholder rules; runbooks; pytest + next build
+
+### [2026-07-22] CHECKPOINT: pass 27 Firm Knowledge → matters — Legal Elements load from knowledge map by case type, needed-facts checklist, Memory vs Knowledge UX, filtered knowledge-map; test:firm-knowledge; pytest 77; next build; Vercel prod

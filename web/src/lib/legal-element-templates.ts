@@ -157,7 +157,58 @@ export function formatLinkedFacts(facts: ExtractedFactRecord[]): string {
   return facts.map((f) => factDisplayValue(f)).filter(Boolean).join("; ");
 }
 
+/**
+ * Prefer Firm Knowledge map for legal-element reference.
+ * Legacy immigration-* slugs map onto knowledge-map topic stems when possible.
+ */
 export function firmMemoryReferenceHref(slug?: string): string | null {
   if (!slug) return null;
+  const topicId = slug
+    .replace(/^immigration-/, "")
+    .replace(/^asylum-/, "asylum-")
+    .replace(/^pi-/, "");
+  // Known knowledge-map stems (see brain/.../immigration/00-index.md).
+  const KNOWN = new Set([
+    "aos-discretionary-checklist",
+    "aos-statutory-eligibility",
+    "aos-filing-packet",
+    "affidavit-of-support",
+    "extreme-hardship-factors",
+    "ina-212a-waiver",
+    "inadmissibility-overview",
+    "unlawful-presence-bars",
+    "misrepresentation-212i",
+    "false-claim-usc",
+    "criminal-grounds-overview",
+    "aggravated-felony-overview",
+    "asylum-elements",
+    "asylum-bars",
+    "withholding-cat",
+    "family-based-immigration",
+    "marriage-based-aos",
+    "vawa-u-t-overview",
+    "procedural-posture-removal",
+    "cancellation-of-removal",
+  ]);
+  const mapped: Record<string, string> = {
+    "extreme-hardship": "extreme-hardship-factors",
+    "statutory-eligibility": "aos-statutory-eligibility",
+    admissibility: "inadmissibility-overview",
+    "unlawful-presence": "unlawful-presence-bars",
+    "waiver-strategy": "ina-212a-waiver",
+    discretion: "aos-discretionary-checklist",
+    procedure: "procedural-posture-removal",
+    "criminal-grounds": "criminal-grounds-overview",
+    persecution: "asylum-elements",
+    nexus: "asylum-elements",
+    psg: "asylum-elements",
+    relocation: "asylum-bars",
+    bars: "asylum-bars",
+    "withholding-cat": "withholding-cat",
+  };
+  const stem = mapped[topicId] ?? (KNOWN.has(topicId) ? topicId : mapped[slug] ?? null);
+  if (stem) {
+    return `/knowledge-map?topics=${encodeURIComponent(stem)}#firm-knowledge&topic=${encodeURIComponent(stem)}`;
+  }
   return `/templates#firm-memory&ref=${encodeURIComponent(slug)}`;
 }

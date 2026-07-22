@@ -1,76 +1,82 @@
-# Firm Memory + immigration reference book → legal elements
+# Firm Memory + Firm Knowledge → legal elements
 
 Short runbook for wiring practice reference material into AssociateOnDemand legal-element workflows.
+
+## Firm Memory vs Firm Knowledge (read this first)
+
+| | **Firm Memory** | **Firm Knowledge** |
+|--|-----------------|--------------------|
+| **What** | Tone, voice samples, style preferences | Book-extracted legal-element outlines (knowledge map) |
+| **Where** | `/templates#firm-memory` | `/knowledge-map#firm-knowledge` + `brain/03_Firm_Knowledge/immigration/*.md` |
+| **On a matter** | Soft link from Legal elements (“voice / style”) | **Load elements for this matter type** → Legal Elements tab |
+| **Agents** | Drafting voice / Strategy Patterns | Topic-aware MD excerpts in prompts (`firm_context.select_immigration_knowledge_files`) |
+
+Both feed agents. **Knowledge drives Legal Elements** (what must be proved). **Memory drives voice** (how it reads).
 
 ## Where to put the immigration book
 
 | Location | Best for | How AOD uses it |
 |----------|----------|-----------------|
-| **`brain/03_Firm_Knowledge/immigration/*.md`** | Curated chapter summaries & element checklists | **Wired now** — loaded into agent prompts (char-capped). Skips `README.md`. Not for whole PDFs. |
-| **`/templates#firm-memory`** (Firm Memory upload) | Style exemplars + short reference snippets for **drafts** | **Wired** — `POST /api/firm-memory` → Strategy Patterns → drafting system prompt + matter context |
-| **`.aod-context/features/` or `.aod-context/technical/`** | Structured agent reference (element checklists, INA cites) | Read by Cursor agents + `legal-element-templates.ts` seed lists |
+| **`brain/03_Firm_Knowledge/immigration/*.md`** | Curated chapter summaries & element checklists | **Wired** — agents (topic-aware) + UI Legal Elements load via knowledge-map JSON |
+| **`/knowledge-map`** | Browse outlines (cites, facts that prove it) | Synced JSON from brain (`npm run sync:knowledge-map`) |
+| **`/templates#firm-memory`** | Style exemplars for **drafts** | Strategy Patterns → drafting voice |
+| **`.aod-context/features/` or `.aod-context/technical/`** | Structured agent reference | Cursor agents + fallback templates |
 
 ### Upload recommendation (clear YES / NO)
 
 | Material | Upload? | Where | Format |
 |----------|---------|-------|--------|
-| Firm brief/motion **style samples** (redacted) | **YES — priority 1** | `/templates#firm-memory` | PDF/DOCX samples + tone/citation/header prefs |
-| Element checklists / 2–5 page chapter summaries | **YES — priority 2** | Firm Memory *and/or* `brain/.../immigration/*.md` | Markdown or short pasted text |
-| Full immigration treatise / book PDF | **NO (as a single upload)** | Keep master offline or in vault for humans | Extract excerpts to `.md` instead |
-| Client files, sealed/confidential books | **NO** | Matter Documents only when case-specific | Never Firm Memory |
-| Machine-readable element lists | **YES — priority 3** | `.aod-context/technical/` | TypeScript / markdown lists for Legal Elements seed |
+| Firm brief/motion **style samples** (redacted) | **YES — priority 1** | `/templates#firm-memory` | PDF/DOCX samples + tone prefs |
+| Element checklists / 2–5 page chapter summaries | **YES — priority 2** | `brain/.../immigration/*.md` | Markdown (then sync knowledge map) |
+| Full immigration treatise / book PDF | **NO (as a single upload)** | Keep master offline | Extract excerpts to `.md` instead |
+| Client files | **NO** | Matter Documents only | Never Firm Memory / Knowledge vault |
 
-**Recommendation:** Do **not** dump the whole book into Firm Memory (it will be truncated and dilute style). Extract the chapters you actually cite → `.md` excerpts + Firm Memory snippets.
+## Matter-type → knowledge mapping (Pass 26)
 
-**Honest wiring (2026-07-21):** Drafting agents **do** inject (1) Firm Memory **style preferences** / Strategy Pattern text, and (2) short `.md` excerpts from `brain/03_Firm_Knowledge/immigration/`. Uploaded PDF “firm samples” are stored for completeness / discount tracking but are **not** auto-read into prompts — paste short redacted voice excerpts into style notes, or Save to Firm Memory after editing a draft. Whole-book PDFs are not ingested. See [draft-quality-control.md](./draft-quality-control.md).
+`web/src/lib/firm-knowledge-for-matter.ts` maps case type → knowledge-map topics (aligned with API `firm_context`):
+
+| Matter signals | Knowledge topics (examples) |
+|----------------|----------------------------|
+| Family / AOS / Adjustment / marriage | `family-based-immigration`, `marriage-based-aos`, `aos-*`, `affidavit-of-support` |
+| Waiver / hardship / I-601 | `extreme-hardship-factors`, `ina-212a-waiver`, `unlawful-presence-bars` |
+| Asylum | `asylum-elements`, `asylum-bars`, `withholding-cat` |
+| Removal / cancellation | `procedural-posture-removal`, `cancellation-of-removal` |
+| Criminal | `criminal-grounds-overview`, `aggravated-felony-overview` |
+
+## Attorney workflow (matter)
+
+1. Open a matter (e.g. family Adjustment / AOS) → **Legal elements** tab.
+2. Click **Load elements for this matter type** — prefills from Firm Knowledge (name, cite, needed-facts checklist).
+3. Expand an element → see **Information needed** (Present vs Needed vs assessment OCR).
+4. Customize: edit gaps/actions, add/remove elements; saves to Airtable Legal Elements.
+5. Optional: **Re-suggest (keep edits)** adds missing topics without wiping attorney edits.
+6. **Browse knowledge for this matter type** opens `/knowledge-map` filtered to relevant topics.
+7. Badge on matter header: **Firm knowledge applied: N elements** when loaded.
+8. Firm Memory remains at `/templates#firm-memory` for voice — separate from this tab.
 
 ## How legal elements consume reference material
 
-1. **Templates** — `web/src/lib/legal-element-templates.ts` defines standard elements per practice area (Immigration, PI, deliverable-aware fields from `practice-area-facts.ts`).
-2. **Matter workbench → Legal elements tab** — attorney clicks **Load practice-area elements** to create Airtable Legal Elements rows; maps extracted assessment facts; strategy status Met / Partial / Gap / Needs evidence.
-3. **Extracted facts** — case assessment OCR + attorney verify (`ExtractedFactsReview`) link to elements via `fieldId`.
-4. **Firm Memory** — element cards link to `/templates#firm-memory` for immigration reference snippets saved as Strategy Patterns.
-
-## Attorney workflow
-
-1. Put the master book PDF in `brain/03_Firm_Knowledge/immigration/_source/` (local; gitignored — do not commit copyrighted books).
-2. Ask Cursor to convert by element into short `.md` files under `brain/03_Firm_Knowledge/immigration/` (see that folder’s README + `00-index.md`). Do **not** dump the whole PDF into Firm Memory.
-3. Optional: upload short style snippets / redacted samples → Firm Memory (`/templates#firm-memory`) for drafting voice.
-4. Redeploy the API after adding brain `.md` files (Fly image copies `brain/03_Firm_Knowledge`).
-5. On matter → **Legal elements** → Load practice-area elements → review extracted facts → set strategy status per element.
-6. **Procedural timeline** tab tracks filings/posture; **Case activity** tab holds notes and agent chronology.
+1. **Knowledge map** — `web/src/lib/knowledge-map/data.json` (from brain MD).
+2. **Matter mapping** — `firm-knowledge-for-matter.ts` selects topics + “facts that prove it.”
+3. **Legal Elements tab** — load/merge → Airtable rows; `supportingCases` stores `From firm knowledge: {topic-id}`.
+4. **Agents** — same stems selected by `select_immigration_knowledge_files` in drafting prompts.
+5. **Fallback** — practice-area templates in `legal-element-templates.ts` if no knowledge topics match (e.g. PI).
 
 ## Related code
 
+- `web/src/lib/firm-knowledge-for-matter.ts`
 - `web/src/lib/legal-element-templates.ts`
 - `web/src/components/LegalElementsPanel.tsx`
+- `services/api/app/agents/firm_context.py`
 - `docs/constitution/07-Legal-Mapping-SKILL.md`
 
-## Smart templates + Firm Memory (2026-07-21)
+## Verify
 
-Smart templates separate **editable fields** from **locked boilerplate** so overflow deliverables keep firm format.
+```bash
+cd web && npm run test:firm-knowledge
+cd services/api && .venv/bin/python -m pytest tests/test_firm_knowledge.py -q
+```
 
-| Surface | Purpose |
-|---------|---------|
-| **`/templates#smart-templates`** | Catalog of field maps (e.g. telephonic records request) |
-| **Matter → Overview → Smart templates** | Apply template on a matter; autofill from matter profile + saved template profiles |
-| **`/templates#firm-memory`** | Firm-wide style samples + Strategy Patterns (drafting voice) |
-| **`POST /api/templates/detect-fields`** | Optional LLM/heuristic field detection from uploaded sample OCR |
+## Smart templates + Firm Memory (unchanged)
 
-### Telephonic records request — setup steps
-
-1. Open **`/templates`** → confirm **Smart templates** lists *Telephonic records request*.
-2. **`/templates#firm-memory`** → upload a redacted firm sample (optional) → saves style to Strategy Patterns.
-3. On a matter → **Overview** tab → **Smart templates** → select *Telephonic records request*.
-4. Fill editable fields (client name, A-number, records list) — violet-highlighted regions are customizable; locked sections stay boilerplate.
-5. **Save profile** (e.g. "Telephonic requests — RMV defaults") for reuse on future matters.
-6. **Generate filled preview** → copy structured output or start a hearing-packet assignment.
-
-### Document isolation (matter-scoped uploads)
-
-Documents must only appear on the matter they were uploaded to. Code guards:
-
-- `web/src/lib/airtable/matter-link-filter.ts` — Airtable formula + post-filter on linked record ids
-- Firm-wide rows (`assessment_template:*`, `firm_sample:*`) excluded from matter document lists
-- Upload path always patches `matter_id` when registering an existing Airtable document row
-
+Smart templates separate **editable fields** from **locked boilerplate**. Firm Memory on `/templates#firm-memory` is still the path for drafting voice — not for legal-element checklists.

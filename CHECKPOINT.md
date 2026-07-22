@@ -1,9 +1,11 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-22 (CDT) — Pass 26 CREAC template structure  
+**Last updated:** 2026-07-22 (CDT) — Pass 27 Firm Knowledge → matters  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 27 (2026-07-22):** Matter-type → Firm Knowledge on Legal Elements — load/merge from knowledge map, needed-facts checklist, filtered `/knowledge-map`, Memory vs Knowledge UX, matter badge. `npm run test:firm-knowledge`; pytest 77; next build; Vercel prod (web only).
 
 **Pass 26 (2026-07-22):** DOCX/template Structure tab — CREAC section parser (headings + labels); store `sections` on deliverable template meta; DOCX heading-aware extract + HTML preview; drafting injects TEMPLATE STRUCTURE + preserve Rule + FACTS FOR ANALYSIS; CREAC map on `/templates` preview + AOS fact guide. pytest 77; next build green.
 
@@ -21,7 +23,7 @@
 
 **Pass 20 (2026-07-21):** External partner funnel `/partner/submit` + drafting prompt hardening.
 
-**Next (user choice):** Re-upload `Sakkhi_AOS_Discretionary_Brief.docx` on `/templates` → confirm Structure tab CREAC sections; draft AOS brief on a matter and verify Rule preserved + facts in Analysis.
+**Next (user choice):** On a family/Adjustment matter → Legal elements → **Load elements for this matter type** → confirm badge + needed-facts checklist; browse filtered knowledge map. Then pilot AOS draft (agents already topic-aware).
 
 ## Dual track
 
@@ -539,6 +541,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 27 (2026-07-22):** Firm Knowledge → matters intelligence — Legal Elements load/merge from knowledge map by case type; needed-facts Present/Needed; Memory vs Knowledge UX; filtered knowledge-map deep links; matter badge. Verified: `test:firm-knowledge`, pytest 77, next build.
 - **Pass 21 (2026-07-21):** UX — removed left sidebar; top header nav + More dropdown; mobile hamburger; `/help` site guide (dashboard + Settings links); full-width main content; Associate panel unchanged. Verified: pytest (53), next build, smoke-production PASS.
 - **Pass 20 (2026-07-21):** External partner funnel `/partner/submit`; Stripe checkout on partner path; inbox partner badge; partner link copy on dashboard/settings; drafting prompt hardening (53 pytest). Matter navigation fix + operator UX polish; smoke E2E matter detail 200.
 - **Pass 19 (2026-07-21):** Partner-firm billing model — disabled operator-side Stripe Checkout on internal `/assignments/new`; restored submit → dispatch → inbox; partner invoicing copy site-wide; [`overflow-counsel-billing-model.md`](docs/runbooks/overflow-counsel-billing-model.md). Stripe routes kept for external funnel.
@@ -570,14 +573,12 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Share site guide with pilot firm** — https://aod-next.vercel.app/help (overflow counsel walkthrough).
-2. **Share partner funnel** — copy link from Dashboard or Settings → `/partner/submit?deliverable=aos-discretionary-brief`; optional: set `STRIPE_CHECKOUT_ENABLED=true` on Vercel for pay-at-submit.
-3. **Verify document isolation on prod** — upload on AOD-1001 vs AOD-1002; confirm Documents tab is matter-specific only.
-4. **Pilot telephonic template** — Matter Overview → Smart templates → save RMV profile → generate preview.
-5. **Pilot matter on new workbench** — upload case assessment; verify enriched facts show element labels (not generic "name"); test **Re-analyze with AI** on Legal elements tab.
-6. **First pilot matter (ops)** — operator path: `/assignments/new` → `/inbox` → approve → export.
-7. **Optional:** Stripe + Resend env vars — `bash scripts/stripe-setup-checklist.sh`.
-8. **Roadmap Phase 3** — Firm Memory depth + style QC.
+1. **Try Firm Knowledge on a matter** — open Adjustment/family matter → Legal elements → Load elements for this matter type → Browse knowledge for this matter type.
+2. **Share site guide with pilot firm** — https://aod-next.vercel.app/help (overflow counsel walkthrough).
+3. **Share partner funnel** — `/partner/submit?deliverable=aos-discretionary-brief`.
+4. **Pilot AOS discretionary draft** — confirm topic-aware Firm Knowledge in prompts + Legal Elements checklist.
+5. **Optional:** Stripe + Resend env vars — `bash scripts/stripe-setup-checklist.sh`.
+6. **Roadmap Phase 3** — Firm Memory depth + style QC.
 
 ## Blockers
 

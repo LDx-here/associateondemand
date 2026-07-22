@@ -82,18 +82,19 @@ const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "templates",
-    title: "Templates & Firm Memory",
+    title: "Templates, Firm Memory & Firm Knowledge",
     icon: LayoutTemplate,
     summary:
-      "Teach RMV your firm's voice — samples and style preferences make overflow drafts read in-house.",
+      "Two feeds for agents: Firm Memory = voice/style; Firm Knowledge = legal-element map from books.",
     bullets: [
-      "Firm Memory wizard — upload prior work, set tone preferences, save style edits from agent output.",
+      "Firm Memory wizard — tone samples and style prefs on Templates (not element checklists).",
+      "Firm Knowledge — knowledge map outlines; on a matter → Legal elements → Load elements for this matter type.",
+      "Document assembly — upload firm DOCX (TXDocs-style); matter facts fill {{merge_fields}}; letterhead from Settings → Firm profile.",
       "Deliverable catalog — flat-fee ranges and turnaround for launch SKUs; links prefill intake.",
       "Firm assessment templates — blank forms per practice area for consistent assessment uploads.",
-      "Firm knowledge map — browse immigration and firm-ops outlines on the Knowledge map (More tools).",
       "Incomplete Firm Memory? Dashboard and intake nudge you to finish setup before your first pilot.",
     ],
-    cta: { href: "/templates#firm-memory", label: "Set up Firm Memory" },
+    cta: { href: "/knowledge-map#firm-knowledge", label: "Browse Firm Knowledge" },
   },
   {
     id: "export-billing",

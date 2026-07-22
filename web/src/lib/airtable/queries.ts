@@ -426,7 +426,9 @@ export async function saveCaseAssessmentInAirtable(
 
 export async function updateLegalElementInAirtable(
   elementId: string,
-  patch: Partial<Pick<LegalElementRow, "assessment" | "keyGap" | "nextAction" | "supportingFacts">>,
+  patch: Partial<
+    Pick<LegalElementRow, "assessment" | "keyGap" | "nextAction" | "supportingFacts" | "supportingCases">
+  >,
 ): Promise<LegalElementRow | null> {
   const le = F.legalElements;
   const fields: RawFields = {};
@@ -434,6 +436,7 @@ export async function updateLegalElementInAirtable(
   if (patch.keyGap !== undefined) fields[le.key_gap] = patch.keyGap;
   if (patch.nextAction !== undefined) fields[le.next_action] = patch.nextAction;
   if (patch.supportingFacts !== undefined) fields[le.supporting_facts] = patch.supportingFacts;
+  if (patch.supportingCases !== undefined) fields[le.supporting_cases] = patch.supportingCases;
   const rec = await airtablePatch(TABLES.legalElements, elementId, fields);
   const matterLinks = linkedIds(rec.fields[le.matter_id]);
   const matterId = matterLinks[0] ?? "";

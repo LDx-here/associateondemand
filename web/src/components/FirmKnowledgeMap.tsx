@@ -11,7 +11,7 @@ import {
   CheckSquare,
   Link2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { KnowledgeCategory, KnowledgeMapData, KnowledgeTopic } from "@/lib/knowledge-map/types";
 import { tabActive, tabInactive } from "@/lib/ui-classes";
@@ -201,10 +201,34 @@ function CardGrid({
   );
 }
 
+function readTopicFilterFromUrl(): { filterIds: string[] | null; selectedId: string | null } {
+  if (typeof window === "undefined") return { filterIds: null, selectedId: null };
+  const params = new URLSearchParams(window.location.search);
+  const topicsParam = params.get("topics")?.trim();
+  const filterIds = topicsParam
+    ? topicsParam
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : null;
+  const hash = window.location.hash.replace(/^#/, "");
+  const topicMatch = hash.match(/(?:^|&)topic=([^&]+)/);
+  const selectedId = topicMatch ? decodeURIComponent(topicMatch[1]) : filterIds?.[0] ?? null;
+  return { filterIds, selectedId };
+}
+
 export function FirmKnowledgeMap({ data }: { data: KnowledgeMapData }) {
   const firstId = data.categories[0]?.topics[0]?.id ?? null;
-  const [selectedId, setSelectedId] = useState<string | null>(firstId);
+  const initial = typeof window !== "undefined" ? readTopicFilterFromUrl() : { filterIds: null, selectedId: null };
+  const [filterIds, setFilterIds] = useState<string[] | null>(initial.filterIds);
+  const [selectedId, setSelectedId] = useState<string | null>(initial.selectedId ?? firstId);
   const [view, setView] = useState<ViewMode>("outline");
+
+  useEffect(() => {
+    const { filterIds: nextFilter, selectedId: nextSelected } = readTopicFilterFromUrl();
+    if (nextFilter?.length) setFilterIds(nextFilter);
+    if (nextSelected) setSelectedId(nextSelected);
+  }, []);
 
   const topicById = useMemo(() => {
     const map = new Map<string, KnowledgeTopic>();
@@ -214,7 +238,38 @@ export function FirmKnowledgeMap({ data }: { data: KnowledgeMapData }) {
     return map;
   }, [data]);
 
+  const filteredCategories = useMemo(() => {
+    if (!filterIds?.length) return data.categories;
+    const allow = new Set(filterIds);
+    return data.categories
+      .map((cat) => ({
+        ...cat,
+        topics: cat.topics.filter((t) => allow.has(t.id)),
+      }))
+      .filter((cat) => cat.topics.length > 0);
+  }, [data, filterIds]);
+
   const selected = selectedId ? topicById.get(selectedId) ?? null : null;
+  const filterActive = Boolean(filterIds?.length);
+
+  function clearFilter() {
+    setFilterIds(null);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("topics");
+      url.hash = "firm-knowledge";
+      window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  }
+
+  function selectTopic(id: string) {
+    setSelectedId(id);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.hash = `firm-knowledge&topic=${encodeURIComponent(id)}`;
+      window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -231,6 +286,14 @@ export function FirmKnowledgeMap({ data }: { data: KnowledgeMapData }) {
           <p className="mt-1 text-[11px] text-slate-400">
             Synced from {data.source} · {new Date(data.generatedAt).toLocaleString()}
           </p>
+          {filterActive ? (
+            <p className="mt-2 inline-flex flex-wrap items-center gap-2 rounded-md bg-violet-50 px-2 py-1 text-xs text-violet-950 ring-1 ring-violet-200">
+              Showing {filterIds!.length} topics for this matter type
+              <button type="button" className="font-medium underline-offset-2 hover:underline" onClick={clearFilter}>
+                Show all
+              </button>
+            </p>
+          ) : null}
         </div>
         <div className="flex rounded-md ring-1 ring-slate-200" role="group" aria-label="View mode">
           <button
@@ -261,9 +324,9 @@ export function FirmKnowledgeMap({ data }: { data: KnowledgeMapData }) {
       {view === "cards" ? (
         <div className="space-y-6">
           <CardGrid
-            categories={data.categories}
+            categories={filteredCategories}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={selectTopic}
           />
           {selected ? (
             <div className="rounded-xl border border-violet-200 bg-white p-5 shadow-sm">
@@ -274,12 +337,12 @@ export function FirmKnowledgeMap({ data }: { data: KnowledgeMapData }) {
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(16rem,20rem)_1fr]">
           <aside className="space-y-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto">
-            {data.categories.map((cat) => (
+            {filteredCategories.map((cat) => (
               <CategoryTree
                 key={cat.id}
                 category={cat}
                 selectedId={selectedId}
-                onSelect={setSelectedId}
+                onSelect={selectTopic}
               />
             ))}
           </aside>
