@@ -1,23 +1,33 @@
-"""AOS brief generator — deterministic assembly + optional API FILL prose.
+"""AOS brief generator — library FILL + verbatim PRESERVE (+ optional API enhancement).
 
-Parser and Generator are SEPARATE. Legal logic lives in rules; LLM only enhances FILL.
-Without API: structurally correct brief with placeholders.
-With API: polished FILL sections using full Part 8.1 system prompt + extended thinking.
+Parser and Generator are SEPARATE. Default path uses paragraph library (no API).
+Set AOD_AOS_USE_API=1 (and pass use_api=True) for optional Claude FILL enhancement.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 import re
 from datetime import date
 from pathlib import Path
 from typing import Any
 
+from app.services.aos_paragraph_library import (
+    build_certificate_of_service,
+    evaluate_selection_logic,
+    fill_section,
+    library_loaded,
+    load_paragraph_library,
+)
 from app.services.aos_section_prompts import build_section_prompt, fact_keys_included
 from app.services.aos_system_prompt import SYSTEM_PROMPT_PART_8_1
 from app.services.brief_parser.aos_discretionary import (
     BRIEF_TYPE,
+    CANONICAL_PRESERVE_BY_SECTION,
     build_default_aos_template,
+    is_empty_or_label_preserve,
+    merge_canonical_preserve_sections,
 )
 from app.services.brief_parser.classification import slugify
 
@@ -25,6 +35,22 @@ LOGGER = logging.getLogger(__name__)
 
 # Full Part 8.1 — never truncate when sending to Anthropic.
 AOS_SYSTEM_PROMPT = SYSTEM_PROMPT_PART_8_1
+
+LIBRARY_FILL_SECTION_IDS = frozenset(
+    {
+        "argument_intro",
+        "section_a",
+        "section_b",
+        "section_d_adverse",
+        "section_e_balancing",
+        "certificate_of_service",
+    }
+)
+
+
+def aos_use_api_env() -> bool:
+    """Optional LLM FILL enhancement — default OFF (library path)."""
+    return os.getenv("AOD_AOS_USE_API", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def flatten_facts(d: dict[str, Any], prefix: str = "") -> dict[str, Any]:
@@ -73,6 +99,26 @@ def apply_simple_substitutions(template_text: str, facts: dict[str, Any]) -> tup
         or flat_lower.get("balancinginventory")
         or flat_lower.get("positiveequities"),
         "departure_harm": flat_lower.get("departure_harm") or flat_lower.get("departureharm"),
+        "departure_bar_type": flat_lower.get("departure_bar_type")
+        or flat_lower.get("departurebartype")
+        or "three-year or ten-year",
+        "applicant_pronoun_subject": flat_lower.get("applicant_pronoun_subject")
+        or flat_lower.get("pronoun_subject")
+        or flat_lower.get("pronounsubject")
+        or "the applicant",
+        "applicant_pronoun_object": flat_lower.get("applicant_pronoun_object")
+        or flat_lower.get("pronoun_object")
+        or "the applicant",
+        "applicant_pronoun_possessive": flat_lower.get("applicant_pronoun_possessive")
+        or flat_lower.get("pronoun_possessive")
+        or "the applicant's",
+        "bar_number": flat_lower.get("bar_number")
+        or flat_lower.get("attorney_bar")
+        or flat_lower.get("attorneybar"),
+        "parties_served": flat_lower.get("parties_served") or flat_lower.get("partiesserved") or "USCIS",
+        "service_method": flat_lower.get("service_method")
+        or flat_lower.get("servicemethod")
+        or "electronic submission",
         "attorney_name": flat_lower.get("attorney_name") or flat_lower.get("attorneyname"),
         "firm_name": flat_lower.get("firm_name") or flat_lower.get("firmname"),
         "attorney_bar": flat_lower.get("attorney_bar") or flat_lower.get("bar_number") or flat_lower.get("attorneybar"),
@@ -133,7 +179,11 @@ def validate_required_inputs(facts: dict[str, Any], template: dict[str, Any]) ->
 
 
 def assemble_preserve_section(section: dict[str, Any], facts: dict[str, Any]) -> str:
+    """Always emit full preserved_text after slot substitution — never label placeholders."""
+    sid = str(section.get("section_id") or "")
     text = section.get("preserved_text") or ""
+    if is_empty_or_label_preserve(text):
+        text = CANONICAL_PRESERVE_BY_SECTION.get(sid) or ""
     if not text:
         return ""
     text, _ = apply_simple_substitutions(text, facts)
@@ -141,11 +191,24 @@ def assemble_preserve_section(section: dict[str, Any], facts: dict[str, Any]) ->
 
 
 def assemble_fill_section_no_api(section: dict[str, Any], facts: dict[str, Any]) -> str:
+    """Default FILL path: paragraph library lookup (filing-quality prose, no API)."""
+    sid = str(section.get("section_id") or "")
+
+    if sid == "certificate_of_service" or "certificate" in sid:
+        return build_certificate_of_service(facts)
+
+    if sid in LIBRARY_FILL_SECTION_IDS and library_loaded():
+        body = fill_section(sid, facts)
+        if body and "[SECTION " not in body and "[FILL with matter facts]" not in body:
+            return body
+
     if section.get("fill_template"):
         text, _ = apply_simple_substitutions(section["fill_template"], facts)
         return text
     if section.get("closing_template"):
-        # Balancing with inventory + closing
+        # Balancing with inventory + closing (fallback if library missing)
+        if library_loaded():
+            return fill_section("section_e_balancing", facts)
         inventory = get_fact(facts, "balancing_inventory") or get_fact(facts, "positive_equities")
         body_bits = []
         if inventory:
@@ -154,6 +217,11 @@ def assemble_fill_section_no_api(section: dict[str, Any], facts: dict[str, Any])
         body_bits.append(close)
         return "\n\n".join(body_bits)
 
+    if library_loaded() and sid:
+        body = fill_section(sid, facts)
+        if body and "[SECTION " not in body:
+            return body
+
     required_slots = [s for s in section.get("slots") or [] if s.get("required")]
     slot_lines = []
     for s in required_slots:
@@ -161,7 +229,6 @@ def assemble_fill_section_no_api(section: dict[str, Any], facts: dict[str, Any])
         label = s.get("label") or key
         slot_lines.append(f"  - {label}: {get_fact(facts, key) or '[FACT NEEDED]'}")
     heading = section.get("heading") or section.get("section_id") or "Section"
-    # Prefer attorney-authored headings from facts
     for heading_key in ("section_a_heading", "section_b_heading", "adverse_heading"):
         if heading_key in {s.get("replacement_key") for s in required_slots}:
             authored = get_fact(facts, heading_key)
@@ -169,7 +236,7 @@ def assemble_fill_section_no_api(section: dict[str, Any], facts: dict[str, Any])
                 heading = authored
     cites = ", ".join(section.get("citations_to_include") or [])
     return (
-        f"[SECTION REQUIRES API PROSE GENERATION]\n"
+        f"[SECTION REQUIRES LIBRARY OR API PROSE]\n"
         f"Section: {heading}\n"
         f"Available facts:\n" + "\n".join(slot_lines) + "\n"
         f"Citations to include: {cites}\n"
@@ -457,6 +524,7 @@ def _facts_from_drafting_fields(fields: dict[str, Any] | None, matter_id: str = 
     # Seed family_ties from petitioner + narrative equities (Part 6 shape).
     family_members: list[dict[str, Any]] = []
     if petitioner:
+        quality = section_a_facts[:500] if section_a_facts else ""
         family_members.append(
             {
                 "name": petitioner,
@@ -464,13 +532,33 @@ def _facts_from_drafting_fields(fields: dict[str, Any] | None, matter_id: str = 
                 "status": (
                     "U.S. citizen"
                     if "citizen" in (relationship or "").lower()
+                    or "grandson" in (section_a_facts or "").lower()
+                    or "granddaughter" in (section_a_facts or "").lower()
+                    or "child" in (section_a_facts or "").lower()
                     else g("petitionerStatus") or "see petition facts"
                 ),
                 "dependence": g("familyDependence") or "see Section A facts",
-                "quality_description": section_a_facts[:500] if section_a_facts else "",
+                "quality_description": quality,
             }
         )
+    # If narrative mentions autistic dependent but petitioner is caregiver relative,
+    # ensure autism flag is detectable for library selection.
+    if section_a_facts and ("autism" in section_a_facts.lower() or "autistic" in section_a_facts.lower()):
+        if not any("autism" in str(m.get("quality_description") or "").lower() for m in family_members):
+            family_members.append(
+                {
+                    "name": g("dependentName") or "U.S. citizen dependent",
+                    "relationship": g("dependentRelationship") or "grandson",
+                    "status": "US_citizen",
+                    "dependence": "primary caregiver for autistic dependent",
+                    "quality_description": section_a_facts[:500],
+                }
+            )
     family_notes = g("familyTies", "family_ties", "positiveEquities")
+
+    para_sels = f.get("paragraphSelections") or f.get("paragraph_selections") or {}
+    if not isinstance(para_sels, dict):
+        para_sels = {}
 
     return {
         "case_facts": {
@@ -571,10 +659,15 @@ def _facts_from_drafting_fields(fields: dict[str, Any] | None, matter_id: str = 
                 ),
             },
             "departure_harm": g("departureHarm", "departure_harm"),
+            "departure_bar_type": g("departureBarType", "departure_bar_type") or "three-year or ten-year",
             "evidence_index": [],
+            "paragraph_selections": para_sels,
             # Flat aliases for ##TOKEN## substitution
             "applicant_full_name": full_name,
             "applicant_a_number": g("aNumber"),
+            "applicant_pronoun_subject": pronoun_s,
+            "applicant_pronoun_object": pronoun_o,
+            "applicant_pronoun_possessive": pronoun_p,
             "entry_date": g("entryDate"),
             "port_of_entry": g("portOfEntry"),
             "entry_visa_type": g("entryVisaType"),
@@ -596,11 +689,13 @@ def _facts_from_drafting_fields(fields: dict[str, Any] | None, matter_id: str = 
             "attorney_name": g("attorneyName"),
             "firm_name": g("firmName"),
             "attorney_bar": g("attorneyBar", "barNumber"),
+            "bar_number": g("attorneyBar", "barNumber"),
             "date": date.today().isoformat(),
             # Preserve every raw drafting field under raw_fields for appendix completeness
             "raw_drafting_fields": {k: v for k, v in f.items() if v not in (None, "", [])},
         },
         "fields": f,
+        "paragraph_selections": para_sels,
     }
 
 
@@ -614,11 +709,12 @@ def generate_aos_brief(
     """
     Generate AOS discretionary brief.
 
-    use_api: when True and ANTHROPIC_API_KEY set, FILL sections with api_assistance=required
-    get prose via full Part 8.1 system prompt + Part 8.2 section prompts + extended thinking.
-    Otherwise template/placeholder mode.
+    Default path: PRESERVE verbatim + FILL via paragraph library (no API).
+    use_api: when True AND AOD_AOS_USE_API / caller intent AND Anthropic configured,
+    optionally enhance FILL sections with Part 8.1/8.2 + thinking. Library remains
+    the fallback if API fails.
     """
-    tmpl = template or build_default_aos_template()
+    tmpl = merge_canonical_preserve_sections(template or build_default_aos_template())
     # Accept drafting fields payload
     if "case_facts" not in client_facts and "fields" in client_facts:
         facts = _facts_from_drafting_fields(
@@ -633,6 +729,23 @@ def generate_aos_brief(
     else:
         facts = client_facts
 
+    # Attorney selection-menu overrides
+    if isinstance(client_facts, dict) and client_facts.get("paragraph_selections"):
+        facts.setdefault("case_facts", facts if "applicant" in facts else facts.get("case_facts", {}))
+        if isinstance(facts.get("case_facts"), dict):
+            facts["case_facts"]["paragraph_selections"] = client_facts["paragraph_selections"]
+        facts["paragraph_selections"] = client_facts["paragraph_selections"]
+
+    # Defaults for PRESERVE slots
+    cf = facts.get("case_facts") if isinstance(facts.get("case_facts"), dict) else None
+    if isinstance(cf, dict):
+        cf.setdefault("departure_bar_type", "three-year or ten-year")
+        if not cf.get("bar_number") and cf.get("attorney_bar"):
+            cf["bar_number"] = cf["attorney_bar"]
+        app = cf.get("applicant") if isinstance(cf.get("applicant"), dict) else {}
+        if app:
+            cf.setdefault("applicant_pronoun_subject", app.get("pronoun_subject") or "the applicant")
+
     missing = validate_required_inputs(facts, tmpl)
     # Soft: do not hard-fail generation — placeholders remain for missing fields
 
@@ -644,15 +757,18 @@ def generate_aos_brief(
         is_configured as llm_configured,
     )
 
-    api_available = bool(use_api and llm_configured())
+    # Library is default; API only when caller requests AND AOD_AOS_USE_API=1 AND key set.
+    api_available = bool(use_api and aos_use_api_env() and llm_configured())
     thinking_cfg = aos_thinking_kwargs() if api_available else None
     model_used = aos_model_name() if api_available else None
     fact_keys = fact_keys_included(facts)
+    selection_report = evaluate_selection_logic(facts, load_paragraph_library())
 
     assembled: list[dict[str, Any]] = []
     used_cites: list[str] = []
     api_sections: list[str] = []
     api_errors: list[str] = []
+    library_sections: list[str] = []
 
     for section in tmpl.get("sections") or []:
         classification = section.get("classification")
@@ -670,12 +786,20 @@ def generate_aos_brief(
 
         if classification == "PRESERVE":
             body = assemble_preserve_section(section, facts)
-        elif classification in ("FILL", "BOILERPLATE", "CAPTION"):
-            if classification == "BOILERPLATE" and section.get("preserved_text"):
+        elif classification == "CAPTION":
+            body, _ = apply_simple_substitutions(section.get("fill_template") or "", facts)
+        elif classification == "BOILERPLATE":
+            if sid == "certificate_of_service" or (not section.get("preserved_text") and "certificate" in sid):
+                body = build_certificate_of_service(facts)
+                library_sections.append(sid)
+            elif is_empty_or_label_preserve(section.get("preserved_text")) and sid in CANONICAL_PRESERVE_BY_SECTION:
+                body = assemble_preserve_section(section, facts)
+            elif section.get("preserved_text"):
                 body, _ = apply_simple_substitutions(section["preserved_text"], facts)
-            elif classification == "CAPTION":
-                body, _ = apply_simple_substitutions(section.get("fill_template") or "", facts)
-            elif section.get("api_assistance") == "required" and api_available:
+            else:
+                body = assemble_fill_section_no_api(section, facts)
+        elif classification == "FILL":
+            if section.get("api_assistance") == "required" and api_available:
                 try:
                     user_prompt = build_section_prompt(section, facts)
                     raw = generate_text(
@@ -697,10 +821,13 @@ def generate_aos_brief(
                     LOGGER.warning("AOS FILL API failed for %s: %s", sid, exc)
                     api_errors.append(f"{sid}: {exc}")
                     body = assemble_fill_section_no_api(section, facts)
+                    library_sections.append(sid)
             else:
                 body = assemble_fill_section_no_api(section, facts)
+                if sid in LIBRARY_FILL_SECTION_IDS:
+                    library_sections.append(sid)
         else:
-            body = section.get("preserved_text") or ""
+            body = assemble_preserve_section(section, facts) if section.get("preserved_text") else ""
 
         for cite in section.get("citations_to_include") or []:
             used_cites.append(cite)
@@ -728,6 +855,9 @@ def generate_aos_brief(
         "api_requested": api_available,
         "api_sections": api_sections,
         "api_errors": api_errors,
+        "library_sections": library_sections,
+        "library_loaded": library_loaded(),
+        "selection_logic": selection_report,
         "sections_generated": len(assembled),
         "footnotes_count": len(footnotes),
         "missing_fields": missing,
@@ -741,6 +871,8 @@ def generate_aos_brief(
             "max_tokens": aos_max_tokens() if api_available else None,
             "fact_keys_included": fact_keys,
             "fact_key_count": len(fact_keys),
+            "fill_path": "api" if api_sections else "paragraph_library",
+            "aos_use_api_env": aos_use_api_env(),
         },
     }
 

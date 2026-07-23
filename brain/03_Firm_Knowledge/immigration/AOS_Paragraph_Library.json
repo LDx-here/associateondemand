@@ -1,0 +1,443 @@
+{
+  "version": "2.0",
+  "firm": "Kingdom Counsel Firm",
+  "brief_type": "AOS_DISCRETIONARY",
+  "notes": "All paragraphs are attorney-reviewed. Slot markers use ##SNAKE_CASE## format. Citations appear as footnote keys — actual footnote text is in the footnotes section of the template JSON.",
+
+  "case_theme_templates": {
+    "_notes": "Case themes are one-sentence framings of the human stakes. The attorney selects and lightly edits the most fitting one. Slot: ##APPLICANT_FULL_NAME##, ##DEPENDENT_NAME##, ##ADVERSE_BRIEF##, ##YEARS_IN_US##, ##CREDENTIAL##, ##RELATIONSHIP##.",
+    "caregiver_autistic_child_or_grandchild": [
+      "This is not a case about an overstay — it is a case about a family that has built its entire caregiving architecture around ##APPLICANT_FULL_NAME##, and a U.S. citizen child whose stability, development, and daily functioning depend on ##APPLICANT_PRONOUN_POSSESSIVE## continued presence.",
+      "##APPLICANT_FULL_NAME## is the therapeutic anchor for ##DEPENDENT_NAME##, a United States citizen diagnosed with autism spectrum disorder; ##APPLICANT_PRONOUN_POSSESSIVE## removal would not inconvenience this family — it would dismantle it.",
+      "The officer reviewing this application holds in hand a simple question: whether a U.S. citizen child with autism spectrum disorder should lose the one caregiver who has spent years learning to meet ##DEPENDENT_PRONOUN_POSSESSIVE## unique needs."
+    ],
+    "caregiver_disabled_dependent_general": [
+      "##APPLICANT_FULL_NAME##'s presence in the United States is not incidental to this family's wellbeing — it is its foundation; ##APPLICANT_PRONOUN_POSSESSIVE## removal would reduce a functioning household to a care crisis.",
+      "This case is about what it actually means to remove a person: for ##DEPENDENT_NAME##, it means the loss of a primary caregiver whose knowledge, presence, and devotion cannot be replaced by any institutional alternative."
+    ],
+    "caregiver_elderly_parent": [
+      "##APPLICANT_FULL_NAME## did not come to the United States in search of an opportunity — ##APPLICANT_PRONOUN_SUBJECT## came because ##APPLICANT_PRONOUN_POSSESSIVE## U.S. citizen ##RELATIONSHIP## needed ##APPLICANT_PRONOUN_OBJECT##, and nothing in ##APPLICANT_PRONOUN_POSSESSIVE## immigration history changes that.",
+      "The question before USCIS is not whether ##APPLICANT_FULL_NAME## overstayed — ##APPLICANT_PRONOUN_SUBJECT## did — but whether that overstay, measured against ##DEPENDENT_NAME##'s documented need for daily care, tips the balance against a person whose presence in this country is actively sustaining a U.S. citizen family."
+    ],
+    "sole_provider_usc_family": [
+      "##APPLICANT_FULL_NAME## is not a peripheral member of a U.S. citizen household — ##APPLICANT_PRONOUN_SUBJECT## is its economic and emotional center, and the evidence in this record proves it.",
+      "Removal of ##APPLICANT_FULL_NAME## would not separate a family — it would collapse one: ##APPLICANT_PRONOUN_POSSESSIVE## U.S. citizen ##RELATIONSHIP## and ##DEPENDENT_NAME## have no comparable support structure and no plan that does not depend on ##APPLICANT_PRONOUN_POSSESSIVE## presence."
+    ],
+    "long_term_resident_community_pillar": [
+      "After ##YEARS_IN_US## years of consistent employment, community service, and documented ties to this country, ##APPLICANT_FULL_NAME## is not an overstayer who built a life here by accident — ##APPLICANT_PRONOUN_SUBJECT## is a person whose life is here, and whose removal would leave a gap in the community that noticed ##APPLICANT_PRONOUN_OBJECT##.",
+      "##APPLICANT_FULL_NAME##'s ##YEARS_IN_US## years in the United States represent something that immigration law was designed to recognize: a life so thoroughly integrated into American civic and family life that removal would be a loss to this country, not merely to the applicant."
+    ],
+    "medical_professional_specialized": [
+      "##APPLICANT_FULL_NAME## is a licensed ##CREDENTIAL## whose skills, whose family ties, and whose ##YEARS_IN_US##-year record of service to her patients represent exactly the kind of human contribution this country benefits from — and exactly the kind that adjustment of status was designed to protect.",
+      "The officer reading this brief will encounter few applicants whose professional credentials, family bonds, and community roots are as thoroughly documented as ##APPLICANT_FULL_NAME##'s; this is a record that answers every question the discretionary framework asks."
+    ],
+    "elderly_applicant_general": [
+      "##APPLICANT_FULL_NAME## is ##APPLICANT_AGE## years old, has lived in this country for ##YEARS_IN_US## years, and has never been in trouble with the law; the only question this record asks is whether a single immigration irregularity, years in the past, outweighs a lifetime of good conduct and family devotion.",
+      "At ##APPLICANT_AGE##, ##APPLICANT_FULL_NAME## does not have the luxury of a do-over; the officer's discretionary decision is, as a practical matter, final — and the equities assembled in this record make the answer clear."
+    ],
+    "novel_dual_caregiver_professional": [
+      "##APPLICANT_FULL_NAME## occupies a role that no institutional alternative can fill: ##APPLICANT_PRONOUN_SUBJECT## is simultaneously the licensed ##CREDENTIAL## who manages ##DEPENDENT_NAME##'s complex medical needs and the family member whose presence provides the emotional continuity that makes that medical management possible.",
+      "The record before USCIS presents two independent grounds for a favorable exercise of discretion — ##APPLICANT_FULL_NAME##'s professional expertise in the care of ##DEPENDENT_NAME##'s condition, and ##APPLICANT_PRONOUN_POSSESSIVE## irreplaceable role as the primary attachment figure in a U.S. citizen household that cannot function without ##APPLICANT_PRONOUN_OBJECT##."
+    ]
+  },
+
+  "equity": {
+
+    "caregiver_autistic_dependent": {
+      "display_name": "Primary Caregiver — Autistic U.S. Citizen Dependent",
+      "trigger_conditions": {"has_autistic_dependent": true},
+      "citations_required": ["fn_marin_584", "fn_mendez", "fn_pm_e8"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Medical expertise and irreplaceability",
+          "description": "Leads with the specialized knowledge the applicant has built over time — makes the case that this is not just a parent but a trained caregiver whose expertise cannot be transferred.",
+          "paragraph": "The most compelling equity in this record is ##APPLICANT_PRONOUN_POSSESSIVE## role as the primary caregiver for ##DEPENDENT_NAME##, a United States citizen diagnosed with autism spectrum disorder. ##DEPENDENT_NAME## requires structured daily support, behavioral intervention, and medical coordination that ##APPLICANT_FULL_NAME## alone has the training, experience, and relationship to provide. Over ##CARE_YEARS## of hands-on caregiving, ##APPLICANT_FULL_NAME## has learned what works for ##DEPENDENT_NAME## — what triggers distress, what creates calm, what interventions reach ##DEPENDENT_PRONOUN_OBJECT## in moments of crisis. This is not knowledge that can be downloaded or transferred. It is accumulated through presence, patience, and an intimate familiarity with one child's neurology that no substitute caregiver, agency, or institutional program can replicate on any realistic timeline.\n\n##CARE_SPECIFICS## The equity presented here is not the abstract category of 'family ties.' It is the documented, irreplaceable role of a caregiver whose departure would remove the one person who has built, over years, a functional care system for a U.S. citizen who cannot manage without it. Under Matter of Marin, family ties within the United States constitute a favorable equity; as Matter of Mendez-Morales held, the quality of those ties — not merely their existence — determines their weight. The quality here is, by any measure, extraordinary."
+        },
+        {
+          "variant_id": "v2",
+          "label": "Attachment and daily stakes — officer-facing narrative",
+          "description": "Written to make the officer see the actual human stakes. More narrative, less clinical. Effective when the facts include specific daily-care details.",
+          "paragraph": "##DEPENDENT_NAME## is a United States citizen who is ##DEPENDENT_AGE## years old and has autism spectrum disorder. For a child with ##DEPENDENT_NAME##'s diagnosis, stability is not a preference — it is a therapeutic requirement. Consistent routine, consistent environment, and consistent attachment figures are the foundation on which development and functioning depend. ##APPLICANT_FULL_NAME## is that foundation. ##APPLICANT_PRONOUN_SUBJECT## is the person ##DEPENDENT_NAME## knows, trusts, and relies on. ##CARE_SPECIFICS##\n\nOfficers reviewing adjustment applications regularly encounter the phrase 'family ties' as a favorable factor. This case asks the officer to look past the category and see what removal actually means for this family: that ##DEPENDENT_NAME##, a United States citizen who has never lived a day without ##APPLICANT_PRONOUN_POSSESSIVE## presence, would lose the person who has spent years learning the particular language of ##DEPENDENT_PRONOUN_POSSESSIVE## needs. The Board has held that family ties within the United States constitute a favorable equity in adjustment proceedings. Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978). It has further held that 'the quality of their relationship must be considered in determining the weight to be awarded this equity.' Matter of Mendez-Morales, 21 I&N Dec. 296, 301 (BIA 1996). The relationship documented in this record is of the highest quality and most urgent character."
+        },
+        {
+          "variant_id": "v3",
+          "label": "Dual angle — caregiver and medical professional (novel combination)",
+          "description": "Use when the applicant also has professional medical or therapeutic credentials relevant to the dependent's condition. Establishes both the personal bond and the professional expertise.",
+          "paragraph": "##APPLICANT_FULL_NAME## occupies a role in this household that no institutional alternative can fill — and the record supports that assertion with two independent grounds. First, as a ##CREDENTIAL##, ##APPLICANT_PRONOUN_SUBJECT## brings professional expertise to ##DEPENDENT_NAME##'s care that most caregivers cannot. ##PROFESSIONAL_CARE_SPECIFICS## Second, and equally important, ##APPLICANT_PRONOUN_SUBJECT## is ##DEPENDENT_NAME##'s primary attachment figure — the parent, the constant, the person whose departure would register not merely as an inconvenience but as a rupture in the developmental environment that ##DEPENDENT_NAME##'s condition requires.\n\n##DEPENDENT_NAME## is a United States citizen, ##DEPENDENT_AGE## years old, diagnosed with autism spectrum disorder. ##CARE_SPECIFICS## The combination of professional qualification and irreplaceable relationship is rare. It is present in this record. Under Matter of Marin, family ties of this character — particularly where a U.S. citizen dependent relies on the applicant for daily functioning — constitute a favorable equity entitled to the highest weight. The quality of this relationship and the documented nature of this need satisfy Matter of Mendez-Morales's instruction that the quality, not merely the existence, of the family relationship be weighed."
+        }
+      ]
+    },
+
+    "caregiver_disabled_dependent_general": {
+      "display_name": "Primary Caregiver — Disabled U.S. Citizen Dependent (non-autism)",
+      "trigger_conditions": {"has_disabled_dependent": true, "has_autistic_dependent": false},
+      "citations_required": ["fn_marin_584", "fn_mendez", "fn_pm_e8"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Documented daily dependence",
+          "description": "Effective when the record contains specific evidence of the dependent's daily care needs.",
+          "paragraph": "##APPLICANT_FULL_NAME##'s most significant favorable equity is ##APPLICANT_PRONOUN_POSSESSIVE## role as the primary caregiver for ##DEPENDENT_NAME##, a United States citizen with ##DEPENDENT_CONDITION##. ##DEPENDENT_NAME##'s condition requires ##CARE_DESCRIPTION## — care that ##APPLICANT_FULL_NAME## has provided consistently and without interruption. ##CARE_SPECIFICS##\n\nThe weight of this equity is not diminished by the word 'family ties.' What the Board recognized in Matter of Marin as a favorable factor is precisely what this record demonstrates: a U.S. citizen who depends, in concrete and documentable terms, on the applicant's daily presence. The Board further clarified in Matter of Mendez-Morales that the quality of the family relationship — not merely the relationship's existence — determines its weight in the discretionary balance. The quality of ##APPLICANT_FULL_NAME##'s caregiving relationship with ##DEPENDENT_NAME## is documented, sustained, and irreplaceable."
+        },
+        {
+          "variant_id": "v2",
+          "label": "Institutional gap — no realistic alternative",
+          "description": "Effective when evidence shows no adequate substitute care is available or affordable.",
+          "paragraph": "Among the favorable equities in this record, the most urgent is ##APPLICANT_FULL_NAME##'s role as the primary — and as a practical matter, only — caregiver for ##DEPENDENT_NAME##, a United States citizen with ##DEPENDENT_CONDITION##. ##CARE_SPECIFICS## The record reflects that no adequate substitute caregiving arrangement exists: ##NO_ALTERNATIVE_REASON##.\n\nAdjustment cases involving a disabled U.S. citizen dependent are exactly what Matter of Marin's equity framework was built to address. The family tie here is not incidental — it is the operative fact that changes the calculus of removal. Without ##APPLICANT_FULL_NAME##, ##DEPENDENT_NAME##'s care situation deteriorates in ways that are concrete, documentable, and entirely preventable. Matter of Mendez-Morales instructs that the quality of the relationship must be weighed; this record presents a relationship whose quality is measured in daily acts of care that have no substitute."
+        }
+      ]
+    },
+
+    "caregiver_elderly_parent": {
+      "display_name": "Caregiver for Elderly U.S. Citizen Parent",
+      "trigger_conditions": {"has_elderly_parent_dependent": true},
+      "citations_required": ["fn_marin_584", "fn_mendez"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Medical and daily care emphasis",
+          "paragraph": "##APPLICANT_FULL_NAME## came to the United States because ##APPLICANT_PRONOUN_POSSESSIVE## ##PARENT_RELATIONSHIP##, ##DEPENDENT_NAME##, needed ##APPLICANT_PRONOUN_OBJECT##. ##DEPENDENT_NAME## is a United States citizen, ##DEPENDENT_AGE## years old, and ##DEPENDENT_MEDICAL_STATUS##. The care ##APPLICANT_FULL_NAME## provides is not supplemental — it is primary. ##CARE_SPECIFICS## There is no backup plan; there is no equally capable substitute caregiver; there is no institutional alternative that ##DEPENDENT_NAME##'s resources could reliably support.\n\nThe Board recognized in Matter of Marin that evidence of hardship to the family if adjustment is denied is a favorable factor in the discretionary analysis. The hardship here is not abstract: it is the documented condition of an elderly U.S. citizen who relies on the applicant for daily functioning. The quality of that reliance — measured in every day ##APPLICANT_FULL_NAME## has shown up and every day ##DEPENDENT_NAME##'s needs have been met — satisfies Matter of Mendez-Morales's instruction that the depth, not merely the existence, of the family tie be considered."
+        }
+      ]
+    },
+
+    "usc_spouse_marriage": {
+      "display_name": "U.S. Citizen Spouse — Marriage as Primary Tie",
+      "trigger_conditions": {"has_usc_spouse": true},
+      "citations_required": ["fn_marin_584", "fn_mendez"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Long marriage with documented integration",
+          "description": "Effective for marriages of 5+ years with shared property, children, or documented life integration.",
+          "paragraph": "##APPLICANT_FULL_NAME## and ##SPOUSE_NAME## have been married since ##MARRIAGE_DATE##. Over ##MARRIAGE_YEARS## years, they have built a shared life: ##SHARED_LIFE_DETAILS##. The marriage is genuine, documented, and integrated in the ways that matter — financially, practically, and emotionally. Separation would not merely impose inconvenience. It would fracture a household that functions as a unit and a marriage that has proven its durability through years of joint life in the United States.\n\nImmigration law recognizes the special weight of family ties within the United States — and among those ties, the spousal relationship is the one Congress chose to categorize as immediately qualifying. INA §201(b)(2)(A)(i). The significance of that legislative choice extends beyond mere eligibility: it reflects a judgment that the spousal relationship represents exactly the kind of human stake that discretionary relief was designed to protect. Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978). The quality of this marriage, documented in this record, confirms that the discretionary framework should here be exercised in the applicant's favor."
+        },
+        {
+          "variant_id": "v2",
+          "label": "Spouse with medical or significant personal need",
+          "description": "Effective when the USC spouse has health, financial, or caregiving needs that depend on the applicant's presence.",
+          "paragraph": "##APPLICANT_FULL_NAME##'s marriage to ##SPOUSE_NAME## is not merely the basis for the I-130 petition that initiated this proceeding — it is the most significant human fact in this record. ##SPOUSE_NAME## is a United States citizen. ##SPOUSE_SPECIFIC_NEED## ##APPLICANT_FULL_NAME##'s presence in the United States is not incidental to ##SPOUSE_NAME##'s wellbeing. It is essential to it.\n\nThe Board has recognized that family ties within the United States — and the hardship that would follow their rupture — constitute significant favorable equities in adjustment proceedings. Matter of Marin, 16 I&N Dec. 581, 584-85 (BIA 1978). The instruction in Matter of Mendez-Morales that the quality of the relationship be weighed, not merely its formal existence, is satisfied here in full: this record documents not a nominal marriage but a functioning partnership in which the applicant's presence serves needs that ##SPOUSE_NAME##'s United States citizenship alone cannot address."
+        }
+      ]
+    },
+
+    "parent_usc_minor_children": {
+      "display_name": "Parent of U.S. Citizen Minor Children",
+      "trigger_conditions": {"has_usc_minor_children": true},
+      "citations_required": ["fn_marin_584", "fn_mendez"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Children's developmental stake",
+          "paragraph": "##APPLICANT_FULL_NAME## is the parent of ##CHILDREN_COUNT## United States citizen ##CHILD_PLURAL##: ##CHILDREN_NAMES_AND_AGES##. These children are minors. They did not choose to be born to a parent with a complicated immigration history; they are, as a matter of citizenship, as American as any child in this country, and they are entitled to the presence of their parent. ##APPLICANT_FULL_NAME## is not a peripheral figure in their lives — ##APPLICANT_PRONOUN_SUBJECT## is the ##PARENTAL_ROLE_DESCRIPTION##.\n\nDenial of adjustment would impose on United States citizen children a consequence they have done nothing to invite: the removal of their parent. The Board in Matter of Marin identified hardship to the family as a favorable factor. The hardship here is not speculative — it is the documented reality that minor children who depend on an actively involved parent will lose that parent's daily presence. The quality of ##APPLICANT_FULL_NAME##'s parental role, established in this record, satisfies Matter of Mendez-Morales."
+        },
+        {
+          "variant_id": "v2",
+          "label": "Single parent or sole caregiver parent",
+          "description": "Use when the applicant is the primary or only present parent.",
+          "paragraph": "##APPLICANT_FULL_NAME## is the primary parent — in practical terms, the only consistently present parent — for ##CHILDREN_COUNT## United States citizen ##CHILD_PLURAL##. ##CHILDREN_NAMES_AND_AGES##. ##SOLE_PARENT_CONTEXT## There is no co-parent available to absorb the responsibilities ##APPLICANT_FULL_NAME## currently carries; there is no family structure that survives ##APPLICANT_PRONOUN_POSSESSIVE## removal intact.\n\nAdjustment cases involving minor U.S. citizen children raise the question that discretionary law was designed to answer: does the human cost of removal, measured against the severity of the adverse factors, weigh in favor of approval? Here, the adverse factors are limited and the human cost is concrete. United States citizen children should not bear adult immigration consequences. Matter of Marin, 16 I&N Dec. 581, 584-85 (BIA 1978)."
+        }
+      ]
+    },
+
+    "long_us_residence": {
+      "display_name": "Long Duration of U.S. Residence",
+      "trigger_conditions": {"years_in_us": ">= 5"},
+      "citations_required": ["fn_marin_584"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Standard — residence plus integration",
+          "paragraph": "##APPLICANT_FULL_NAME## has resided in the United States for ##YEARS_IN_US## years. ##APPLICANT_PRONOUN_POSSESSIVE## life is here — ##APPLICANT_PRONOUN_POSSESSIVE## family is here, ##APPLICANT_PRONOUN_POSSESSIVE## employment history is here, and ##APPLICANT_PRONOUN_POSSESSIVE## community ties are here. This is not a person who established minimal U.S. contacts and overstayed. This is a person whose ##YEARS_IN_US## years in this country have been years of active, documented participation in American life. ##RESIDENCE_SPECIFICS##\n\nThe Board of Immigration Appeals has recognized that residence of long duration in this country is a favorable equity in adjustment cases — particularly where that residence has been characterized by employment, community involvement, and family integration. Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978). The length and character of ##APPLICANT_FULL_NAME##'s residence in this country weigh firmly in ##APPLICANT_PRONOUN_POSSESSIVE## favor."
+        }
+      ]
+    },
+
+    "employment_licensed_professional": {
+      "display_name": "Licensed Professional / Specialized Employment",
+      "trigger_conditions": {"has_professional_credentials": true},
+      "citations_required": ["fn_marin_584", "fn_pm_e8"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Professional credentials and service record",
+          "paragraph": "##APPLICANT_FULL_NAME## is a licensed ##CREDENTIAL## with ##CREDENTIAL_YEARS## years of professional experience. ##CREDENTIAL_DETAILS## ##APPLICANT_PRONOUN_POSSESSIVE## professional history in the United States is a record of ##EMPLOYMENT_SUMMARY## — employment that has been lawful, consistent, and of value to the communities and patients ##APPLICANT_PRONOUN_SUBJECT## has served.\n\nThe Board of Immigration Appeals has identified a history of employment as a favorable equity in adjustment proceedings. Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978). Where that employment reflects professional licensure, specialized skill, and documented service to others, its weight is amplified. The USCIS Policy Manual confirms that the totality of the applicant's circumstances — including employment history — is to be weighed in the discretionary analysis. 1 USCIS-PM E.8(A). ##APPLICANT_FULL_NAME##'s professional record is a substantial and documented contribution to that totality."
+        },
+        {
+          "variant_id": "v2",
+          "label": "Credentials directly relevant to dependent's care (novel combination)",
+          "description": "Use when the professional credentials directly serve the dependent's needs — creates a single, powerful combined equity.",
+          "paragraph": "##APPLICANT_FULL_NAME##'s professional background as a ##CREDENTIAL## is not incidental to this case — it is central to it. ##APPLICANT_PRONOUN_POSSESSIVE## training and licensure are the reason ##APPLICANT_PRONOUN_SUBJECT## can provide the level of care that ##DEPENDENT_NAME##'s condition requires. ##PROFESSIONAL_CARE_SPECIFICS## Most families in ##DEPENDENT_NAME##'s situation must hire outside professionals and coordinate among multiple providers. This family has those skills in house — in the parent, the caregiver, and the person who knows ##DEPENDENT_NAME## best.\n\nThe Board recognized in Matter of Marin that employment history is a favorable equity. Here, the equity is more than an employment record: it is a professional qualification applied every day in service of a United States citizen dependent, at no cost to the public and at incalculable benefit to that dependent. That is the kind of equity that speaks directly to the question of whether adjustment appears 'in the best interests of this country.' Matter of Marin, 16 I&N Dec. at 584."
+        }
+      ]
+    },
+
+    "community_service": {
+      "display_name": "Community Service and Civic Ties",
+      "trigger_conditions": {"has_community_service": true},
+      "citations_required": ["fn_marin_584", "fn_pm_e8"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Organized service with named organizations",
+          "paragraph": "##APPLICANT_FULL_NAME##'s ties to the United States extend well beyond the family household. For ##SERVICE_YEARS## years, ##APPLICANT_PRONOUN_SUBJECT## has been an active participant in the communities that form the fabric of American civic life. ##SERVICE_SUMMARY## This is not occasional or nominal participation. It is a consistent record of showing up.\n\nThe Board of Immigration Appeals has identified evidence of value and service to the community as a favorable equity in the adjustment analysis. Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978). The USCIS Policy Manual similarly instructs officers to weigh the totality of the circumstances, including community ties. 1 USCIS-PM E.8(A). ##APPLICANT_FULL_NAME##'s community record — documented, named, and verified — is a concrete demonstration that ##APPLICANT_PRONOUN_POSSESSIVE## presence in this country serves interests beyond ##APPLICANT_PRONOUN_POSSESSIVE## own."
+        },
+        {
+          "variant_id": "v2",
+          "label": "Religious community leadership — community pillar (novel combination)",
+          "description": "Use when the applicant is a recognized community or religious leader. Elevates community ties to a qualitatively different level.",
+          "paragraph": "##APPLICANT_FULL_NAME## is not a passive member of ##APPLICANT_PRONOUN_POSSESSIVE## community — ##APPLICANT_PRONOUN_SUBJECT## is one of its pillars. ##COMMUNITY_LEADERSHIP_SPECIFICS## ##APPLICANT_PRONOUN_POSSESSIVE## departure would not merely inconvenience the people who rely on ##APPLICANT_PRONOUN_OBJECT##; it would leave a gap in a community structure that functions, in part, because ##APPLICANT_PRONOUN_SUBJECT## has chosen to invest in it.\n\nThe Board of Immigration Appeals has recognized evidence of value and service to the community as a significant favorable equity. Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978). In the context of a community leadership role — where the applicant's contribution is not merely individual but institutional — this factor carries weight proportional to its documented impact. ##APPLICANT_FULL_NAME##'s record of community service is of that character."
+        }
+      ]
+    },
+
+    "age_elderly": {
+      "display_name": "Age — Elderly Applicant",
+      "trigger_conditions": {"applicant_age": ">= 60"},
+      "citations_required": ["fn_marin_584"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Age in context of long US ties",
+          "paragraph": "##APPLICANT_FULL_NAME## is ##APPLICANT_AGE## years old. At ##APPLICANT_PRONOUN_POSSESSIVE## age, the consequences of a removal order are not temporary. They are permanent. Return to ##COUNTRY_OF_BIRTH## — a country ##APPLICANT_PRONOUN_SUBJECT## has not called home in ##YEARS_IN_US## years — would mean leaving behind every family member, every social connection, every medical provider, and every community tie that constitutes ##APPLICANT_PRONOUN_POSSESSIVE## daily life. ##AGE_CONTEXT##\n\nThe Board of Immigration Appeals has recognized hardship to the respondent as a favorable factor in the adjustment analysis, particularly where that hardship is acute. Matter of Marin, 16 I&N Dec. 581, 584-85 (BIA 1978). For an applicant of ##APPLICANT_FULL_NAME##'s age, the hardship of removal is not the ordinary disruption of relocation — it is the severing, likely permanent, of the life ##APPLICANT_PRONOUN_SUBJECT## has built and the family ##APPLICANT_PRONOUN_SUBJECT## sustains."
+        }
+      ]
+    },
+
+    "clean_criminal_record": {
+      "display_name": "Clean Criminal Record",
+      "trigger_conditions": {"criminal_record": false},
+      "citations_required": ["fn_marin_584"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Affirmative — clean record as positive equity",
+          "paragraph": "##APPLICANT_FULL_NAME##'s personal conduct in the United States has been without blemish. ##APPLICANT_PRONOUN_SUBJECT## has no criminal record of any kind — no arrests, no charges, no convictions. This is not a neutral data point. For an applicant who has been in the United States for ##YEARS_IN_US## years, a clean record is an affirmative statement about ##APPLICANT_PRONOUN_POSSESSIVE## character and conduct — and it is exactly the kind of evidence of good character that the Board of Immigration Appeals has recognized as a favorable equity in adjustment proceedings. Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978)."
+        }
+      ]
+    },
+
+    "tax_compliance": {
+      "display_name": "Tax Compliance and Economic Contribution",
+      "trigger_conditions": {"has_tax_history": true},
+      "citations_required": ["fn_marin_584"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Tax filing history as proof of civic engagement",
+          "paragraph": "##APPLICANT_FULL_NAME## has filed U.S. tax returns for ##TAX_YEARS## consecutive years, reporting ##APPLICANT_PRONOUN_POSSESSIVE## income and fulfilling ##APPLICANT_PRONOUN_POSSESSIVE## obligations to the federal government. This fact speaks directly to the question of moral character: a person who could have evaded any tax obligation chose instead to comply. ##TAX_SPECIFICS## The Board of Immigration Appeals has identified good moral character as a favorable factor in adjustment proceedings. Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978). Years of voluntary tax compliance is a concrete demonstration of that character."
+        }
+      ]
+    }
+  },
+
+  "adverse": {
+
+    "simple_overstay": {
+      "display_name": "Simple Overstay — No Fraud, No Criminal History",
+      "trigger_conditions": {"adverse_type": "overstay", "is_fraud": false, "has_criminal_record": false},
+      "citations_required": ["fn_arai", "fn_marin_585"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Factual and proportionality — standard",
+          "description": "States the overstay directly, provides context, establishes it is not a serious adverse factor under BIA standards.",
+          "paragraph": "##APPLICANT_FULL_NAME## entered the United States on ##ENTRY_DATE## on a ##ENTRY_VISA_TYPE## visa and remained beyond the period of authorized admission. ##ADVERSE_CONTEXT## This is the sole adverse factor in this record.\n\nThe Board of Immigration Appeals established in Matter of Arai that '[i]n the absence of adverse factors, adjustment will ordinarily be granted, still as a matter of discretion.' 13 I&N Dec. 494, 496 (BIA 1970). The adverse factor present here — a period of unlawful presence without fraud, without criminal conduct, and without any other aggravating circumstance — does not rise to the level that would require ##APPLICANT_FULL_NAME## to demonstrate 'unusual or outstanding equities.' That elevated standard applies 'as the negative factors grow more serious.' Matter of Marin, 16 I&N Dec. 581, 585 (BIA 1978). An isolated overstay, absent aggravating factors, is not a serious adverse factor under the Board's own framework. The baseline rule of Matter of Arai therefore applies, and the favorable equities assembled in this record satisfy it."
+        },
+        {
+          "variant_id": "v2",
+          "label": "Contextual — changed circumstances or family emergency",
+          "description": "Use when the overstay arose from circumstances that the applicant did not control or did not fully understand at the time.",
+          "paragraph": "##APPLICANT_FULL_NAME## did not willfully abandon ##APPLICANT_PRONOUN_POSSESSIVE## compliance with immigration law. ##ADVERSE_CONTEXT## The overstay that resulted is a single immigration irregularity that occurred under circumstances this record explains in full — circumstances that speak to inadvertence, family obligation, or changed conditions rather than contempt for immigration law or intent to deceive.\n\nThe Board of Immigration Appeals has identified the nature and underlying circumstances of the inadmissibility ground as the relevant adverse factor to be weighed — not the mere label of 'overstay.' Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978). When those circumstances reflect a person who made a human decision, for understandable reasons, rather than a systematic violator of immigration law, the adverse weight is limited. It does not negate the favorable equities in this record. Under Matter of Arai, a single, contextually explained overstay, standing alone, does not prevent a favorable exercise of discretion. 13 I&N Dec. 494, 496 (BIA 1970)."
+        }
+      ]
+    },
+
+    "overstay_compelling_reason": {
+      "display_name": "Overstay — Compelling Reason (Medical / Family Emergency)",
+      "trigger_conditions": {"adverse_type": "overstay", "has_compelling_reason": true},
+      "citations_required": ["fn_arai", "fn_marin_585"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Medical emergency drove the overstay",
+          "paragraph": "##APPLICANT_FULL_NAME## remained in the United States beyond the period of authorized admission because ##COMPELLING_REASON##. This was not a calculated decision to disregard immigration law — it was a response to a medical reality that did not respect visa expiration dates. ##MEDICAL_SPECIFICS## ##APPLICANT_FULL_NAME## made the decision that any parent, any caregiver, or any person of conscience would make: ##APPLICANT_PRONOUN_SUBJECT## stayed.\n\nThe Board of Immigration Appeals has directed that the 'nature and underlying circumstances' of the inadmissibility ground — not simply the category — be weighed in the discretionary analysis. Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978). The nature and circumstances of this overstay are documented in this record, and they describe a person who made a human choice under pressure — not a person who intended to exploit the immigration system. Under Matter of Arai, an overstay of this character, standing alone, does not prevent a favorable exercise of discretion. 13 I&N Dec. 494, 496 (BIA 1970). It weighs lightly in the adverse column and less heavily still when measured against the equities this record presents."
+        }
+      ]
+    },
+
+    "prior_removal_old": {
+      "display_name": "Prior Removal Order — Old, No Reinstatement, Changed Circumstances",
+      "trigger_conditions": {"adverse_type": "prior_removal"},
+      "citations_required": ["fn_arai", "fn_marin_584", "fn_marin_585", "fn_edwards"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Time, rehabilitation, and changed circumstances",
+          "paragraph": "The record reflects a prior removal order entered ##REMOVAL_DATE##. ##APPLICANT_FULL_NAME## acknowledges this fact directly. ##REMOVAL_CONTEXT## The order was entered ##YEARS_SINCE_REMOVAL## years ago. In the intervening period, ##APPLICANT_FULL_NAME##'s circumstances have changed materially: ##CHANGED_CIRCUMSTANCES##. The prior order has not been reinstated. ##APPLICANT_FULL_NAME##'s conduct since that order — ##POST_REMOVAL_CONDUCT## — reflects a person who has not repeated the conduct that led to the original proceeding.\n\nThe Board of Immigration Appeals has recognized that time, rehabilitation, and changed circumstances bear on the weight of a prior adverse event. Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978); see also Matter of Edwards, 20 I&N Dec. 191, 196 (BIA 1990) (rehabilitation is a factor to be considered in the exercise of discretion, evaluated case by case rather than as a categorical bar). The adverse weight of a prior removal order, standing alone, is not a disqualifying factor — it is one consideration among many, to be measured against the favorable equities that ##APPLICANT_FULL_NAME##'s record presents."
+        }
+      ]
+    },
+
+    "entry_without_inspection": {
+      "display_name": "Entry Without Inspection (EWI)",
+      "trigger_conditions": {"adverse_type": "ewi"},
+      "citations_required": ["fn_marin_584", "fn_marin_585", "fn_arai"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Single EWI, long subsequent lawful conduct",
+          "paragraph": "##APPLICANT_FULL_NAME## entered the United States without inspection on ##ENTRY_DATE##. ##EWI_CONTEXT## This single act of unlawful entry is the adverse factor in this record. It is not accompanied by fraud, misrepresentation, a criminal history, or any additional immigration violation.\n\nThe Board of Immigration Appeals has held that the 'nature and underlying circumstances' of the entry violation — not the categorical label — determine its adverse weight. Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978). An entry without inspection, where the applicant has subsequently lived in the United States for ##YEARS_IN_US## years without further violation, earned the trust of the family and community documented in this record, and is now eligible for adjustment through an immediate relative petition, represents a single act that does not reflect an ongoing pattern of disregard for immigration law. The elevated standard of 'unusual or outstanding equities' applies where 'negative factors grow more serious.' Matter of Marin, 16 I&N Dec. at 585. A single EWI, standing alone, does not reach that threshold."
+        },
+        {
+          "variant_id": "v2",
+          "label": "EWI driven by humanitarian circumstances",
+          "paragraph": "##APPLICANT_FULL_NAME## crossed the border without inspection on ##ENTRY_DATE## under circumstances that this record describes in full: ##EWI_HUMANITARIAN_CONTEXT##. The entry was unlawful. It was also, as the facts in this record establish, driven by ##HUMANITARIAN_DRIVER## rather than a systematic intention to circumvent immigration law.\n\nIn evaluating the adverse weight of an entry without inspection, the Board of Immigration Appeals has directed that the circumstances of the entry be considered — not merely the fact that it occurred. Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978). The circumstances here are human circumstances. They do not excuse the entry under the law; they do explain it in a way that bears on the question of whether discretion should be exercised favorably. The equities built over ##YEARS_IN_US## years of residence in this country, set out in full in the sections above, are the answer to that question."
+        }
+      ]
+    }
+  },
+
+  "balancing": {
+
+    "balancing_caregiver_vs_overstay": {
+      "display_name": "Balancing — Caregiver Equities vs. Overstay",
+      "citations_required": ["fn_arai", "fn_marin_584"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Inventory with stakes framing",
+          "paragraph": "The favorable equities in this record are concrete, documented, and cumulative. On the positive side of the ledger: ##BALANCING_INVENTORY##. On the adverse side: a period of unlawful presence without fraud, criminal conduct, or any additional immigration violation.\n\nThe Board of Immigration Appeals held in Matter of Arai that '[i]n the absence of adverse factors, adjustment will ordinarily be granted.' 13 I&N Dec. 494, 496 (BIA 1970). The adverse factor here does not trigger the elevated standard that Matter of Marin reserves for cases involving serious negative factors — it is an isolated immigration irregularity that does not reflect bad character, threaten public safety, or indicate the applicant is undesirable as a permanent resident. What this record reflects, overwhelmingly, is a person whose continued presence in the United States serves the demonstrated needs of a United States citizen family and a community that has recognized ##APPLICANT_PRONOUN_POSSESSIVE## contributions."
+        },
+        {
+          "variant_id": "v2",
+          "label": "Stakes-first — officer-facing human consequence",
+          "description": "Opens with the human consequence of denial before listing the inventory. More persuasive in cases with compelling caregiver facts.",
+          "paragraph": "Before turning to the formal inventory of equities, it is worth pausing on what this decision means in practice. If this application is denied, ##DEPENDENT_NAME## — a United States citizen with ##DEPENDENT_CONDITION## — loses ##APPLICANT_PRONOUN_POSSESSIVE## primary caregiver. The care system that ##APPLICANT_FULL_NAME## has built over ##CARE_YEARS## years — the daily routines, the crisis management strategies, the accumulated knowledge of one person's specific needs — dissolves. There is no substitute.\n\nHolding that consequence in view, the formal balance is as follows: ##BALANCING_INVENTORY##. Against this: a single period of unlawful presence, unaccompanied by fraud, criminal history, or aggravating conduct. The Board's framework in Matter of Marin instructs that these considerations be weighed against each other to determine whether adjustment 'appears in the best interests of this country.' 16 I&N Dec. 581, 584 (BIA 1978). On this record, the balance is not close."
+        }
+      ]
+    },
+
+    "balancing_standard": {
+      "display_name": "Balancing — Standard Family Ties vs. Overstay",
+      "citations_required": ["fn_arai", "fn_marin_584"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Standard inventory and close",
+          "paragraph": "The discretionary balance in this case weighs the following favorable equities against the adverse factor of unlawful presence: ##BALANCING_INVENTORY##. The adverse factor — an overstay without fraud, criminality, or aggravating circumstance — is a single, isolated immigration irregularity.\n\nThe Board of Immigration Appeals held in Matter of Marin that favorable and adverse factors are to be weighed in their totality to determine whether adjustment 'appears in the best interests of this country.' 16 I&N Dec. 581, 584 (BIA 1978). The Board held in Matter of Arai that, in the absence of serious adverse factors, adjustment will ordinarily be granted. 13 I&N Dec. 494, 496 (BIA 1970). ##APPLICANT_FULL_NAME##'s record falls within the Arai baseline: the adverse factor is not serious, the favorable equities are substantial and documented, and the balance favors a grant of discretion."
+        }
+      ]
+    },
+
+    "balancing_community_pillar": {
+      "display_name": "Balancing — Community Leader / Long Residence vs. Minor Violation",
+      "citations_required": ["fn_arai", "fn_marin_584", "fn_pm_e8"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Community contribution as affirmative national interest",
+          "paragraph": "The favorable equities in this record are not merely personal — they are civic. ##BALANCING_INVENTORY##. The adverse factor — ##ADVERSE_FACTOR_BRIEF## — stands alone on the other side of the ledger, unaccompanied by any criminal history, fraud, or pattern of immigration disregard.\n\nThe Board of Immigration Appeals has instructed that the discretionary question in adjustment cases is whether the grant 'appears in the best interests of this country.' Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978). The USCIS Policy Manual echoes this framework. 1 USCIS-PM E.8(A). The question posed is not whether the applicant is perfect. It is whether ##APPLICANT_PRONOUN_POSSESSIVE## continued presence serves this country's interests. On this record, the answer is plainly yes: ##APPLICANT_FULL_NAME## has demonstrated, through years of documented community engagement and civic contribution, that ##APPLICANT_PRONOUN_POSSESSIVE## presence is an asset — not a liability."
+        }
+      ]
+    },
+
+    "closing_template": {
+      "display_name": "Balancing Closing Sentence (Fixed — All Cases)",
+      "notes": "This sentence is mandatory in every brief. It appears as the final sentence of Section E. Slots: ##ADVERSE_FACTOR_BRIEF##, ##CASE_THEME_BRIEF##.",
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Standard close",
+          "paragraph": "This is not a case about ##ADVERSE_FACTOR_BRIEF##. It is a case about ##CASE_THEME_BRIEF##. A favorable exercise of discretion is both legally supported and compelled by the facts of this record."
+        }
+      ]
+    }
+  },
+
+  "novel_combinations": {
+    "_notes": "Use these when two or more strong equity types are present simultaneously and a single integrated paragraph is more persuasive than two separate ones.",
+
+    "elderly_caregiver_professional": {
+      "display_name": "Elderly Applicant + Caregiver + Professional Credentials",
+      "trigger_conditions": {"applicant_age": ">= 60", "has_disabled_dependent": true, "has_professional_credentials": true},
+      "citations_required": ["fn_marin_584", "fn_marin_585", "fn_mendez"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Three-way equity: age, caregiving, expertise",
+          "paragraph": "This record presents a convergence of equities that, taken separately, would each warrant serious weight — and taken together, define a case in which a favorable exercise of discretion is the only proportionate response. ##APPLICANT_FULL_NAME## is ##APPLICANT_AGE## years old, a licensed ##CREDENTIAL## with ##CREDENTIAL_YEARS## years of professional experience, and the primary caregiver for ##DEPENDENT_NAME##, a United States citizen with ##DEPENDENT_CONDITION##.\n\nAt ##APPLICANT_AGE##, the consequences of removal are not abstract: they are permanent separation from every family member, every professional relationship, and every community connection in this country. As a ##CREDENTIAL##, ##APPLICANT_PRONOUN_SUBJECT## brings to ##DEPENDENT_NAME##'s care a level of expertise that most families cannot access without significant professional expense — and that, in this household, is provided daily, as an act of family devotion. ##PROFESSIONAL_CARE_SPECIFICS## And as ##DEPENDENT_NAME##'s primary caregiver, ##APPLICANT_PRONOUN_SUBJECT## provides the consistency and attachment that ##DEPENDENT_NAME##'s condition requires.\n\nMatter of Marin recognized all three of these equity types — age, employment and professional history, and family ties to a dependent U.S. citizen — as favorable factors in the discretionary analysis. 16 I&N Dec. 581, 584-85 (BIA 1978). Matter of Mendez-Morales instructs that the quality of the family relationship must be weighed. 21 I&N Dec. 296, 301 (BIA 1996). The quality here is professional, personal, and documented."
+        }
+      ]
+    },
+
+    "dual_vulnerability_caregiver_and_ill": {
+      "display_name": "Applicant with Own Medical Condition + Primary Caregiver Role",
+      "trigger_conditions": {"has_own_medical_condition": true, "has_disabled_dependent": true},
+      "citations_required": ["fn_marin_584", "fn_marin_585", "fn_mendez"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Dual vulnerability — applicant's health and dependent's need",
+          "paragraph": "The humanitarian equities in this record run in both directions. ##APPLICANT_FULL_NAME## is ##APPLICANT_PRONOUN_POSSESSIVE##self managing ##APPLICANT_CONDITION##, a condition that requires ##APPLICANT_MEDICAL_NEEDS## and that ##APPLICANT_PRONOUN_SUBJECT## has consistently addressed in the United States. At the same time, ##APPLICANT_PRONOUN_SUBJECT## is the primary caregiver for ##DEPENDENT_NAME##, a United States citizen with ##DEPENDENT_CONDITION##.\n\nThe convergence of these two facts — a person managing a serious health condition who is simultaneously the primary caregiver for a dependent U.S. citizen — raises the humanitarian stakes of a denial to an unusually high level. Removal would expose ##APPLICANT_FULL_NAME## to the deterioration of a medical condition being managed in this country and simultaneously remove ##DEPENDENT_NAME##'s primary caregiver. The Board in Matter of Marin recognized hardship to the respondent and hardship to the family as independent favorable equities. Both are present here. Their combination compels a favorable exercise of discretion."
+        }
+      ]
+    },
+
+    "long_residence_community_leader_overstay": {
+      "display_name": "Long Residence + Community Leadership + Single Overstay",
+      "trigger_conditions": {"years_in_us": ">= 10", "has_community_leadership": true, "adverse_type": "overstay"},
+      "citations_required": ["fn_marin_584", "fn_arai"],
+      "variants": [
+        {
+          "variant_id": "v1",
+          "label": "Contrast: years of contribution vs. single irregularity",
+          "paragraph": "The officer reviewing this application is asked to weigh ##YEARS_IN_US## years of documented community contribution — ##COMMUNITY_LEADERSHIP_SPECIFICS## — against a single immigration irregularity: an overstay that arose under the circumstances described in the preceding section. The math of that comparison is not close.\n\nThe Board of Immigration Appeals instructs that favorable and adverse factors be weighed in their totality. Matter of Marin, 16 I&N Dec. 581, 584 (BIA 1978). The totality here is ##YEARS_IN_US## years of employment, family commitment, community leadership, and civic engagement on one side — and one period of unlawful presence, without fraud or criminal conduct, on the other. The Board further held in Matter of Arai that, absent serious adverse factors, adjustment will ordinarily be granted. 13 I&N Dec. 494, 496 (BIA 1970). Serious adverse factors do not include ##YEARS_IN_US## years of good conduct punctuated by a single overstay. The baseline rule applies, and the equities in this record satisfy it many times over."
+        }
+      ]
+    }
+  },
+
+  "selection_logic": {
+    "_notes": "These rules drive which templates are shown in the selection menu. The UI evaluates them in order. Multiple templates may be surfaced simultaneously — the attorney picks.",
+    "primary_equity_rules": [
+      {"condition": "has_autistic_dependent == true AND has_professional_credentials == true", "suggest": ["caregiver_autistic_dependent.v3", "novel_combinations.elderly_caregiver_professional.v1"]},
+      {"condition": "has_autistic_dependent == true", "suggest": ["caregiver_autistic_dependent.v1", "caregiver_autistic_dependent.v2"]},
+      {"condition": "has_disabled_dependent == true AND has_own_medical_condition == true", "suggest": ["novel_combinations.dual_vulnerability_caregiver_and_ill.v1", "caregiver_disabled_dependent_general.v1"]},
+      {"condition": "has_disabled_dependent == true", "suggest": ["caregiver_disabled_dependent_general.v1", "caregiver_disabled_dependent_general.v2"]},
+      {"condition": "has_elderly_parent_dependent == true", "suggest": ["caregiver_elderly_parent.v1"]},
+      {"condition": "has_usc_spouse == true AND spouse_has_medical_need == true", "suggest": ["usc_spouse_marriage.v2", "usc_spouse_marriage.v1"]},
+      {"condition": "has_usc_spouse == true", "suggest": ["usc_spouse_marriage.v1", "usc_spouse_marriage.v2"]},
+      {"condition": "has_usc_minor_children == true AND is_sole_parent == true", "suggest": ["parent_usc_minor_children.v2", "parent_usc_minor_children.v1"]},
+      {"condition": "has_usc_minor_children == true", "suggest": ["parent_usc_minor_children.v1", "parent_usc_minor_children.v2"]}
+    ],
+    "secondary_equity_rules": [
+      {"condition": "has_professional_credentials == true AND has_disabled_dependent == true", "suggest": ["employment_licensed_professional.v2"]},
+      {"condition": "has_professional_credentials == true", "suggest": ["employment_licensed_professional.v1"]},
+      {"condition": "has_community_leadership == true", "suggest": ["community_service.v2"]},
+      {"condition": "has_community_service == true", "suggest": ["community_service.v1"]},
+      {"condition": "applicant_age >= 60", "suggest": ["age_elderly.v1"]},
+      {"condition": "years_in_us >= 5", "suggest": ["long_us_residence.v1"]},
+      {"condition": "criminal_record == false", "suggest": ["clean_criminal_record.v1"]},
+      {"condition": "has_tax_history == true", "suggest": ["tax_compliance.v1"]}
+    ],
+    "adverse_rules": [
+      {"condition": "adverse_type == 'overstay' AND has_compelling_reason == true", "suggest": ["overstay_compelling_reason.v1"]},
+      {"condition": "adverse_type == 'overstay'", "suggest": ["simple_overstay.v1", "simple_overstay.v2"]},
+      {"condition": "adverse_type == 'prior_removal'", "suggest": ["prior_removal_old.v1"]},
+      {"condition": "adverse_type == 'ewi' AND has_humanitarian_ewi == true", "suggest": ["entry_without_inspection.v2", "entry_without_inspection.v1"]},
+      {"condition": "adverse_type == 'ewi'", "suggest": ["entry_without_inspection.v1"]}
+    ],
+    "balancing_rules": [
+      {"condition": "has_disabled_dependent == true AND adverse_type == 'overstay'", "suggest": ["balancing_caregiver_vs_overstay.v2", "balancing_caregiver_vs_overstay.v1"]},
+      {"condition": "has_community_leadership == true", "suggest": ["balancing_community_pillar.v1", "balancing_standard.v1"]},
+      {"condition": "true", "suggest": ["balancing_standard.v1"]}
+    ],
+    "novel_combination_alerts": [
+      {"condition": "applicant_age >= 60 AND has_disabled_dependent == true AND has_professional_credentials == true", "alert": "Novel combination detected: elderly + caregiver + professional. Consider using the combined template in novel_combinations.elderly_caregiver_professional for a single, more powerful argument rather than three separate paragraphs."},
+      {"condition": "has_own_medical_condition == true AND has_disabled_dependent == true", "alert": "Dual vulnerability detected: applicant's own medical condition + caregiver role. Consider novel_combinations.dual_vulnerability_caregiver_and_ill for an integrated argument."},
+      {"condition": "years_in_us >= 10 AND has_community_leadership == true AND adverse_type == 'overstay'", "alert": "Long residence + community leader + single overstay detected. Consider novel_combinations.long_residence_community_leader_overstay for a contrast-based closing argument."}
+    ]
+  }
+}

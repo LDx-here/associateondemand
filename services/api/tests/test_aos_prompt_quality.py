@@ -176,6 +176,7 @@ def test_generate_aos_brief_api_path_uses_full_system_and_thinking(monkeypatch, 
         )
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test-key")
+    monkeypatch.setenv("AOD_AOS_USE_API", "1")
     with patch("app.services.llm.is_configured", return_value=True), patch(
         "app.services.llm.generate_text", side_effect=fake_generate_text
     ):

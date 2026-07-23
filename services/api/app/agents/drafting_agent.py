@@ -130,7 +130,7 @@ def _run_aos_generator_primary(matter_id: str, matter_ctx: dict | None) -> dict[
         brief_template,
         fact_payload,
         docx_path,
-        use_api=True,  # full Part 8.1/8.2 + thinking when Anthropic configured
+        use_api=True,  # honored only when AOD_AOS_USE_API=1; default = paragraph library
     )
     memo = assembled_sections_to_memo(gen.get("assembled_sections") or [])
     return {

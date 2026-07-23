@@ -42,6 +42,7 @@ const PRIMARY_NAV: SidebarNavItem[] = [
 const SECONDARY_NAV: SidebarNavItem[] = [
   { href: "/help", label: "How this works", icon: HelpCircle },
   { href: "/firm-memory", label: "Firm Memory", icon: Brain },
+  { href: "/tools/aos-brief-builder" as Route, label: "AOS brief builder", icon: LayoutTemplate },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/contacts", label: "Contacts", icon: Users },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },

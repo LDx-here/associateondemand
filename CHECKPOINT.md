@@ -1,9 +1,11 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-22 (CDT) — Pass 33 AOS drafting: full Part 8.1 + thinking + full Part 8.2 facts  
+**Last updated:** 2026-07-23 (CDT) — Pass 34 AOS Output Fix: PRESERVE verbatim + library FILL  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 34 (2026-07-23):** AOS Output Fix (five fixes) — canonical PRESERVE legal standard / AOS mechanism / conclusion (Patel + Arai verbatim); FILL via `aos_paragraph_library.json` builders (default, no API); certificate of service; attorney selection menu at `/tools/aos-brief-builder`; optional LLM via `AOD_AOS_USE_API=1`. pytest 115; next build; Fly + Vercel. Runbook: `docs/runbooks/aos-output-library-fill.md`.
 
 **Pass 33 (2026-07-22):** AOS draft quality — store full Part 8.1 system prompt (`aos_system_prompt.py`); Part 8.2 `build_section_prompt` with all client facts; Anthropic extended thinking (`budget_tokens=8192`); drafting agent primary path = `aos_brief_generator` (`use_api=True`). Env: `AOD_AOS_MODEL`, `AOD_AOS_THINKING_BUDGET`, `AOD_AOS_MAX_TOKENS`. pytest 108. Fly API redeploy.
 
@@ -13,7 +15,7 @@
 
 **Pass 30 (2026-07-22):** Legal Elements auto-seed core Firm Knowledge by matter type (no Load button / applied badge); optional elements via dropdown; case-type change merge prompt. Firm Memory moved to `/firm-memory` + Settings (out of Templates). USCIS form autofill noted as future. `test:firm-knowledge`; pytest 81; next build; Vercel prod (web only).
 
-**Next:** Fill AOS architecture facts on a matter → dispatch drafting for aos-discretionary-brief → confirm gaps show Part 8.1 char count + thinking + model; compare DOCX FILL quality to Cowork. Later: asylum / hearing-packet `brief_type`s.
+**Next:** Retest AOS draft on a matter (library FILL, no API) → confirm Legal Standard has Patel/Arai; Section A is library prose; open `/tools/aos-brief-builder`. Optional: set `AOD_AOS_USE_API=1` on Fly only if LLM FILL desired.
 
 **Pass 29 (2026-07-22):** Templates UX journey — architecture explainer moved to `/help#templates`; `/templates` browse by practice area + Cards/List; Open preview lands on Structure mapping (CREAC + feeds-from); Firm Memory collapsed. next build; smoke PASS.
 
@@ -553,6 +555,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 34 (2026-07-23):** AOS Output Fix — PRESERVE Patel/Arai verbatim; FILL via paragraph library (default no API); certificate of service; `/tools/aos-brief-builder` selection menu; pytest 115; next build; Fly + Vercel. Runbook: `docs/runbooks/aos-output-library-fill.md`.
 - **Pass 27 (2026-07-22):** Firm Knowledge → matters intelligence — Legal Elements load/merge from knowledge map by case type; needed-facts Present/Needed; Memory vs Knowledge UX; filtered knowledge-map deep links; matter badge. Verified: `test:firm-knowledge`, pytest 77, next build.
 - **Pass 21 (2026-07-21):** UX — removed left sidebar; top header nav + More dropdown; mobile hamburger; `/help` site guide (dashboard + Settings links); full-width main content; Associate panel unchanged. Verified: pytest (53), next build, smoke-production PASS.
 - **Pass 20 (2026-07-21):** External partner funnel `/partner/submit`; Stripe checkout on partner path; inbox partner badge; partner link copy on dashboard/settings; drafting prompt hardening (53 pytest). Matter navigation fix + operator UX polish; smoke E2E matter detail 200.
@@ -585,12 +588,11 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Try Firm Knowledge on a matter** — open Adjustment/family matter → Legal elements → Load elements for this matter type → Browse knowledge for this matter type.
-2. **Share site guide with pilot firm** — https://aod-next.vercel.app/help (overflow counsel walkthrough).
-3. **Share partner funnel** — `/partner/submit?deliverable=aos-discretionary-brief`.
-4. **Pilot AOS discretionary draft** — confirm topic-aware Firm Knowledge in prompts + Legal Elements checklist.
+1. **Retest AOS draft (library path)** — fill architecture facts → dispatch `aos-discretionary-brief` → confirm Legal Standard has Matter of Patel + Matter of Arai; Section A is library prose (not `[FILL with matter facts]`); certificate of service present.
+2. **Open selection menu** — https://aod-next.vercel.app/tools/aos-brief-builder (optional `?matterId=AOD-XXXX`).
+3. **Share site guide with pilot firm** — https://aod-next.vercel.app/help.
+4. **Optional LLM FILL** — only if desired: `fly secrets set AOD_AOS_USE_API=1 -a associateondemand-api`.
 5. **Optional:** Stripe + Resend env vars — `bash scripts/stripe-setup-checklist.sh`.
-6. **Roadmap Phase 3** — Firm Memory depth + style QC.
 
 ## Blockers
 

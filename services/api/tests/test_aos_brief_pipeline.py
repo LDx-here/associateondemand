@@ -135,9 +135,10 @@ def test_classify_and_build_template_schema():
     tmpl = classify_and_build_template(sections, source_name="test.docx")
     assert tmpl["brief_type"] == "AOS_DISCRETIONARY"
     assert tmpl["template_id"]
-    assert len(tmpl["sections"]) == 2
+    assert len(tmpl["sections"]) >= 2
     assert tmpl["sections"][0]["classification"] == "PRESERVE"
     assert tmpl["sections"][1]["classification"] == "FILL"
+    assert any(s.get("section_id") == "certificate_of_service" for s in tmpl["sections"])
 
 
 def test_default_template_has_required_sections():
