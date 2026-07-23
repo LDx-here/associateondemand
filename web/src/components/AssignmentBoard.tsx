@@ -1,10 +1,11 @@
 "use client";
 
-import { CircleDot, ClipboardList } from "lucide-react";
+import { CircleDot, ClipboardList, Eye } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 
+import { AssignmentDetailDrawer } from "@/components/AssignmentDetailDrawer";
 import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/components/Toast";
 import { formatUsdFromCents } from "@/lib/stripe-pricing";
@@ -85,7 +86,14 @@ export function AssignmentBoard({
   const [modal, setModal] = useState<PendingModal | null>(null);
   const [note, setNote] = useState("");
   const [modalError, setModalError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const selected = selectedId ? assignments.find((a) => a.id === selectedId) ?? null : null;
+
+  const onItemUpdated = useCallback((updated: InboxItem) => {
+    setAssignments((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+  }, []);
 
   async function transition(item: InboxItem, nextStatus: AssignmentStatus, transitionNote?: string) {
     setBusyId(item.id);
@@ -177,8 +185,25 @@ export function AssignmentBoard({
               ) : (
                 lane.items.map((item) => {
                   const busy = busyId === item.id;
+                  const isSelected = selectedId === item.id;
                   return (
-                    <article key={item.id} className="rounded-md border border-slate-200 bg-white p-3 text-sm shadow-sm">
+                    <article
+                      key={item.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Open details for ${item.deliverableType || item.title}`}
+                      className={cn(
+                        "cursor-pointer rounded-md border bg-white p-3 text-sm shadow-sm transition hover:border-slate-300 hover:shadow",
+                        isSelected ? "border-sky-400 ring-2 ring-sky-200" : "border-slate-200",
+                      )}
+                      onClick={() => setSelectedId(item.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setSelectedId(item.id);
+                        }
+                      }}
+                    >
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <p className="font-medium text-slate-900">{item.deliverableType || item.title}</p>
                         <div className="flex flex-wrap gap-1">
@@ -189,7 +214,11 @@ export function AssignmentBoard({
                       </div>
                       <p className="mt-1 text-xs text-slate-500">
                         {item.matterId ? (
-                          <Link href={`/matters/${item.matterId}`} className={linkMatter}>
+                          <Link
+                            href={`/matters/${item.matterId}`}
+                            className={linkMatter}
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             {item.matterId}
                           </Link>
                         ) : (
@@ -211,7 +240,15 @@ export function AssignmentBoard({
                           {item.resolution}
                         </p>
                       ) : null}
-                      <div className="mt-3 flex flex-wrap gap-1.5">
+                      <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-sky-800">
+                        <Eye className="h-3 w-3" aria-hidden />
+                        Click to preview
+                      </p>
+                      <div
+                        className="mt-3 flex flex-wrap gap-1.5"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
                         {item.status === "Submitted" ? (
                           <button
                             type="button"
@@ -279,6 +316,17 @@ export function AssignmentBoard({
           </div>
         ))}
       </div>
+
+      {selected ? (
+        <AssignmentDetailDrawer
+          item={selected}
+          demoMode={demoMode}
+          busy={busyId === selected.id}
+          onClose={() => setSelectedId(null)}
+          onTransition={transition}
+          onItemUpdated={onItemUpdated}
+        />
+      ) : null}
 
       {modal ? (
         <div
