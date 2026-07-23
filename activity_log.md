@@ -1,3 +1,5 @@
+### [2026-07-23] CHECKPOINT: pass 36 AOS brief builder integrated into template/drafting flow — removed standalone /tools/aos-brief-builder + AOS_Selection_Menu.html (redirect to /templates); GET /api/aos/library + native AosVariantSelector (alerts, live preview) as fact-guide step 4; /templates "Draft with variants"; picks → fields.paragraphSelections; backend generator unchanged; next build
+
 ### [2026-07-23] CHECKPOINT: pass 35 Contacts — list/add/link to matters; Airtable linked_matters; Overview Add client contact; test:contacts; next build; Vercel
 
 ### [2026-07-23] CHECKPOINT: pass 34 AOS Output Fix — PRESERVE Patel/Arai verbatim; FILL via paragraph library (no API default); certificate of service; selection menu /tools/aos-brief-builder; pytest 115; next build; Fly + Vercel

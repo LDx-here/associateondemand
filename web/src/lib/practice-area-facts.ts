@@ -32,6 +32,13 @@ export type DraftingFactsPayload = {
   caseType?: string;
   deliverableId?: string;
   fields: Record<string, string | string[]>;
+  /**
+   * AOS argument-variant picks keyed by section
+   * (section_a / section_d_adverse / section_e_balancing) with
+   * "<library_key>.<variant_id>" values. Folded into `fields.paragraphSelections`
+   * on serialize so the backend generator consumes them directly.
+   */
+  paragraphSelections?: Record<string, string>;
   additionalNotes?: string;
   updatedAt?: string;
 };
@@ -642,11 +649,20 @@ export function parseDraftingFactsNote(
     const parsed = JSON.parse(trimmed) as Partial<DraftingFactsPayload>;
     if (parsed.v !== 1 || !parsed.practiceArea) return null;
     const base = emptyDraftingFacts(matterId, caseType, deliverableId ?? parsed.deliverableId);
+    // paragraphSelections may be stored inside fields (persisted form) or at the
+    // top level (in-memory form). Lift it back out so `fields` stays fact-only.
+    const parsedFields: Record<string, unknown> = { ...(parsed.fields ?? {}) };
+    const foldedSelections = parsedFields.paragraphSelections as Record<string, string> | undefined;
+    delete parsedFields.paragraphSelections;
+    const paragraphSelections =
+      parsed.paragraphSelections ??
+      (foldedSelections && typeof foldedSelections === "object" ? foldedSelections : undefined);
     return {
       ...base,
       ...parsed,
       v: 1,
-      fields: { ...base.fields, ...(parsed.fields ?? {}) },
+      fields: { ...base.fields, ...(parsedFields as Record<string, string | string[]>) },
+      paragraphSelections,
     };
   } catch {
     return null;
@@ -654,7 +670,15 @@ export function parseDraftingFactsNote(
 }
 
 export function serializeDraftingFacts(payload: DraftingFactsPayload): string {
-  return JSON.stringify({ ...payload, updatedAt: new Date().toISOString() });
+  const fields: Record<string, unknown> = { ...payload.fields };
+  // Fold argument-variant picks into fields so the backend AOS generator reads
+  // them from `fields.paragraphSelections`.
+  if (payload.paragraphSelections && Object.keys(payload.paragraphSelections).length) {
+    fields.paragraphSelections = payload.paragraphSelections;
+  } else {
+    delete fields.paragraphSelections;
+  }
+  return JSON.stringify({ ...payload, fields, updatedAt: new Date().toISOString() });
 }
 
 const FIELD_LABELS: Record<string, string> = {};
@@ -689,6 +713,19 @@ export function formatDraftingFactsForPrompt(payload: DraftingFactsPayload | nul
   }
   if (payload.additionalNotes?.trim()) {
     lines.push(`- Additional notes: ${payload.additionalNotes.trim()}`);
+  }
+  const selections = payload.paragraphSelections ?? {};
+  const selEntries = Object.entries(selections).filter(([, v]) => v);
+  if (selEntries.length) {
+    const labels: Record<string, string> = {
+      section_a: "Primary equity (§A)",
+      section_d_adverse: "Adverse framing (§D)",
+      section_e_balancing: "Balancing (§E)",
+    };
+    lines.push("- Selected argument variants (AOS paragraph library):");
+    for (const [key, value] of selEntries) {
+      lines.push(`  - ${labels[key] ?? key}: ${value}`);
+    }
   }
   return lines.length > 1 ? lines.join("\n") : "";
 }

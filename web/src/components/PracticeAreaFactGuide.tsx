@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { AosVariantSelector } from "@/components/AosVariantSelector";
+import type { AosSectionKey } from "@/lib/aos-library";
 import { useToast } from "@/components/Toast";
 import {
   deliverableFactGuideTitle,
@@ -150,6 +152,25 @@ export function PracticeAreaFactGuide({
       });
     },
     [onChange],
+  );
+
+  const setParagraphSelection = useCallback(
+    (key: AosSectionKey, value: string | null) => {
+      patchPayload((prev) => {
+        const nextSelections = { ...(prev.paragraphSelections ?? {}) };
+        if (value) nextSelections[key] = value;
+        else delete nextSelections[key];
+        return { ...prev, paragraphSelections: nextSelections };
+      });
+    },
+    [patchPayload],
+  );
+
+  const setCaseTheme = useCallback(
+    (text: string) => {
+      patchPayload((prev) => ({ ...prev, fields: { ...prev.fields, caseTheme: text } }));
+    },
+    [patchPayload],
   );
 
   useEffect(() => {
@@ -311,6 +332,19 @@ export function PracticeAreaFactGuide({
               3. Equities &amp; adverse detail
             </h4>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">{factorDefs.map(renderField)}</div>
+          </div>
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              4. Choose argument variants
+            </h4>
+            <div className="mt-3">
+              <AosVariantSelector
+                fields={payload.fields}
+                selections={payload.paragraphSelections ?? {}}
+                onSelect={setParagraphSelection}
+                onCaseThemeSelect={setCaseTheme}
+              />
+            </div>
           </div>
         </div>
       ) : (

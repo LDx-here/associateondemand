@@ -1,9 +1,11 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-23 (CDT) — Pass 35 Contacts: list/add/link to matters  
+**Last updated:** 2026-07-23 (CDT) — Pass 36 AOS variant selection folded into template/drafting flow  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 36 (2026-07-23):** AOS brief builder integrated (no standalone tool) — removed `/tools/aos-brief-builder` HTML page (now redirects to `/templates`) and `AOS_Selection_Menu.html`. New `GET /api/aos/library` + native `AosVariantSelector` (recommended badges, novel-combination alerts, live preview) as step 4 of the AOS fact guide; `/templates` AOS card/preview → "Draft with variants". Picks save to `fields.paragraphSelections` (section_a / section_d_adverse / section_e_balancing), consumed by the existing generator (no backend change; paragraph library kept). next build (staged) green. Runbook: `docs/runbooks/aos-output-library-fill.md`.
 
 **Pass 35 (2026-07-23):** Contacts feature — Airtable `linked_matters` field; `/contacts` list + Add contact modal; contact detail with related matters; matter Overview Contacts panel (Add client contact / Link existing); demo seed contacts; APIs `POST/GET /api/contacts`, `PATCH /api/contacts/[id]` link/unlink. `npm run test:contacts`; next build; Vercel.
 
@@ -17,7 +19,7 @@
 
 **Pass 30 (2026-07-22):** Legal Elements auto-seed core Firm Knowledge by matter type (no Load button / applied badge); optional elements via dropdown; case-type change merge prompt. Firm Memory moved to `/firm-memory` + Settings (out of Templates). USCIS form autofill noted as future. `test:firm-knowledge`; pytest 81; next build; Vercel prod (web only).
 
-**Next:** Add real client contacts from `/contacts` or matter Overview; confirm linked contacts appear on both sides. Optional: continue AOS draft retest (Pass 34 Next).
+**Next:** Retest AOS variant flow on prod — `/templates` → AOS → "Draft with variants" → pick Section A/adverse/balancing variants on a matter, save facts, dispatch `aos-discretionary-brief`, confirm chosen library prose appears. Note: unrelated local WIP (`AssignmentDetailDrawer.tsx`, `AssignmentBoard.tsx`, `api/inbox/[itemId]/preview`) has pre-existing typedRoutes build errors — left uncommitted.
 
 **Pass 29 (2026-07-22):** Templates UX journey — architecture explainer moved to `/help#templates`; `/templates` browse by practice area + Cards/List; Open preview lands on Structure mapping (CREAC + feeds-from); Firm Memory collapsed. next build; smoke PASS.
 

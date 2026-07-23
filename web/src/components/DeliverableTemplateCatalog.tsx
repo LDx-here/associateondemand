@@ -510,6 +510,7 @@ function TemplateCard({
   const badge = sourceBadge(item);
   const hasInteractive = Boolean(getTemplateFieldMapByDeliverable(item.deliverableId));
   const isList = layout === "list";
+  const isAos = item.deliverableId === "aos-discretionary-brief";
 
   return (
     <article
@@ -585,7 +586,7 @@ function TemplateCard({
           href={`/assignments/new?deliverable=${item.deliverableId}`}
           className={`${btnSecondary} text-xs`}
         >
-          Start assignment
+          {isAos ? "Draft with variants" : "Start assignment"}
         </Link>
       </div>
 
@@ -796,6 +797,20 @@ function PreviewModal({
             )
           ) : null}
         </div>
+        {item.deliverableId === "aos-discretionary-brief" ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-4 py-3">
+            <p className="text-xs text-slate-600">
+              Pick attorney-reviewed argument variants (Section A / adverse / balancing) inside the standard
+              drafting flow — same PRESERVE/FILL path shown above.
+            </p>
+            <Link
+              href="/assignments/new?deliverable=aos-discretionary-brief"
+              className={`${btnPrimary} shrink-0 text-xs`}
+            >
+              Draft with variants
+            </Link>
+          </div>
+        ) : null}
       </div>
     </div>
   );
