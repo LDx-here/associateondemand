@@ -1,3 +1,5 @@
+### [2026-07-23] CHECKPOINT: pass 37 Inbox assignment detail drawer — clickable board cards → side panel with matter/client, facts, draft preview, missing checklist, status actions; GET /api/inbox/[itemId]/preview; e27a4f0; next build; Vercel prod
+
 ### [2026-07-23] CHECKPOINT: pass 36 AOS brief builder integrated into template/drafting flow — removed standalone /tools/aos-brief-builder + AOS_Selection_Menu.html (redirect to /templates); GET /api/aos/library + native AosVariantSelector (alerts, live preview) as fact-guide step 4; /templates "Draft with variants"; picks → fields.paragraphSelections; backend generator unchanged; next build
 
 ### [2026-07-23] CHECKPOINT: pass 35 Contacts — list/add/link to matters; Airtable linked_matters; Overview Add client contact; test:contacts; next build; Vercel
