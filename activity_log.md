@@ -195,3 +195,5 @@
 ### [2026-07-21] CHECKPOINT: pass 22 — draft QC checklist + Firm Memory/brain knowledge wiring honesty; linter chatbot/placeholder rules; runbooks; pytest + next build
 
 ### [2026-07-22] CHECKPOINT: Pass 33 AOS drafting quality — full Part 8.1 system prompt + extended thinking (8192) + Part 8.2 full client facts; drafting primary path aos_brief_generator; pytest 108; Fly API
+
+### [2026-07-23] CHECKPOINT: Pass 34 autonomous cron pass — verified assignment intake → inbox → template catalog end to end (no workflow regressions); fixed `smoke-assignment-e2e.sh` hang (orphaned next-server held stdout pipe open when piped, e.g. `| tail` — the exact bug that stalled this automation mid-run) via process-group cleanup + log redirection; fixed stale `test:assessment-docs` assertion broken since fact-label humanization shipped. pytest 108, next build (39 routes), all 13 web test:* suites, smoke-production + smoke-assignment-e2e — all PASS. No app code changed → no redeploy needed.

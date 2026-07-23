@@ -1,9 +1,44 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-22 (CDT) — Pass 33 AOS drafting: full Part 8.1 + thinking + full Part 8.2 facts  
+**Last updated:** 2026-07-23 (UTC) — Pass 34 autonomous verification pass: assignment intake → inbox → template catalog regression check + fixes  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 34 (2026-07-23, autonomous cron pass):** Re-verified the three priority
+surfaces from [`docs/runbooks/autonomous-agent-pass.md`](docs/runbooks/autonomous-agent-pass.md)
+end to end — assignment intake (`/assignments/new`) → matter/task/note/inbox
+creation → inbox lifecycle (`Submitted → In progress → Ready for review →
+Approved`) → delivered/export → template catalog (`/templates`,
+`deliverable-catalog.ts`). No regressions in the workflow itself; found and
+fixed two bugs surfaced during verification:
+
+- **`scripts/smoke-assignment-e2e.sh` hang** — the backgrounded `npm run
+  build && npm run start` dev-server job inherited the script's stdout/stderr.
+  When the cleanup trap killed only the npm subshell PID, the further
+  `next-server` child could be reparented to init and keep holding that pipe
+  open forever — hanging any caller piping the script's output (e.g. this
+  automation's `| tail`, which is exactly what happened mid-pass). Fixed by
+  redirecting server output to a temp log, running the job in its own process
+  group (`set -m`) so cleanup kills the whole npm → next-server tree, plus a
+  best-effort port-kill fallback and a clear failure message with the server
+  log if health checks never pass.
+- **`web/scripts/verify-assessment-documents.mjs` stale assertion** — the
+  round-trip test still asserted the raw `entry_date` fact key, but
+  `formatAssessmentOcrForAgents` has rendered fact types through the
+  human-readable `factDisplayLabel` (`entry_date` → `entry date`) since the
+  attorney fact-verification QC pass; the test had been silently broken since
+  then. Updated the assertion to match current, intended output.
+
+Verified: `pytest` 108 passed, `next build` (39 routes) green, all 13 `web`
+`test:*` unit suites green (`catalog`, `facts`, `assessment-docs`,
+`document-create`, `matter-link-filter`, `template-field-maps`, `onboarding`,
+`matter-stage`, `assignment-transitions`, `intake-prefill`, `stripe-pricing`,
+`stripe-webhook`, `firm-knowledge`), `scripts/smoke-production.sh` PASS (prod
+Fly + Vercel already healthy), `scripts/smoke-assignment-e2e.sh` PASS (demo
+mode, full intake→inbox→export lifecycle). No app/runtime code changed — only
+the local smoke script and a test file — so **no Fly/Vercel redeploy needed**;
+production was already green pre- and post-pass.
 
 **Pass 33 (2026-07-22):** AOS draft quality — store full Part 8.1 system prompt (`aos_system_prompt.py`); Part 8.2 `build_section_prompt` with all client facts; Anthropic extended thinking (`budget_tokens=8192`); drafting agent primary path = `aos_brief_generator` (`use_api=True`). Env: `AOD_AOS_MODEL`, `AOD_AOS_THINKING_BUDGET`, `AOD_AOS_MAX_TOKENS`. pytest 108. Fly API redeploy.
 
@@ -553,6 +588,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 34 (2026-07-23):** Autonomous pass — verified assignment intake → inbox → template catalog end to end (no workflow regressions); fixed `smoke-assignment-e2e.sh` hang-on-orphaned-server bug (the exact bug that stalled this automation run) and a stale `test:assessment-docs` assertion. pytest 108, next build, all 13 web test suites, both smoke scripts — all PASS. No redeploy needed (tooling/test-only fix).
 - **Pass 27 (2026-07-22):** Firm Knowledge → matters intelligence — Legal Elements load/merge from knowledge map by case type; needed-facts Present/Needed; Memory vs Knowledge UX; filtered knowledge-map deep links; matter badge. Verified: `test:firm-knowledge`, pytest 77, next build.
 - **Pass 21 (2026-07-21):** UX — removed left sidebar; top header nav + More dropdown; mobile hamburger; `/help` site guide (dashboard + Settings links); full-width main content; Associate panel unchanged. Verified: pytest (53), next build, smoke-production PASS.
 - **Pass 20 (2026-07-21):** External partner funnel `/partner/submit`; Stripe checkout on partner path; inbox partner badge; partner link copy on dashboard/settings; drafting prompt hardening (53 pytest). Matter navigation fix + operator UX polish; smoke E2E matter detail 200.
