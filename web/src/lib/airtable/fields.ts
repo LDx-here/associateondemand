@@ -84,6 +84,8 @@ export const SPEC_FIELDS = {
     events: "Events",
     strategy_patterns: "Strategy Patterns",
     corrections: "Corrections",
+    /** Inverse of Contacts.linked_matters (Airtable auto-created). */
+    contacts: "Contacts",
   },
   contacts: {
     display_name: "display_name",
@@ -92,6 +94,7 @@ export const SPEC_FIELDS = {
     phone: "phone",
     organization: "organization",
     notes: "notes",
+    linked_matters: "linked_matters",
   },
   tasks: {
     description: "description",

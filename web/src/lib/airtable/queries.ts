@@ -186,9 +186,14 @@ export async function getMatterFromAirtable(matterCode: string): Promise<Matter 
   }
 }
 
-function mapContact(rec: { id: string; fields: RawFields }) {
+function mapContact(
+  rec: { id: string; fields: RawFields },
+  matterCodeByRecordId?: Map<string, string>,
+): Contact {
   const f = rec.fields;
   const c = F.contacts;
+  const linkedRecordIds = linkedIds(f[c.linked_matters]);
+  const linkedMatterIds = linkedRecordIds.map((rid) => matterCodeByRecordId?.get(rid) ?? rid);
   return {
     id: rec.id,
     displayName: String(f[c.display_name] ?? ""),
@@ -197,12 +202,124 @@ function mapContact(rec: { id: string; fields: RawFields }) {
     phone: String(f[c.phone] ?? ""),
     organization: String(f[c.organization] ?? ""),
     notes: String(f[c.notes] ?? ""),
+    linkedMatterIds,
   };
 }
 
+async function matterCodeLookup(): Promise<Map<string, string>> {
+  const matters = await airtableListAll<RawFields>(TABLES.matters);
+  const map = new Map<string, string>();
+  for (const m of matters) {
+    map.set(m.id, String(m.fields[F.matters.matter_id] ?? m.id));
+  }
+  return map;
+}
+
 export async function listContactsFromAirtable(): Promise<Contact[]> {
-  const records = await airtableListAll<RawFields>(TABLES.contacts);
-  return records.map(mapContact);
+  const [records, codeByRecord] = await Promise.all([
+    airtableListAll<RawFields>(TABLES.contacts),
+    matterCodeLookup(),
+  ]);
+  return records.map((rec) => mapContact(rec, codeByRecord));
+}
+
+export async function getContactFromAirtable(contactId: string): Promise<Contact | null> {
+  try {
+    const [rec, codeByRecord] = await Promise.all([
+      airtableGetRecord<RawFields>(TABLES.contacts, contactId),
+      matterCodeLookup(),
+    ]);
+    return mapContact(rec, codeByRecord);
+  } catch {
+    return null;
+  }
+}
+
+export async function listContactsForMatterFromAirtable(matterCode: string): Promise<Contact[]> {
+  const resolved = await resolveMatterRecordId(matterCode);
+  if (!resolved) return [];
+  try {
+    const matterRec = await airtableGetRecord<RawFields>(TABLES.matters, resolved.recordId);
+    const contactIds = linkedIds(matterRec.fields[F.matters.contacts]);
+    if (contactIds.length === 0) return [];
+    const [all, codeByRecord] = await Promise.all([
+      airtableListAll<RawFields>(TABLES.contacts),
+      matterCodeLookup(),
+    ]);
+    const want = new Set(contactIds);
+    return all.filter((r) => want.has(r.id)).map((rec) => mapContact(rec, codeByRecord));
+  } catch {
+    // Fallback: scan contacts for linked_matters containing this matter.
+    const [all, codeByRecord] = await Promise.all([
+      airtableListAll<RawFields>(TABLES.contacts),
+      matterCodeLookup(),
+    ]);
+    return all
+      .filter((r) => linkedIds(r.fields[F.contacts.linked_matters]).includes(resolved.recordId))
+      .map((rec) => mapContact(rec, codeByRecord));
+  }
+}
+
+export async function createContactInAirtable(payload: {
+  displayName: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  organization?: string;
+  notes?: string;
+  matterCode?: string;
+}): Promise<Contact> {
+  const c = F.contacts;
+  const fields: RawFields = {
+    [c.display_name]: payload.displayName,
+  };
+  if (payload.role) fields[c.role] = payload.role;
+  if (payload.email) fields[c.email] = payload.email;
+  if (payload.phone) fields[c.phone] = payload.phone;
+  if (payload.organization) fields[c.organization] = payload.organization;
+  if (payload.notes) fields[c.notes] = payload.notes;
+  if (payload.matterCode) {
+    const resolved = await resolveMatterRecordId(payload.matterCode);
+    if (resolved) fields[c.linked_matters] = [resolved.recordId];
+  }
+  const rec = await airtableCreate(TABLES.contacts, fields);
+  const codeByRecord = await matterCodeLookup();
+  return mapContact(rec, codeByRecord);
+}
+
+export async function linkContactToMatterInAirtable(
+  contactId: string,
+  matterCode: string,
+): Promise<Contact> {
+  const resolved = await resolveMatterRecordId(matterCode);
+  if (!resolved) throw new Error(`Matter ${matterCode} not found`);
+  const existing = await airtableGetRecord<RawFields>(TABLES.contacts, contactId);
+  const current = linkedIds(existing.fields[F.contacts.linked_matters]);
+  if (!current.includes(resolved.recordId)) {
+    await airtablePatch(TABLES.contacts, contactId, {
+      [F.contacts.linked_matters]: [...current, resolved.recordId],
+    });
+  }
+  const updated = await getContactFromAirtable(contactId);
+  if (!updated) throw new Error("Contact not found after link");
+  return updated;
+}
+
+export async function unlinkContactFromMatterInAirtable(
+  contactId: string,
+  matterCode: string,
+): Promise<Contact> {
+  const resolved = await resolveMatterRecordId(matterCode);
+  if (!resolved) throw new Error(`Matter ${matterCode} not found`);
+  const existing = await airtableGetRecord<RawFields>(TABLES.contacts, contactId);
+  const current = linkedIds(existing.fields[F.contacts.linked_matters]);
+  const next = current.filter((id) => id !== resolved.recordId);
+  await airtablePatch(TABLES.contacts, contactId, {
+    [F.contacts.linked_matters]: next,
+  });
+  const updated = await getContactFromAirtable(contactId);
+  if (!updated) throw new Error("Contact not found after unlink");
+  return updated;
 }
 
 export async function createMatterInAirtable(payload: {

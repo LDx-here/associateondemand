@@ -11,6 +11,7 @@ import { MatterTasksPanel } from "@/components/MatterTasksPanel";
 import { ProceduralTimelinePanel } from "@/components/ProceduralTimelinePanel";
 import type {
   CalendarEvent,
+  Contact,
   DocumentRow,
   LegalElementRow,
   Matter,
@@ -73,6 +74,8 @@ export function MatterWorkbench({
   initialEvents = [],
   initialAssignments = [],
   initialAgentAlerts = [],
+  initialContacts = [],
+  allContacts = [],
   demoMode = false,
 }: {
   matter: Matter;
@@ -84,6 +87,8 @@ export function MatterWorkbench({
   initialEvents?: CalendarEvent[];
   initialAssignments?: InboxItem[];
   initialAgentAlerts?: InboxItem[];
+  initialContacts?: Contact[];
+  allContacts?: Contact[];
   demoMode?: boolean;
 }) {
   const [tab, setTab] = useState<Tab>(readInitialTabFromUrl);
@@ -280,6 +285,8 @@ export function MatterWorkbench({
           matter={matterHeader}
           documents={documents}
           events={events}
+          contacts={initialContacts}
+          allContacts={allContacts}
           demoMode={demoMode}
         />
       ) : null}

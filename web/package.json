@@ -21,7 +21,8 @@
     "test:intake-prefill": "tsx scripts/verify-intake-prefill.mjs",
     "test:stripe-pricing": "tsx scripts/verify-stripe-pricing.mjs",
     "test:stripe-webhook": "tsx scripts/verify-stripe-webhook.mjs",
-    "test:firm-knowledge": "tsx scripts/verify-firm-knowledge-for-matter.mjs"
+    "test:firm-knowledge": "tsx scripts/verify-firm-knowledge-for-matter.mjs",
+    "test:contacts": "tsx scripts/verify-contacts.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

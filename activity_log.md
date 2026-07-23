@@ -1,3 +1,5 @@
+### [2026-07-23] CHECKPOINT: pass 35 Contacts — list/add/link to matters; Airtable linked_matters; Overview Add client contact; test:contacts; next build; Vercel
+
 ### [2026-07-23] CHECKPOINT: pass 34 AOS Output Fix — PRESERVE Patel/Arai verbatim; FILL via paragraph library (no API default); certificate of service; selection menu /tools/aos-brief-builder; pytest 115; next build; Fly + Vercel
 
 ### [2026-07-22] CHECKPOINT: pass 33 AOS full Part 8.1/8.2 prompts + extended thinking — aos_system_prompt + section prompts; drafting primary aos_brief_generator; pytest 108; Fly API

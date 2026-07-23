@@ -19,6 +19,11 @@ import {
   listInboxItemsFromAirtable,
   listLegalElementsFromAirtable,
   listContactsFromAirtable,
+  getContactFromAirtable,
+  listContactsForMatterFromAirtable,
+  createContactInAirtable,
+  linkContactToMatterInAirtable,
+  unlinkContactFromMatterInAirtable,
   listMattersFromAirtable,
   getMatterFromAirtable,
   createMatterInAirtable,
@@ -119,9 +124,89 @@ export async function listMatters(): Promise<Matter[]> {
 
 export async function listContacts(): Promise<Contact[]> {
   if (isDemoMode()) {
-    return [];
+    return (await loadDemoSeed()).contacts ?? [];
   }
   return listContactsFromAirtable();
+}
+
+export async function getContact(contactId: string): Promise<Contact | null> {
+  if (isDemoMode()) {
+    const contacts = (await loadDemoSeed()).contacts ?? [];
+    return contacts.find((c) => c.id === contactId) ?? null;
+  }
+  return getContactFromAirtable(contactId);
+}
+
+export async function listContactsForMatter(matterId: string): Promise<Contact[]> {
+  if (isDemoMode()) {
+    const contacts = (await loadDemoSeed()).contacts ?? [];
+    return contacts.filter((c) => c.linkedMatterIds.includes(matterId));
+  }
+  return listContactsForMatterFromAirtable(matterId);
+}
+
+export async function createContact(payload: {
+  displayName: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  organization?: string;
+  notes?: string;
+  matterCode?: string;
+}): Promise<Contact> {
+  const displayName = payload.displayName.trim();
+  if (!displayName) throw new Error("displayName is required");
+
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    if (!seed.contacts) seed.contacts = [];
+    const contact: Contact = {
+      id: `recContact${Date.now()}`,
+      displayName,
+      role: payload.role ?? "Client",
+      email: payload.email ?? "",
+      phone: payload.phone ?? "",
+      organization: payload.organization ?? "",
+      notes: payload.notes ?? "",
+      linkedMatterIds: payload.matterCode ? [payload.matterCode] : [],
+    };
+    seed.contacts.push(contact);
+    await persistSeed();
+    return contact;
+  }
+  return createContactInAirtable({ ...payload, displayName });
+}
+
+export async function linkContactToMatter(
+  contactId: string,
+  matterCode: string,
+): Promise<Contact> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const contact = (seed.contacts ?? []).find((c) => c.id === contactId);
+    if (!contact) throw new Error("Contact not found");
+    if (!contact.linkedMatterIds.includes(matterCode)) {
+      contact.linkedMatterIds.push(matterCode);
+      await persistSeed();
+    }
+    return contact;
+  }
+  return linkContactToMatterInAirtable(contactId, matterCode);
+}
+
+export async function unlinkContactFromMatter(
+  contactId: string,
+  matterCode: string,
+): Promise<Contact> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const contact = (seed.contacts ?? []).find((c) => c.id === contactId);
+    if (!contact) throw new Error("Contact not found");
+    contact.linkedMatterIds = contact.linkedMatterIds.filter((id) => id !== matterCode);
+    await persistSeed();
+    return contact;
+  }
+  return unlinkContactFromMatterInAirtable(contactId, matterCode);
 }
 
 export async function createMatter(payload: {

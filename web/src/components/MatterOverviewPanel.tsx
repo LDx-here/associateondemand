@@ -3,20 +3,25 @@
 import { LayoutDashboard } from "lucide-react";
 
 import { CaseAssessmentSummary } from "@/components/CaseAssessmentSummary";
+import { MatterContactsPanel } from "@/components/MatterContactsPanel";
 import { MatterEventsPanel } from "@/components/MatterEventsPanel";
 import { TemplateApplyPanel } from "@/components/TemplateApplyPanel";
-import type { CalendarEvent, DocumentRow, Matter } from "@/lib/types";
+import type { CalendarEvent, Contact, DocumentRow, Matter } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
 export function MatterOverviewPanel({
   matter,
   documents,
   events,
+  contacts = [],
+  allContacts = [],
   demoMode,
 }: {
   matter: Matter;
   documents: DocumentRow[];
   events: CalendarEvent[];
+  contacts?: Contact[];
+  allContacts?: Contact[];
   demoMode?: boolean;
 }) {
   return (
@@ -57,6 +62,13 @@ export function MatterOverviewPanel({
         {matter.summary ? <p className="mt-3 text-sm text-slate-700">{matter.summary}</p> : null}
       </section>
 
+      <MatterContactsPanel
+        matterId={matter.matterId}
+        initialContacts={contacts}
+        allContacts={allContacts}
+        demoMode={demoMode}
+      />
+
       <CaseAssessmentSummary matter={matter} documents={documents} />
 
       <TemplateApplyPanel matter={matter} compact />
@@ -64,7 +76,11 @@ export function MatterOverviewPanel({
       {events.length > 0 ? (
         <section>
           <h3 className="mb-2 text-sm font-semibold text-slate-900">Upcoming calendar</h3>
-          <MatterEventsPanel matterId={matter.matterId} initialEvents={events} demoMode={demoMode ?? false} />
+          <MatterEventsPanel
+            matterId={matter.matterId}
+            initialEvents={events}
+            demoMode={demoMode ?? false}
+          />
         </section>
       ) : null}
     </div>

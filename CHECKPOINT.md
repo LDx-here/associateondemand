@@ -1,9 +1,11 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-23 (CDT) — Pass 34 AOS Output Fix: PRESERVE verbatim + library FILL  
+**Last updated:** 2026-07-23 (CDT) — Pass 35 Contacts: list/add/link to matters  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 35 (2026-07-23):** Contacts feature — Airtable `linked_matters` field; `/contacts` list + Add contact modal; contact detail with related matters; matter Overview Contacts panel (Add client contact / Link existing); demo seed contacts; APIs `POST/GET /api/contacts`, `PATCH /api/contacts/[id]` link/unlink. `npm run test:contacts`; next build; Vercel.
 
 **Pass 34 (2026-07-23):** AOS Output Fix (five fixes) — canonical PRESERVE legal standard / AOS mechanism / conclusion (Patel + Arai verbatim); FILL via `aos_paragraph_library.json` builders (default, no API); certificate of service; attorney selection menu at `/tools/aos-brief-builder`; optional LLM via `AOD_AOS_USE_API=1`. pytest 115; next build; Fly + Vercel. Runbook: `docs/runbooks/aos-output-library-fill.md`.
 
@@ -15,7 +17,7 @@
 
 **Pass 30 (2026-07-22):** Legal Elements auto-seed core Firm Knowledge by matter type (no Load button / applied badge); optional elements via dropdown; case-type change merge prompt. Firm Memory moved to `/firm-memory` + Settings (out of Templates). USCIS form autofill noted as future. `test:firm-knowledge`; pytest 81; next build; Vercel prod (web only).
 
-**Next:** Retest AOS draft on a matter (library FILL, no API) → confirm Legal Standard has Patel/Arai; Section A is library prose; open `/tools/aos-brief-builder`. Optional: set `AOD_AOS_USE_API=1` on Fly only if LLM FILL desired.
+**Next:** Add real client contacts from `/contacts` or matter Overview; confirm linked contacts appear on both sides. Optional: continue AOS draft retest (Pass 34 Next).
 
 **Pass 29 (2026-07-22):** Templates UX journey — architecture explainer moved to `/help#templates`; `/templates` browse by practice area + Cards/List; Open preview lands on Structure mapping (CREAC + feeds-from); Firm Memory collapsed. next build; smoke PASS.
 

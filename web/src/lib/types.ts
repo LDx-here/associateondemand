@@ -95,6 +95,21 @@ export type LegalElementRow = {
   supportingCases?: string;
 };
 
+/** Roles shown in add/edit contact UI (Airtable typecast accepts new choices). */
+export const CONTACT_ROLES = [
+  "Client",
+  "Co-Counsel",
+  "Opposing Counsel",
+  "Judge",
+  "Witness",
+  "Expert",
+  "Derivative",
+  "USCIS Officer",
+  "Other",
+] as const;
+
+export type ContactRole = (typeof CONTACT_ROLES)[number];
+
 export type Contact = {
   id: string;
   displayName: string;
@@ -103,6 +118,8 @@ export type Contact = {
   phone: string;
   organization: string;
   notes: string;
+  /** Linked matter codes (e.g. AOD-1001), resolved from Airtable record links. */
+  linkedMatterIds: string[];
 };
 
 export type DocumentRow = {
@@ -221,6 +238,7 @@ export type DevSeed = {
   legalElements: LegalElementRow[];
   documents: DocumentRow[];
   events: CalendarEvent[];
+  contacts?: Contact[];
   auditLog?: AuditLogEntry[];
   caseAssessments?: CaseAssessment[];
   inboxItems?: InboxItem[];

@@ -9,7 +9,9 @@
       "proceduralPosture": "Removal proceedings — master calendar",
       "fidelityScore": 72,
       "nextDeadline": "2026-06-01",
-      "vulnerabilityFlags": ["Missing Evidence"],
+      "vulnerabilityFlags": [
+        "Missing Evidence"
+      ],
       "assignedAttorney": "La'Dajia Ferguson",
       "summary": "Affirmative asylum pathway; country conditions memo pending."
     },
@@ -22,7 +24,9 @@
       "proceduralPosture": "EOIR — individual calendar",
       "fidelityScore": 58,
       "nextDeadline": "2026-05-28",
-      "vulnerabilityFlags": ["Approaching SOL"],
+      "vulnerabilityFlags": [
+        "Approaching SOL"
+      ],
       "assignedAttorney": "La'Dajia Ferguson",
       "summary": "Ten-year presence and exceptional hardship analysis started."
     },
@@ -141,7 +145,11 @@
       "agent": "Research Agent",
       "whatTried": "Loaded the Five-Anchors SKILL and gathered gov + practice-resource hits for Matter of A-B- progeny.",
       "whatNeeded": "Attorney to confirm whether the strategy memo should cite Niang v. Holder.",
-      "options": ["Approve", "Modify", "Defer"],
+      "options": [
+        "Approve",
+        "Modify",
+        "Defer"
+      ],
       "followUpSteps": [
         "Confirm Niang v. Holder citation in the research memo.",
         "Update Case Assessment Next Action if strategy changes."
@@ -159,7 +167,10 @@
       "agent": "Fact Extraction",
       "whatTried": "Extracted 14 facts from intake declaration; 4 anchored to corroborating documents.",
       "whatNeeded": "Attorney to review uncertain facts before strategy memo is finalized.",
-      "options": ["Approve", "Reject"],
+      "options": [
+        "Approve",
+        "Reject"
+      ],
       "followUpSteps": [
         "Spot-check the four uncertain facts against the declaration file.",
         "Add a correction note if any fact line must change."
@@ -172,7 +183,7 @@
     },
     {
       "id": "inbox-demo-3",
-      "title": "Research Memo \u2014 Research tier",
+      "title": "Research Memo — Research tier",
       "matterId": "AOD-1002",
       "agent": "PM Orchestrator",
       "whatTried": "Assignment submitted via intake form. Awaiting PM pickup.",
@@ -200,7 +211,7 @@
     },
     {
       "id": "inbox-demo-4",
-      "title": "Cover Letter \u2014 Template tier",
+      "title": "Cover Letter — Template tier",
       "matterId": "AOD-1001",
       "agent": "PM Orchestrator",
       "whatTried": "Assignment submitted via intake form. Drafting agent filled the firm cover letter template from the facts packet.",
@@ -234,7 +245,7 @@
     },
     {
       "id": "inbox-demo-5",
-      "title": "AOS Discretionary Brief \u2014 Template tier",
+      "title": "AOS Discretionary Brief — Template tier",
       "matterId": "AOD-1003",
       "agent": "PM Orchestrator",
       "whatTried": "AOS discretionary factors workbook completed; drafting agent produced a first-pass brief for attorney sign-off.",
@@ -270,6 +281,44 @@
           "at": "2026-06-14T09:15:00Z",
           "by": "PM Orchestrator"
         }
+      ]
+    }
+  ],
+  "contacts": [
+    {
+      "id": "recContactDemo1",
+      "displayName": "Sample Client A",
+      "role": "Client",
+      "email": "client.a@example.com",
+      "phone": "555-0101",
+      "organization": "",
+      "notes": "Primary client for AOD-1001",
+      "linkedMatterIds": [
+        "AOD-1001"
+      ]
+    },
+    {
+      "id": "recContactDemo2",
+      "displayName": "Jordan Lee",
+      "role": "Co-Counsel",
+      "email": "jlee@example-law.com",
+      "phone": "555-0199",
+      "organization": "Lee & Associates",
+      "notes": "",
+      "linkedMatterIds": [
+        "AOD-1001"
+      ]
+    },
+    {
+      "id": "recContactDemo3",
+      "displayName": "Sample Client B",
+      "role": "Client",
+      "email": "client.b@example.com",
+      "phone": "555-0102",
+      "organization": "",
+      "notes": "",
+      "linkedMatterIds": [
+        "AOD-1002"
       ]
     }
   ]

@@ -6,6 +6,8 @@ import {
   getMatterByCode,
   listAgentAlertsForMatter,
   listAssignmentsForMatter,
+  listContacts,
+  listContactsForMatter,
   listDocumentsForMatter,
   listEventsForMatter,
   listLegalElements,
@@ -21,8 +23,18 @@ export default async function MatterDetailPage({ params }: Props) {
   const matter = await getMatterByCode(id);
   if (!matter) notFound();
 
-  const [tasks, notes, elements, timeline, documents, events, assignments, agentAlerts] =
-    await Promise.all([
+  const [
+    tasks,
+    notes,
+    elements,
+    timeline,
+    documents,
+    events,
+    assignments,
+    agentAlerts,
+    contacts,
+    allContacts,
+  ] = await Promise.all([
     listTasksForMatter(matter.matterId),
     listNotesForMatter(matter.matterId),
     listLegalElements(matter.matterId),
@@ -31,6 +43,8 @@ export default async function MatterDetailPage({ params }: Props) {
     listEventsForMatter(matter.matterId),
     listAssignmentsForMatter(matter.matterId),
     listAgentAlertsForMatter(matter.matterId),
+    listContactsForMatter(matter.matterId),
+    listContacts(),
   ]);
 
   const demo = isDemoMode();
@@ -47,6 +61,8 @@ export default async function MatterDetailPage({ params }: Props) {
       initialEvents={events}
       initialAssignments={assignments}
       initialAgentAlerts={agentAlerts}
+      initialContacts={contacts}
+      allContacts={allContacts}
     />
   );
 }
