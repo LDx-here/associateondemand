@@ -83,7 +83,8 @@ export function KnowledgeMapShell({ firmKnowledge }: { firmKnowledge: KnowledgeM
         <section id="patterns" aria-label="Pattern knowledge graph" className="space-y-2">
           <p className="text-sm text-slate-600">
             Force-directed graph of matters linked to relief types and jurisdictions (Qdrant-backed when
-            available). Click a node for details.
+            available). Scroll to zoom, drag the background to pan, or use Fit to view so every node is
+            visible. Click a node for details.
           </p>
           <KnowledgeMapGraph />
         </section>
