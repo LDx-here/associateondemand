@@ -100,6 +100,10 @@ def flatten_facts_for_slots(facts: dict[str, Any]) -> dict[str, str]:
         "employment_summary",
         "professional_care_specifics",
         "service_summary",
+        "service_years",
+        "years_in_us",
+        "credential_years",
+        "credential_details",
         "religious_community",
         "applicant_age",
         "age",
@@ -165,21 +169,117 @@ def flatten_facts_for_slots(facts: dict[str, Any]) -> dict[str, str]:
     return result
 
 
+# Narrative/color slots that are safe to omit when no fact is supplied. When empty
+# they render as nothing (surrounding whitespace is cleaned) instead of a visible
+# "[SLOT — required]" bracket, which keeps the filing clean and lets Section A dedupe
+# an already-stated care sentence.
+_OPTIONAL_SLOTS = frozenset(
+    {
+        "care_specifics",
+        "professional_care_specifics",
+        "care_description",
+        "credential_details",
+    }
+)
+
+_SENTENCE_END = (".", "!", "?")
+
+
+def _capitalize_first(text: str) -> str:
+    """Capitalize the first alphabetic character of a slot value."""
+    for i, ch in enumerate(text):
+        if ch.isalpha():
+            return text[:i] + ch.upper() + text[i + 1:]
+        if not ch.isspace():
+            # Leading non-letter (quote, bracket, digit) — leave value as-is.
+            return text
+    return text
+
+
+def _starts_sentence(prefix: str) -> bool:
+    """True when the already-rendered text ends a sentence (or is empty/newline)."""
+    if not prefix:
+        return True
+    stripped = prefix.rstrip()
+    if not stripped:
+        return True
+    # A newline between the last visible character and this slot = new line/paragraph.
+    if "\n" in prefix[len(stripped):]:
+        return True
+    return stripped[-1] in _SENTENCE_END
+
+
 def substitute_slots(template_text: str, facts: dict[str, Any]) -> str:
-    """Replace ##SLOT## markers with values from facts."""
+    """Replace ##SLOT## markers with values from facts.
+
+    A resolved value is capitalized when it begins a sentence (start of text, after a
+    newline, or after sentence-ending punctuation) so pronoun slots such as
+    ##APPLICANT_PRONOUN_SUBJECT## render "She"/"Her" at sentence start. Sentence-start
+    detection uses the text rendered so far, so it works even when a pronoun slot
+    directly follows another slot whose value ends a sentence.
+    """
     flat = flatten_facts_for_slots(facts)
-    result = template_text or ""
-    for match in re.finditer(r"##([A-Z0-9_]+)##", template_text or ""):
+    text = template_text or ""
+    out: list[str] = []
+    last = 0
+    dropped_optional = False
+    for match in re.finditer(r"##([A-Z0-9_]+)##", text):
+        out.append(text[last:match.start()])
+        last = match.end()
         key = match.group(1).lower()
         value = flat.get(key)
         if value is None or not str(value).strip():
             # Also try without applicant_ prefix for builder-injected keys
             value = flat.get(key.replace("applicant_", ""))
         if value is not None and str(value).strip():
-            result = result.replace(match.group(0), str(value))
+            rendered = str(value)
+            if _starts_sentence("".join(out)):
+                rendered = _capitalize_first(rendered)
+            out.append(rendered)
+        elif key in _OPTIONAL_SLOTS:
+            dropped_optional = True
         else:
-            result = result.replace(match.group(0), f"[{match.group(1)} — required]")
+            out.append(f"[{match.group(1)} — required]")
+    out.append(text[last:])
+    result = "".join(out)
+    if dropped_optional:
+        # Clean whitespace left by an omitted optional slot (never touches newlines,
+        # so signature-block indentation elsewhere is preserved).
+        result = re.sub(r"[ \t]{2,}", " ", result)
+        result = re.sub(r"[ \t]+([.,;:])", r"\1", result)
     return result
+
+
+def _as_sentence(text: str) -> str:
+    """Ensure a narrative fragment ends with sentence-terminating punctuation."""
+    t = (text or "").strip()
+    if not t:
+        return ""
+    if t[-1] not in _SENTENCE_END:
+        t += "."
+    return t
+
+
+def _same_sentence(a: str, b: str) -> bool:
+    """True when two narrative fragments are the same prose (ignoring case/terminal punct)."""
+    def _norm(s: str) -> str:
+        return re.sub(r"\s+", " ", (s or "").strip().lower()).rstrip(".!?")
+
+    na, nb = _norm(a), _norm(b)
+    return bool(na) and na == nb
+
+
+def _join_list_as_sentences(items: list[str]) -> str:
+    """Join list entries into filing-clean sentences (period + space between items)."""
+    parts: list[str] = []
+    for i, raw in enumerate(items):
+        t = str(raw or "").strip()
+        if not t:
+            continue
+        if i > 0:
+            t = _capitalize_first(t)
+        parts.append(_as_sentence(t))
+    return " ".join(parts)
 
 
 def _case_root(facts: dict[str, Any]) -> dict[str, Any]:
@@ -481,12 +581,61 @@ def build_primary_equity(facts: dict[str, Any], library: dict[str, Any] | None =
     extra_app["dependent_condition"] = primary_member.get("quality_description") or "a documented condition"
     extra_app["dependent_dependence"] = primary_member.get("dependence") or "documented daily dependence"
     extra_app["care_description"] = family.get("quality_notes") or root.get("section_a_facts") or "[daily care description]"
-    extra_app["care_specifics"] = root.get("section_a_facts") or family.get("quality_notes") or ""
-    extra_app["care_years"] = extra_app.get("care_years") or "several"
+    extra_app["care_years"] = extra_app.get("care_years") or root.get("care_years") or "several"
+    extra_app["dependent_age"] = (
+        extra_app.get("dependent_age")
+        or primary_member.get("age")
+        or root.get("dependent_age")
+        or ""
+    )
     extra_app["dependent_pronoun_object"] = "them"
     extra_app["dependent_pronoun_possessive"] = "their"
-    extra_app["credential"] = extra_app.get("credential") or "licensed professional"
-    extra_app["professional_care_specifics"] = root.get("section_a_facts") or ""
+    extra_app["credential"] = extra_app.get("credential") or root.get("credential") or "licensed professional"
+
+    # Dual-angle Section A variants (e.g. caregiver_autistic_dependent.v3) use both
+    # ##PROFESSIONAL_CARE_SPECIFICS## (clinical/professional framing) and ##CARE_SPECIFICS##
+    # (attachment/relationship framing). Keep them distinct so the same sentence cannot
+    # render twice; if only one narrative exists, omit the second (optional slot).
+    has_prof_slot = "##PROFESSIONAL_CARE_SPECIFICS##" in (para or "")
+    has_care_slot = "##CARE_SPECIFICS##" in (para or "")
+    clinical = (
+        root.get("professional_care_specifics")
+        or extra_app.get("professional_care_specifics")
+        or root.get("section_a_facts")
+        or ""
+    )
+    attachment = (
+        root.get("care_specifics")
+        or extra_app.get("care_specifics")
+        or family.get("quality_notes")
+        or ""
+    )
+    if has_prof_slot and has_care_slot:
+        if clinical:
+            professional = _as_sentence(str(clinical))
+            # Attachment/relationship framing only when it is not the same sentence.
+            if attachment and not _same_sentence(str(attachment), str(clinical)):
+                care = _as_sentence(str(attachment))
+            else:
+                care = ""
+        elif attachment:
+            # Only one narrative available — place it once (first slot), never twice.
+            professional = _as_sentence(str(attachment))
+            care = ""
+        else:
+            professional = ""
+            care = ""
+        extra_app["professional_care_specifics"] = professional
+        extra_app["care_specifics"] = care
+    else:
+        # Single-slot variants: prefer the richest available narrative.
+        single = clinical or attachment or ""
+        filled = _as_sentence(str(single)) if single else ""
+        if has_prof_slot:
+            extra_app["professional_care_specifics"] = filled
+        if has_care_slot:
+            extra_app["care_specifics"] = filled
+
     extra_cf["applicant"] = extra_app
     extra["case_facts"] = extra_cf
 
@@ -550,7 +699,21 @@ def build_secondary_equities(facts: dict[str, Any], library: dict[str, Any] | No
         extra_app = dict(app)
         extra_app["credential_summary"] = cred_str or emp_str or root.get("section_b_facts") or "[credentials]"
         extra_app["employment_summary"] = emp_str or root.get("section_b_facts") or "[employment history]"
-        extra_app["credential"] = cred_str or "professional credentials"
+        # Prefer a short credential title for "licensed ##CREDENTIAL##" prose.
+        short_cred = (
+            app.get("credential")
+            or root.get("credential")
+            or (cred_list[0].get("credential") if isinstance(cred_list, list) and cred_list and isinstance(cred_list[0], dict) else "")
+            or cred_str
+            or "professional"
+        )
+        extra_app["credential"] = short_cred
+        extra_app["credential_years"] = (
+            app.get("credential_years") or root.get("credential_years") or ""
+        )
+        details = app.get("credential_details") or root.get("credential_details") or ""
+        extra_app["credential_details"] = _as_sentence(str(details)) if details else ""
+        extra_app["years_in_us"] = app.get("years_in_us") or root.get("years_in_us") or ""
         extra_cf["applicant"] = extra_app
         extra["case_facts"] = extra_cf
         if para:
@@ -560,20 +723,28 @@ def build_secondary_equities(facts: dict[str, Any], library: dict[str, Any] | No
         svc = comm.get("service_activities") or []
         rel = comm.get("religious_community") or ""
         if isinstance(svc, list) and svc and isinstance(svc[0], dict):
-            svc_str = "; ".join(
-                f"{s.get('role', '')} with {s.get('organization', '')}".strip()
+            svc_items = [
+                f"{s.get('role', '')} with {s.get('organization', '')}".strip(" ,;")
                 for s in svc
-                if isinstance(s, dict)
-            )
+                if isinstance(s, dict) and (s.get("role") or s.get("organization"))
+            ]
+            svc_str = _join_list_as_sentences(svc_items)
         elif isinstance(svc, list):
-            svc_str = "; ".join(str(s) for s in svc if s)
+            svc_str = _join_list_as_sentences([str(s) for s in svc if s])
         else:
-            svc_str = str(svc or "")
+            svc_str = _as_sentence(str(svc or ""))
+        if not svc_str and root.get("section_b_facts"):
+            svc_str = _as_sentence(str(root.get("section_b_facts")))
         para = _get_variant_paragraph(lib, "equity", "community_service", variant_id="v1")
         extra = dict(facts)
         extra_cf = dict(root)
         extra_app = dict(app)
-        extra_app["service_summary"] = svc_str or root.get("section_b_facts") or "[community service activities]"
+        extra_app["service_summary"] = svc_str or "[community service activities]"
+        extra_app["service_years"] = (
+            extra_app.get("service_years")
+            or root.get("service_years")
+            or ""
+        )
         extra_app["religious_community"] = str(rel or "")
         extra_cf["applicant"] = extra_app
         extra["case_facts"] = extra_cf

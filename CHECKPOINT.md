@@ -561,6 +561,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **AOS prose polish (2026-07-24):** Filing-clean library FILL — sentence-start pronoun capitalization; Section A v3 care-slot dedupe (professional vs attachment); community-service list punctuation; Maria Elena sample 0 errors/0 warnings; pytest 115; Fly API.
 - **Pass 34 (2026-07-23):** AOS Output Fix — PRESERVE Patel/Arai verbatim; FILL via paragraph library (default no API); certificate of service; `/tools/aos-brief-builder` selection menu; pytest 115; next build; Fly + Vercel. Runbook: `docs/runbooks/aos-output-library-fill.md`.
 - **Pass 27 (2026-07-22):** Firm Knowledge → matters intelligence — Legal Elements load/merge from knowledge map by case type; needed-facts Present/Needed; Memory vs Knowledge UX; filtered knowledge-map deep links; matter badge. Verified: `test:firm-knowledge`, pytest 77, next build.
 - **Pass 21 (2026-07-21):** UX — removed left sidebar; top header nav + More dropdown; mobile hamburger; `/help` site guide (dashboard + Settings links); full-width main content; Associate panel unchanged. Verified: pytest (53), next build, smoke-production PASS.
