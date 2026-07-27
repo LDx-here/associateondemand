@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-27 (CDT) — Pass 45: Dashboard warning for filing deadlines missing a date  
+**Last updated:** 2026-07-27 (CDT) — Pass 46: Filing-deadline tasks now show on the Calendar page  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -8,6 +8,12 @@
 **Overnight continuation agent active (2026-07-26/27 night):** running `docs/runbooks/continuation-agent.md` protocol via Claude Code `/loop`, self-paced, session-bound. **Direction from La'Dajia (2026-07-27):** full move to Google Sheets, Airtable retired as the operational backend — but its code stays in place, dormant (not deleted), specifically so we can compare in the morning and decide file-by-file whether to keep, roll back to, or actually remove it. Also: for major/permission-worthy calls, ask in the response text but don't block the loop on an answer — if no reply within a few minutes, proceed with the safer default and flag it in CHECKPOINT.
 
 **Note — Cursor was also running its own agent on this repo simultaneously for part of the night** (commits `c304c7c` Google Sheets connected on Vercel, `209a0bd`/`89b64eb`/`ec9d708` SSR-crash fixes). One real collision: a `vercel deploy --prod` from this loop caught `data-store.ts` mid-edit by Cursor's agent and failed the build (safely — Vercel deploys are atomic, production was never affected). La'Dajia paused Cursor and told this loop to continue solo. If Cursor reappears mid-pass, this loop's protocol is to stand down again rather than fight over the same files.
+
+**Pass 46 (2026-07-27, continuation agent pass 7):** The Calendar page's own subtitle promises "hearings, filing deadlines, and internal deadlines" but it only ever read the Events table — filing-deadline Tasks (even dated ones, after Pass 44's fix) never actually appeared there. `calendar/page.tsx` now also fetches `listAllTasks()`, filters to incomplete `isFilingDeadline` tasks with a due date, maps them into the same `CalendarEntry` shape (type "Filing Deadline", synthetic `task-<id>` ids to avoid collision with real Event ids), and merges both lists into `CalendarBoard`. Confirmed safe first — `CalendarBoard`'s entry-detail view is read-only (links to the matter, no edit/delete tied to `entry.id`), so the synthetic ids can't trigger a broken mutating action.
+
+**Bug found + fixed while verifying:** `createTaskForMatter`'s demo-mode branch pushed to `seed.tasks` but never called `persistSeed()` — a pre-existing bug (not introduced this session), unrelated to the calendar work but discovered because it was making Calendar verification look broken. In demo/local mode, any task created this way was lost the moment the dev server's module cache reset (Fast Refresh), which likely explains some of the confusing test-data behavior noted in earlier passes tonight too. Production is unaffected — this only fires in demo mode (`isDemoMode()`), never against real Airtable/Sheets. Fixed with the same `persistSeed()` call already used everywhere else in this file.
+
+pytest 118; next build; Fly + Vercel. Verified live: created a filing-deadline task, gave it a date, confirmed it renders on `/calendar`.
 
 **Pass 45 (2026-07-27, continuation agent pass 6):** Direct follow-on to Pass 44 — `filingDeadlinesMissingDate()` counts incomplete filing-deadline tasks with no due date (invisible to Upcoming Deadlines/Calendar by construction); dashboard now shows a firm-wide rose-colored warning line next to the existing "N filing deadlines in the next 14 days" summary, so the attorney doesn't have to open every matter's Tasks tab to find the ones still missing a date. Small, additive, low-risk — code-reviewed + type-checked + built rather than a full live-browser round-trip, per the resource-conservation note below. pytest 118; next build; Fly + Vercel.
 
@@ -30,6 +36,8 @@
 **Pass 39 (2026-07-26):** Matter lifecycle automation — Clio-Manage-style stages (Intake → Active → Filed/Awaiting Decision → Resolution → Closed) finished the Tasks-on-Google-Sheets migration slice and made stage moves auto-fire that stage's task checklist (idempotent via `createdFrom` tags). Real events now drive stage automatically: new matter seeds Intake tasks immediately; first assignment submitted nudges Intake→Active; exporting an approved deliverable nudges Active→Filed/Awaiting Decision; closing a matter forces Closed from any stage; reopening resumes Active. Commits `2a152e6`, `cb49671`. pytest 118; next build; Fly + Vercel.
 
 **Next:** Document/OCR-pipeline Sheets migration needs a joint look (Python/Fly side) — see flagged item above. Also still open: `ANTHROPIC_API_KEY` on Fly for smart AOS extract; pilot: New matter → paste facts → save → dispatch AOS brief.
+
+**Discussed tonight, not built — real candidates for a future pass:** Google Calendar sync (Events schema already has unused `calendar_synced`/`google_calendar_id` columns anticipating this; needs La'Dajia to set up a Google Cloud OAuth app first — her personal calendar, not multi-user, matches the internal-first framing). General external-app integrations (e-signature, Slack, etc.) follow the same optional-API-key pattern already used for Anthropic/Midpage/Fastcase/Stripe/Resend — not phase-gated, just not built yet. Only Clio/Needles-style *competing platform* integrations are actually locked per `LEGAL_BOUNDARIES.md`.
 
 ## Awaiting approval (overnight side branches)
 

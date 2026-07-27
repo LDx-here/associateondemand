@@ -778,6 +778,8 @@ export async function createTaskForMatter(
       createdFrom: payload.createdFrom,
     };
     seed.tasks.push(task);
+    const { persistSeed } = await import("./demo-store-mutable");
+    await persistSeed();
     return task;
   }
   return tasksBackend().create(matterId, payload);

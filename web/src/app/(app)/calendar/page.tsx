@@ -1,4 +1,4 @@
-import { listAllEvents, listMatters, isDemoMode } from "@/lib/data-store";
+import { listAllEvents, listAllTasks, listMatters, isDemoMode } from "@/lib/data-store";
 import { CalendarBoard, type CalendarEntry } from "@/components/CalendarBoard";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export default async function CalendarPage({
     ? parseMonthParam(sp.month, now)
     : new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [matters, rawEvents] = await Promise.all([listMatters(), listAllEvents()]);
+  const [matters, rawEvents, allTasks] = await Promise.all([listMatters(), listAllEvents(), listAllTasks()]);
   const matterIndex = new Map(matters.map((m) => [m.id, m]));
   const events: CalendarEntry[] = rawEvents.map((e) => ({
     id: e.id,
@@ -31,6 +31,24 @@ export default async function CalendarPage({
     calendarSynced: e.calendarSynced,
   }));
 
+  // Filing-deadline tasks (matter-lifecycle automation + manual) are a
+  // separate data source from Events and never appeared here before,
+  // despite the page's own subtitle promising filing deadlines.
+  const filingDeadlineTasks: CalendarEntry[] = allTasks
+    .filter((t) => t.isFilingDeadline && t.dueDate && t.status !== "Done")
+    .map((t) => ({
+      id: `task-${t.id}`,
+      matterCode: t.matterId,
+      matterRecordId: t.matterId || null,
+      type: "Filing Deadline",
+      date: t.dueDate as string,
+      time: "",
+      summary: t.description,
+      description: "",
+      location: "",
+      calendarSynced: false,
+    }));
+
   return (
     <div className="space-y-6">
       <header>
@@ -41,7 +59,7 @@ export default async function CalendarPage({
       </header>
 
       <CalendarBoard
-        events={events}
+        events={[...events, ...filingDeadlineTasks]}
         matters={matters.map((m) => ({ id: m.id, matterId: m.matterId }))}
         monthStartIso={isoDate(monthStart)}
         demoMode={demo}
