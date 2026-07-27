@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-26 (CDT) — Pass 40 Record-decision action closes the lifecycle loop  
+**Last updated:** 2026-07-27 (CDT) — Prod SSR fix: Google Sheets mode skips Airtable 429 crashes  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -573,6 +573,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Prod SSR fix (2026-07-27):** Google Sheets primary mode no longer calls Airtable for unmigrated tables (Documents, Legal Elements, PM Inbox, Contacts, …) — empty degrade instead of 429 crash. Restored Airtable quota fallback regardless of `DATA_STORE`. Fixed digests 1798507080, 978696406, 693593980 on `/matters/[id]`, `/inbox`, `/dashboard`. next build; Vercel prod.
 - **Google Sheets production (2026-07-27):** Firm spreadsheet + service account on Vercel (`DATA_STORE=google_sheets`); prod deploy https://aod-next.vercel.app; `/api/health` reports `demoMode: false`.
 - **Pass 38 (2026-07-26):** Real client path + AOS intelligence — paste summary extract (LLM + heuristic), scorecard follow-ups, prior-matter fact templates, Google Sheets skills; pytest 118; test:aos-intelligence.
 - **AOS prose polish (2026-07-24):** Filing-clean library FILL — sentence-start pronoun capitalization; Section A v3 care-slot dedupe (professional vs attachment); community-service list punctuation; Maria Elena sample 0 errors/0 warnings; pytest 115; Fly API.
@@ -609,10 +610,10 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Connect Google Sheets on Vercel** — `GOOGLE_SHEETS_SPREADSHEET_ID` + service account JSON; runbook: `docs/runbooks/google-sheets-setup.md`. Removes Airtable quota / sample-data fallback.
-2. **Pilot real client AOS** — New matter → matter Documents/fact guide → paste summary → Extract facts → answer scorecard → Save facts → pick library variants → dispatch `aos-discretionary-brief`.
+1. **Pilot real client AOS on prod** — New matter in Google Sheets → paste summary → Extract facts → Save → dispatch `aos-discretionary-brief`.
+2. **Phase 2 Sheets migration** — PM Inbox, Documents, Legal Elements, Contacts tabs (currently empty degrade on Sheets).
 3. **Optional smart extract** — `fly secrets set ANTHROPIC_API_KEY=... -a associateondemand-api` (heuristic extract works without it).
-4. **Retest AOS variant flow on prod** — `/templates` → AOS → Draft with variants → confirm library prose in draft.
+4. **Retest lifecycle on prod** — matter Tasks tab → stage PATCH → Record decision on Filed/Awaiting Decision matters.
 5. **Share site guide** — https://aod-next.vercel.app/help
 
 ## Blockers

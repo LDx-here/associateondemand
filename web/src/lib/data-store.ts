@@ -44,6 +44,7 @@ import {
 } from "./airtable/queries";
 import { isAirtableQuotaError } from "./airtable/client";
 import { isDemoMode, usesGoogleSheets } from "./data-store-config";
+import { isGoogleSheetsReadError } from "./google-sheets/client";
 import {
   completeTaskInGoogleSheets,
   createMatterInGoogleSheets,
@@ -220,7 +221,7 @@ async function withSampleFallback<T>(
   try {
     return await liveFn();
   } catch (error) {
-    if (!usesGoogleSheets() && isAirtableQuotaError(error)) {
+    if (isAirtableQuotaError(error)) {
       quotaFallbackActive = true;
       console.warn("[AOD] Airtable quota exceeded — serving bundled sample data.");
       return demoFn();
@@ -229,44 +230,75 @@ async function withSampleFallback<T>(
   }
 }
 
-async function readStore<T>(demoFn: () => Promise<T>, airtableFn: () => Promise<T>): Promise<T> {
+/** Matters / Notes / Tasks — primary backend (Google Sheets or Airtable). */
+async function readPrimary<T>(demoFn: () => Promise<T>, liveFn: () => Promise<T>): Promise<T> {
   if (isDemoMode()) return demoFn();
-  return withSampleFallback(demoFn, airtableFn);
+  try {
+    return await liveFn();
+  } catch (error) {
+    if (isAirtableQuotaError(error)) {
+      quotaFallbackActive = true;
+      console.warn("[AOD] Airtable quota exceeded — serving bundled sample data.");
+      return demoFn();
+    }
+    if (usesGoogleSheets() && isGoogleSheetsReadError(error)) {
+      console.warn("[AOD] Google Sheets read failed — serving empty/sample fallback.");
+      return demoFn();
+    }
+    throw error;
+  }
+}
+
+/**
+ * Tables not yet migrated to Google Sheets (Documents, Legal Elements, PM Inbox, …).
+ * When Sheets is primary, skip Airtable entirely so quota errors cannot crash SSR.
+ */
+async function readAirtableLegacy<T>(opts: {
+  demoFn: () => Promise<T>;
+  airtableFn: () => Promise<T>;
+  sheetsFallback: () => T;
+}): Promise<T> {
+  if (isDemoMode()) return opts.demoFn();
+  if (usesGoogleSheets()) return opts.sheetsFallback();
+  return withSampleFallback(opts.demoFn, opts.airtableFn);
 }
 
 export async function listMatters(): Promise<Matter[]> {
   const backend = mattersBackend();
-  return readStore(
+  return readPrimary(
     async () => (await loadDemoSeed()).matters,
     () => backend.list(),
   );
 }
 
 export async function listContacts(): Promise<Contact[]> {
-  return readStore(
-    async () => (await loadDemoSeed()).contacts ?? [],
-    () => listContactsFromAirtable(),
-  );
+  return readAirtableLegacy({
+    demoFn: async () => (await loadDemoSeed()).contacts ?? [],
+    airtableFn: () => listContactsFromAirtable(),
+    sheetsFallback: () => [],
+  });
 }
 
 export async function getContact(contactId: string): Promise<Contact | null> {
-  return readStore(
-    async () => {
+  return readAirtableLegacy({
+    demoFn: async () => {
       const contacts = (await loadDemoSeed()).contacts ?? [];
       return contacts.find((c) => c.id === contactId) ?? null;
     },
-    () => getContactFromAirtable(contactId),
-  );
+    airtableFn: () => getContactFromAirtable(contactId),
+    sheetsFallback: () => null,
+  });
 }
 
 export async function listContactsForMatter(matterId: string): Promise<Contact[]> {
-  return readStore(
-    async () => {
+  return readAirtableLegacy({
+    demoFn: async () => {
       const contacts = (await loadDemoSeed()).contacts ?? [];
       return contacts.filter((c) => c.linkedMatterIds.includes(matterId));
     },
-    () => listContactsForMatterFromAirtable(matterId),
-  );
+    airtableFn: () => listContactsForMatterFromAirtable(matterId),
+    sheetsFallback: () => [],
+  });
 }
 
 export async function createContact(payload: {
@@ -415,7 +447,7 @@ export async function ensureFirmTemplateMatter(): Promise<Matter> {
 }
 
 export async function getMatterByCode(matterId: string): Promise<Matter | null> {
-  return readStore(
+  return readPrimary(
     async () => {
       const matters = (await loadDemoSeed()).matters;
       return matters.find((m) => m.matterId === matterId || m.id === matterId) ?? null;
@@ -425,7 +457,7 @@ export async function getMatterByCode(matterId: string): Promise<Matter | null> 
 }
 
 export async function listTasksForMatter(matterId: string): Promise<Task[]> {
-  return readStore(
+  return readPrimary(
     async () => {
       const seed = await loadDemoSeed();
       return seed.tasks.filter((t) => t.matterId === matterId);
@@ -435,21 +467,21 @@ export async function listTasksForMatter(matterId: string): Promise<Task[]> {
 }
 
 export async function listAllTasks(): Promise<Task[]> {
-  return readStore(
+  return readPrimary(
     async () => (await loadDemoSeed()).tasks,
     () => tasksBackend().listAll(),
   );
 }
 
 export async function listAllNotes(): Promise<Note[]> {
-  return readStore(
+  return readPrimary(
     async () => (await loadDemoSeed()).notes,
     () => notesBackend().listAll(),
   );
 }
 
 export async function listNotesForMatter(matterId: string): Promise<Note[]> {
-  return readStore(
+  return readPrimary(
     async () => {
       const seed = await loadDemoSeed();
       return seed.notes.filter((n) => n.matterId === matterId);
@@ -459,28 +491,30 @@ export async function listNotesForMatter(matterId: string): Promise<Note[]> {
 }
 
 export async function listLegalElements(matterId: string): Promise<LegalElementRow[]> {
-  return readStore(
-    async () => {
+  return readAirtableLegacy({
+    demoFn: async () => {
       const seed = await loadDemoSeed();
       return seed.legalElements.filter((e) => e.matterId === matterId);
     },
-    () => listLegalElementsFromAirtable(matterId),
-  );
+    airtableFn: () => listLegalElementsFromAirtable(matterId),
+    sheetsFallback: () => [],
+  });
 }
 
 export async function listEventsForMatter(matterId: string) {
-  return readStore(
-    async () => {
+  return readAirtableLegacy({
+    demoFn: async () => {
       const seed = await loadDemoSeed();
       return seed.events.filter((e) => e.matterId === matterId);
     },
-    () => listEventsForMatterFromAirtable(matterId),
-  );
+    airtableFn: () => listEventsForMatterFromAirtable(matterId),
+    sheetsFallback: () => [],
+  });
 }
 
 export async function listDocumentsForMatter(matterId: string): Promise<DocumentRow[]> {
-  return readStore(
-    async () => {
+  return readAirtableLegacy({
+    demoFn: async () => {
       const seed = await loadDemoSeed();
       return seed.documents.filter(
         (d) =>
@@ -490,19 +524,21 @@ export async function listDocumentsForMatter(matterId: string): Promise<Document
           !isDeliverableTemplateDocument(d),
       );
     },
-    () => listDocumentsFromAirtable(matterId),
-  );
+    airtableFn: () => listDocumentsFromAirtable(matterId),
+    sheetsFallback: () => [],
+  });
 }
 
 export async function getCaseAssessment(matterId: string): Promise<CaseAssessment> {
-  return readStore(
-    async () => {
+  return readAirtableLegacy({
+    demoFn: async () => {
       const seed = await loadDemoSeed();
       const stored = seed.caseAssessments?.find((c) => c.matterId === matterId);
       return stored ?? emptyCaseAssessment(matterId);
     },
-    () => getCaseAssessmentFromAirtable(matterId),
-  );
+    airtableFn: () => getCaseAssessmentFromAirtable(matterId),
+    sheetsFallback: () => emptyCaseAssessment(matterId),
+  });
 }
 
 export async function saveCaseAssessment(matterId: string, assessment: CaseAssessment): Promise<CaseAssessment> {
@@ -634,9 +670,14 @@ export async function getDraftingFactsForMatter(matterId: string): Promise<Draft
     if (!note) return null;
     return parseDraftingFactsNote(note.content, matterId, caseType);
   }
-  const note = await notesBackend().findFacts(matterId);
-  if (!note) return null;
-  return parseDraftingFactsNote(note.content, matterId, caseType);
+  try {
+    const note = await notesBackend().findFacts(matterId);
+    if (!note) return null;
+    return parseDraftingFactsNote(note.content, matterId, caseType);
+  } catch (error) {
+    console.warn(`[AOD] drafting facts read failed for ${matterId}:`, error);
+    return null;
+  }
 }
 
 export async function saveDraftingFactsForMatter(
@@ -695,9 +736,14 @@ export async function getProceduralTimelineForMatter(
     if (!note) return emptyProceduralTimeline(matterId);
     return parseProceduralTimeline(note.content, matterId) ?? emptyProceduralTimeline(matterId);
   }
-  const note = await notesBackend().findProcedural(matterId);
-  if (!note) return emptyProceduralTimeline(matterId);
-  return parseProceduralTimeline(note.content, matterId) ?? emptyProceduralTimeline(matterId);
+  try {
+    const note = await notesBackend().findProcedural(matterId);
+    if (!note) return emptyProceduralTimeline(matterId);
+    return parseProceduralTimeline(note.content, matterId) ?? emptyProceduralTimeline(matterId);
+  } catch (error) {
+    console.warn(`[AOD] procedural timeline read failed for ${matterId}:`, error);
+    return emptyProceduralTimeline(matterId);
+  }
 }
 
 export async function saveProceduralTimelineForMatter(
@@ -977,6 +1023,7 @@ const OPEN_INBOX_STATUSES = new Set(["Pending", "Submitted", "In progress", "Rea
 
 export async function listInboxItems(): Promise<InboxItem[]> {
   if (isDemoMode()) return listInboxItemsDemo();
+  if (usesGoogleSheets()) return [];
   return withSampleFallback(() => listInboxItemsDemo(), () => listInboxItemsFromAirtable());
 }
 
@@ -1017,6 +1064,7 @@ export async function createAssignment(payload: {
 
 export async function getInboxItemById(itemId: string): Promise<InboxItem | null> {
   if (isDemoMode()) return getInboxItemByIdDemo(itemId);
+  if (usesGoogleSheets()) return null;
   return withSampleFallback(
     () => getInboxItemByIdDemo(itemId),
     () => getInboxItemByIdFromAirtable(itemId),
@@ -1181,15 +1229,16 @@ export async function registerAssessmentDocument(
 }
 
 export async function listAssessmentTemplates(): Promise<DocumentRow[]> {
-  return readStore(
-    async () => {
+  return readAirtableLegacy({
+    demoFn: async () => {
       const seed = await loadDemoSeed();
       return seed.documents.filter(
         (d) => d.matterId === FIRM_TEMPLATE_MATTER_ID || isAssessmentTemplateDocument(d),
       );
     },
-    () => listAssessmentTemplatesFromAirtable(),
-  );
+    airtableFn: () => listAssessmentTemplatesFromAirtable(),
+    sheetsFallback: () => [],
+  });
 }
 
 export async function saveAssessmentTemplate(payload: {
@@ -1230,15 +1279,16 @@ export type FirmMemoryStatus = {
 };
 
 export async function listFirmSamples(): Promise<DocumentRow[]> {
-  return readStore(
-    async () => {
+  return readAirtableLegacy({
+    demoFn: async () => {
       const seed = await loadDemoSeed();
       return seed.documents.filter(
         (d) => d.matterId === FIRM_TEMPLATE_MATTER_ID || isFirmSampleDocument(d),
       );
     },
-    () => listFirmSampleDocumentsFromAirtable(),
-  );
+    airtableFn: () => listFirmSampleDocumentsFromAirtable(),
+    sheetsFallback: () => [],
+  });
 }
 
 export async function getFirmMemoryStatus(): Promise<FirmMemoryStatus> {
@@ -1246,12 +1296,13 @@ export async function getFirmMemoryStatus(): Promise<FirmMemoryStatus> {
   const samples = await listFirmSamples();
   const templateCount = templates.length;
   const sampleCount = samples.length;
-  const stylePreferenceCount = isDemoMode()
-    ? 0
-    : await withSampleFallback(
-        async () => 0,
-        () => countFirmMemoryPatternsFromAirtable(),
-      );
+  const stylePreferenceCount =
+    isDemoMode() || usesGoogleSheets()
+      ? 0
+      : await withSampleFallback(
+          async () => 0,
+          () => countFirmMemoryPatternsFromAirtable(),
+        );
   const configured = templateCount > 0 || sampleCount > 0 || stylePreferenceCount > 0;
   return { templateCount, sampleCount, stylePreferenceCount, configured };
 }
@@ -1289,7 +1340,12 @@ export async function getAssessmentOcrNote(matterId: string): Promise<Note | nul
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     return matches[0] ?? null;
   }
-  return notesBackend().findAssessmentOcr(matterId);
+  try {
+    return await notesBackend().findAssessmentOcr(matterId);
+  } catch (error) {
+    console.warn(`[AOD] assessment OCR note read failed for ${matterId}:`, error);
+    return null;
+  }
 }
 
 export async function saveAssessmentOcrPayload(
@@ -1348,15 +1404,16 @@ async function listDeliverableTemplateMetaNotes(): Promise<Note[]> {
 }
 
 export async function listDeliverableTemplateDocuments(): Promise<DocumentRow[]> {
-  return readStore(
-    async () => {
+  return readAirtableLegacy({
+    demoFn: async () => {
       const seed = await loadDemoSeed();
       return seed.documents.filter(
         (d) => d.matterId === FIRM_TEMPLATE_MATTER_ID || isDeliverableTemplateDocument(d),
       );
     },
-    () => listDeliverableTemplateDocumentsFromAirtable(),
-  );
+    airtableFn: () => listDeliverableTemplateDocumentsFromAirtable(),
+    sheetsFallback: () => [],
+  });
 }
 
 export async function listDeliverableTemplateCatalog(): Promise<DeliverableTemplateCatalogItem[]> {

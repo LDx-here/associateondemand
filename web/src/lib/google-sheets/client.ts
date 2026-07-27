@@ -52,6 +52,18 @@ export function getSpreadsheetId(): string | null {
 
 export { isGoogleSheetsConfigured } from "../data-store-config";
 
+/** Google Sheets API or credential failures — safe to degrade reads. */
+export function isGoogleSheetsReadError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message;
+  return (
+    msg.includes("Google Sheets") ||
+    msg.includes("GOOGLE_SHEETS") ||
+    msg.includes("service account credentials not configured") ||
+    msg.includes("Failed to obtain Google access token")
+  );
+}
+
 export function getSpreadsheetUrl(): string | null {
   const id = getSpreadsheetId();
   if (!id) return null;

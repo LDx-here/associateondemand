@@ -1,3 +1,5 @@
+### [2026-07-27] CHECKPOINT: prod SSR fix — skip Airtable reads when DATA_STORE=google_sheets; restore quota fallback; matter detail/inbox/dashboard no longer 500 on Airtable 429
+
 ### [2026-07-26] CHECKPOINT: pass 38 real client path + AOS intelligence — paste summary extract (Fly /agents/aos/extract-facts + heuristic fallback), scorecard follow-ups, prior-matter fact templates, Google Sheets skills; pytest 118; test:aos-intelligence
 
 ### [2026-07-26] CHECKPOINT: pass 38 Google Sheets data store Phase 1 — DATA_STORE flag, Matters+Notes adapter, Settings link, runbooks; Vercel prod; Airtable fallback kept
