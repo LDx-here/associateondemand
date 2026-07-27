@@ -3,12 +3,14 @@ import { NextResponse } from "next/server";
 import { requiresPaymentBeforeDispatch } from "@/lib/assignment-payment";
 import { dispatchAssignmentToPm } from "@/lib/assignment-dispatch";
 import {
+  autoAdvanceMatterLifecycleStage,
   createAssignment,
   createMatter,
   createNoteForMatter,
   createTaskForMatter,
   getMatterByCode,
   saveDraftingFactsForMatter,
+  seedInitialLifecycleTasks,
   updateAssignmentStatus,
   isDemoMode,
 } from "@/lib/data-store";
@@ -93,6 +95,7 @@ export async function POST(req: Request) {
         summary: `${deliverableType} assignment intake (${tier} tier).`,
       });
       matterId = matter.matterId;
+      await seedInitialLifecycleTasks(matterId, matter.caseType);
     } else {
       const matter = await getMatterByCode(existingMatterId);
       if (!matter) {
@@ -110,6 +113,9 @@ export async function POST(req: Request) {
       priority,
       isFilingDeadline: false,
     });
+
+    // Real work is starting on this matter — nudge Intake → Active (no-op if already past Intake).
+    await autoAdvanceMatterLifecycleStage(matterId, "Intake", "Active");
 
     if (structuredFacts?.v === 1) {
       await saveDraftingFactsForMatter(matterId, structuredFacts);

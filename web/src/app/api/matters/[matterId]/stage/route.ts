@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { createTaskForMatter, listTasksForMatter, updateMatterLifecycleStage } from "@/lib/data-store";
+import { advanceMatterStageWithTasks } from "@/lib/data-store";
 import { MATTER_LIFECYCLE_STAGES, type MatterLifecycleStage } from "@/lib/matter-lifecycle-stage";
-import { stageTaskTemplates } from "@/lib/matter-task-templates";
 
 type Ctx = { params: Promise<{ matterId: string }> };
 
@@ -30,32 +29,12 @@ export async function PATCH(req: Request, ctx: Ctx) {
   }
   const nextStage = stage as MatterLifecycleStage;
 
-  let matter;
   try {
-    matter = await updateMatterLifecycleStage(matterId, nextStage);
+    const { matter, tasksCreated } = await advanceMatterStageWithTasks(matterId, nextStage);
+    return NextResponse.json({ matter, tasksCreated });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Could not update lifecycle stage.";
     const status = message.includes("Google Sheets") ? 400 : message.includes("not found") ? 404 : 409;
     return NextResponse.json({ error: message }, { status });
   }
-
-  const templates = stageTaskTemplates(matter.caseType, nextStage);
-  const existing = await listTasksForMatter(matterId);
-  const existingTags = new Set(existing.map((t) => t.createdFrom).filter(Boolean));
-
-  let tasksCreated = 0;
-  for (const template of templates) {
-    const tag = `stage:${nextStage}:${template.id}`;
-    if (existingTags.has(tag)) continue;
-    await createTaskForMatter(matterId, {
-      description: template.description,
-      dueDate: null,
-      priority: template.priority,
-      isFilingDeadline: template.isFilingDeadline ?? false,
-      createdFrom: tag,
-    });
-    tasksCreated += 1;
-  }
-
-  return NextResponse.json({ matter, tasksCreated });
 }

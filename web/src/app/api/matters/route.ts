@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { createMatter, listMatters, isDemoMode } from "@/lib/data-store";
+import { createMatter, listMatters, isDemoMode, seedInitialLifecycleTasks } from "@/lib/data-store";
 
 export async function GET() {
   const matters = await listMatters();
@@ -23,6 +23,7 @@ export async function POST(request: Request) {
       status: body.status ? String(body.status) : undefined,
       summary: body.summary ? String(body.summary) : undefined,
     });
+    await seedInitialLifecycleTasks(matter.matterId, matter.caseType);
     return NextResponse.json({ matter, demoMode: isDemoMode() }, { status: 201 });
   } catch (err) {
     return NextResponse.json(

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { markAssignmentDelivered } from "@/lib/data-store";
+import { autoAdvanceMatterLifecycleStage, markAssignmentDelivered } from "@/lib/data-store";
 
 type Ctx = { params: Promise<{ itemId: string }> };
 
@@ -25,6 +25,9 @@ export async function POST(req: Request, ctx: Ctx) {
       { status: 409 },
     );
   }
+
+  // A deliverable was exported — nudge the matter Active → Filed/Awaiting Decision.
+  await autoAdvanceMatterLifecycleStage(item.matterId, "Active", "Filed/Awaiting Decision");
 
   return NextResponse.json({ item, deliveredAt: item.deliveredAt });
 }

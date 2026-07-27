@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 
 import { dispatchAssignmentToPm } from "@/lib/assignment-dispatch";
 import {
+  autoAdvanceMatterLifecycleStage,
   createAssignment,
   createMatter,
   createNoteForMatter,
   createTaskForMatter,
   saveDraftingFactsForMatter,
+  seedInitialLifecycleTasks,
   updateAssignmentStatus,
   isDemoMode,
 } from "@/lib/data-store";
@@ -97,6 +99,7 @@ export async function POST(req: Request) {
       summary: `${deliverableType} — partner overflow submission (${tier} tier).`,
     });
     const matterId = matter.matterId;
+    await seedInitialLifecycleTasks(matterId, matter.caseType);
 
     const priority = body.priority?.trim() || "Medium";
     const dueDate = body.dueDate?.trim() || null;
@@ -107,6 +110,9 @@ export async function POST(req: Request) {
       priority,
       isFilingDeadline: false,
     });
+
+    // Real work is starting on this matter — nudge Intake → Active (no-op if already past Intake).
+    await autoAdvanceMatterLifecycleStage(matterId, "Intake", "Active");
 
     if (structuredFacts?.v === 1) {
       await saveDraftingFactsForMatter(matterId, structuredFacts);

@@ -69,6 +69,7 @@ import {
   normalizeLifecycleStage,
   type MatterLifecycleStage,
 } from "./matter-lifecycle-stage";
+import { stageTaskTemplates } from "./matter-task-templates";
 import { emptyCaseAssessment } from "./case-assessment";
 import {
   emptyProceduralTimeline,
@@ -869,6 +870,107 @@ export async function updateMatterLifecycleStage(
   const updated = await updateMatterInGoogleSheets(matterId, { lifecycleStage: nextStage });
   if (!updated) throw new Error("Matter not found.");
   return updated;
+}
+
+/** Shared by `advanceMatterStageWithTasks` and `seedInitialLifecycleTasks` — bulk-creates a stage's task checklist, tagged for idempotency. */
+async function createStageTaskChecklist(
+  matterId: string,
+  caseType: string,
+  stage: MatterLifecycleStage,
+): Promise<number> {
+  const templates = stageTaskTemplates(caseType, stage);
+  const existing = await listTasksForMatter(matterId);
+  const existingTags = new Set(existing.map((t) => t.createdFrom).filter(Boolean));
+
+  let tasksCreated = 0;
+  for (const template of templates) {
+    const tag = `stage:${stage}:${template.id}`;
+    if (existingTags.has(tag)) continue;
+    await createTaskForMatter(matterId, {
+      description: template.description,
+      dueDate: null,
+      priority: template.priority,
+      isFilingDeadline: template.isFilingDeadline ?? false,
+      createdFrom: tag,
+    });
+    tasksCreated += 1;
+  }
+  return tasksCreated;
+}
+
+/**
+ * Transition + bulk-create that stage's task checklist, tagged for
+ * idempotency. Shared by the manual `PATCH /api/matters/[id]/stage` route
+ * and the automatic triggers below (assignment created, deliverable
+ * exported, matter closed/reopened) so both paths behave identically.
+ */
+export async function advanceMatterStageWithTasks(
+  matterId: string,
+  nextStage: MatterLifecycleStage,
+): Promise<{ matter: Matter; tasksCreated: number }> {
+  const matter = await updateMatterLifecycleStage(matterId, nextStage);
+  const tasksCreated = await createStageTaskChecklist(matterId, matter.caseType, nextStage);
+  return { matter, tasksCreated };
+}
+
+/**
+ * Seed the Intake checklist on a brand-new matter. Nothing ever
+ * "transitions into" Intake (it's the default starting stage), so this is
+ * the one case that isn't covered by `advanceMatterStageWithTasks`. Same
+ * best-effort contract as `autoAdvanceMatterLifecycleStage`.
+ */
+export async function seedInitialLifecycleTasks(matterId: string, caseType: string): Promise<void> {
+  if (!isDemoMode() && !usesGoogleSheets()) return;
+  try {
+    await createStageTaskChecklist(matterId, caseType, "Intake");
+  } catch (err) {
+    console.warn(`[AOD] seed initial lifecycle tasks failed for ${matterId}:`, err);
+  }
+}
+
+/**
+ * Best-effort automatic stage advance for real system events (assignment
+ * created, deliverable exported). Only moves if the matter is currently in
+ * exactly `fromStage` — so it's naturally a one-time, idempotent nudge, not
+ * a forced jump — and never throws, since these fire as side effects of an
+ * unrelated primary action that must not fail because of this.
+ */
+export async function autoAdvanceMatterLifecycleStage(
+  matterId: string,
+  fromStage: MatterLifecycleStage,
+  toStage: MatterLifecycleStage,
+): Promise<void> {
+  if (!isDemoMode() && !usesGoogleSheets()) return;
+  try {
+    const matter = await getMatterByCode(matterId);
+    if (!matter) return;
+    if (normalizeLifecycleStage(matter.lifecycleStage) !== fromStage) return;
+    await advanceMatterStageWithTasks(matterId, toStage);
+  } catch (err) {
+    console.warn(`[AOD] auto-advance lifecycle stage failed for ${matterId}:`, err);
+  }
+}
+
+/**
+ * Force-set the lifecycle stage without transition validation — used only
+ * when an attorney explicitly closes a matter (any stage can close). Best
+ * effort, same as `autoAdvanceMatterLifecycleStage`.
+ */
+export async function forceMatterLifecycleStage(
+  matterId: string,
+  stage: MatterLifecycleStage,
+): Promise<void> {
+  if (!isDemoMode() && !usesGoogleSheets()) return;
+  try {
+    if (isDemoMode()) {
+      const { updateMatterLifecycleStageDemo } = await import("./demo-store-mutable");
+      await updateMatterLifecycleStageDemo(matterId, stage);
+      return;
+    }
+    await updateMatterInGoogleSheets(matterId, { lifecycleStage: stage });
+  } catch (err) {
+    console.warn(`[AOD] force lifecycle stage failed for ${matterId}:`, err);
+  }
 }
 
 const OPEN_INBOX_STATUSES = new Set(["Pending", "Submitted", "In progress", "Ready for review", "Returned"]);

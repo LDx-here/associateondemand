@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { getMatterByCode, updateMatterFields } from "@/lib/data-store";
+import {
+  advanceMatterStageWithTasks,
+  forceMatterLifecycleStage,
+  getMatterByCode,
+  updateMatterFields,
+} from "@/lib/data-store";
+import { isClosedMatterStatus } from "@/lib/matter-status";
 
 type Ctx = { params: Promise<{ matterId: string }> };
 
@@ -35,5 +41,22 @@ export async function PATCH(req: Request, ctx: Ctx) {
   });
 
   if (!matter) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Close/reopen also drives lifecycle stage — closing overrides any stage;
+  // reopening resumes work (Closed → Active is always a legal transition).
+  if (typeof body.status === "string") {
+    try {
+      if (isClosedMatterStatus(body.status)) {
+        await forceMatterLifecycleStage(matterId, "Closed");
+        matter.lifecycleStage = "Closed";
+      } else {
+        const { matter: advanced } = await advanceMatterStageWithTasks(matterId, "Active");
+        matter.lifecycleStage = advanced.lifecycleStage;
+      }
+    } catch (err) {
+      console.warn(`[AOD] lifecycle stage sync on status change failed for ${matterId}:`, err);
+    }
+  }
+
   return NextResponse.json({ matter });
 }
