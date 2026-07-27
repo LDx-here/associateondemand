@@ -6,7 +6,13 @@ import { FirmLetterheadSettings } from "@/components/FirmLetterheadSettings";
 import { FirmMemorySetup } from "@/components/FirmMemorySetup";
 import { PiiTierComplianceSection } from "@/components/PiiTierComplianceSection";
 import { listPeopleFromAirtable } from "@/lib/airtable/queries";
-import { isDemoMode } from "@/lib/data-store";
+import {
+  dataStoreLabel,
+  getDataStoreKind,
+  isDemoMode,
+  usesGoogleSheets,
+} from "@/lib/data-store-config";
+import { getSpreadsheetUrl } from "@/lib/google-sheets/client";
 import { billingNoteForPartnerFirm } from "@/lib/deliverable-catalog";
 import { partnerSubmissionUrl } from "@/lib/partner-submission";
 import { isStripeConfigured, isStripeTestMode } from "@/lib/stripe-config";
@@ -30,6 +36,8 @@ function piiTierLabel(tier: string): string {
 
 export default async function SettingsPage() {
   const demo = isDemoMode();
+  const dataKind = getDataStoreKind();
+  const spreadsheetUrl = usesGoogleSheets() ? getSpreadsheetUrl() : null;
   const piiTier = process.env.NEXT_PUBLIC_PII_TIER ?? "0";
   const authEnabled =
     (process.env.AOD_AUTH_ENABLED ?? "false").toLowerCase() === "true";
@@ -67,7 +75,7 @@ export default async function SettingsPage() {
 
       <SettingsSection title="Profile">
         {demo ? (
-          <Row label="Mode">Sample data. Connect Airtable to load live matters.</Row>
+          <Row label="Mode">Sample data. Connect Google Sheets or Airtable to load live matters.</Row>
         ) : attorney ? (
           <>
             <Row label="Name">{attorney.name}</Row>
@@ -112,7 +120,7 @@ export default async function SettingsPage() {
       </section>
 
       <SettingsSection title="Data connection">
-        <Row label="Airtable">
+        <Row label="Data store">
           {demo ? (
             <span className="inline-flex items-center gap-2 text-sm text-slate-700">
               <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden />
@@ -121,10 +129,52 @@ export default async function SettingsPage() {
           ) : (
             <span className="inline-flex items-center gap-2 text-sm text-slate-700">
               <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
-              Connected to Airtable
+              Connected — {dataStoreLabel()}
             </span>
           )}
         </Row>
+        {usesGoogleSheets() && spreadsheetUrl ? (
+          <Row label="Google Sheet">
+            <a
+              className="font-medium text-sky-800 underline-offset-2 hover:underline"
+              href={spreadsheetUrl}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Open firm spreadsheet
+            </a>
+            <span className="mt-1 block text-xs text-slate-500">
+              Matters and Notes live in this sheet. Export or sort in Google Sheets anytime.
+            </span>
+          </Row>
+        ) : null}
+        {!demo && dataKind === "airtable" ? (
+          <Row label="Airtable">
+            <span className="text-sm text-slate-700">
+              Legacy mode — set <code className="text-xs">DATA_STORE=google_sheets</code> to migrate.{" "}
+              <a
+                className="font-medium text-sky-800 underline-offset-2 hover:underline"
+                href="https://github.com/LDx-here/associateondemand/blob/cursor/phase0-foundation/docs/runbooks/google-sheets-setup.md"
+                rel="noreferrer"
+                target="_blank"
+              >
+                Google Sheets setup →
+              </a>
+            </span>
+          </Row>
+        ) : null}
+        {demo ? (
+          <Row label="Setup">
+            <a
+              className="font-medium text-sky-800 underline-offset-2 hover:underline"
+              href="https://github.com/LDx-here/associateondemand/blob/cursor/phase0-foundation/docs/runbooks/google-sheets-setup.md"
+              rel="noreferrer"
+              target="_blank"
+            >
+              Connect Google Workspace (runbook) →
+            </a>
+          </Row>
+        ) : null}
       </SettingsSection>
 
       <SettingsSection title="Billing">

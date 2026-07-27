@@ -22,7 +22,9 @@
     "test:stripe-pricing": "tsx scripts/verify-stripe-pricing.mjs",
     "test:stripe-webhook": "tsx scripts/verify-stripe-webhook.mjs",
     "test:firm-knowledge": "tsx scripts/verify-firm-knowledge-for-matter.mjs",
-    "test:contacts": "tsx scripts/verify-contacts.mjs"
+    "test:contacts": "tsx scripts/verify-contacts.mjs",
+    "test:google-sheets": "tsx scripts/verify-google-sheets.mjs",
+    "test:aos-intelligence": "tsx scripts/verify-aos-intelligence.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
@@ -31,6 +33,7 @@
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
     "date-fns": "^4.1.0",
+    "google-auth-library": "^9.15.1",
     "lucide-react": "^1.14.0",
     "next": "16.2.4",
     "react": "19.2.4",

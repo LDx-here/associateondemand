@@ -1,9 +1,13 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-23 (CDT) — Pass 37 Inbox assignment detail drawer  
+**Last updated:** 2026-07-26 (CDT) — Pass 38 Real client path + AOS intelligence  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 38 (2026-07-26):** Real client work path — Google Sheets matters/notes already wired; Settings shows data store + sheet link. AOS fact guide: paste summary → `POST /agents/aos/extract-facts` (Anthropic on Fly) or heuristic fallback; scorecard follow-ups (no LLM); prior-matter fact template reuse (schema + variant picks, PII cleared); skills save to Google Sheets Strategy Patterns tab. pytest 118; `test:aos-intelligence`.
+
+**Next:** Connect Google Sheets on Vercel (see `docs/runbooks/google-sheets-setup.md`); set `ANTHROPIC_API_KEY` on Fly for smart extract; pilot: New matter → paste facts → save → dispatch AOS brief.
 
 **Pass 37 (2026-07-23):** Inbox PM board — clickable assignment cards open a right-side detail drawer (`AssignmentDetailDrawer` + `GET /api/inbox/[itemId]/preview`). Shows deliverable/tier, matter + client links, facts, latest agent draft (or No draft yet → Open Associate), actionable “what’s missing” checklist, and approve/return/status actions. next build; Vercel prod. Commit `e27a4f0`.
 
@@ -561,6 +565,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 38 (2026-07-26):** Real client path + AOS intelligence — paste summary extract (LLM + heuristic), scorecard follow-ups, prior-matter fact templates, Google Sheets skills; pytest 118; test:aos-intelligence.
 - **AOS prose polish (2026-07-24):** Filing-clean library FILL — sentence-start pronoun capitalization; Section A v3 care-slot dedupe (professional vs attachment); community-service list punctuation; Maria Elena sample 0 errors/0 warnings; pytest 115; Fly API.
 - **Pass 34 (2026-07-23):** AOS Output Fix — PRESERVE Patel/Arai verbatim; FILL via paragraph library (default no API); certificate of service; `/tools/aos-brief-builder` selection menu; pytest 115; next build; Fly + Vercel. Runbook: `docs/runbooks/aos-output-library-fill.md`.
 - **Pass 27 (2026-07-22):** Firm Knowledge → matters intelligence — Legal Elements load/merge from knowledge map by case type; needed-facts Present/Needed; Memory vs Knowledge UX; filtered knowledge-map deep links; matter badge. Verified: `test:firm-knowledge`, pytest 77, next build.
@@ -595,11 +600,11 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Retest AOS draft (library path)** — fill architecture facts → dispatch `aos-discretionary-brief` → confirm Legal Standard has Matter of Patel + Matter of Arai; Section A is library prose (not `[FILL with matter facts]`); certificate of service present.
-2. **Open selection menu** — https://aod-next.vercel.app/tools/aos-brief-builder (optional `?matterId=AOD-XXXX`).
-3. **Share site guide with pilot firm** — https://aod-next.vercel.app/help.
-4. **Optional LLM FILL** — only if desired: `fly secrets set AOD_AOS_USE_API=1 -a associateondemand-api`.
-5. **Optional:** Stripe + Resend env vars — `bash scripts/stripe-setup-checklist.sh`.
+1. **Connect Google Sheets on Vercel** — `GOOGLE_SHEETS_SPREADSHEET_ID` + service account JSON; runbook: `docs/runbooks/google-sheets-setup.md`. Removes Airtable quota / sample-data fallback.
+2. **Pilot real client AOS** — New matter → matter Documents/fact guide → paste summary → Extract facts → answer scorecard → Save facts → pick library variants → dispatch `aos-discretionary-brief`.
+3. **Optional smart extract** — `fly secrets set ANTHROPIC_API_KEY=... -a associateondemand-api` (heuristic extract works without it).
+4. **Retest AOS variant flow on prod** — `/templates` → AOS → Draft with variants → confirm library prose in draft.
+5. **Share site guide** — https://aod-next.vercel.app/help
 
 ## Blockers
 

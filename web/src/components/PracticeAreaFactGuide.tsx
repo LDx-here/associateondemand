@@ -3,7 +3,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AosVariantSelector } from "@/components/AosVariantSelector";
+import { PriorMatterFactsPicker } from "@/components/PriorMatterFactsPicker";
 import type { AosSectionKey } from "@/lib/aos-library";
+import {
+  applyAosExtractToPayload,
+  extractAosFactsFromSummary,
+  heuristicExtractAosFacts,
+} from "@/lib/aos-fact-extract";
+import {
+  mergeFollowUpAnswers,
+  runAosFactScorecard,
+  type ScorecardQuestion,
+} from "@/lib/aos-fact-scorecard";
 import { useToast } from "@/components/Toast";
 import {
   deliverableFactGuideTitle,
@@ -116,6 +127,10 @@ export function PracticeAreaFactGuide({
     () => initialPayload ?? emptyDraftingFacts(matterId ?? "draft", caseType, deliverableId),
   );
   const [busy, setBusy] = useState(false);
+  const [extractBusy, setExtractBusy] = useState(false);
+  const [pasteSummary, setPasteSummary] = useState("");
+  const [extractMode, setExtractMode] = useState<string | null>(null);
+  const [followUpDrafts, setFollowUpDrafts] = useState<Record<string, string>>({});
   const [loaded, setLoaded] = useState(mode === "intake");
   const intakeSyncKey =
     mode === "intake" ? `${matterId ?? "draft"}::${caseType}::${deliverableId ?? ""}` : "";
@@ -129,6 +144,7 @@ export function PracticeAreaFactGuide({
   }
 
   const activeDeliverableId = deliverableId ?? payload.deliverableId;
+  const isAos = activeDeliverableId === "aos-discretionary-brief";
   const defs = useMemo(
     () => fieldsForDeliverable(activeDeliverableId, payload.practiceArea),
     [activeDeliverableId, payload.practiceArea],
@@ -142,6 +158,59 @@ export function PracticeAreaFactGuide({
     () => mergeFactsForDispatch(payload, freeformFacts),
     [payload, freeformFacts],
   );
+
+  const scorecard = useMemo(() => {
+    if (!isAos) return null;
+    return runAosFactScorecard(payload);
+  }, [payload, isAos]);
+
+  async function runExtract(useHeuristicOnly = false) {
+    const text = pasteSummary.trim();
+    if (!text) {
+      showToast("Paste a client fact summary first.", "error");
+      return;
+    }
+    setExtractBusy(true);
+    try {
+      const result = useHeuristicOnly
+        ? { ...heuristicExtractAosFacts(text), llmAvailable: false }
+        : await extractAosFactsFromSummary(text);
+      const { payload: next, filledFieldIds } = applyAosExtractToPayload(payload, result, {
+        overwrite: false,
+      });
+      const withNotes = result.additionalNotes
+        ? {
+            ...next,
+            additionalNotes: [next.additionalNotes, result.additionalNotes].filter(Boolean).join("\n\n"),
+          }
+        : next;
+      setPayload(withNotes);
+      onChange?.(withNotes);
+      setExtractMode(
+        result.extractionMode === "llm"
+          ? "Smart extract (Anthropic)"
+          : result.llmAvailable === false
+            ? "Heuristic extract — add ANTHROPIC_API_KEY on Fly for smarter mapping"
+            : "Heuristic extract",
+      );
+      showToast(
+        `Extracted ${filledFieldIds.length} field${filledFieldIds.length === 1 ? "" : "s"} — review before saving.`,
+        filledFieldIds.length ? "success" : "error",
+      );
+    } catch {
+      showToast("Extract failed.", "error");
+    } finally {
+      setExtractBusy(false);
+    }
+  }
+
+  function applyFollowUpAnswers() {
+    const next = mergeFollowUpAnswers(payload, followUpDrafts);
+    setPayload(next);
+    onChange?.(next);
+    setFollowUpDrafts({});
+    showToast("Follow-up answers merged into facts.", "success");
+  }
 
   const patchPayload = useCallback(
     (updater: (prev: DraftingFactsPayload) => DraftingFactsPayload) => {
@@ -252,7 +321,6 @@ export function PracticeAreaFactGuide({
   }
 
   const areaLabel = payload.practiceArea === "immigration" ? "Immigration" : "Personal injury";
-  const isAos = activeDeliverableId === "aos-discretionary-brief";
   const identityDefs = defs.filter((d) => !d.stage || d.stage === "identity");
   const architectureDefs = defs.filter((d) => d.stage === "architecture");
   const factorDefs = defs.filter((d) => d.stage === "factors");
@@ -298,6 +366,71 @@ export function PracticeAreaFactGuide({
         </div>
         <CompletenessBar {...completeness} />
       </div>
+
+      {matterId && isAos ? (
+        <PriorMatterFactsPicker
+          matterId={matterId}
+          caseType={caseType}
+          deliverableId={activeDeliverableId}
+          onApply={(next) => {
+            setPayload(next);
+            onChange?.(next);
+            showToast("Prior matter template applied — add this client's facts.", "success");
+          }}
+        />
+      ) : null}
+
+      {isAos ? (
+        <div className="space-y-2 rounded-md border border-violet-200 bg-violet-50/60 p-3">
+          <label className="block text-sm">
+            <span className="font-medium text-violet-950">Paste client fact summary</span>
+            <span className="mt-0.5 block text-xs text-violet-900/80">
+              Attorney notes, intake email, or declaration excerpt — we map into the checklist below.
+            </span>
+            <textarea
+              className="mt-2 w-full rounded-md border border-violet-200 bg-white px-3 py-2 text-sm"
+              rows={compact ? 4 : 5}
+              value={pasteSummary}
+              onChange={(e) => setPasteSummary(e.target.value)}
+              placeholder="Applicant entered on B-2 in 2019… U.S. citizen daughter petitioner… primary equity is care for autistic grandson…"
+            />
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={btnPrimary}
+              disabled={extractBusy || !pasteSummary.trim()}
+              onClick={() => void runExtract(false)}
+            >
+              {extractBusy ? "Extracting…" : "Extract facts"}
+            </button>
+            <button
+              type="button"
+              className={btnSecondary}
+              disabled={extractBusy || !pasteSummary.trim()}
+              onClick={() => void runExtract(true)}
+            >
+              Heuristic only
+            </button>
+          </div>
+          {extractMode ? (
+            <p className="text-xs text-violet-900/90">{extractMode}</p>
+          ) : (
+            <p className="text-xs text-violet-900/70">
+              Smart extract uses Anthropic on Fly when configured; heuristic mode always works offline.
+            </p>
+          )}
+        </div>
+      ) : null}
+
+      {isAos && scorecard && scorecard.questions.length > 0 ? (
+        <ScorecardPanel
+          questions={scorecard.questions}
+          drafts={followUpDrafts}
+          onDraftChange={(id, value) => setFollowUpDrafts((prev) => ({ ...prev, [id]: value }))}
+          onApply={applyFollowUpAnswers}
+        />
+      ) : null}
 
       {isAos ? (
         <div className="rounded-md border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs text-indigo-950">
@@ -432,5 +565,51 @@ export function DraftingFactsCompletenessChip({
     >
       Complete facts on Documents tab ({completeness.filled}/{completeness.total}) →
     </button>
+  );
+}
+
+function ScorecardPanel({
+  questions,
+  drafts,
+  onDraftChange,
+  onApply,
+}: {
+  questions: ScorecardQuestion[];
+  drafts: Record<string, string>;
+  onDraftChange: (id: string, value: string) => void;
+  onApply: () => void;
+}) {
+  const hasAnswers = questions.some((q) => drafts[q.id]?.trim());
+  return (
+    <div className="space-y-3 rounded-md border border-amber-200 bg-amber-50/70 p-3">
+      <div>
+        <p className="text-sm font-medium text-amber-950">Associate follow-ups</p>
+        <p className="text-xs text-amber-900/80">
+          Substantive gaps detected — answer to strengthen the brief before drafting.
+        </p>
+      </div>
+      <ol className="list-decimal space-y-3 pl-4 text-sm text-amber-950">
+        {questions.map((q) => (
+          <li key={q.id}>
+            <p>{q.question}</p>
+            <p className="mt-0.5 text-xs text-amber-800/80">{q.reason}</p>
+            <textarea
+              className="mt-1 w-full rounded border border-amber-200 bg-white px-2 py-1 text-sm"
+              rows={2}
+              value={drafts[q.id] ?? ""}
+              onChange={(e) => onDraftChange(q.id, e.target.value)}
+              placeholder="Your answer…"
+            />
+          </li>
+        ))}
+      </ol>
+      {hasAnswers ? (
+        <div className="flex justify-end">
+          <button type="button" className={btnSecondary} onClick={onApply}>
+            Merge answers into facts
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }

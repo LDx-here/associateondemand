@@ -76,7 +76,17 @@ export function NewMatterButton({ demoMode }: Props) {
                 onChange={(e) => setCaseType(e.target.value)}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
               >
-                {["Asylum", "Withholding", "CAT", "Motion to Reopen", "Appeal", "Other"].map((t) => (
+                {[
+                  "Immigration - Adjustment of Status",
+                  "Immigration - Family",
+                  "Immigration - Asylum",
+                  "Asylum",
+                  "Withholding",
+                  "CAT",
+                  "Motion to Reopen",
+                  "Appeal",
+                  "Other",
+                ].map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>

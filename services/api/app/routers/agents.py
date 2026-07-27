@@ -400,3 +400,26 @@ def strong_reader_run(
 @router.get("/knowledge-map/graph")
 def knowledge_map_graph() -> dict[str, Any]:
     return build_knowledge_graph()
+
+
+class AosExtractFactsRequest(BaseModel):
+    summary: str = Field(..., min_length=1, max_length=50000)
+    force_heuristic: bool = False
+
+
+@router.post("/aos/extract-facts")
+def aos_extract_facts(body: AosExtractFactsRequest) -> dict[str, Any]:
+    """Extract AOS drafting facts from attorney paste summary (LLM or heuristic)."""
+    from app.services.aos_fact_extract import extract_aos_facts
+    from app.services.llm import is_configured
+
+    result = extract_aos_facts(body.summary, force_heuristic=body.force_heuristic)
+    return {
+        "fields": result.get("fields", {}),
+        "paragraphSelections": result.get("paragraphSelections", {}),
+        "additionalNotes": result.get("additionalNotes", ""),
+        "confidence": result.get("confidence", "low"),
+        "extractionMode": result.get("extraction_mode", "heuristic"),
+        "llmAvailable": is_configured(),
+        "llmFallback": result.get("llm_fallback", False),
+    }

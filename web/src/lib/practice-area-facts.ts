@@ -39,6 +39,10 @@ export type DraftingFactsPayload = {
    * on serialize so the backend generator consumes them directly.
    */
   paragraphSelections?: Record<string, string>;
+  /** Scorecard follow-up Q&A persisted for next case continuity. */
+  followUpAnswers?: Record<string, string>;
+  /** Prior matter used as fact template (schema only — PII cleared). */
+  sourceMatterId?: string;
   additionalNotes?: string;
   updatedAt?: string;
 };

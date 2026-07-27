@@ -35,6 +35,7 @@ import {
   isSampleDataMode,
   isQuotaFallbackMode,
 } from "@/lib/data-store";
+import { dataStoreLabel, usesGoogleSheets } from "@/lib/data-store-config";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
 import { getSupabaseSessionUser } from "@/lib/supabase/server";
 import { partnerSubmissionUrl } from "@/lib/partner-submission";
@@ -133,8 +134,15 @@ export default async function DashboardPage() {
           {demo ? (
             <p className="mt-1 text-xs text-slate-500">
               {quotaFallback
-                ? "Airtable API limit reached for this month — showing bundled sample data until usage resets or the plan is upgraded."
-                : "Showing sample data. Connect Airtable in Settings to load live matters."}
+                ? "Previous data provider API limit reached — showing bundled sample data. Connect Google Sheets in Settings to avoid quota billing."
+                : "Showing sample data. Connect Google Sheets in Settings to load live matters."}
+            </p>
+          ) : usesGoogleSheets() ? (
+            <p className="mt-1 text-xs text-slate-500">
+              Data source: {dataStoreLabel()}.{" "}
+              <Link href="/settings" className="font-medium text-sky-800 underline-offset-2 hover:underline">
+                Open spreadsheet →
+              </Link>
             </p>
           ) : null}
           <p className="mt-2 text-sm">

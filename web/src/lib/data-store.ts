@@ -41,9 +41,25 @@ import {
   updateMatterDeadlineInAirtable,
   updateMatterInAirtable,
   updateNoteInAirtable,
-  isDemoMode,
 } from "./airtable/queries";
 import { isAirtableQuotaError } from "./airtable/client";
+import { isDemoMode, usesGoogleSheets } from "./data-store-config";
+import {
+  createMatterInGoogleSheets,
+  createNoteInGoogleSheets,
+  ensureFirmTemplateMatterInGoogleSheets,
+  findLatestAgentNoteForMatterFromGoogleSheets,
+  findLatestAssessmentOcrNoteForMatterFromGoogleSheets,
+  findLatestDraftingFactsNoteForMatterFromGoogleSheets,
+  findLatestProceduralTimelineNoteForMatterFromGoogleSheets,
+  getMatterFromGoogleSheets,
+  listAllNotesFromGoogleSheets,
+  listMattersFromGoogleSheets,
+  listNotesForMatterFromGoogleSheets,
+  updateMatterDeadlineInGoogleSheets,
+  updateMatterInGoogleSheets,
+  updateNoteInGoogleSheets,
+} from "./google-sheets/queries";
 import { emptyCaseAssessment } from "./case-assessment";
 import {
   emptyProceduralTimeline,
@@ -110,9 +126,53 @@ import type {
   TimelineEntry,
 } from "./types";
 
-export { isDemoMode };
+export { isDemoMode, usesGoogleSheets } from "./data-store-config";
 
 let quotaFallbackActive = false;
+
+function mattersBackend() {
+  return usesGoogleSheets()
+    ? {
+        list: listMattersFromGoogleSheets,
+        get: getMatterFromGoogleSheets,
+        create: createMatterInGoogleSheets,
+        ensureFirmTemplate: ensureFirmTemplateMatterInGoogleSheets,
+        update: updateMatterInGoogleSheets,
+        updateDeadline: updateMatterDeadlineInGoogleSheets,
+      }
+    : {
+        list: listMattersFromAirtable,
+        get: getMatterFromAirtable,
+        create: createMatterInAirtable,
+        ensureFirmTemplate: ensureFirmTemplateMatterInAirtable,
+        update: updateMatterInAirtable,
+        updateDeadline: updateMatterDeadlineInAirtable,
+      };
+}
+
+function notesBackend() {
+  return usesGoogleSheets()
+    ? {
+        listAll: listAllNotesFromGoogleSheets,
+        listForMatter: listNotesForMatterFromGoogleSheets,
+        create: createNoteInGoogleSheets,
+        update: updateNoteInGoogleSheets,
+        findAgent: findLatestAgentNoteForMatterFromGoogleSheets,
+        findProcedural: findLatestProceduralTimelineNoteForMatterFromGoogleSheets,
+        findFacts: findLatestDraftingFactsNoteForMatterFromGoogleSheets,
+        findAssessmentOcr: findLatestAssessmentOcrNoteForMatterFromGoogleSheets,
+      }
+    : {
+        listAll: listAllNotesFromAirtable,
+        listForMatter: listNotesForMatterFromAirtable,
+        create: createNoteInAirtable,
+        update: updateNoteInAirtable,
+        findAgent: findLatestAgentNoteForMatter,
+        findProcedural: findLatestProceduralTimelineNoteForMatter,
+        findFacts: findLatestDraftingFactsNoteForMatter,
+        findAssessmentOcr: findLatestAssessmentOcrNoteForMatter,
+      };
+}
 
 export function isQuotaFallbackMode(): boolean {
   return quotaFallbackActive;
@@ -129,12 +189,12 @@ async function loadDemoSeed(): Promise<DevSeed> {
 
 async function withSampleFallback<T>(
   demoFn: () => Promise<T>,
-  airtableFn: () => Promise<T>,
+  liveFn: () => Promise<T>,
 ): Promise<T> {
   try {
-    return await airtableFn();
+    return await liveFn();
   } catch (error) {
-    if (isAirtableQuotaError(error)) {
+    if (!usesGoogleSheets() && isAirtableQuotaError(error)) {
       quotaFallbackActive = true;
       console.warn("[AOD] Airtable quota exceeded — serving bundled sample data.");
       return demoFn();
@@ -149,9 +209,10 @@ async function readStore<T>(demoFn: () => Promise<T>, airtableFn: () => Promise<
 }
 
 export async function listMatters(): Promise<Matter[]> {
+  const backend = mattersBackend();
   return readStore(
     async () => (await loadDemoSeed()).matters,
-    () => listMattersFromAirtable(),
+    () => backend.list(),
   );
 }
 
@@ -278,7 +339,7 @@ export async function createMatter(payload: {
     await persistSeed();
     return matter;
   }
-  return createMatterInAirtable(payload);
+  return mattersBackend().create(payload);
 }
 
 /** Closed administrative matter for firm-wide templates (demo + Airtable). */
@@ -308,7 +369,7 @@ export async function ensureFirmTemplateMatter(): Promise<Matter> {
     await persistSeed();
     return matter;
   }
-  const resolved = await ensureFirmTemplateMatterInAirtable();
+  const resolved = await mattersBackend().ensureFirmTemplate();
   return (
     (await getMatterByCode(resolved.matterId)) ?? {
       id: resolved.recordId,
@@ -333,7 +394,7 @@ export async function getMatterByCode(matterId: string): Promise<Matter | null> 
       const matters = (await loadDemoSeed()).matters;
       return matters.find((m) => m.matterId === matterId || m.id === matterId) ?? null;
     },
-    () => getMatterFromAirtable(matterId),
+    () => mattersBackend().get(matterId),
   );
 }
 
@@ -357,7 +418,7 @@ export async function listAllTasks(): Promise<Task[]> {
 export async function listAllNotes(): Promise<Note[]> {
   return readStore(
     async () => (await loadDemoSeed()).notes,
-    () => listAllNotesFromAirtable(),
+    () => notesBackend().listAll(),
   );
 }
 
@@ -367,7 +428,7 @@ export async function listNotesForMatter(matterId: string): Promise<Note[]> {
       const seed = await loadDemoSeed();
       return seed.notes.filter((n) => n.matterId === matterId);
     },
-    () => listNotesForMatterFromAirtable(matterId),
+    () => notesBackend().listForMatter(matterId),
   );
 }
 
@@ -484,7 +545,7 @@ export async function completeTask(
   const body = note
     ? `Task completed: ${task.description}. By: ${options?.completedBy ?? "Attorney"}. Date: ${when}. Documents: ${docs}. Note: ${note}`
     : `Task completed: ${task.description}. By: ${options?.completedBy ?? "Attorney"}. Date: ${when}. Documents: ${docs}.`;
-  await createNoteInAirtable(task.matterId, body, "System", "Manual");
+  await notesBackend().create(task.matterId, body, "System", "Manual");
   return task;
 }
 
@@ -529,7 +590,7 @@ export async function createNoteForMatter(
     await persistSeed();
     return note;
   }
-  return createNoteInAirtable(matterId, content, author, type);
+  return notesBackend().create(matterId, content, author, type);
 }
 
 export async function getDraftingFactsForMatter(matterId: string): Promise<DraftingFactsPayload | null> {
@@ -543,7 +604,7 @@ export async function getDraftingFactsForMatter(matterId: string): Promise<Draft
     if (!note) return null;
     return parseDraftingFactsNote(note.content, matterId, caseType);
   }
-  const note = await findLatestDraftingFactsNoteForMatter(matterId);
+  const note = await notesBackend().findFacts(matterId);
   if (!note) return null;
   return parseDraftingFactsNote(note.content, matterId, caseType);
 }
@@ -583,11 +644,12 @@ export async function saveDraftingFactsForMatter(
     return normalized;
   }
 
-  const existing = await findLatestDraftingFactsNoteForMatter(matterId);
+  const nb = notesBackend();
+  const existing = await nb.findFacts(matterId);
   if (existing) {
-    await updateNoteInAirtable(existing.id, matterId, content, "Attorney");
+    await nb.update(existing.id, matterId, content, "Attorney");
   } else {
-    await createNoteInAirtable(matterId, content, "Attorney", "Facts");
+    await nb.create(matterId, content, "Attorney", "Facts");
   }
   return normalized;
 }
@@ -603,7 +665,7 @@ export async function getProceduralTimelineForMatter(
     if (!note) return emptyProceduralTimeline(matterId);
     return parseProceduralTimeline(note.content, matterId) ?? emptyProceduralTimeline(matterId);
   }
-  const note = await findLatestProceduralTimelineNoteForMatter(matterId);
+  const note = await notesBackend().findProcedural(matterId);
   if (!note) return emptyProceduralTimeline(matterId);
   return parseProceduralTimeline(note.content, matterId) ?? emptyProceduralTimeline(matterId);
 }
@@ -643,11 +705,12 @@ export async function saveProceduralTimelineForMatter(
     return normalized;
   }
 
-  const existing = await findLatestProceduralTimelineNoteForMatter(matterId);
+  const nb = notesBackend();
+  const existing = await nb.findProcedural(matterId);
   if (existing) {
-    await updateNoteInAirtable(existing.id, matterId, content, "Attorney");
+    await nb.update(existing.id, matterId, content, "Attorney");
   } else {
-    await createNoteInAirtable(matterId, content, "Attorney", PROCEDURAL_TIMELINE_NOTE_TYPE);
+    await nb.create(matterId, content, "Attorney", PROCEDURAL_TIMELINE_NOTE_TYPE);
   }
   return normalized;
 }
@@ -667,7 +730,7 @@ export async function updateNoteForMatter(
     return note;
   }
   try {
-    return await updateNoteInAirtable(noteId, matterId, content, author);
+    return await notesBackend().update(noteId, matterId, content, author);
   } catch {
     return null;
   }
@@ -708,16 +771,17 @@ export async function upsertAgentOutputForMatter(
     return note;
   }
 
+  const nb = notesBackend();
   if (options?.noteId) {
-    const updated = await updateNoteInAirtable(options.noteId, matterId, trimmed, "Attorney (edited)");
+    const updated = await nb.update(options.noteId, matterId, trimmed, "Attorney (edited)");
     return updated;
   }
-  const latest = await findLatestAgentNoteForMatter(matterId);
+  const latest = await nb.findAgent(matterId);
   if (latest) {
-    return updateNoteInAirtable(latest.id, matterId, trimmed, "Attorney (edited)");
+    return nb.update(latest.id, matterId, trimmed, "Attorney (edited)");
   }
   const label = options?.agent ? `[${options.agent} — edited output]` : "[Agent output — edited]";
-  return createNoteInAirtable(matterId, `${label}\n\n${trimmed}`, options?.agent ?? "Litigation Associate", "Agent");
+  return nb.create(matterId, `${label}\n\n${trimmed}`, options?.agent ?? "Litigation Associate", "Agent");
 }
 
 export async function updateMatterFields(
@@ -731,7 +795,7 @@ export async function updateMatterFields(
     Object.assign(matter, patch);
     return matter;
   }
-  return updateMatterInAirtable(matterId, patch);
+  return mattersBackend().update(matterId, patch);
 }
 
 export async function updateMatterDeadline(matterId: string, nextDeadline: string | null): Promise<Matter | null> {
@@ -742,7 +806,7 @@ export async function updateMatterDeadline(matterId: string, nextDeadline: strin
     matter.nextDeadline = nextDeadline;
     return matter;
   }
-  return updateMatterDeadlineInAirtable(matterId, nextDeadline);
+  return mattersBackend().updateDeadline(matterId, nextDeadline);
 }
 
 const OPEN_INBOX_STATUSES = new Set(["Pending", "Submitted", "In progress", "Ready for review", "Returned"]);
@@ -1061,7 +1125,7 @@ export async function getAssessmentOcrNote(matterId: string): Promise<Note | nul
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     return matches[0] ?? null;
   }
-  return findLatestAssessmentOcrNoteForMatter(matterId);
+  return notesBackend().findAssessmentOcr(matterId);
 }
 
 export async function saveAssessmentOcrPayload(
@@ -1094,11 +1158,12 @@ export async function saveAssessmentOcrPayload(
     return payload;
   }
 
-  const existing = await findLatestAssessmentOcrNoteForMatter(matterId);
+  const nb = notesBackend();
+  const existing = await nb.findAssessmentOcr(matterId);
   if (existing) {
-    await updateNoteInAirtable(existing.id, matterId, content, author);
+    await nb.update(existing.id, matterId, content, author);
   } else {
-    await createNoteInAirtable(matterId, content, author, ASSESSMENT_DOCUMENT_NOTE_TYPE);
+    await nb.create(matterId, content, author, ASSESSMENT_DOCUMENT_NOTE_TYPE);
   }
   return payload;
 }
@@ -1111,7 +1176,7 @@ async function listDeliverableTemplateMetaNotes(): Promise<Note[]> {
     );
   }
   try {
-    const notes = await listNotesForMatterFromAirtable(FIRM_TEMPLATE_MATTER_ID);
+    const notes = await notesBackend().listForMatter(FIRM_TEMPLATE_MATTER_ID);
     return notes.filter((n) => n.type === DELIVERABLE_TEMPLATE_NOTE_TYPE);
   } catch {
     return [];
@@ -1335,9 +1400,9 @@ export async function saveDeliverableTemplate(payload: {
     (n) => parseDeliverableTemplateMeta(n.content)?.deliverableId === deliverableId,
   );
   if (existingNote) {
-    await updateNoteInAirtable(existingNote.id, FIRM_TEMPLATE_MATTER_ID, content, "Attorney");
+    await notesBackend().update(existingNote.id, FIRM_TEMPLATE_MATTER_ID, content, "Attorney");
   } else {
-    await createNoteInAirtable(
+    await notesBackend().create(
       FIRM_TEMPLATE_MATTER_ID,
       content,
       "Attorney",

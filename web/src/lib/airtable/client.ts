@@ -8,14 +8,7 @@
 
 const AIRTABLE_API = "https://api.airtable.com/v0";
 
-export function isAirtableConfigured(): boolean {
-  return Boolean(process.env.AIRTABLE_PAT && process.env.AIRTABLE_BASE_ID);
-}
-
-export function isDemoMode(): boolean {
-  if ((process.env.AOD_FORCE_DEMO_MODE ?? "").toLowerCase() === "true") return true;
-  return !isAirtableConfigured();
-}
+export { isAirtableConfigured, isDemoMode } from "../data-store-config";
 
 /** Airtable monthly API quota exceeded (429 PUBLIC_API_BILLING_LIMIT_EXCEEDED). */
 export function isAirtableQuotaError(error: unknown): boolean {
