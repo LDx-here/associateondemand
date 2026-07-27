@@ -53,6 +53,17 @@ export function filingDeadlinesWithin(
 }
 
 /**
+ * Filing-deadline tasks with no due date — the automation that creates them
+ * (matter-task-templates.ts stage checklists) has no way to know the real
+ * date, so these need an attorney to fill one in via the task edit added in
+ * the record-decision/task-editing passes. Until then they're invisible to
+ * `filingDeadlinesWithin` and the calendar.
+ */
+export function filingDeadlinesMissingDate(tasks: Task[]): number {
+  return tasks.filter((t) => t.isFilingDeadline && !t.dueDate && t.status !== "Done").length;
+}
+
+/**
  * Matters grouped by lifecycle stage (Intake/Active/Filed/Resolution/Closed),
  * in canonical stage order — dashboard visibility for the stage-automation
  * built into the matter workbench. Google Sheets-only (same as the stage

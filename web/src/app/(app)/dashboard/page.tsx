@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { DashboardCharts } from "@/components/DashboardCharts";
 import { KpiCard } from "@/components/KpiCard";
 import {
+  filingDeadlinesMissingDate,
   filingDeadlinesWithin,
   firmMemoryCompleteness,
   greeting,
@@ -81,6 +82,7 @@ export default async function DashboardPage() {
   const firmMemoryPct = firmMemoryCompleteness(firmMemory);
 
   const filingDeadlines14 = filingDeadlinesWithin(tasks, 14, now);
+  const filingDeadlinesMissing = filingDeadlinesMissingDate(tasks);
   let inboxUnread = 0;
   try {
     inboxUnread = await countUnreadInbox();
@@ -377,6 +379,13 @@ export default async function DashboardPage() {
         {filingDeadlines14 > 0 ? (
           <p className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
             {filingDeadlines14} filing deadline{filingDeadlines14 === 1 ? "" : "s"} in the next 14 days.
+          </p>
+        ) : null}
+        {filingDeadlinesMissing > 0 ? (
+          <p className="border-t border-rose-100 bg-rose-50/60 px-4 py-2 text-xs font-medium text-rose-800">
+            {filingDeadlinesMissing} filing deadline{filingDeadlinesMissing === 1 ? "" : "s"} still need
+            {filingDeadlinesMissing === 1 ? "s" : ""} a date — won&apos;t show above or on the calendar until
+            set. Open the matter&apos;s Tasks tab to add one.
           </p>
         ) : null}
       </section>
