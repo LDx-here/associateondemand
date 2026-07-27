@@ -5,7 +5,7 @@
 
 import { DELIVERABLE_CATALOG } from "./deliverable-catalog";
 import type { MatterLifecycleStage } from "./matter-lifecycle-stage";
-import { resolvePracticeArea } from "./practice-area-facts";
+import { isImmigrationPracticeArea, resolvePracticeArea } from "./practice-area-facts";
 
 export type MatterTaskTemplate = {
   id: string;
@@ -187,12 +187,11 @@ export function stageTaskTemplates(
   stage: MatterLifecycleStage,
 ): MatterTaskTemplate[] {
   const area = resolvePracticeArea(caseType);
-  const byStage =
-    area === "immigration"
-      ? IMMIGRATION_STAGE_TASKS
-      : area === "personal_injury"
-        ? PI_STAGE_TASKS
-        : GENERIC_STAGE_TASKS;
+  const byStage = isImmigrationPracticeArea(area)
+    ? IMMIGRATION_STAGE_TASKS
+    : area === "personal_injury"
+      ? PI_STAGE_TASKS
+      : GENERIC_STAGE_TASKS;
   return byStage[stage] ?? [];
 }
 

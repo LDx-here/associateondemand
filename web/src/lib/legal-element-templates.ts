@@ -3,7 +3,7 @@
  * and mapping to extracted assessment facts.
  */
 
-import { fieldsForDeliverable, resolvePracticeArea } from "./practice-area-facts";
+import { fieldsForDeliverable, isImmigrationPracticeArea, resolvePracticeArea } from "./practice-area-facts";
 import type { ExtractedFactRecord } from "./assessment-documents";
 import { factDisplayValue } from "./assessment-documents";
 
@@ -95,7 +95,7 @@ export function legalElementTemplatesForMatter(caseType: string, deliverableId?:
   const area = resolvePracticeArea(caseType);
   const lower = caseTypeLower(caseType);
 
-  if (area === "immigration") {
+  if (isImmigrationPracticeArea(area)) {
     const fromFacts = fieldsForDeliverable(deliverableId, area)
       .filter((d) => d.feedsSection || d.required)
       .map((d) => ({

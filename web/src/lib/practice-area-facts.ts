@@ -5,7 +5,24 @@
  * v2: deliverable-aware prompts with feedsSection helper text (B2B overflow pivot).
  */
 
-export type PracticeAreaId = "immigration" | "personal_injury" | "generic";
+/**
+ * `immigration_asylum` / `immigration_family` are finer-grained than
+ * `immigration` — asylum/withholding/CAT and family-based petitions get
+ * their own guided intake depth (matching AOS's staging), while `immigration`
+ * stays the fallback for AOS/other immigration case types. Callers that only
+ * care about "is this an immigration matter at all" should use
+ * `isImmigrationPracticeArea()` rather than checking `=== "immigration"`.
+ */
+export type PracticeAreaId =
+  | "immigration"
+  | "immigration_asylum"
+  | "immigration_family"
+  | "personal_injury"
+  | "generic";
+
+export function isImmigrationPracticeArea(area: PracticeAreaId): boolean {
+  return area === "immigration" || area === "immigration_asylum" || area === "immigration_family";
+}
 
 export type FactFieldKind = "text" | "textarea" | "date" | "checkboxes";
 
@@ -98,6 +115,329 @@ const IMMIGRATION_BASE: FactFieldDef[] = [
       "Affidavits or declarations",
       "Court or BIA orders",
     ],
+  },
+];
+
+/**
+ * Asylum / withholding / CAT — same staged depth as AOS Discretionary Brief
+ * (identity → attorney-authored case architecture → detailed factors).
+ */
+const ASYLUM_WITHHOLDING_CAT_FIELDS: FactFieldDef[] = [
+  // ── Stage 1: Identity / posture ────────────────────────────────────────
+  {
+    id: "applicantName",
+    label: "Applicant full legal name",
+    feedsSection: "Caption / cover",
+    kind: "text",
+    required: true,
+    stage: "identity",
+  },
+  {
+    id: "aNumber",
+    label: "A-Number (if known)",
+    hint: "Format A-XXXXXXXXX",
+    feedsSection: "Caption / cover",
+    kind: "text",
+    stage: "identity",
+  },
+  {
+    id: "countryOfOrigin",
+    label: "Country of origin / feared return country",
+    feedsSection: "Statement of the case",
+    kind: "text",
+    required: true,
+    stage: "identity",
+  },
+  {
+    id: "filingType",
+    label: "Affirmative or defensive filing",
+    hint: "Affirmative (Asylum Office) or defensive (in removal proceedings before an IJ)",
+    feedsSection: "Procedural posture",
+    kind: "text",
+    required: true,
+    stage: "identity",
+  },
+  {
+    id: "entryDate",
+    label: "Date of last entry to the U.S.",
+    feedsSection: "Procedural posture",
+    kind: "date",
+    required: true,
+    stage: "identity",
+  },
+  {
+    id: "oneYearDeadlineStatus",
+    label: "One-year filing deadline status",
+    hint: "Filed within one year of entry, or explain the exception (changed/extraordinary circumstances)",
+    feedsSection: "Procedural posture — timeliness",
+    kind: "textarea",
+    required: true,
+    stage: "identity",
+  },
+  {
+    id: "currentProceedingsPosture",
+    label: "Current posture",
+    hint: "Asylum Office interview scheduled, referred to EOIR, individual hearing set, etc.",
+    feedsSection: "Procedural posture",
+    kind: "textarea",
+    required: true,
+    stage: "identity",
+  },
+  {
+    id: "reliefSought",
+    label: "Relief sought",
+    hint: "Asylum, withholding of removal, CAT protection — or all three in the alternative",
+    feedsSection: "Conclusion",
+    kind: "text",
+    required: true,
+    stage: "identity",
+  },
+  // ── Stage 2: Case architecture (attorney-authored) ─────────────────────
+  {
+    id: "caseTheme",
+    label: "Case theme (one sentence)",
+    hint:
+      "Attorney-authored. Template: “This case concerns a [who] who was [harm] because of [protected ground], and who continues to face [ongoing risk] if returned to [country].”",
+    feedsSection: "Statement of the case + Conclusion",
+    kind: "textarea",
+    required: true,
+    stage: "architecture",
+  },
+  {
+    id: "protectedGroundTheory",
+    label: "Protected-ground / nexus theory",
+    hint: "Race, religion, nationality, political opinion, or particular social group (PSG) — and why the persecution was ON ACCOUNT OF that ground",
+    feedsSection: "Legal argument — nexus",
+    kind: "textarea",
+    required: true,
+    stage: "architecture",
+  },
+  {
+    id: "particularSocialGroupFormulation",
+    label: "Particular social group formulation (if PSG-based)",
+    hint: "Must be socially distinct + defined with particularity — not just “people who fear X”",
+    feedsSection: "Legal argument — PSG cognizability",
+    kind: "textarea",
+    stage: "architecture",
+  },
+  {
+    id: "persecutorIdentity",
+    label: "Who is the persecutor",
+    hint: "Government actor, or non-state actor the government is unable/unwilling to control",
+    feedsSection: "Legal argument — government nexus",
+    kind: "textarea",
+    required: true,
+    stage: "architecture",
+  },
+  // ── Stage 3: Factors / evidentiary detail ──────────────────────────────
+  {
+    id: "pastPersecutionNarrative",
+    label: "Past persecution narrative",
+    hint: "What happened, when, by whom — severity and pattern, not just a single bad incident",
+    feedsSection: "Statement of facts",
+    kind: "textarea",
+    required: true,
+    stage: "factors",
+  },
+  {
+    id: "wellFoundedFearNarrative",
+    label: "Well-founded fear of future persecution",
+    hint: "Why the client reasonably fears return today — specific, not general country instability",
+    feedsSection: "Legal argument — well-founded fear",
+    kind: "textarea",
+    required: true,
+    stage: "factors",
+  },
+  {
+    id: "countryConditionsEvidence",
+    label: "Country conditions evidence on file or needed",
+    hint: "State Dept reports, NGO reports, news articles corroborating the pattern of harm",
+    feedsSection: "Evidence — country conditions",
+    kind: "textarea",
+    stage: "factors",
+  },
+  {
+    id: "corroboratingEvidence",
+    label: "Corroborating evidence and witnesses",
+    hint: "Affidavits, medical/psychological records, photos, police reports — or explain why unavailable",
+    feedsSection: "Evidence — corroboration",
+    kind: "textarea",
+    stage: "factors",
+  },
+  {
+    id: "internalRelocationAnalysis",
+    label: "Internal relocation — why it isn't a safe alternative",
+    hint: "Anticipate this argument; address it directly if raised",
+    feedsSection: "Legal argument — internal relocation",
+    kind: "textarea",
+    stage: "factors",
+  },
+  {
+    id: "firmResettlementIssues",
+    label: "Firm resettlement in a third country",
+    hint: "Any time spent in another country that could raise a firm-resettlement bar — or confirm none",
+    feedsSection: "Legal argument — bars to relief",
+    kind: "textarea",
+    stage: "factors",
+  },
+  {
+    id: "credibilityCorroboration",
+    label: "Credibility — consistency and corroboration strategy",
+    hint: "How the record supports credibility (consistency across statements, corroborating documents) — address any inconsistencies proactively",
+    feedsSection: "Legal argument — credibility",
+    kind: "textarea",
+    stage: "factors",
+  },
+  {
+    id: "catTortureFactors",
+    label: "CAT-specific: likelihood of torture and government acquiescence",
+    hint: "Only if CAT protection is sought in the alternative — torture standard differs from persecution",
+    feedsSection: "Legal argument — CAT (if applicable)",
+    kind: "textarea",
+    stage: "factors",
+  },
+  {
+    id: "priorImmigrationHistory",
+    label: "Prior immigration history",
+    hint: "Prior filings, denials, removals, voluntary departure — with outcomes",
+    feedsSection: "Procedural background",
+    kind: "textarea",
+    stage: "factors",
+  },
+];
+
+/**
+ * Family-based petitions (I-130 and downstream AOS/consular processing) —
+ * same staged depth as AOS Discretionary Brief.
+ */
+const FAMILY_BASED_FIELDS: FactFieldDef[] = [
+  // ── Stage 1: Identity / petition ───────────────────────────────────────
+  {
+    id: "petitionerName",
+    label: "Petitioner full legal name",
+    hint: "U.S. citizen or lawful permanent resident filing the I-130",
+    feedsSection: "Caption / cover",
+    kind: "text",
+    required: true,
+    stage: "identity",
+  },
+  {
+    id: "petitionerStatus",
+    label: "Petitioner status",
+    hint: "U.S. citizen or lawful permanent resident — affects category and wait time",
+    feedsSection: "Statutory eligibility",
+    kind: "text",
+    required: true,
+    stage: "identity",
+  },
+  {
+    id: "beneficiaryName",
+    label: "Beneficiary full legal name",
+    feedsSection: "Caption / cover",
+    kind: "text",
+    required: true,
+    stage: "identity",
+  },
+  {
+    id: "relationshipType",
+    label: "Relationship type",
+    hint: "Spouse, parent, child, sibling, fiancé(e) — determines category and visa availability",
+    feedsSection: "Statutory eligibility",
+    kind: "text",
+    required: true,
+    stage: "identity",
+  },
+  {
+    id: "i130Status",
+    label: "I-130 filing / approval status",
+    hint: "Not yet filed, pending, or approved — with dates",
+    feedsSection: "Procedural posture",
+    kind: "textarea",
+    required: true,
+    stage: "identity",
+  },
+  {
+    id: "processingPath",
+    label: "Processing path",
+    hint: "Adjustment of status (in the U.S.) or consular processing (abroad)",
+    feedsSection: "Procedural posture",
+    kind: "text",
+    required: true,
+    stage: "identity",
+  },
+  {
+    id: "priorityDate",
+    label: "Priority date and visa availability",
+    hint: "Immediate relative (always current) or preference category (check visa bulletin)",
+    feedsSection: "Statutory eligibility",
+    kind: "text",
+    stage: "identity",
+  },
+  // ── Stage 2: Case architecture (attorney-authored) ─────────────────────
+  {
+    id: "relationshipTheme",
+    label: "Relationship theme (one sentence, if marriage-based)",
+    hint: "Attorney-authored framing of the bona fide relationship — not required for parent/child petitions",
+    feedsSection: "Cover letter / bona fide relationship argument",
+    kind: "textarea",
+    stage: "architecture",
+  },
+  {
+    id: "redFlagsToAddress",
+    label: "Red flags to proactively address",
+    hint: "Short courtship, large age gap, no shared address history, prior petitions for others — frame directly rather than let USCIS raise it first, or confirm none",
+    feedsSection: "Cover letter — anticipated RFE issues",
+    kind: "textarea",
+    stage: "architecture",
+  },
+  // ── Stage 3: Factors / evidentiary detail ──────────────────────────────
+  {
+    id: "relationshipEvidence",
+    label: "Relationship evidence inventory (if marriage-based)",
+    hint: "Joint finances, joint lease/mortgage, photos over time, affidavits from friends/family, joint insurance",
+    feedsSection: "Evidence — bona fide relationship",
+    kind: "textarea",
+    stage: "factors",
+  },
+  {
+    id: "priorMaritalHistory",
+    label: "Prior marriages / immigration petitions by either party",
+    hint: "Prior marriages (with proof of termination), prior I-130s filed for other beneficiaries — or confirm none",
+    feedsSection: "Statutory eligibility — prior history",
+    kind: "textarea",
+    stage: "factors",
+  },
+  {
+    id: "priorDenialsOrRfes",
+    label: "Prior denials or RFEs on this or a related petition",
+    hint: "What was raised and how it's being addressed now — or confirm none",
+    feedsSection: "Procedural background",
+    kind: "textarea",
+    stage: "factors",
+  },
+  {
+    id: "inadmissibilityGrounds",
+    label: "Grounds of inadmissibility (if any)",
+    hint: "Unlawful presence, prior removal, criminal history, public charge — or confirm none",
+    feedsSection: "Statutory eligibility — admissibility",
+    kind: "textarea",
+    stage: "factors",
+  },
+  {
+    id: "publicChargeConsiderations",
+    label: "Public charge considerations",
+    hint: "Affidavit of Support (I-864) sponsor, household income — or confirm not applicable",
+    feedsSection: "Statutory eligibility — public charge",
+    kind: "textarea",
+    stage: "factors",
+  },
+  {
+    id: "medicalExamStatus",
+    label: "Medical exam (I-693) status",
+    hint: "Not yet scheduled, completed, or results pending",
+    feedsSection: "Procedural checklist",
+    kind: "text",
+    stage: "factors",
   },
 ];
 
@@ -712,9 +1052,31 @@ export function deliverableFactGuideTitle(deliverableId?: string): string | null
 
 export function resolvePracticeArea(caseType: string): PracticeAreaId {
   const lower = (caseType || "").toLowerCase();
+  // Check the finer immigration sub-areas before the generic immigration
+  // catch-all, so e.g. "Immigration - Asylum" resolves to the deeper schema.
+  if (
+    lower.includes("asylum") ||
+    lower.includes("withholding") ||
+    lower.includes("cat claim") ||
+    lower.includes("convention against torture") ||
+    lower.includes("credible fear") ||
+    lower.includes("reasonable fear")
+  ) {
+    return "immigration_asylum";
+  }
+  if (
+    lower.includes("family") ||
+    lower.includes("marriage") ||
+    lower.includes("i-130") ||
+    lower.includes("i130") ||
+    lower.includes("spousal petition") ||
+    lower.includes("fiance") ||
+    lower.includes("fiancé")
+  ) {
+    return "immigration_family";
+  }
   if (
     lower.includes("immigration") ||
-    lower.includes("asylum") ||
     lower.includes("adjustment") ||
     lower.includes("cancellation") ||
     lower.includes("uscis") ||
@@ -735,6 +1097,8 @@ export function resolvePracticeArea(caseType: string): PracticeAreaId {
 }
 
 export function fieldsForPracticeArea(area: PracticeAreaId): FactFieldDef[] {
+  if (area === "immigration_asylum") return ASYLUM_WITHHOLDING_CAT_FIELDS;
+  if (area === "immigration_family") return FAMILY_BASED_FIELDS;
   if (area === "immigration") return IMMIGRATION_BASE;
   if (area === "personal_injury") return PI_BASE;
   return [];
@@ -746,7 +1110,17 @@ export function fieldsForDeliverable(
   area: PracticeAreaId,
 ): FactFieldDef[] {
   if (deliverableId) {
-    const schema = DELIVERABLE_FACT_SCHEMAS[deliverableId]?.[area];
+    const byDeliverable = DELIVERABLE_FACT_SCHEMAS[deliverableId];
+    // A specific deliverable (e.g. AOS Discretionary Brief) keeps its own
+    // dedicated schema regardless of which immigration sub-area the case
+    // type resolves to — the asylum/family sub-areas only change the
+    // *generic* fallback below, not a deliverable that already has its own
+    // guided intake. Falls back from the sub-area to the coarse
+    // "immigration" key so e.g. an "Asylum" case type selecting AOS
+    // Discretionary Brief still gets AOS_DISCRETIONARY_BRIEF_FIELDS.
+    const schema =
+      byDeliverable?.[area] ??
+      (isImmigrationPracticeArea(area) ? byDeliverable?.immigration : undefined);
     if (schema?.length) return schema;
   }
   return fieldsForPracticeArea(area);
@@ -844,6 +1218,8 @@ export function serializeDraftingFacts(payload: DraftingFactsPayload): string {
 const FIELD_LABELS: Record<string, string> = {};
 for (const def of [
   ...IMMIGRATION_BASE,
+  ...ASYLUM_WITHHOLDING_CAT_FIELDS,
+  ...FAMILY_BASED_FIELDS,
   ...AOS_DISCRETIONARY_BRIEF_FIELDS,
   ...RESEARCH_MEMO_IMMIGRATION_FIELDS,
   ...HEARING_PACKET_FIELDS,

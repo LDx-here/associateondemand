@@ -21,6 +21,7 @@ import {
   draftingFactsCompleteness,
   emptyDraftingFacts,
   fieldsForDeliverable,
+  isImmigrationPracticeArea,
   mergeFactsForDispatch,
   type DraftingFactsPayload,
   type FactFieldDef,
@@ -320,11 +321,16 @@ export function PracticeAreaFactGuide({
     );
   }
 
-  const areaLabel = payload.practiceArea === "immigration" ? "Immigration" : "Personal injury";
+  const areaLabel = isImmigrationPracticeArea(payload.practiceArea) ? "Immigration" : "Personal injury";
   const identityDefs = defs.filter((d) => !d.stage || d.stage === "identity");
   const architectureDefs = defs.filter((d) => d.stage === "architecture");
   const factorDefs = defs.filter((d) => d.stage === "factors");
-  const unstagedDefs = isAos ? [] : defs;
+  // Progressive-disclosure staging isn't AOS-only — any deliverable whose
+  // schema uses `stage` (PI Demand Letter, asylum, family-based) gets the
+  // same guided Identity → Architecture → Factors layout. Only the
+  // paragraph-variant library (step 4) stays AOS-specific.
+  const hasStagedFields = architectureDefs.length > 0 || factorDefs.length > 0;
+  const unstagedDefs = hasStagedFields ? [] : defs;
 
   function renderField(def: FactFieldDef) {
     return (
@@ -443,12 +449,10 @@ export function PracticeAreaFactGuide({
         </div>
       ) : null}
 
-      {isAos ? (
+      {hasStagedFields ? (
         <div className="space-y-6">
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              1. Identity &amp; petition
-            </h4>
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">1. Identity</h4>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">{identityDefs.map(renderField)}</div>
           </div>
           <div>
@@ -462,23 +466,25 @@ export function PracticeAreaFactGuide({
           </div>
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              3. Equities &amp; adverse detail
+              3. Factors &amp; supporting detail
             </h4>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">{factorDefs.map(renderField)}</div>
           </div>
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              4. Choose argument variants
-            </h4>
-            <div className="mt-3">
-              <AosVariantSelector
-                fields={payload.fields}
-                selections={payload.paragraphSelections ?? {}}
-                onSelect={setParagraphSelection}
-                onCaseThemeSelect={setCaseTheme}
-              />
+          {isAos ? (
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                4. Choose argument variants
+              </h4>
+              <div className="mt-3">
+                <AosVariantSelector
+                  fields={payload.fields}
+                  selections={payload.paragraphSelections ?? {}}
+                  onSelect={setParagraphSelection}
+                  onCaseThemeSelect={setCaseTheme}
+                />
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">{unstagedDefs.map(renderField)}</div>
