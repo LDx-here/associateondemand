@@ -30,9 +30,6 @@ export default async function PhaseZeroHome() {
             <Link className={btnPrimaryMd} href="/login">
               Sign in to open dashboard
             </Link>
-            <p className="w-full text-center text-xs text-slate-500">
-              Firm access requires Supabase sign-in. Matters and tasks remain in Airtable.
-            </p>
           </>
         ) : (
           <>

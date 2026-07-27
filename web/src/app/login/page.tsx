@@ -12,9 +12,6 @@ export default function LoginPage() {
       <header>
         <p className="text-sm font-semibold text-slate-700">AssociateOnDemand</p>
         <h1 className="text-2xl font-semibold text-slate-900">Sign in</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Firm access uses Supabase Auth. Matters and tasks remain in Airtable.
-        </p>
       </header>
 
       {!authFlag ? (
