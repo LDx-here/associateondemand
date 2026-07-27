@@ -133,8 +133,9 @@ export async function ensureFirmTemplateMatterInGoogleSheets(): Promise<{
   const row = await findMatterRow(matter.matterId);
   if (row) {
     const headers = TAB_HEADERS.matters;
-    const updated = { ...row, matter_id: FIRM_TEMPLATE_MATTER_ID, status: MATTER_STATUS_CLOSED };
-    await updateSheetRow("matters", row._sheetRow, rowToValues(headers, updated));
+    const { _sheetRow, ...rowData } = row;
+    const updated = { ...rowData, matter_id: FIRM_TEMPLATE_MATTER_ID, status: MATTER_STATUS_CLOSED };
+    await updateSheetRow("matters", _sheetRow, rowToValues(headers, updated));
   }
   return { recordId: matter.id, matterId: FIRM_TEMPLATE_MATTER_ID };
 }
@@ -161,7 +162,8 @@ export async function updateMatterInGoogleSheets(
   const row = await findMatterRow(matterCode);
   if (!row) return null;
   const headers = TAB_HEADERS.matters;
-  const updated: Record<string, string> = { ...row, updated_at: new Date().toISOString() };
+  const { _sheetRow, ...rowData } = row;
+  const updated: Record<string, string> = { ...rowData, updated_at: new Date().toISOString() };
   if (patch.title !== undefined) updated.title = patch.title;
   if (patch.caseType !== undefined) updated.case_type = patch.caseType;
   if (patch.country !== undefined) updated.country = patch.country;
@@ -173,7 +175,7 @@ export async function updateMatterInGoogleSheets(
   if (patch.nextDeadline !== undefined) updated.next_deadline = patch.nextDeadline ?? "";
   if (patch.nextHearing !== undefined) updated.next_hearing = patch.nextHearing ?? "";
   if (patch.assignedAttorney !== undefined) updated.assigned_to = patch.assignedAttorney;
-  await updateSheetRow("matters", row._sheetRow, rowToValues(headers, updated));
+  await updateSheetRow("matters", _sheetRow, rowToValues(headers, updated));
   return mapMatterRow(updated);
 }
 
@@ -231,12 +233,13 @@ export async function updateNoteInGoogleSheets(
   const existing = rows.find((r) => r.row_id === noteId);
   if (!existing) throw new Error(`Note not found: ${noteId}`);
   const headers = TAB_HEADERS.notes;
+  const { _sheetRow, ...rowData } = existing;
   const updated: Record<string, string> = {
-    ...existing,
+    ...rowData,
     content: content.slice(0, 100_000),
     author: author?.slice(0, 120) ?? existing.author,
   };
-  await updateSheetRow("notes", existing._sheetRow, rowToValues(headers, updated));
+  await updateSheetRow("notes", _sheetRow, rowToValues(headers, updated));
   return mapNoteRow(updated);
 }
 
