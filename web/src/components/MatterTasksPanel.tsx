@@ -16,6 +16,80 @@ import type { DraftingFactsPayload } from "@/lib/practice-area-facts";
 import type { Task } from "@/lib/types";
 import { btnSecondary } from "@/lib/ui-classes";
 
+/** Mirrors DECISION_OUTCOMES in api/matters/[matterId]/decision/route.ts. */
+const DECISION_OUTCOMES = ["Approved", "Denied", "RFE issued", "NOID issued", "Continued", "Other"] as const;
+
+function DecisionForm({ matterId, onRecorded }: { matterId: string; onRecorded: () => void }) {
+  const { showToast } = useToast();
+  const [outcome, setOutcome] = useState<string>(DECISION_OUTCOMES[0]);
+  const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    setSubmitting(true);
+    try {
+      const resp = await fetch(`/api/matters/${matterId}/decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ outcome, note: note.trim() || undefined }),
+      });
+      const data = (await resp.json()) as { error?: string; tasksCreated?: number };
+      if (!resp.ok) throw new Error(data.error ?? "Could not record decision.");
+      showToast(
+        data.tasksCreated
+          ? `Decision recorded — moved to Resolution, ${data.tasksCreated} task${data.tasksCreated === 1 ? "" : "s"} added.`
+          : "Decision recorded — moved to Resolution.",
+        "success",
+      );
+      setNote("");
+      onRecorded();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Could not record decision.", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="mt-2 flex flex-wrap items-end gap-2 rounded-md border border-sky-200 bg-sky-50/60 p-2">
+      <label className="flex flex-col gap-1 text-xs text-slate-700">
+        Decision
+        <select
+          value={outcome}
+          onChange={(e) => setOutcome(e.target.value)}
+          className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+          disabled={submitting}
+        >
+          {DECISION_OUTCOMES.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex min-w-[200px] flex-1 flex-col gap-1 text-xs text-slate-700">
+        Note (optional)
+        <input
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="e.g. approval notice date, next filing needed"
+          className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs"
+          disabled={submitting}
+        />
+      </label>
+      <button
+        type="button"
+        disabled={submitting}
+        className="rounded-md bg-sky-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-900 disabled:opacity-40"
+        onClick={() => void submit()}
+      >
+        {submitting ? "Recording…" : "Record decision"}
+      </button>
+    </div>
+  );
+}
+
 function LifecycleStagePanel({
   matterId,
   stage,
@@ -29,7 +103,11 @@ function LifecycleStagePanel({
 }) {
   const { showToast } = useToast();
   const [moving, setMoving] = useState(false);
-  const nextStages = LIFECYCLE_TRANSITIONS[stage] ?? [];
+  const awaitingDecision = stage === "Filed/Awaiting Decision";
+  // Resolution is reached via the decision form below, not a bare stage move, when awaiting a decision.
+  const nextStages = (LIFECYCLE_TRANSITIONS[stage] ?? []).filter(
+    (s) => !(awaitingDecision && s === "Resolution"),
+  );
 
   async function moveTo(next: MatterLifecycleStage) {
     setMoving(true);
@@ -82,6 +160,7 @@ function LifecycleStagePanel({
               ))}
             </>
           ) : null}
+          {awaitingDecision ? <DecisionForm matterId={matterId} onRecorded={onMoved} /> : null}
         </div>
       ) : (
         <p className="mt-2 text-xs text-slate-600">

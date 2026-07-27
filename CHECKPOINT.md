@@ -1,13 +1,21 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-26 (CDT) — Pass 38 Real client path + AOS intelligence  
+**Last updated:** 2026-07-26 (CDT) — Pass 40 Record-decision action closes the lifecycle loop  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
 
-**Pass 38 (2026-07-26):** Real client work path — Google Sheets matters/notes already wired; Settings shows data store + sheet link. AOS fact guide: paste summary → `POST /agents/aos/extract-facts` (Anthropic on Fly) or heuristic fallback; scorecard follow-ups (no LLM); prior-matter fact template reuse (schema + variant picks, PII cleared); skills save to Google Sheets Strategy Patterns tab. pytest 118; `test:aos-intelligence`.
+**Overnight continuation agent active (2026-07-26 night):** running `docs/runbooks/continuation-agent.md` protocol via Claude Code `/loop`, self-paced, session-bound (stops if this terminal/session closes). Governance: routine work matching what's already documented ships (commit → push → deploy, same bar as the rest of this session); anything super-major or undiscussed goes to an `overnight/<name>` branch for approval instead — see **Awaiting approval** below (empty so far).
 
-**Next:** Connect Google Sheets on Vercel (see `docs/runbooks/google-sheets-setup.md`); set `ANTHROPIC_API_KEY` on Fly for smart extract; pilot: New matter → paste facts → save → dispatch AOS brief.
+**Pass 40 (2026-07-26, continuation agent pass 1):** Record-decision action — the one lifecycle transition with no automatic trigger (Filed/Awaiting Decision → Resolution; nothing observes "a decision came in"). `POST /api/matters/[matterId]/decision` (outcome + optional note) logs a Decision-type Note and advances the stage + auto-creates Resolution tasks in one action; UI replaces the bare "Move to: Resolution" button with a decision form when a matter is Filed/Awaiting Decision. Caught and fixed a real bug during live testing: the route originally raced note-creation against the stage-advance (`Promise.all`), so a *rejected* call (illegal transition) still left a stray "Decision recorded" note behind — fixed by sequencing (advance first, only log the note if it succeeds). Verified live: illegal-from-Intake call correctly 409s with zero notes written; full Filed→Resolution flow records the note and creates 3 tasks; re-calling from Resolution correctly 409s. pytest 118; next build; Fly + Vercel.
+
+**Pass 39 (2026-07-26):** Matter lifecycle automation — Clio-Manage-style stages (Intake → Active → Filed/Awaiting Decision → Resolution → Closed) finished the Tasks-on-Google-Sheets migration slice (schema existed, queries never implemented) and made stage moves auto-fire that stage's task checklist (idempotent via `createdFrom` tags on each Task). Then closed the loop further: real events now drive stage automatically instead of only a manual button — new matter seeds Intake tasks immediately; first assignment submitted nudges Intake→Active; exporting an approved deliverable nudges Active→Filed/Awaiting Decision; closing a matter forces Closed from any stage; reopening resumes Active. All best-effort/non-blocking (a stage-nudge failure never breaks the primary action). Google Sheets-only by design — shows an explanatory message on Airtable. Commits `2a152e6`, `cb49671`. pytest 118; next build; Fly + Vercel.
+
+**Next:** Connect Google Sheets on Vercel (see `docs/runbooks/google-sheets-setup.md`) — still the biggest unlock, since the whole lifecycle-automation feature (Pass 39–40) is inert until Sheets creds are live in production. Also: `ANTHROPIC_API_KEY` on Fly for smart AOS extract; pilot: New matter → paste facts → save → dispatch AOS brief.
+
+## Awaiting approval (overnight side branches)
+
+_None yet — nothing built overnight has qualified as "super major or different" so far; everything has shipped straight to `cursor/phase0-foundation` after tests passed, per the pre-existing continuation-agent authorization._
 
 **Pass 37 (2026-07-23):** Inbox PM board — clickable assignment cards open a right-side detail drawer (`AssignmentDetailDrawer` + `GET /api/inbox/[itemId]/preview`). Shows deliverable/tier, matter + client links, facts, latest agent draft (or No draft yet → Open Associate), actionable “what’s missing” checklist, and approve/return/status actions. next build; Vercel prod. Commit `e27a4f0`.
 

@@ -211,3 +211,5 @@
 ### [2026-07-22] CHECKPOINT: Pass 33 AOS drafting quality — full Part 8.1 system prompt + extended thinking (8192) + Part 8.2 full client facts; drafting primary path aos_brief_generator; pytest 108; Fly API
 
 ### [2026-07-24] CHECKPOINT: AOS prose polish — pronoun caps at sentence start, Section A care-slot dedupe, community-service list punctuation; pytest 115; Fly API
+
+### [2026-07-26] CHECKPOINT: Pass 40 (continuation agent) — Record-decision action closes Filed/Awaiting Decision→Resolution, the one lifecycle transition with no automatic trigger; caught+fixed a race bug (failed calls leaked a stray note) via live testing before shipping; pytest 118; next build; Fly + Vercel
