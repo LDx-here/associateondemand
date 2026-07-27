@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-27 (CDT) — Prod SSR fix: Google Sheets mode skips Airtable 429 crashes  
+**Last updated:** 2026-07-27 (CDT) — Prod SSR fix commit `89b64eb`: calendar + legacy Airtable reads no longer crash when Google Sheets is primary  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
