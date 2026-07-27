@@ -62,6 +62,12 @@ export type Matter = {
   createdAt?: string | null;
   /** BUILD_SPEC §2 writable updatedAt — bumped on every PATCH. */
   updatedAt?: string | null;
+  /**
+   * Matter lifecycle stage (Intake/Active/Filed/Resolution/Closed) — distinct
+   * from the assignment-derived `deriveMatterStage()`. Google Sheets-only for
+   * now (see `lib/matter-lifecycle-stage.ts`); undefined defaults to Intake.
+   */
+  lifecycleStage?: string;
 };
 
 export type Task = {
@@ -73,6 +79,8 @@ export type Task = {
   priority: string;
   isFilingDeadline: boolean;
   assignedTo?: string;
+  /** Stable tag (e.g. "stage:Active:imm-medical") set by automated task creation, for idempotency. */
+  createdFrom?: string;
 };
 
 export type Note = {

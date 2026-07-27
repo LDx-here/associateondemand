@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "fs/promises";
 import path from "path";
 
-import type { AssignmentStatus, AssignmentTier, DevSeed, DocumentRow, InboxItem, LegalElementRow, Note, Task } from "./types";
+import type { AssignmentStatus, AssignmentTier, DevSeed, DocumentRow, InboxItem, LegalElementRow, Matter, Note, Task } from "./types";
 import { ASSIGNMENT_TRANSITIONS, buildDeliveredHistory } from "./assignment-transitions";
 
 let cache: DevSeed | null = null;
@@ -54,7 +54,7 @@ export async function addTask(
 ): Promise<Task> {
   const seed = await getMutableSeed();
   const task: Task = {
-    id: `tsk-${Date.now()}`,
+    id: `tsk-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`,
     matterId,
     description: payload.description,
     dueDate: payload.dueDate,
@@ -83,6 +83,18 @@ export async function completeTask(taskId: string): Promise<Task | null> {
   });
   await persistSeed();
   return task;
+}
+
+export async function updateMatterLifecycleStageDemo(
+  matterId: string,
+  stage: string,
+): Promise<Matter | null> {
+  const seed = await getMutableSeed();
+  const matter = seed.matters.find((m) => m.matterId === matterId);
+  if (!matter) return null;
+  matter.lifecycleStage = stage;
+  await persistSeed();
+  return matter;
 }
 
 export async function updateLegalElement(

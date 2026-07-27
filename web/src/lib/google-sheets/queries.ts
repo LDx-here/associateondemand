@@ -2,7 +2,8 @@
  * Google Sheets read/write — Matters + Notes (Phase 1 migration slice).
  */
 
-import type { Matter, Note } from "../types";
+import type { Matter, Note, Task } from "../types";
+import { DEFAULT_LIFECYCLE_STAGE } from "../matter-lifecycle-stage";
 import { FIRM_TEMPLATE_MATTER_ID } from "../assessment-documents";
 import { MATTER_STATUS_CLOSED } from "../matter-status";
 import {
@@ -37,6 +38,21 @@ function mapMatterRow(row: Record<string, string>): Matter {
     summary: row.summary ?? "",
     createdAt: row.created_at || null,
     updatedAt: row.updated_at || null,
+    lifecycleStage: row.lifecycle_stage || undefined,
+  };
+}
+
+function mapTaskRow(row: Record<string, string>): Task {
+  return {
+    id: row.row_id,
+    matterId: row.matter_id,
+    description: row.description ?? "",
+    dueDate: row.due_date || null,
+    status: row.status || "To Do",
+    priority: row.priority || "Medium",
+    isFilingDeadline: row.is_filing_deadline === "true" || row.is_filing_deadline === "TRUE",
+    assignedTo: row.assigned_to || undefined,
+    createdFrom: row.created_from_agent || undefined,
   };
 }
 
@@ -105,6 +121,7 @@ export async function createMatterInGoogleSheets(payload: {
     summary: payload.summary ?? "",
     created_at: now,
     updated_at: now,
+    lifecycle_stage: DEFAULT_LIFECYCLE_STAGE,
   };
   await appendSheetRow("matters", rowToValues(headers, row));
   return mapMatterRow(row);
@@ -156,6 +173,7 @@ export async function updateMatterInGoogleSheets(
       | "nextDeadline"
       | "nextHearing"
       | "assignedAttorney"
+      | "lifecycleStage"
     >
   >,
 ): Promise<Matter | null> {
@@ -175,6 +193,7 @@ export async function updateMatterInGoogleSheets(
   if (patch.nextDeadline !== undefined) updated.next_deadline = patch.nextDeadline ?? "";
   if (patch.nextHearing !== undefined) updated.next_hearing = patch.nextHearing ?? "";
   if (patch.assignedAttorney !== undefined) updated.assigned_to = patch.assignedAttorney;
+  if (patch.lifecycleStage !== undefined) updated.lifecycle_stage = patch.lifecycleStage;
   await updateSheetRow("matters", _sheetRow, rowToValues(headers, updated));
   return mapMatterRow(updated);
 }
@@ -334,4 +353,55 @@ export async function createCorrectionInGoogleSheets(payload: {
   };
   await appendSheetRow("corrections", rowToValues(headers, row));
   return { id: rowId };
+}
+
+export async function listTasksForMatterFromGoogleSheets(matterCode: string): Promise<Task[]> {
+  const resolved = await findMatterRow(matterCode);
+  const code = resolved?.matter_id ?? matterCode;
+  const rows = await readSheetTab("tasks");
+  return rows.filter((r) => r.matter_id === code).map(mapTaskRow);
+}
+
+export async function listAllTasksFromGoogleSheets(): Promise<Task[]> {
+  const rows = await readSheetTab("tasks");
+  return rows.map(mapTaskRow);
+}
+
+export async function createTaskInGoogleSheets(
+  matterCode: string,
+  payload: Pick<Task, "description" | "dueDate" | "priority" | "isFilingDeadline"> & {
+    createdFrom?: string;
+  },
+): Promise<Task> {
+  const resolved = await findMatterRow(matterCode);
+  const code = resolved?.matter_id ?? matterCode;
+  const headers = TAB_HEADERS.tasks;
+  const rowId = newRowId("task");
+  const row: Record<string, string> = {
+    row_id: rowId,
+    matter_id: code,
+    description: payload.description,
+    status: "To Do",
+    priority: payload.priority,
+    due_date: payload.dueDate ?? "",
+    assigned_to: "",
+    is_filing_deadline: payload.isFilingDeadline ? "true" : "",
+    created_from_agent: payload.createdFrom ?? "",
+  };
+  await appendSheetRow("tasks", rowToValues(headers, row));
+  return mapTaskRow(row);
+}
+
+export async function completeTaskInGoogleSheets(
+  taskId: string,
+  _options?: { completionDocs?: string; completionNote?: string; completedBy?: string },
+): Promise<Task | null> {
+  const rows = await readSheetTab("tasks", { noCache: true });
+  const existing = rows.find((r) => r.row_id === taskId);
+  if (!existing) return null;
+  const headers = TAB_HEADERS.tasks;
+  const { _sheetRow, ...rowData } = existing;
+  const updated: Record<string, string> = { ...rowData, status: "Done" };
+  await updateSheetRow("tasks", _sheetRow, rowToValues(headers, updated));
+  return mapTaskRow(updated);
 }

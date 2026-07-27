@@ -45,8 +45,10 @@ import {
 import { isAirtableQuotaError } from "./airtable/client";
 import { isDemoMode, usesGoogleSheets } from "./data-store-config";
 import {
+  completeTaskInGoogleSheets,
   createMatterInGoogleSheets,
   createNoteInGoogleSheets,
+  createTaskInGoogleSheets,
   ensureFirmTemplateMatterInGoogleSheets,
   findLatestAgentNoteForMatterFromGoogleSheets,
   findLatestAssessmentOcrNoteForMatterFromGoogleSheets,
@@ -54,12 +56,19 @@ import {
   findLatestProceduralTimelineNoteForMatterFromGoogleSheets,
   getMatterFromGoogleSheets,
   listAllNotesFromGoogleSheets,
+  listAllTasksFromGoogleSheets,
   listMattersFromGoogleSheets,
   listNotesForMatterFromGoogleSheets,
+  listTasksForMatterFromGoogleSheets,
   updateMatterDeadlineInGoogleSheets,
   updateMatterInGoogleSheets,
   updateNoteInGoogleSheets,
 } from "./google-sheets/queries";
+import {
+  isValidLifecycleTransition,
+  normalizeLifecycleStage,
+  type MatterLifecycleStage,
+} from "./matter-lifecycle-stage";
 import { emptyCaseAssessment } from "./case-assessment";
 import {
   emptyProceduralTimeline,
@@ -171,6 +180,22 @@ function notesBackend() {
         findProcedural: findLatestProceduralTimelineNoteForMatter,
         findFacts: findLatestDraftingFactsNoteForMatter,
         findAssessmentOcr: findLatestAssessmentOcrNoteForMatter,
+      };
+}
+
+function tasksBackend() {
+  return usesGoogleSheets()
+    ? {
+        listForMatter: listTasksForMatterFromGoogleSheets,
+        listAll: listAllTasksFromGoogleSheets,
+        create: createTaskInGoogleSheets,
+        complete: completeTaskInGoogleSheets,
+      }
+    : {
+        listForMatter: listTasksForMatterFromAirtable,
+        listAll: listAllTasksFromAirtable,
+        create: createTaskInAirtable,
+        complete: completeTaskInAirtable,
       };
 }
 
@@ -404,14 +429,14 @@ export async function listTasksForMatter(matterId: string): Promise<Task[]> {
       const seed = await loadDemoSeed();
       return seed.tasks.filter((t) => t.matterId === matterId);
     },
-    () => listTasksForMatterFromAirtable(matterId),
+    () => tasksBackend().listForMatter(matterId),
   );
 }
 
 export async function listAllTasks(): Promise<Task[]> {
   return readStore(
     async () => (await loadDemoSeed()).tasks,
-    () => listAllTasksFromAirtable(),
+    () => tasksBackend().listAll(),
   );
 }
 
@@ -537,7 +562,7 @@ export async function completeTask(
     const { completeTask: completeDemoTask } = await import("./demo-store-mutable");
     return completeDemoTask(taskId);
   }
-  const task = await completeTaskInAirtable(taskId, options);
+  const task = await tasksBackend().complete(taskId, options);
   if (!task) return null;
   const when = new Date().toISOString();
   const docs = options?.completionDocs?.trim() || "(not specified)";
@@ -551,23 +576,27 @@ export async function completeTask(
 
 export async function createTaskForMatter(
   matterId: string,
-  payload: Pick<Task, "description" | "dueDate" | "priority" | "isFilingDeadline">,
+  payload: Pick<Task, "description" | "dueDate" | "priority" | "isFilingDeadline"> & {
+    /** Stable template tag (e.g. "stage:Active:imm-medical") for automated, idempotent creation. */
+    createdFrom?: string;
+  },
 ): Promise<Task> {
   if (isDemoMode()) {
     const seed = await loadDemoSeed();
     const task: Task = {
-      id: `tsk-${Date.now()}`,
+      id: `tsk-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`,
       matterId,
       description: payload.description,
       dueDate: payload.dueDate,
       status: "To Do",
       priority: payload.priority,
       isFilingDeadline: payload.isFilingDeadline,
+      createdFrom: payload.createdFrom,
     };
     seed.tasks.push(task);
     return task;
   }
-  return createTaskInAirtable(matterId, payload);
+  return tasksBackend().create(matterId, payload);
 }
 
 export async function createNoteForMatter(
@@ -807,6 +836,39 @@ export async function updateMatterDeadline(matterId: string, nextDeadline: strin
     return matter;
   }
   return mattersBackend().updateDeadline(matterId, nextDeadline);
+}
+
+/**
+ * Matter lifecycle stage transition (Google Sheets only — see
+ * `matter-lifecycle-stage.ts`). Throws on an illegal transition or when
+ * neither demo mode nor Google Sheets is active, mirroring
+ * `updateAssignmentStatus`'s error-on-illegal-move contract; the API route
+ * maps the thrown message to a 400/404/409.
+ */
+export async function updateMatterLifecycleStage(
+  matterId: string,
+  nextStage: MatterLifecycleStage,
+): Promise<Matter> {
+  if (!isDemoMode() && !usesGoogleSheets()) {
+    throw new Error(
+      "Lifecycle stages require Google Sheets. Connect Google Sheets in Settings to use this feature.",
+    );
+  }
+  const matter = await getMatterByCode(matterId);
+  if (!matter) throw new Error("Matter not found.");
+  const current = normalizeLifecycleStage(matter.lifecycleStage);
+  if (!isValidLifecycleTransition(current, nextStage)) {
+    throw new Error(`Cannot move matter from "${current}" to "${nextStage}".`);
+  }
+  if (isDemoMode()) {
+    const { updateMatterLifecycleStageDemo } = await import("./demo-store-mutable");
+    const updated = await updateMatterLifecycleStageDemo(matterId, nextStage);
+    if (!updated) throw new Error("Matter not found.");
+    return updated;
+  }
+  const updated = await updateMatterInGoogleSheets(matterId, { lifecycleStage: nextStage });
+  if (!updated) throw new Error("Matter not found.");
+  return updated;
 }
 
 const OPEN_INBOX_STATUSES = new Set(["Pending", "Submitted", "In progress", "Ready for review", "Returned"]);

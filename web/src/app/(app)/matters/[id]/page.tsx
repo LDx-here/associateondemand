@@ -14,6 +14,7 @@ import {
   listNotesForMatter,
   listTasksForMatter,
   isDemoMode,
+  usesGoogleSheets,
 } from "@/lib/data-store";
 
 type Props = { params: Promise<{ id: string }> };
@@ -48,10 +49,12 @@ export default async function MatterDetailPage({ params }: Props) {
   ]);
 
   const demo = isDemoMode();
+  const sheetsEnabled = demo || usesGoogleSheets();
 
   return (
     <MatterWorkbench
       demoMode={demo}
+      sheetsEnabled={sheetsEnabled}
       matter={matter}
       initialTasks={tasks}
       initialNotes={notes}

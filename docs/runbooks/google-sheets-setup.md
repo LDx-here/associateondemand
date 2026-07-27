@@ -57,8 +57,18 @@ Secrets stay on disk under `.secrets/` (gitignored) and in `web/.env.local` (git
 ### Matters — row 1 headers
 
 ```
-row_id	matter_id	title	case_type	country	posture	court	judge	status	assigned_to	next_deadline	next_hearing	summary	created_at	updated_at
+row_id	matter_id	title	case_type	country	posture	court	judge	status	assigned_to	next_deadline	next_hearing	summary	created_at	updated_at	lifecycle_stage
 ```
+
+`lifecycle_stage` (column P) drives the matter-lifecycle task automation (Intake → Active → Filed/Awaiting Decision → Resolution → Closed) — see [`lib/matter-lifecycle-stage.ts`](../../web/src/lib/matter-lifecycle-stage.ts). If this column is missing, new matters just default to Intake in the app; no error. **Google Sheets-only** — the stage control is disabled with an explanatory message when running on Airtable.
+
+### Tasks — row 1 headers
+
+```
+row_id	matter_id	description	status	priority	due_date	assigned_to	is_filing_deadline	created_from_agent
+```
+
+`created_from_agent` holds a stable tag (e.g. `stage:Active:imm-medical`) for tasks auto-created by a lifecycle-stage transition, so re-entering a stage never creates duplicates. Manually-added tasks leave it blank.
 
 ### Notes — row 1 headers
 

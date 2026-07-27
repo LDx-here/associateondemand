@@ -1,24 +1,110 @@
 "use client";
 
-import { ListTodo, Sparkles } from "lucide-react";
+import { ListTodo, Sparkles, Workflow } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { AddTaskForm } from "@/components/AddTaskForm";
 import { TaskList } from "@/components/TaskList";
 import { useToast } from "@/components/Toast";
+import {
+  LIFECYCLE_TRANSITIONS,
+  normalizeLifecycleStage,
+  type MatterLifecycleStage,
+} from "@/lib/matter-lifecycle-stage";
 import { deliverableLabel, matterTaskTemplates } from "@/lib/matter-task-templates";
 import type { DraftingFactsPayload } from "@/lib/practice-area-facts";
 import type { Task } from "@/lib/types";
 import { btnSecondary } from "@/lib/ui-classes";
 
+function LifecycleStagePanel({
+  matterId,
+  stage,
+  sheetsEnabled,
+  onMoved,
+}: {
+  matterId: string;
+  stage: MatterLifecycleStage;
+  sheetsEnabled: boolean;
+  onMoved: () => void;
+}) {
+  const { showToast } = useToast();
+  const [moving, setMoving] = useState(false);
+  const nextStages = LIFECYCLE_TRANSITIONS[stage] ?? [];
+
+  async function moveTo(next: MatterLifecycleStage) {
+    setMoving(true);
+    try {
+      const resp = await fetch(`/api/matters/${matterId}/stage`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: next }),
+      });
+      const data = (await resp.json()) as { error?: string; tasksCreated?: number };
+      if (!resp.ok) throw new Error(data.error ?? "Could not update lifecycle stage.");
+      showToast(
+        data.tasksCreated
+          ? `Moved to ${next} — ${data.tasksCreated} task${data.tasksCreated === 1 ? "" : "s"} added.`
+          : `Moved to ${next}.`,
+        "success",
+      );
+      onMoved();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Could not update lifecycle stage.", "error");
+    } finally {
+      setMoving(false);
+    }
+  }
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-3">
+      <h3 className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+        <Workflow className="h-4 w-4 text-sky-800" aria-hidden />
+        Matter lifecycle
+      </h3>
+      {sheetsEnabled ? (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-900">
+            {stage}
+          </span>
+          {nextStages.length > 0 ? (
+            <>
+              <span className="text-xs text-slate-500">Move to:</span>
+              {nextStages.map((next) => (
+                <button
+                  key={next}
+                  type="button"
+                  disabled={moving}
+                  className={`${btnSecondary} text-xs disabled:opacity-40`}
+                  onClick={() => void moveTo(next)}
+                >
+                  {next}
+                </button>
+              ))}
+            </>
+          ) : null}
+        </div>
+      ) : (
+        <p className="mt-2 text-xs text-slate-600">
+          Lifecycle stage tracking (and the task checklist that comes with each stage) requires
+          Google Sheets — connect it in Settings to use this feature.
+        </p>
+      )}
+    </section>
+  );
+}
+
 export function MatterTasksPanel({
   matterId,
   caseType,
+  lifecycleStage,
+  sheetsEnabled = false,
   initialTasks,
   onUpdated,
 }: {
   matterId: string;
   caseType: string;
+  lifecycleStage?: string;
+  sheetsEnabled?: boolean;
   initialTasks: Task[];
   onUpdated: () => void;
 }) {
@@ -76,6 +162,13 @@ export function MatterTasksPanel({
 
   return (
     <div className="space-y-4">
+      <LifecycleStagePanel
+        matterId={matterId}
+        stage={normalizeLifecycleStage(lifecycleStage)}
+        sheetsEnabled={sheetsEnabled}
+        onMoved={onUpdated}
+      />
+
       {templates.length > 0 ? (
         <section className="rounded-lg border border-slate-200 bg-slate-50/80 p-3">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">

@@ -77,6 +77,7 @@ export function MatterWorkbench({
   initialContacts = [],
   allContacts = [],
   demoMode = false,
+  sheetsEnabled = false,
 }: {
   matter: Matter;
   initialTasks: Task[];
@@ -90,6 +91,8 @@ export function MatterWorkbench({
   initialContacts?: Contact[];
   allContacts?: Contact[];
   demoMode?: boolean;
+  /** Lifecycle-stage task automation is Google Sheets-only (demo mode counts). */
+  sheetsEnabled?: boolean;
 }) {
   const [tab, setTab] = useState<Tab>(readInitialTabFromUrl);
   const [matterHeader, setMatterHeader] = useState(matter);
@@ -341,6 +344,8 @@ export function MatterWorkbench({
         <MatterTasksPanel
           matterId={matter.matterId}
           caseType={matterHeader.caseType}
+          lifecycleStage={matterHeader.lifecycleStage}
+          sheetsEnabled={sheetsEnabled}
           initialTasks={tasks}
           onUpdated={refresh}
         />
