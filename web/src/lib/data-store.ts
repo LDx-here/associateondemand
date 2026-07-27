@@ -1,5 +1,6 @@
 import {
   completeTaskInAirtable,
+  updateTaskInAirtable,
   createAssignmentInAirtable,
   createEventInAirtable,
   createLegalElementInAirtable,
@@ -49,6 +50,7 @@ import { isDemoMode, usesGoogleSheets } from "./data-store-config";
 import { isGoogleSheetsReadError } from "./google-sheets/client";
 import {
   completeTaskInGoogleSheets,
+  updateTaskInGoogleSheets,
   createContactInGoogleSheets,
   createEventInGoogleSheets,
   createLegalElementInGoogleSheets,
@@ -209,12 +211,14 @@ function tasksBackend() {
         listAll: listAllTasksFromGoogleSheets,
         create: createTaskInGoogleSheets,
         complete: completeTaskInGoogleSheets,
+        update: updateTaskInGoogleSheets,
       }
     : {
         listForMatter: listTasksForMatterFromAirtable,
         listAll: listAllTasksFromAirtable,
         create: createTaskInAirtable,
         complete: completeTaskInAirtable,
+        update: updateTaskInAirtable,
       };
 }
 
@@ -741,6 +745,17 @@ export async function completeTask(
     : `Task completed: ${task.description}. By: ${options?.completedBy ?? "Attorney"}. Date: ${when}. Documents: ${docs}.`;
   await notesBackend().create(task.matterId, body, "System", "Manual");
   return task;
+}
+
+export async function updateTaskForMatter(
+  taskId: string,
+  patch: Partial<Pick<Task, "description" | "dueDate" | "priority" | "isFilingDeadline">>,
+): Promise<Task | null> {
+  if (isDemoMode()) {
+    const { updateTask: updateDemoTask } = await import("./demo-store-mutable");
+    return updateDemoTask(taskId, patch);
+  }
+  return tasksBackend().update(taskId, patch);
 }
 
 export async function createTaskForMatter(

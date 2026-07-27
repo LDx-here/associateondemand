@@ -652,3 +652,21 @@ export async function completeTaskInGoogleSheets(
   await updateSheetRow("tasks", _sheetRow, rowToValues(headers, updated));
   return mapTaskRow(updated);
 }
+
+export async function updateTaskInGoogleSheets(
+  taskId: string,
+  patch: Partial<Pick<Task, "description" | "dueDate" | "priority" | "isFilingDeadline">>,
+): Promise<Task | null> {
+  const rows = await readSheetTab("tasks", { noCache: true });
+  const existing = rows.find((r) => r.row_id === taskId);
+  if (!existing) return null;
+  const headers = TAB_HEADERS.tasks;
+  const { _sheetRow, ...rowData } = existing;
+  const updated: Record<string, string> = { ...rowData };
+  if (patch.description !== undefined) updated.description = patch.description;
+  if (patch.dueDate !== undefined) updated.due_date = patch.dueDate ?? "";
+  if (patch.priority !== undefined) updated.priority = patch.priority;
+  if (patch.isFilingDeadline !== undefined) updated.is_filing_deadline = patch.isFilingDeadline ? "true" : "";
+  await updateSheetRow("tasks", _sheetRow, rowToValues(headers, updated));
+  return mapTaskRow(updated);
+}

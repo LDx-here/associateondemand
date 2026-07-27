@@ -85,6 +85,18 @@ export async function completeTask(taskId: string): Promise<Task | null> {
   return task;
 }
 
+export async function updateTask(
+  taskId: string,
+  patch: Partial<Pick<Task, "description" | "dueDate" | "priority" | "isFilingDeadline">>,
+): Promise<Task | null> {
+  const seed = await getMutableSeed();
+  const task = seed.tasks.find((t) => t.id === taskId);
+  if (!task) return null;
+  Object.assign(task, patch);
+  await persistSeed();
+  return task;
+}
+
 export async function updateMatterLifecycleStageDemo(
   matterId: string,
   stage: string,

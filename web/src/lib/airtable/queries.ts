@@ -610,6 +610,20 @@ export async function completeTaskInAirtable(
   return mapTask(rec, firstString(rec.fields[F.tasks.matter_id]));
 }
 
+export async function updateTaskInAirtable(
+  taskId: string,
+  patch: Partial<Pick<Task, "description" | "dueDate" | "priority" | "isFilingDeadline">>,
+): Promise<Task | null> {
+  const t = F.tasks;
+  const fields: RawFields = {};
+  if (patch.description !== undefined) fields[t.description] = patch.description;
+  if (patch.dueDate !== undefined) fields[t.due_date] = patch.dueDate ?? null;
+  if (patch.priority !== undefined) fields[t.priority] = patch.priority;
+  if (patch.isFilingDeadline !== undefined) fields["is_filing_deadline"] = patch.isFilingDeadline;
+  const rec = await airtablePatch(TABLES.tasks, taskId, fields);
+  return mapTask(rec, firstString(rec.fields[F.tasks.matter_id]));
+}
+
 export async function listAllNotesFromAirtable(): Promise<Note[]> {
   const matters = await listMattersFromAirtable();
   const codeByRecord = new Map(matters.map((m) => [m.id, m.matterId]));
