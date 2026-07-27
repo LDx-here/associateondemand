@@ -1,11 +1,5 @@
-import {
-  listEventsFromAirtable,
-  listMattersFromAirtable,
-} from "@/lib/airtable/queries";
-import { isDemoMode } from "@/lib/data-store";
-import { getMutableSeed } from "@/lib/demo-store-mutable";
+import { listAllEvents, listMatters, isDemoMode } from "@/lib/data-store";
 import { CalendarBoard, type CalendarEntry } from "@/components/CalendarBoard";
-import type { Matter } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -22,44 +16,20 @@ export default async function CalendarPage({
     ? parseMonthParam(sp.month, now)
     : new Date(now.getFullYear(), now.getMonth(), 1);
 
-  let events: CalendarEntry[] = [];
-  let matters: Matter[] = [];
-
-  if (demo) {
-    const seed = await getMutableSeed();
-    matters = seed.matters;
-    events = seed.events.map((e) => ({
-      id: e.id,
-      matterCode: e.matterId,
-      matterRecordId: null,
-      type: e.type,
-      date: e.date,
-      time: "",
-      summary: e.description,
-      description: e.description,
-      location: "",
-      calendarSynced: false,
-    }));
-  } else {
-    const [airtableEvents, airtableMatters] = await Promise.all([
-      listEventsFromAirtable(),
-      listMattersFromAirtable(),
-    ]);
-    const matterIndex = new Map(airtableMatters.map((m) => [m.id, m]));
-    matters = airtableMatters;
-    events = airtableEvents.map((e) => ({
-      id: e.id,
-      matterCode: matterIndex.get(e.matterId)?.matterId ?? "",
-      matterRecordId: e.matterId || null,
-      type: e.type,
-      date: e.date,
-      time: e.time,
-      summary: e.description,
-      description: e.longDescription,
-      location: e.location,
-      calendarSynced: e.calendarSynced,
-    }));
-  }
+  const [matters, rawEvents] = await Promise.all([listMatters(), listAllEvents()]);
+  const matterIndex = new Map(matters.map((m) => [m.id, m]));
+  const events: CalendarEntry[] = rawEvents.map((e) => ({
+    id: e.id,
+    matterCode: matterIndex.get(e.matterId)?.matterId ?? e.matterId,
+    matterRecordId: e.matterId || null,
+    type: e.type,
+    date: e.date,
+    time: e.time,
+    summary: e.description,
+    description: e.longDescription,
+    location: e.location,
+    calendarSynced: e.calendarSynced,
+  }));
 
   return (
     <div className="space-y-6">

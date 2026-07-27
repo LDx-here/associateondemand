@@ -5,7 +5,6 @@ import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { FirmLetterheadSettings } from "@/components/FirmLetterheadSettings";
 import { FirmMemorySetup } from "@/components/FirmMemorySetup";
 import { PiiTierComplianceSection } from "@/components/PiiTierComplianceSection";
-import { listPeopleFromAirtable } from "@/lib/airtable/queries";
 import {
   dataStoreLabel,
   getDataStoreKind,
@@ -47,8 +46,9 @@ export default async function SettingsPage() {
   const partnerLink = partnerSubmissionUrl();
 
   let attorney: { name: string; role: string; email: string; isActive: boolean } | null = null;
-  if (!demo) {
+  if (!demo && !usesGoogleSheets()) {
     try {
+      const { listPeopleFromAirtable } = await import("@/lib/airtable/queries");
       const people = await listPeopleFromAirtable();
       attorney =
         people.find(

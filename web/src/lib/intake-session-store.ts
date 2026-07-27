@@ -8,10 +8,9 @@ import path from "path";
 
 import {
   createNoteInAirtable,
-  listAllNotesFromAirtable,
   updateNoteInAirtable,
 } from "@/lib/airtable/queries";
-import { isDemoMode } from "@/lib/data-store";
+import { isDemoMode, listAllNotes } from "@/lib/data-store";
 
 export type StoredIntakeSession = {
   sessionId: string;
@@ -57,7 +56,7 @@ async function writeDemoSessions(sessions: StoredIntakeSession[]): Promise<void>
 }
 
 async function listAirtableSessions(): Promise<Array<StoredIntakeSession & { noteId: string }>> {
-  const notes = await listAllNotesFromAirtable();
+  const notes = await listAllNotes();
   const out: Array<StoredIntakeSession & { noteId: string }> = [];
   for (const note of notes) {
     if (note.type !== INTAKE_SESSION_TYPE) continue;

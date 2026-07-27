@@ -9,9 +9,11 @@ import { ToastProvider } from "@/components/Toast";
 export async function AppShell({
   children,
   demoMode,
+  airtableDegraded = false,
 }: {
   children: React.ReactNode;
   demoMode: boolean;
+  airtableDegraded?: boolean;
 }) {
   return (
     <ToastProvider>
@@ -21,7 +23,14 @@ export async function AppShell({
             role="status"
             className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-950"
           >
-            Demo data — add AIRTABLE_PAT to web/.env.local
+            Demo data — connect Google Sheets in Settings to load live matters.
+          </div>
+        ) : airtableDegraded ? (
+          <div
+            role="status"
+            className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-950"
+          >
+            Some sections (inbox, calendar events, contacts) are temporarily unavailable — Airtable quota exceeded. Matters, tasks, and notes load from Google Sheets.
           </div>
         ) : null}
         <div className="flex min-h-0 flex-1">

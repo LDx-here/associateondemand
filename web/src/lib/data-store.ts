@@ -16,6 +16,7 @@ import {
   countFirmMemoryPatternsFromAirtable,
   registerAssessmentDocumentInAirtable,
   listEventsForMatterFromAirtable,
+  listEventsFromAirtable,
   listInboxItemsFromAirtable,
   listLegalElementsFromAirtable,
   listContactsFromAirtable,
@@ -205,9 +206,14 @@ export function isQuotaFallbackMode(): boolean {
   return quotaFallbackActive;
 }
 
-/** Demo mode or Airtable quota exceeded — UI should show sample-data messaging. */
+/** Demo mode or full Airtable-only quota fallback — UI shows sample-data messaging. */
 export function isSampleDataMode(): boolean {
-  return isDemoMode() || quotaFallbackActive;
+  return isDemoMode() || (quotaFallbackActive && !usesGoogleSheets());
+}
+
+/** Google Sheets primary but legacy Airtable tables unavailable (quota or not migrated). */
+export function isAirtableDegradedMode(): boolean {
+  return quotaFallbackActive && usesGoogleSheets();
 }
 
 async function loadDemoSeed(): Promise<DevSeed> {
@@ -231,7 +237,11 @@ async function withSampleFallback<T>(
 }
 
 /** Matters / Notes / Tasks — primary backend (Google Sheets or Airtable). */
-async function readPrimary<T>(demoFn: () => Promise<T>, liveFn: () => Promise<T>): Promise<T> {
+async function readPrimary<T>(
+  demoFn: () => Promise<T>,
+  liveFn: () => Promise<T>,
+  degradedFallback?: T,
+): Promise<T> {
   if (isDemoMode()) return demoFn();
   try {
     return await liveFn();
@@ -242,7 +252,9 @@ async function readPrimary<T>(demoFn: () => Promise<T>, liveFn: () => Promise<T>
       return demoFn();
     }
     if (usesGoogleSheets() && isGoogleSheetsReadError(error)) {
-      console.warn("[AOD] Google Sheets read failed — serving empty/sample fallback.");
+      quotaFallbackActive = true;
+      console.warn("[AOD] Google Sheets read failed — degraded mode.");
+      if (degradedFallback !== undefined) return degradedFallback;
       return demoFn();
     }
     throw error;
@@ -268,6 +280,7 @@ export async function listMatters(): Promise<Matter[]> {
   return readPrimary(
     async () => (await loadDemoSeed()).matters,
     () => backend.list(),
+    [],
   );
 }
 
@@ -508,6 +521,30 @@ export async function listEventsForMatter(matterId: string) {
       return seed.events.filter((e) => e.matterId === matterId);
     },
     airtableFn: () => listEventsForMatterFromAirtable(matterId),
+    sheetsFallback: () => [],
+  });
+}
+
+export type CalendarEventRow = Awaited<ReturnType<typeof listEventsFromAirtable>>[number];
+
+/** All firm calendar events (Calendar page). Legacy Airtable table — empty when Sheets is primary. */
+export async function listAllEvents(): Promise<CalendarEventRow[]> {
+  return readAirtableLegacy({
+    demoFn: async () => {
+      const seed = await loadDemoSeed();
+      return seed.events.map((e) => ({
+        id: e.id,
+        matterId: e.matterId,
+        type: e.type,
+        date: e.date,
+        description: e.description,
+        time: "",
+        location: "",
+        longDescription: e.description,
+        calendarSynced: false,
+      }));
+    },
+    airtableFn: () => listEventsFromAirtable(),
     sheetsFallback: () => [],
   });
 }
