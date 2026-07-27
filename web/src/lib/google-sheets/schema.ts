@@ -38,6 +38,7 @@ export const TAB_HEADERS: Record<SheetTabKey, readonly string[]> = {
     "created_at",
     "updated_at",
     "lifecycle_stage",
+    "assessment_data",
   ],
   notes: ["row_id", "matter_id", "content", "author", "created_at", "type"],
   tasks: [

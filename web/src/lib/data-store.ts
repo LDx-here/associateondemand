@@ -60,6 +60,7 @@ import {
   findLatestAssessmentOcrNoteForMatterFromGoogleSheets,
   findLatestDraftingFactsNoteForMatterFromGoogleSheets,
   findLatestProceduralTimelineNoteForMatterFromGoogleSheets,
+  getCaseAssessmentFromGoogleSheets,
   getContactFromGoogleSheets,
   getMatterFromGoogleSheets,
   linkContactToMatterInGoogleSheets,
@@ -73,6 +74,7 @@ import {
   listMattersFromGoogleSheets,
   listNotesForMatterFromGoogleSheets,
   listTasksForMatterFromGoogleSheets,
+  saveCaseAssessmentInGoogleSheets,
   unlinkContactFromMatterInGoogleSheets,
   updateLegalElementInGoogleSheets,
   updateMatterDeadlineInGoogleSheets,
@@ -655,15 +657,18 @@ export async function listDocumentsForMatter(matterId: string): Promise<Document
 }
 
 export async function getCaseAssessment(matterId: string): Promise<CaseAssessment> {
-  return readAirtableLegacy({
-    demoFn: async () => {
+  return readPrimary(
+    async () => {
       const seed = await loadDemoSeed();
       const stored = seed.caseAssessments?.find((c) => c.matterId === matterId);
       return stored ?? emptyCaseAssessment(matterId);
     },
-    airtableFn: () => getCaseAssessmentFromAirtable(matterId),
-    sheetsFallback: () => emptyCaseAssessment(matterId),
-  });
+    () =>
+      usesGoogleSheets()
+        ? getCaseAssessmentFromGoogleSheets(matterId)
+        : getCaseAssessmentFromAirtable(matterId),
+    emptyCaseAssessment(matterId),
+  );
 }
 
 export async function saveCaseAssessment(matterId: string, assessment: CaseAssessment): Promise<CaseAssessment> {
@@ -678,7 +683,9 @@ export async function saveCaseAssessment(matterId: string, assessment: CaseAsses
     await persistSeed();
     return payload;
   }
-  return saveCaseAssessmentInAirtable(matterId, assessment);
+  return usesGoogleSheets()
+    ? saveCaseAssessmentInGoogleSheets(matterId, assessment)
+    : saveCaseAssessmentInAirtable(matterId, assessment);
 }
 
 export async function createLegalElement(

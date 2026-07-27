@@ -62,6 +62,8 @@ row_id	matter_id	title	case_type	country	posture	court	judge	status	assigned_to	
 
 `lifecycle_stage` (column P) drives the matter-lifecycle task automation (Intake → Active → Filed/Awaiting Decision → Resolution → Closed) — see [`lib/matter-lifecycle-stage.ts`](../../web/src/lib/matter-lifecycle-stage.ts). If this column is missing, new matters just default to Intake in the app; no error. **Google Sheets-only** — the stage control is disabled with an explanatory message when running on Airtable.
 
+`assessment_data` (column Q) holds the structured Case Assessment form as serialized JSON — same shape as Airtable's `assessment_data` field. Missing column just means an empty assessment is returned; no error.
+
 ### Tasks — row 1 headers
 
 ```

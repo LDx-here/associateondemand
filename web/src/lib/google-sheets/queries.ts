@@ -2,7 +2,8 @@
  * Google Sheets read/write — Matters + Notes (Phase 1 migration slice).
  */
 
-import type { CalendarEvent, Contact, LegalElementRow, Matter, Note, Task } from "../types";
+import type { CalendarEvent, CaseAssessment, Contact, LegalElementRow, Matter, Note, Task } from "../types";
+import { emptyCaseAssessment, parseCaseAssessment, serializeCaseAssessment } from "../case-assessment";
 import { DEFAULT_LIFECYCLE_STAGE } from "../matter-lifecycle-stage";
 import { FIRM_TEMPLATE_MATTER_ID } from "../assessment-documents";
 import { MATTER_STATUS_CLOSED } from "../matter-status";
@@ -353,6 +354,30 @@ export async function createCorrectionInGoogleSheets(payload: {
   };
   await appendSheetRow("corrections", rowToValues(headers, row));
   return { id: rowId };
+}
+
+export async function getCaseAssessmentFromGoogleSheets(matterCode: string): Promise<CaseAssessment> {
+  const row = await findMatterRow(matterCode);
+  if (!row) return emptyCaseAssessment(matterCode);
+  return parseCaseAssessment(row.assessment_data, row.matter_id || matterCode);
+}
+
+export async function saveCaseAssessmentInGoogleSheets(
+  matterCode: string,
+  assessment: CaseAssessment,
+): Promise<CaseAssessment> {
+  const row = await findMatterRow(matterCode);
+  if (!row) throw new Error(`Matter not found: ${matterCode}`);
+  const headers = TAB_HEADERS.matters;
+  const { _sheetRow, ...rowData } = row;
+  const payload = { ...assessment, matterId: row.matter_id || matterCode };
+  const updated: Record<string, string> = {
+    ...rowData,
+    assessment_data: serializeCaseAssessment(payload),
+    updated_at: new Date().toISOString(),
+  };
+  await updateSheetRow("matters", _sheetRow, rowToValues(headers, updated));
+  return payload;
 }
 
 export async function listTasksForMatterFromGoogleSheets(matterCode: string): Promise<Task[]> {
