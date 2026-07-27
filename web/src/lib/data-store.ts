@@ -1,6 +1,7 @@
 import {
   completeTaskInAirtable,
   createAssignmentInAirtable,
+  createEventInAirtable,
   createLegalElementInAirtable,
   createNoteInAirtable,
   createTaskInAirtable,
@@ -48,6 +49,9 @@ import { isDemoMode, usesGoogleSheets } from "./data-store-config";
 import { isGoogleSheetsReadError } from "./google-sheets/client";
 import {
   completeTaskInGoogleSheets,
+  createContactInGoogleSheets,
+  createEventInGoogleSheets,
+  createLegalElementInGoogleSheets,
   createMatterInGoogleSheets,
   createNoteInGoogleSheets,
   createTaskInGoogleSheets,
@@ -56,12 +60,21 @@ import {
   findLatestAssessmentOcrNoteForMatterFromGoogleSheets,
   findLatestDraftingFactsNoteForMatterFromGoogleSheets,
   findLatestProceduralTimelineNoteForMatterFromGoogleSheets,
+  getContactFromGoogleSheets,
   getMatterFromGoogleSheets,
+  linkContactToMatterInGoogleSheets,
   listAllNotesFromGoogleSheets,
   listAllTasksFromGoogleSheets,
+  listContactsForMatterFromGoogleSheets,
+  listContactsFromGoogleSheets,
+  listEventsForMatterFromGoogleSheets,
+  listEventsFromGoogleSheets,
+  listLegalElementsFromGoogleSheets,
   listMattersFromGoogleSheets,
   listNotesForMatterFromGoogleSheets,
   listTasksForMatterFromGoogleSheets,
+  unlinkContactFromMatterInGoogleSheets,
+  updateLegalElementInGoogleSheets,
   updateMatterDeadlineInGoogleSheets,
   updateMatterInGoogleSheets,
   updateNoteInGoogleSheets,
@@ -126,6 +139,7 @@ export type { DeliverableTemplateCatalogItem };
 import type {
   AssignmentStatus,
   AssignmentTier,
+  CalendarEvent,
   CaseAssessment,
   DevSeed,
   DocumentRow,
@@ -199,6 +213,54 @@ function tasksBackend() {
         listAll: listAllTasksFromAirtable,
         create: createTaskInAirtable,
         complete: completeTaskInAirtable,
+      };
+}
+
+function contactsBackend() {
+  return usesGoogleSheets()
+    ? {
+        list: listContactsFromGoogleSheets,
+        get: getContactFromGoogleSheets,
+        listForMatter: listContactsForMatterFromGoogleSheets,
+        create: createContactInGoogleSheets,
+        link: linkContactToMatterInGoogleSheets,
+        unlink: unlinkContactFromMatterInGoogleSheets,
+      }
+    : {
+        list: listContactsFromAirtable,
+        get: getContactFromAirtable,
+        listForMatter: listContactsForMatterFromAirtable,
+        create: createContactInAirtable,
+        link: linkContactToMatterInAirtable,
+        unlink: unlinkContactFromMatterInAirtable,
+      };
+}
+
+function legalElementsBackend() {
+  return usesGoogleSheets()
+    ? {
+        listForMatter: listLegalElementsFromGoogleSheets,
+        create: createLegalElementInGoogleSheets,
+        update: updateLegalElementInGoogleSheets,
+      }
+    : {
+        listForMatter: listLegalElementsFromAirtable,
+        create: createLegalElementInAirtable,
+        update: updateLegalElementInAirtable,
+      };
+}
+
+function eventsBackend() {
+  return usesGoogleSheets()
+    ? {
+        listForMatter: listEventsForMatterFromGoogleSheets,
+        listAll: listEventsFromGoogleSheets,
+        create: createEventInGoogleSheets,
+      }
+    : {
+        listForMatter: listEventsForMatterFromAirtable,
+        listAll: listEventsFromAirtable,
+        create: createEventInAirtable,
       };
 }
 
@@ -285,33 +347,33 @@ export async function listMatters(): Promise<Matter[]> {
 }
 
 export async function listContacts(): Promise<Contact[]> {
-  return readAirtableLegacy({
-    demoFn: async () => (await loadDemoSeed()).contacts ?? [],
-    airtableFn: () => listContactsFromAirtable(),
-    sheetsFallback: () => [],
-  });
+  return readPrimary(
+    async () => (await loadDemoSeed()).contacts ?? [],
+    () => contactsBackend().list(),
+    [],
+  );
 }
 
 export async function getContact(contactId: string): Promise<Contact | null> {
-  return readAirtableLegacy({
-    demoFn: async () => {
+  return readPrimary(
+    async () => {
       const contacts = (await loadDemoSeed()).contacts ?? [];
       return contacts.find((c) => c.id === contactId) ?? null;
     },
-    airtableFn: () => getContactFromAirtable(contactId),
-    sheetsFallback: () => null,
-  });
+    () => contactsBackend().get(contactId),
+    null,
+  );
 }
 
 export async function listContactsForMatter(matterId: string): Promise<Contact[]> {
-  return readAirtableLegacy({
-    demoFn: async () => {
+  return readPrimary(
+    async () => {
       const contacts = (await loadDemoSeed()).contacts ?? [];
       return contacts.filter((c) => c.linkedMatterIds.includes(matterId));
     },
-    airtableFn: () => listContactsForMatterFromAirtable(matterId),
-    sheetsFallback: () => [],
-  });
+    () => contactsBackend().listForMatter(matterId),
+    [],
+  );
 }
 
 export async function createContact(payload: {
@@ -343,7 +405,7 @@ export async function createContact(payload: {
     await persistSeed();
     return contact;
   }
-  return createContactInAirtable({ ...payload, displayName });
+  return contactsBackend().create({ ...payload, displayName });
 }
 
 export async function linkContactToMatter(
@@ -360,7 +422,7 @@ export async function linkContactToMatter(
     }
     return contact;
   }
-  return linkContactToMatterInAirtable(contactId, matterCode);
+  return contactsBackend().link(contactId, matterCode);
 }
 
 export async function unlinkContactFromMatter(
@@ -375,7 +437,7 @@ export async function unlinkContactFromMatter(
     await persistSeed();
     return contact;
   }
-  return unlinkContactFromMatterInAirtable(contactId, matterCode);
+  return contactsBackend().unlink(contactId, matterCode);
 }
 
 export async function createMatter(payload: {
@@ -504,33 +566,33 @@ export async function listNotesForMatter(matterId: string): Promise<Note[]> {
 }
 
 export async function listLegalElements(matterId: string): Promise<LegalElementRow[]> {
-  return readAirtableLegacy({
-    demoFn: async () => {
+  return readPrimary(
+    async () => {
       const seed = await loadDemoSeed();
       return seed.legalElements.filter((e) => e.matterId === matterId);
     },
-    airtableFn: () => listLegalElementsFromAirtable(matterId),
-    sheetsFallback: () => [],
-  });
+    () => legalElementsBackend().listForMatter(matterId),
+    [],
+  );
 }
 
 export async function listEventsForMatter(matterId: string) {
-  return readAirtableLegacy({
-    demoFn: async () => {
+  return readPrimary(
+    async () => {
       const seed = await loadDemoSeed();
       return seed.events.filter((e) => e.matterId === matterId);
     },
-    airtableFn: () => listEventsForMatterFromAirtable(matterId),
-    sheetsFallback: () => [],
-  });
+    () => eventsBackend().listForMatter(matterId),
+    [],
+  );
 }
 
 export type CalendarEventRow = Awaited<ReturnType<typeof listEventsFromAirtable>>[number];
 
-/** All firm calendar events (Calendar page). Legacy Airtable table — empty when Sheets is primary. */
+/** All firm calendar events (Calendar page). */
 export async function listAllEvents(): Promise<CalendarEventRow[]> {
-  return readAirtableLegacy({
-    demoFn: async () => {
+  return readPrimary(
+    async () => {
       const seed = await loadDemoSeed();
       return seed.events.map((e) => ({
         id: e.id,
@@ -544,9 +606,35 @@ export async function listAllEvents(): Promise<CalendarEventRow[]> {
         calendarSynced: false,
       }));
     },
-    airtableFn: () => listEventsFromAirtable(),
-    sheetsFallback: () => [],
-  });
+    () => eventsBackend().listAll(),
+    [],
+  );
+}
+
+export async function createEvent(payload: {
+  summary: string;
+  matterCode?: string;
+  type: string;
+  date: string;
+  time?: string;
+  description?: string;
+  location?: string;
+}): Promise<CalendarEvent> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const event: CalendarEvent = {
+      id: `evt-${Date.now()}`,
+      matterId: payload.matterCode ?? "",
+      type: payload.type,
+      date: payload.date,
+      description: payload.summary,
+    };
+    seed.events.push(event);
+    const { persistSeed } = await import("./demo-store-mutable");
+    await persistSeed();
+    return event;
+  }
+  return eventsBackend().create(payload);
 }
 
 export async function listDocumentsForMatter(matterId: string): Promise<DocumentRow[]> {
@@ -612,7 +700,7 @@ export async function createLegalElement(
     await persistSeed();
     return row;
   }
-  return createLegalElementInAirtable(matterId, elementName);
+  return legalElementsBackend().create(matterId, elementName);
 }
 
 export async function updateLegalElementRow(
@@ -625,7 +713,7 @@ export async function updateLegalElementRow(
     const { updateLegalElement } = await import("./demo-store-mutable");
     return updateLegalElement(id, patch);
   }
-  return updateLegalElementInAirtable(id, patch);
+  return legalElementsBackend().update(id, patch);
 }
 
 export async function completeTask(

@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { createEventInAirtable } from "@/lib/airtable/queries";
-import { isDemoMode } from "@/lib/data-store";
+import { createEvent } from "@/lib/data-store";
 
 export async function POST(req: Request) {
-  if (isDemoMode()) {
-    return NextResponse.json(
-      { error: "Demo mode — creating events requires a live Airtable connection." },
-      { status: 503 },
-    );
-  }
   let body: {
     summary?: string;
     matterCode?: string;
@@ -33,7 +26,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "date must be YYYY-MM-DD" }, { status: 400 });
   }
   try {
-    const event = await createEventInAirtable({
+    const event = await createEvent({
       summary,
       matterCode: body.matterCode || undefined,
       type: body.type || "Reminder",

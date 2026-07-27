@@ -217,3 +217,5 @@
 ### [2026-07-24] CHECKPOINT: AOS prose polish — pronoun caps at sentence start, Section A care-slot dedupe, community-service list punctuation; pytest 115; Fly API
 
 ### [2026-07-26] CHECKPOINT: Pass 40 (continuation agent) — Record-decision action closes Filed/Awaiting Decision→Resolution, the one lifecycle transition with no automatic trigger; caught+fixed a race bug (failed calls leaked a stray note) via live testing before shipping; pytest 118; next build; Fly + Vercel
+
+### [2026-07-27] CHECKPOINT: Pass 41 (continuation agent) — migrated Contacts/Legal Elements/Events to Google Sheets (were silently empty; conflict-check-relevant since Contacts feeds that flow); caught a missing-import bug the WASM type-checker reported as an opaque crash; fixed broken local `node_modules/typescript` install along the way; Documents/OCR-pipeline flagged for joint review (cross-service, Python/Fly side); pytest 118; next build; Fly + Vercel
