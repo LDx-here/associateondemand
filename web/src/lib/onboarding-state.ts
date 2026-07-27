@@ -34,7 +34,7 @@ export const ONBOARDING_STEP_META: Record<
   welcome: {
     title: "Welcome — overflow counsel",
     detail:
-      "AssociateOnDemand takes drafting off your plate. RMV verifies every deliverable before you sign off — capacity relief, not another overdue-task dashboard.",
+      "AssociateOnDemand takes drafting off your plate. Every deliverable is ready for your sign-off — capacity relief, not another overdue-task dashboard.",
   },
   "firm-memory": {
     title: "Set up Firm Memory",
@@ -46,7 +46,7 @@ export const ONBOARDING_STEP_META: Record<
   assignment: {
     title: "Submit your first assignment",
     detail:
-      "Pick a deliverable, answer practice-specific questions, and send capacity work to RMV. Intelligent intake guides you field by field.",
+      "Pick a deliverable, answer practice-specific questions, and dispatch agents to draft it. Intelligent intake guides you field by field.",
     href: "/assignments/new",
     cta: "Start new assignment",
   },
@@ -60,7 +60,7 @@ export const ONBOARDING_STEP_META: Record<
   review: {
     title: "Review deliverables",
     detail:
-      "When RMV marks work ready, approve or request revisions from Inbox — no hunting through internal PM tools.",
+      "When a draft is ready, approve or request revisions from Inbox — no hunting through internal PM tools.",
     href: "/inbox",
     cta: "Open inbox",
   },

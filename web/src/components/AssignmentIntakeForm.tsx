@@ -390,7 +390,7 @@ export function AssignmentIntakeForm({
       setConflictDetails(data.details as string);
       setConflictMatches(Array.isArray(data.matches) ? (data.matches as ConflictMatch[]) : []);
     } catch {
-      showToast("Conflict check unavailable — RMV will review manually.", "error");
+      showToast("Conflict check unavailable — review manually before proceeding.", "error");
     } finally {
       setCheckingConflict(false);
     }

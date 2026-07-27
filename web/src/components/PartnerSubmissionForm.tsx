@@ -68,7 +68,7 @@ export function PartnerSubmissionForm({ initialEmail = "", initialDeliverableId 
   const tier: AssignmentTier = selectedCatalog?.tier ?? "Template";
 
   const disclaimerContext = useMemo(
-    () => ({ caseType, country: country || undefined }),
+    () => ({ caseType, country: country || undefined, isPartnerSubmission: true }),
     [caseType, country],
   );
   const disclaimerBody = useMemo(() => buildIntakeDisclaimerBody(disclaimerContext), [disclaimerContext]);

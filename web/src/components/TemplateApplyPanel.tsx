@@ -174,7 +174,7 @@ export function TemplateApplyPanel({
             <div className="flex flex-wrap gap-2">
               <input
                 className="min-w-[12rem] flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm"
-                placeholder={`e.g. ${map.name} — RMV defaults`}
+                placeholder={`e.g. ${map.name} — firm defaults`}
                 value={profileName}
                 onChange={(e) => setProfileName(e.target.value)}
               />

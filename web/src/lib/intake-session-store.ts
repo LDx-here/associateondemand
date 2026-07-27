@@ -163,7 +163,7 @@ export async function sendAbandonedIntakeEmail(session: StoredIntakeSession): Pr
     body: JSON.stringify({
       from: process.env.INTAKE_FOLLOWUP_FROM?.trim() || process.env.ASSIGNMENT_NOTIFY_FROM?.trim() || "AssociateOnDemand <onboarding@resend.dev>",
       to: [session.email],
-      subject: "Complete your RMV Associate assignment request",
+      subject: "Complete your AssociateOnDemand assignment request",
       html: `<p>You started an overflow counsel assignment on AssociateOnDemand. <a href="${resumeUrl}">Continue where you left off</a>.</p>`,
     }),
   });

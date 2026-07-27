@@ -230,7 +230,7 @@ export function buildIntakeGuidanceMessages(input: {
     messages.push({
       id: "pick-deliverable",
       role: "assistant",
-      text: "Select a deliverable type and I'll walk you through the facts RMV needs for a complete first draft.",
+      text: "Select a deliverable type and I'll walk you through the facts needed for a complete first draft.",
       tone: "info",
     });
     return messages;

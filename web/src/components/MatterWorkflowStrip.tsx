@@ -68,7 +68,7 @@ const NEXT_ACTIONS: Record<StepId, string> = {
   intake: "Submit an overflow assignment with facts and attachments.",
   documents: "Upload case assessment and supporting documents on the Documents tab.",
   facts: "Verify extracted facts and map legal elements before drafting.",
-  draft: "RMV is drafting — add attorney instructions or wait for Ready for review.",
+  draft: "Agents are drafting — add attorney instructions or wait for Ready for review.",
   review: "Approve the deliverable or request revision in the review panel below.",
   export: "Export the approved deliverable and mark the assignment delivered.",
 };

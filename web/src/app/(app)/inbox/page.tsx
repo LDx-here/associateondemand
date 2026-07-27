@@ -27,7 +27,7 @@ export default async function InboxPage() {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Inbox</h1>
           <p className="text-sm text-slate-600">
-            Track overflow deliverables from submission through RMV verification and your sign-off. Agent
+            Track deliverables from submission through agent drafting and your sign-off. Agent
             alerts below surface gaps that need a workflow action — not a comment thread.
           </p>
         </div>

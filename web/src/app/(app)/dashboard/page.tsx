@@ -186,7 +186,7 @@ export default async function DashboardPage() {
           <FilePlus2 className="h-5 w-5 shrink-0 text-sky-800" aria-hidden />
           <div>
             <p className="font-medium text-slate-900">New assignment</p>
-            <p className="text-xs text-slate-600">Submit overflow work to RMV</p>
+            <p className="text-xs text-slate-600">Start drafting on a new matter</p>
           </div>
         </Link>
         <Link
@@ -245,7 +245,7 @@ export default async function DashboardPage() {
         <KpiCard
           label="Open assignments"
           value={overflow.openAssignments}
-          hint="Submitted or in progress with RMV"
+          hint="Submitted or in progress"
           icon={Briefcase}
           tone="neutral"
         />

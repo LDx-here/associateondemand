@@ -43,12 +43,12 @@ const GUIDE_SECTIONS: GuideSection[] = [
     title: "Assignments & partner submit",
     icon: FilePlus2,
     summary:
-      "Send overflow capacity work to RMV — guided intake collects practice-specific facts so drafts start closer to done.",
+      "Dispatch drafting agents on a matter — guided intake collects practice-specific facts so drafts start closer to done.",
     bullets: [
       "New assignment — pick a deliverable (AOS brief, research memo, hearing packet, etc.), add facts, attach samples.",
       "Intelligent intake guides field-by-field; sample uploads can reduce your flat fee.",
       "Partner funnel — external firms use your partner link (/partner/submit) to request work with scope and pricing.",
-      "After submit, RMV dispatches agents; you track progress in Inbox and on the matter workbench.",
+      "After submit, agents start drafting; you track progress in Inbox and on the matter workbench.",
     ],
     cta: { href: "/assignments/new", label: "Submit assignment" },
   },
@@ -131,9 +131,9 @@ export function SiteGuideContent({ showIntro = true }: { showIntro?: boolean }) 
         <section className="rounded-xl border border-sky-200 bg-sky-50/50 px-5 py-4 text-sm text-sky-950">
           <p className="font-medium">Overflow counsel for capacity relief</p>
           <p className="mt-1 text-sky-900">
-            AssociateOnDemand is not a generic associate marketplace — it is verified overflow counsel
-            that extends your team. Submit facts and samples; RMV returns associate-quality work in your
-            firm&apos;s style. Year one: RMV verifies every deliverable.
+            AssociateOnDemand is not a generic associate marketplace — it is your own drafting layer
+            that extends your team. Submit facts and samples; agents return associate-quality work in
+            your firm&apos;s style, ready for your sign-off.
           </p>
         </section>
       ) : null}
