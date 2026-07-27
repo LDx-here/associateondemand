@@ -37,12 +37,13 @@ export function billingNoteForStripe(_stripeConfigured?: boolean): string {
   return PARTNER_FIRM_BILLING_NOTE;
 }
 
-/** Phase 0 B2B overflow launch SKUs — immigration brief, motion, hearing packet, research upsell. */
+/** Phase 0 launch SKUs — immigration brief, motion, hearing packet, research upsell, PI demand letter. */
 export const PHASE0_LAUNCH_SKU_IDS = [
   "aos-discretionary-brief",
   "custom-motion",
   "hearing-packet",
   "research-memo",
+  "demand-letter",
 ] as const;
 
 export type Phase0LaunchSkuId = (typeof PHASE0_LAUNCH_SKU_IDS)[number];
@@ -177,7 +178,13 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
       "Personal injury demand letter to carrier or opposing party. Agent drafts from incident, liability, injury, and damages facts; attorney signs off.",
     turnaround: "1–2 business days",
     skillDoc: "docs/constitution/05-Drafting-SKILL.md",
-    pricing: { minUsd: 400, maxUsd: 800, sampleDiscountEligible: true, sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT },
+    pricing: {
+      minUsd: 400,
+      maxUsd: 800,
+      note: PARTNER_FIRM_BILLING_NOTE,
+      sampleDiscountEligible: true,
+      sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT,
+    },
   },
   {
     id: "custom-other",
