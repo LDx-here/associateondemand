@@ -1,5 +1,7 @@
 ### [2026-07-26] CHECKPOINT: pass 38 real client path + AOS intelligence — paste summary extract (Fly /agents/aos/extract-facts + heuristic fallback), scorecard follow-ups, prior-matter fact templates, Google Sheets skills; pytest 118; test:aos-intelligence
 
+### [2026-07-26] CHECKPOINT: pass 38 Google Sheets data store Phase 1 — DATA_STORE flag, Matters+Notes adapter, Settings link, runbooks; Vercel prod; Airtable fallback kept
+
 ### [2026-07-23] CHECKPOINT: pass 37 Inbox assignment detail drawer — clickable board cards → side panel with matter/client, facts, draft preview, missing checklist, status actions; GET /api/inbox/[itemId]/preview; e27a4f0; next build; Vercel prod
 
 ### [2026-07-23] CHECKPOINT: pass 36 AOS brief builder integrated into template/drafting flow — removed standalone /tools/aos-brief-builder + AOS_Selection_Menu.html (redirect to /templates); GET /api/aos/library + native AosVariantSelector (alerts, live preview) as fact-guide step 4; /templates "Draft with variants"; picks → fields.paragraphSelections; backend generator unchanged; next build

@@ -25,7 +25,7 @@
 
 **Pass 30 (2026-07-22):** Legal Elements auto-seed core Firm Knowledge by matter type (no Load button / applied badge); optional elements via dropdown; case-type change merge prompt. Firm Memory moved to `/firm-memory` + Settings (out of Templates). USCIS form autofill noted as future. `test:firm-knowledge`; pytest 81; next build; Vercel prod (web only).
 
-**Next:** Retest AOS variant flow on prod — `/templates` → AOS → "Draft with variants" → pick Section A/adverse/balancing variants on a matter, save facts, dispatch `aos-discretionary-brief`, confirm chosen library prose appears. Spot-check Inbox: click a card → detail drawer shows draft/missing checklist.
+**Next:** Connect Google Workspace — create spreadsheet + service account per `docs/runbooks/google-sheets-setup.md`; set `GOOGLE_SHEETS_SPREADSHEET_ID` + `GOOGLE_SERVICE_ACCOUNT_JSON` on Vercel; unset or keep `AIRTABLE_PAT` only if rollback needed. Phase 2: migrate Tasks, PM Inbox, Documents, Fly API writes.
 
 **Pass 29 (2026-07-22):** Templates UX journey — architecture explainer moved to `/help#templates`; `/templates` browse by practice area + Cards/List; Open preview lands on Structure mapping (CREAC + feeds-from); Firm Memory collapsed. next build; smoke PASS.
 

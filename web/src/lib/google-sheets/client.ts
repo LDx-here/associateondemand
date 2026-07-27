@@ -199,6 +199,6 @@ export function newRowId(prefix: string): string {
   return `gs-${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export function rowToValues(headers: readonly string[], row: Record<string, string>): string[] {
-  return headers.map((h) => row[h] ?? "");
+export function rowToValues(headers: readonly string[], row: Record<string, string | number>): string[] {
+  return headers.map((h) => String(row[h] ?? ""));
 }
