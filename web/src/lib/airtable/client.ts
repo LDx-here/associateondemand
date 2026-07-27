@@ -17,6 +17,13 @@ export function isDemoMode(): boolean {
   return !isAirtableConfigured();
 }
 
+/** Airtable monthly API quota exceeded (429 PUBLIC_API_BILLING_LIMIT_EXCEEDED). */
+export function isAirtableQuotaError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message;
+  return msg.includes("Airtable 429:") || msg.includes("PUBLIC_API_BILLING_LIMIT_EXCEEDED");
+}
+
 export type AirtableRecord<T = Record<string, unknown>> = {
   id: string;
   fields: T;

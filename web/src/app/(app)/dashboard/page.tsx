@@ -32,7 +32,8 @@ import {
   listAllTasks,
   listInboxItems,
   listMatters,
-  isDemoMode,
+  isSampleDataMode,
+  isQuotaFallbackMode,
 } from "@/lib/data-store";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
 import { getSupabaseSessionUser } from "@/lib/supabase/server";
@@ -51,7 +52,8 @@ export default async function DashboardPage() {
   const matters = await listMatters();
   const tasks = await listAllTasks();
   const matterIndex = new Map(matters.map((m) => [m.matterId, m]));
-  const demo = isDemoMode();
+  const demo = isSampleDataMode();
+  const quotaFallback = isQuotaFallbackMode();
   const seed = demo ? await getMutableSeed() : null;
 
   const session = await getSupabaseSessionUser();
@@ -130,7 +132,9 @@ export default async function DashboardPage() {
           </p>
           {demo ? (
             <p className="mt-1 text-xs text-slate-500">
-              Showing sample data. Connect Airtable in Settings to load live matters.
+              {quotaFallback
+                ? "Airtable API limit reached for this month — showing bundled sample data until usage resets or the plan is upgraded."
+                : "Showing sample data. Connect Airtable in Settings to load live matters."}
             </p>
           ) : null}
           <p className="mt-2 text-sm">
