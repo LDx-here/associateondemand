@@ -24,7 +24,8 @@
     "test:firm-knowledge": "tsx scripts/verify-firm-knowledge-for-matter.mjs",
     "test:contacts": "tsx scripts/verify-contacts.mjs",
     "test:google-sheets": "tsx scripts/verify-google-sheets.mjs",
-    "test:aos-intelligence": "tsx scripts/verify-aos-intelligence.mjs"
+    "test:aos-intelligence": "tsx scripts/verify-aos-intelligence.mjs",
+    "test:matter-lifecycle-stage": "tsx scripts/verify-matter-lifecycle-stage.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

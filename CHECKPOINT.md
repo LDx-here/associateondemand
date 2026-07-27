@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-27 (CDT) — Pass 46: Filing-deadline tasks now show on the Calendar page  
+**Last updated:** 2026-07-27 (CDT) — Pass 47: Regression tests for lifecycle-stage + dashboard aggregates  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -8,6 +8,8 @@
 **Overnight continuation agent active (2026-07-26/27 night):** running `docs/runbooks/continuation-agent.md` protocol via Claude Code `/loop`, self-paced, session-bound. **Direction from La'Dajia (2026-07-27):** full move to Google Sheets, Airtable retired as the operational backend — but its code stays in place, dormant (not deleted), specifically so we can compare in the morning and decide file-by-file whether to keep, roll back to, or actually remove it. Also: for major/permission-worthy calls, ask in the response text but don't block the loop on an answer — if no reply within a few minutes, proceed with the safer default and flag it in CHECKPOINT.
 
 **Note — Cursor was also running its own agent on this repo simultaneously for part of the night** (commits `c304c7c` Google Sheets connected on Vercel, `209a0bd`/`89b64eb`/`ec9d708` SSR-crash fixes). One real collision: a `vercel deploy --prod` from this loop caught `data-store.ts` mid-edit by Cursor's agent and failed the build (safely — Vercel deploys are atomic, production was never affected). La'Dajia paused Cursor and told this loop to continue solo. If Cursor reappears mid-pass, this loop's protocol is to stand down again rather than fight over the same files.
+
+**Pass 47 (2026-07-27, continuation agent pass 8):** `npm run test:matter-lifecycle-stage` — first automated coverage for the lifecycle-stage logic shipped across Pass 39-46 (was verified live each time but had zero regression protection). Covers `normalizeLifecycleStage`, `isValidLifecycleTransition` (forward progression, reopen-from-Closed, one-step-back all legal; skipping stages/self-transitions illegal), `stageTaskTemplates` (immigration/PI have real checklists, generic areas mostly empty, no duplicate template ids within a stage — a duplicate would silently collide with the `createdFrom` idempotency tag and only ever create one task), `matterLifecycleBreakdown`, and `filingDeadlinesMissingDate`. Pure test addition, zero behavior change — deployed the web app but the only thing that changed is a new script. pytest 118; next build.
 
 **Pass 46 (2026-07-27, continuation agent pass 7):** The Calendar page's own subtitle promises "hearings, filing deadlines, and internal deadlines" but it only ever read the Events table — filing-deadline Tasks (even dated ones, after Pass 44's fix) never actually appeared there. `calendar/page.tsx` now also fetches `listAllTasks()`, filters to incomplete `isFilingDeadline` tasks with a due date, maps them into the same `CalendarEntry` shape (type "Filing Deadline", synthetic `task-<id>` ids to avoid collision with real Event ids), and merges both lists into `CalendarBoard`. Confirmed safe first — `CalendarBoard`'s entry-detail view is read-only (links to the matter, no edit/delete tied to `entry.id`), so the synthetic ids can't trigger a broken mutating action.
 
