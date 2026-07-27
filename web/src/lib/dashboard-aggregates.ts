@@ -1,5 +1,6 @@
 import type { AuditLogEntry, Matter, Note, Task } from "./types";
 import type { InboxItem } from "./airtable/queries";
+import { MATTER_LIFECYCLE_STAGES, normalizeLifecycleStage } from "./matter-lifecycle-stage";
 
 /** Rough hours saved per approved overflow deliverable (capacity relief metric). */
 const HOURS_SAVED_PER_DELIVERABLE = 4;
@@ -49,6 +50,23 @@ export function filingDeadlinesWithin(
     const ts = new Date(t.dueDate).getTime();
     return ts >= today.getTime() && ts <= horizon;
   }).length;
+}
+
+/**
+ * Matters grouped by lifecycle stage (Intake/Active/Filed/Resolution/Closed),
+ * in canonical stage order — dashboard visibility for the stage-automation
+ * built into the matter workbench. Google Sheets-only (same as the stage
+ * feature itself); callers should gate rendering behind `usesGoogleSheets()`.
+ */
+export function matterLifecycleBreakdown(
+  matters: Matter[],
+): Array<{ stage: (typeof MATTER_LIFECYCLE_STAGES)[number]; count: number }> {
+  const counts = new Map(MATTER_LIFECYCLE_STAGES.map((s) => [s, 0]));
+  for (const m of matters) {
+    const stage = normalizeLifecycleStage(m.lifecycleStage);
+    counts.set(stage, (counts.get(stage) ?? 0) + 1);
+  }
+  return MATTER_LIFECYCLE_STAGES.map((stage) => ({ stage, count: counts.get(stage) ?? 0 }));
 }
 
 /** Greeting per BUILD_SPEC §7.1 row 1 — time-aware. */

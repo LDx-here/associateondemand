@@ -20,6 +20,7 @@ import {
   firmMemoryCompleteness,
   greeting,
   inboxToActivityEntries,
+  matterLifecycleBreakdown,
   overflowDashboardMetrics,
   overflowWelcomeSubtitle,
   recentActivity,
@@ -121,6 +122,7 @@ export default async function DashboardPage() {
     .map((name) => ({ name, value: matters.filter((m) => m.caseType === name).length }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 8);
+  const lifecycleBreakdown = matterLifecycleBreakdown(matters);
 
   return (
     <div className="space-y-6">
@@ -293,6 +295,28 @@ export default async function DashboardPage() {
       </section>
 
       <DashboardCharts statusCounts={statusCounts} caseTypeCounts={caseTypeCounts} />
+
+      {demo || usesGoogleSheets() ? (
+        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="font-medium text-slate-900">Matters by lifecycle stage</h2>
+          <p className="text-xs text-slate-500">
+            Where your caseload actually stands — updates automatically as matters move.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            {lifecycleBreakdown.map(({ stage, count }) => (
+              <div
+                key={stage}
+                className="flex min-w-[120px] flex-1 items-center justify-between rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2"
+              >
+                <span className="text-xs font-medium text-slate-700">{stage}</span>
+                <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-900">
+                  {count}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-4 py-3">

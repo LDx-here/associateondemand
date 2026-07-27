@@ -1,6 +1,6 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-27 (CDT) — Pass 42: Case Assessment migrated to Google Sheets  
+**Last updated:** 2026-07-27 (CDT) — Pass 43: Dashboard "Matters by lifecycle stage" widget  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
@@ -8,6 +8,8 @@
 **Overnight continuation agent active (2026-07-26/27 night):** running `docs/runbooks/continuation-agent.md` protocol via Claude Code `/loop`, self-paced, session-bound. **Direction from La'Dajia (2026-07-27):** full move to Google Sheets, Airtable retired as the operational backend — but its code stays in place, dormant (not deleted), specifically so we can compare in the morning and decide file-by-file whether to keep, roll back to, or actually remove it. Also: for major/permission-worthy calls, ask in the response text but don't block the loop on an answer — if no reply within a few minutes, proceed with the safer default and flag it in CHECKPOINT.
 
 **Note — Cursor was also running its own agent on this repo simultaneously for part of the night** (commits `c304c7c` Google Sheets connected on Vercel, `209a0bd`/`89b64eb`/`ec9d708` SSR-crash fixes). One real collision: a `vercel deploy --prod` from this loop caught `data-store.ts` mid-edit by Cursor's agent and failed the build (safely — Vercel deploys are atomic, production was never affected). La'Dajia paused Cursor and told this loop to continue solo. If Cursor reappears mid-pass, this loop's protocol is to stand down again rather than fight over the same files.
+
+**Pass 43 (2026-07-27, continuation agent pass 4):** Dashboard "Matters by lifecycle stage" widget — `matterLifecycleBreakdown()` in `dashboard-aggregates.ts` groups matters into the 5 canonical stages; renders as a compact count row on `/dashboard` (gated to Sheets/demo, same as the stage feature itself). The mechanical Sheets-migration backlog was done after Pass 42, so all four passes' worth of stage automation had zero visibility from the dashboard — this closes that gap: the attorney can now see the whole caseload's stage distribution at a glance instead of needing to open each matter's Tasks tab. Verified live: fresh demo seed correctly shows Intake 3 / Active 0 / Filed 0 / Resolution 0 / Closed 0. pytest 118; next build; Fly + Vercel.
 
 **Pass 42 (2026-07-27, continuation agent pass 3):** Case Assessment migrated to Google Sheets — new `assessment_data` column (Q) on the Matters tab, same JSON shape as Airtable's field of the same name. Checked the remaining `readAirtableLegacy` list first: Assessment Templates / Firm Samples / Deliverable Template Documents all read the same Documents table the OCR pipeline writes to (filtered by category) — migrating just their reads would split-brain against Python/Fly's Airtable writes, so left those with Documents under the same flagged item. Verified live: GET on a fresh matter returns the empty-assessment shape; PATCH persists; GET-after-PATCH matches exactly; unrelated matter fields (title, caseType) untouched by the read-modify-write. pytest 118; next build; Fly + Vercel.
 
