@@ -124,3 +124,7 @@ services/api/.venv-smoke/
 # Supabase CLI link metadata (local only)
 supabase/.temp/
 web/supabase/.temp/
+.vercel
+
+# Local GCP keys (setup-google-sheets.sh)
+.secrets/

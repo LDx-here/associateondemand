@@ -17,6 +17,22 @@ AssociateOnDemand can use a **Google Spreadsheet** (Google Workspace) instead of
 - Service account JSON key
 - A Google Spreadsheet shared with the service account email (`Editor`)
 
+## Automated setup (recommended)
+
+If you have the Google Cloud CLI on your Mac:
+
+```bash
+# One-time browser login (pick your Google Workspace account)
+gcloud auth login
+
+# Creates GCP project, service account, key, spreadsheet, and web/.env.local entries
+bash scripts/setup-google-sheets.sh
+```
+
+Secrets stay on disk under `.secrets/` (gitignored) and in `web/.env.local` (gitignored). For **Vercel Production**, add `GOOGLE_SHEETS_SPREADSHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON` (full JSON one line), and optional `DATA_STORE=google_sheets` in the dashboard — do not paste JSON in chat.
+
+---
+
 ## Step 1 — Create the spreadsheet
 
 1. In Google Drive, create a spreadsheet named **AssociateOnDemand — Firm Data**.
