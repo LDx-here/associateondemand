@@ -565,6 +565,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Google Sheets production (2026-07-27):** Firm spreadsheet + service account on Vercel (`DATA_STORE=google_sheets`); prod deploy https://aod-next.vercel.app; `/api/health` reports `demoMode: false`.
 - **Pass 38 (2026-07-26):** Real client path + AOS intelligence — paste summary extract (LLM + heuristic), scorecard follow-ups, prior-matter fact templates, Google Sheets skills; pytest 118; test:aos-intelligence.
 - **AOS prose polish (2026-07-24):** Filing-clean library FILL — sentence-start pronoun capitalization; Section A v3 care-slot dedupe (professional vs attachment); community-service list punctuation; Maria Elena sample 0 errors/0 warnings; pytest 115; Fly API.
 - **Pass 34 (2026-07-23):** AOS Output Fix — PRESERVE Patel/Arai verbatim; FILL via paragraph library (default no API); certificate of service; `/tools/aos-brief-builder` selection menu; pytest 115; next build; Fly + Vercel. Runbook: `docs/runbooks/aos-output-library-fill.md`.
