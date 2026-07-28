@@ -2,7 +2,17 @@
  * Google Sheets read/write — Matters + Notes (Phase 1 migration slice).
  */
 
-import type { CalendarEvent, CaseAssessment, Contact, InboxItem, LegalElementRow, Matter, Note, Task } from "../types";
+import type {
+  CalendarEvent,
+  CaseAssessment,
+  Contact,
+  DocumentRow,
+  InboxItem,
+  LegalElementRow,
+  Matter,
+  Note,
+  Task,
+} from "../types";
 import type { AssignmentStatus, AssignmentTier } from "../types";
 import { buildDeliveredHistory, isValidAssignmentTransition } from "../assignment-transitions";
 import {
@@ -12,7 +22,12 @@ import {
 } from "../pm-inbox-options";
 import { emptyCaseAssessment, parseCaseAssessment, serializeCaseAssessment } from "../case-assessment";
 import { DEFAULT_LIFECYCLE_STAGE } from "../matter-lifecycle-stage";
-import { FIRM_TEMPLATE_MATTER_ID } from "../assessment-documents";
+import {
+  ASSESSMENT_TEMPLATE_PREFIX,
+  DELIVERABLE_TEMPLATE_PREFIX,
+  FIRM_SAMPLE_PREFIX,
+  FIRM_TEMPLATE_MATTER_ID,
+} from "../assessment-documents";
 import { MATTER_STATUS_CLOSED } from "../matter-status";
 import type { NoteWorkEntry } from "../work-entry";
 import {
@@ -941,4 +956,147 @@ export async function createInboxItemInGoogleSheets(payload: {
   };
   await appendSheetRow("pmInbox", rowToValues(headers, row));
   return mapInboxRow(row);
+}
+
+function inferFileTypeFromTitle(title: string): string {
+  const lower = title.toLowerCase();
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (/\.(png|jpe?g|gif|webp|tif|tiff)$/.test(lower)) return "image/jpeg";
+  if (lower.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  if (lower.endsWith(".txt") || lower.endsWith(".md")) return "text/plain";
+  return "";
+}
+
+function mapDocumentRow(row: Record<string, string>): DocumentRow {
+  const title = row.title || "Untitled";
+  const fileType = row.file_type || inferFileTypeFromTitle(title);
+  return {
+    id: row.row_id,
+    matterId: row.matter_id,
+    title,
+    category: row.category ?? "",
+    uploadedAt: row.created_at || new Date().toISOString(),
+    uploadedBy: row.uploaded_by || undefined,
+    ocrStatus: row.ocr_status || undefined,
+    piiTier: row.pii_tier || undefined,
+    fileType: fileType || undefined,
+  };
+}
+
+export type DocumentSheetsPayload = {
+  title: string;
+  category: string;
+  /** Existing row id (Airtable/Postgres/Sheets) — upsert when present. */
+  documentId?: string;
+  uploadedBy?: string;
+  ocrStatus?: string;
+  piiTier?: string;
+  fileType?: string;
+};
+
+async function resolveDocumentMatterCode(matterCode: string): Promise<string> {
+  if (matterCode === FIRM_TEMPLATE_MATTER_ID) return FIRM_TEMPLATE_MATTER_ID;
+  const matter = await findMatterRow(matterCode);
+  return matter?.matter_id ?? matterCode;
+}
+
+export async function listDocumentsForMatterFromGoogleSheets(matterCode: string): Promise<DocumentRow[]> {
+  const code = await resolveDocumentMatterCode(matterCode);
+  const rows = await readSheetTab("documents");
+  return rows.filter((r) => r.matter_id === code).map(mapDocumentRow);
+}
+
+export async function listAllDocumentsFromGoogleSheets(): Promise<DocumentRow[]> {
+  const rows = await readSheetTab("documents");
+  return rows.map(mapDocumentRow);
+}
+
+export async function listAssessmentTemplatesFromGoogleSheets(): Promise<DocumentRow[]> {
+  const rows = await readSheetTab("documents");
+  return rows
+    .filter((r) => (r.category || "").includes(ASSESSMENT_TEMPLATE_PREFIX))
+    .map((r) => {
+      const { _sheetRow: _, ...fields } = r;
+      return mapDocumentRow({ ...fields, matter_id: fields.matter_id || FIRM_TEMPLATE_MATTER_ID });
+    });
+}
+
+export async function listFirmSampleDocumentsFromGoogleSheets(): Promise<DocumentRow[]> {
+  const rows = await readSheetTab("documents");
+  return rows
+    .filter((r) => (r.category || "").includes(FIRM_SAMPLE_PREFIX))
+    .map((r) => {
+      const { _sheetRow: _, ...fields } = r;
+      return mapDocumentRow({ ...fields, matter_id: fields.matter_id || FIRM_TEMPLATE_MATTER_ID });
+    });
+}
+
+export async function listDeliverableTemplateDocumentsFromGoogleSheets(): Promise<DocumentRow[]> {
+  const rows = await readSheetTab("documents");
+  return rows
+    .filter((r) => (r.category || "").includes(DELIVERABLE_TEMPLATE_PREFIX))
+    .map((r) => {
+      const { _sheetRow: _, ...fields } = r;
+      return mapDocumentRow({ ...fields, matter_id: fields.matter_id || FIRM_TEMPLATE_MATTER_ID });
+    });
+}
+
+export async function createDocumentInGoogleSheets(
+  matterCode: string,
+  payload: DocumentSheetsPayload,
+): Promise<DocumentRow> {
+  const resolvedCode = await resolveDocumentMatterCode(matterCode);
+  if (!resolvedCode && matterCode !== FIRM_TEMPLATE_MATTER_ID) {
+    throw new Error(`Matter not found: ${matterCode}`);
+  }
+  const headers = TAB_HEADERS.documents;
+  const rowId = payload.documentId?.trim() || newRowId("doc");
+  const now = new Date().toISOString();
+  const title = payload.title.slice(0, 240);
+  const row: Record<string, string> = {
+    row_id: rowId,
+    matter_id: resolvedCode,
+    title,
+    category: (payload.category || "uncategorized").slice(0, 120),
+    created_at: now,
+    uploaded_by: (payload.uploadedBy || "Attorney").slice(0, 120),
+    ocr_status: payload.ocrStatus ?? "",
+    pii_tier: payload.piiTier ?? "",
+    file_type: payload.fileType || inferFileTypeFromTitle(title),
+  };
+  await appendSheetRow("documents", rowToValues(headers, row));
+  return mapDocumentRow(row);
+}
+
+/** Create or patch a Documents row (assessment/template/supporting-doc metadata). */
+export async function registerDocumentInGoogleSheets(
+  matterCode: string,
+  payload: DocumentSheetsPayload,
+): Promise<DocumentRow> {
+  const resolvedCode = await resolveDocumentMatterCode(matterCode);
+  const headers = TAB_HEADERS.documents;
+  const docId = payload.documentId?.trim();
+
+  if (docId) {
+    const rows = await readSheetTab("documents", { noCache: true });
+    const existing = rows.find((r) => r.row_id === docId);
+    if (existing) {
+      const { _sheetRow, ...rowData } = existing;
+      const title = (payload.title || existing.title || "Untitled").slice(0, 240);
+      const updated: Record<string, string> = {
+        ...rowData,
+        matter_id: resolvedCode || existing.matter_id,
+        title,
+        category: (payload.category || existing.category || "uncategorized").slice(0, 120),
+        uploaded_by: payload.uploadedBy?.slice(0, 120) || existing.uploaded_by || "Attorney",
+        ocr_status: payload.ocrStatus ?? existing.ocr_status ?? "",
+        pii_tier: payload.piiTier ?? existing.pii_tier ?? "",
+        file_type: payload.fileType || existing.file_type || inferFileTypeFromTitle(title),
+      };
+      await updateSheetRow("documents", _sheetRow, rowToValues(headers, updated));
+      return mapDocumentRow(updated);
+    }
+  }
+
+  return createDocumentInGoogleSheets(matterCode, payload);
 }

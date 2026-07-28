@@ -90,6 +90,12 @@ import {
   updateAssignmentPaymentInGoogleSheets,
   markAssignmentDeliveredInGoogleSheets,
   resolveInboxItemInGoogleSheets,
+  listDocumentsForMatterFromGoogleSheets,
+  listAssessmentTemplatesFromGoogleSheets,
+  listFirmSampleDocumentsFromGoogleSheets,
+  listDeliverableTemplateDocumentsFromGoogleSheets,
+  createDocumentInGoogleSheets,
+  registerDocumentInGoogleSheets,
 } from "./google-sheets/queries";
 import {
   isValidLifecycleTransition,
@@ -279,6 +285,58 @@ function eventsBackend() {
       };
 }
 
+function documentsBackend() {
+  return usesGoogleSheets()
+    ? {
+        listForMatter: listDocumentsForMatterFromGoogleSheets,
+        listAssessmentTemplates: listAssessmentTemplatesFromGoogleSheets,
+        listFirmSamples: listFirmSampleDocumentsFromGoogleSheets,
+        listDeliverableTemplates: listDeliverableTemplateDocumentsFromGoogleSheets,
+        create: createDocumentInGoogleSheets,
+        register: registerDocumentInGoogleSheets,
+      }
+    : {
+        listForMatter: listDocumentsFromAirtable,
+        listAssessmentTemplates: listAssessmentTemplatesFromAirtable,
+        listFirmSamples: listFirmSampleDocumentsFromAirtable,
+        listDeliverableTemplates: listDeliverableTemplateDocumentsFromAirtable,
+        create: async (
+          matterId: string,
+          payload: {
+            title: string;
+            category: string;
+            documentId?: string;
+            uploadedBy?: string;
+            ocrStatus?: string;
+            piiTier?: string;
+            fileType?: string;
+          },
+        ) =>
+          registerAssessmentDocumentInAirtable(matterId, {
+            title: payload.title,
+            category: payload.category,
+            airtableDocumentId: payload.documentId,
+          }),
+        register: async (
+          matterId: string,
+          payload: {
+            title: string;
+            category: string;
+            documentId?: string;
+            uploadedBy?: string;
+            ocrStatus?: string;
+            piiTier?: string;
+            fileType?: string;
+          },
+        ) =>
+          registerAssessmentDocumentInAirtable(matterId, {
+            title: payload.title,
+            category: payload.category,
+            airtableDocumentId: payload.documentId,
+          }),
+      };
+}
+
 function inboxBackend() {
   return usesGoogleSheets()
     ? {
@@ -358,20 +416,6 @@ async function readPrimary<T>(
     }
     throw error;
   }
-}
-
-/**
- * Tables not yet migrated to Google Sheets (Documents — Python/Fly OCR pipeline).
- * When Sheets is primary, skip Airtable entirely so quota errors cannot crash SSR.
- */
-async function readAirtableLegacy<T>(opts: {
-  demoFn: () => Promise<T>;
-  airtableFn: () => Promise<T>;
-  sheetsFallback: () => T;
-}): Promise<T> {
-  if (isDemoMode()) return opts.demoFn();
-  if (usesGoogleSheets()) return opts.sheetsFallback();
-  return withSampleFallback(opts.demoFn, opts.airtableFn);
 }
 
 export async function listMatters(): Promise<Matter[]> {
@@ -675,8 +719,8 @@ export async function createEvent(payload: {
 }
 
 export async function listDocumentsForMatter(matterId: string): Promise<DocumentRow[]> {
-  return readAirtableLegacy({
-    demoFn: async () => {
+  return readPrimary(
+    async () => {
       const seed = await loadDemoSeed();
       return seed.documents.filter(
         (d) =>
@@ -686,9 +730,42 @@ export async function listDocumentsForMatter(matterId: string): Promise<Document
           !isDeliverableTemplateDocument(d),
       );
     },
-    airtableFn: () => listDocumentsFromAirtable(matterId),
-    sheetsFallback: () => [],
-  });
+    async () => {
+      const docs = await documentsBackend().listForMatter(matterId);
+      return docs.filter(
+        (d) =>
+          !isAssessmentTemplateDocument(d) &&
+          !isFirmSampleDocument(d) &&
+          !isDeliverableTemplateDocument(d),
+      );
+    },
+    [],
+  );
+}
+
+/** Register document metadata (assessment, template, or supporting upload). */
+export async function createDocumentForMatter(
+  matterId: string,
+  payload: {
+    title: string;
+    category: string;
+    documentId?: string;
+    uploadedBy?: string;
+    ocrStatus?: string;
+    piiTier?: string;
+    fileType?: string;
+  },
+): Promise<DocumentRow> {
+  if (isDemoMode()) {
+    return addDocumentDemo(matterId, {
+      title: payload.title,
+      category: payload.category,
+      ocrStatus: payload.ocrStatus,
+      fileType: payload.fileType,
+      id: payload.documentId,
+    });
+  }
+  return documentsBackend().register(matterId, payload);
 }
 
 export async function getCaseAssessment(matterId: string): Promise<CaseAssessment> {
@@ -1413,30 +1490,43 @@ export async function buildTimeline(matterId: string): Promise<TimelineEntry[]> 
 
 export async function registerAssessmentDocument(
   matterId: string,
-  payload: { title: string; category: string; airtableDocumentId?: string; ocrStatus?: string },
+  payload: {
+    title: string;
+    category: string;
+    airtableDocumentId?: string;
+    ocrStatus?: string;
+    fileType?: string;
+  },
 ): Promise<DocumentRow> {
   if (isDemoMode()) {
     return addDocumentDemo(matterId, {
       title: payload.title,
       category: payload.category,
       ocrStatus: payload.ocrStatus,
+      fileType: payload.fileType,
       id: payload.airtableDocumentId,
     });
   }
-  return registerAssessmentDocumentInAirtable(matterId, payload);
+  return documentsBackend().register(matterId, {
+    title: payload.title,
+    category: payload.category,
+    documentId: payload.airtableDocumentId,
+    ocrStatus: payload.ocrStatus,
+    fileType: payload.fileType,
+  });
 }
 
 export async function listAssessmentTemplates(): Promise<DocumentRow[]> {
-  return readAirtableLegacy({
-    demoFn: async () => {
+  return readPrimary(
+    async () => {
       const seed = await loadDemoSeed();
       return seed.documents.filter(
         (d) => d.matterId === FIRM_TEMPLATE_MATTER_ID || isAssessmentTemplateDocument(d),
       );
     },
-    airtableFn: () => listAssessmentTemplatesFromAirtable(),
-    sheetsFallback: () => [],
-  });
+    () => documentsBackend().listAssessmentTemplates(),
+    [],
+  );
 }
 
 export async function saveAssessmentTemplate(payload: {
@@ -1462,10 +1552,10 @@ export async function saveAssessmentTemplate(payload: {
     await persistSeed();
     return doc;
   }
-  return registerAssessmentDocumentInAirtable(FIRM_TEMPLATE_MATTER_ID, {
+  return documentsBackend().register(FIRM_TEMPLATE_MATTER_ID, {
     title: payload.title,
     category,
-    airtableDocumentId: payload.airtableDocumentId,
+    documentId: payload.airtableDocumentId,
   });
 }
 
@@ -1477,16 +1567,16 @@ export type FirmMemoryStatus = {
 };
 
 export async function listFirmSamples(): Promise<DocumentRow[]> {
-  return readAirtableLegacy({
-    demoFn: async () => {
+  return readPrimary(
+    async () => {
       const seed = await loadDemoSeed();
       return seed.documents.filter(
         (d) => d.matterId === FIRM_TEMPLATE_MATTER_ID || isFirmSampleDocument(d),
       );
     },
-    airtableFn: () => listFirmSampleDocumentsFromAirtable(),
-    sheetsFallback: () => [],
-  });
+    () => documentsBackend().listFirmSamples(),
+    [],
+  );
 }
 
 export async function getFirmMemoryStatus(): Promise<FirmMemoryStatus> {
@@ -1523,10 +1613,10 @@ export async function saveFirmSample(payload: {
       id: payload.airtableDocumentId,
     });
   }
-  return registerAssessmentDocumentInAirtable(FIRM_TEMPLATE_MATTER_ID, {
+  return documentsBackend().register(FIRM_TEMPLATE_MATTER_ID, {
     title: payload.title,
     category,
-    airtableDocumentId: payload.airtableDocumentId,
+    documentId: payload.airtableDocumentId,
   });
 }
 
@@ -1602,16 +1692,16 @@ async function listDeliverableTemplateMetaNotes(): Promise<Note[]> {
 }
 
 export async function listDeliverableTemplateDocuments(): Promise<DocumentRow[]> {
-  return readAirtableLegacy({
-    demoFn: async () => {
+  return readPrimary(
+    async () => {
       const seed = await loadDemoSeed();
       return seed.documents.filter(
         (d) => d.matterId === FIRM_TEMPLATE_MATTER_ID || isDeliverableTemplateDocument(d),
       );
     },
-    airtableFn: () => listDeliverableTemplateDocumentsFromAirtable(),
-    sheetsFallback: () => [],
-  });
+    () => documentsBackend().listDeliverableTemplates(),
+    [],
+  );
 }
 
 export async function listDeliverableTemplateCatalog(): Promise<DeliverableTemplateCatalogItem[]> {
@@ -1708,10 +1798,11 @@ export async function saveDeliverableTemplate(payload: {
       await persistSeed();
       docId = doc.id;
     } else {
-      const doc = await registerAssessmentDocumentInAirtable(FIRM_TEMPLATE_MATTER_ID, {
+      const doc = await documentsBackend().register(FIRM_TEMPLATE_MATTER_ID, {
         title: payload.title,
         category,
-        airtableDocumentId: payload.airtableDocumentId ?? resolvedDocId,
+        documentId: payload.airtableDocumentId ?? resolvedDocId,
+        fileType: payload.fileType,
       });
       docId = doc.id;
     }

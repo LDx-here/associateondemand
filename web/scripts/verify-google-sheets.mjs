@@ -13,9 +13,16 @@ import {
 assert.equal(SHEET_TABS.matters, "Matters");
 assert.equal(SHEET_TABS.notes, "Notes");
 assert.ok(TAB_HEADERS.matters.includes("matter_id"));
-assert.ok(TAB_HEADERS.notes.includes("content"));
-assert.ok(TAB_HEADERS.pmInbox.includes("matter_id"));
-assert.ok(TAB_HEADERS.pmInbox.includes("options"));
+assert.ok(TAB_HEADERS.notes.includes("activity"));
+assert.ok(TAB_HEADERS.notes.includes("minutes"));
+assert.ok(TAB_HEADERS.notes.includes("billable"));
+assert.ok(TAB_HEADERS.documents.includes("row_id"));
+assert.ok(TAB_HEADERS.documents.includes("matter_id"));
+assert.ok(TAB_HEADERS.documents.includes("ocr_status"));
+assert.equal(SHEET_TABS.documents, "Documents");
+assert.equal(TAB_HEADERS.notes.indexOf("activity"), 6);
+assert.equal(TAB_HEADERS.notes.indexOf("minutes"), 7);
+assert.equal(TAB_HEADERS.notes.indexOf("billable"), 8);
 
 // Without env creds, should be demo unless Airtable is configured
 if (!process.env.GOOGLE_SHEETS_SPREADSHEET_ID) {

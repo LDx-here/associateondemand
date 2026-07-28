@@ -67,7 +67,28 @@ export function MatterDocumentUpload({
         showToast(data.error, "error");
       } else {
         setResult(data);
-        const documentId = data.airtable_document_id;
+        // Persist metadata via Next.js data-store so Google Sheets mode lists the row
+        // even when Fly OCR still writes Airtable (dual-write not yet on Fly).
+        let documentId = data.airtable_document_id;
+        try {
+          const registerResp = await fetch(`/api/matters/${encodeURIComponent(matterId)}/documents`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: data.filename ?? file.name,
+              category: "uncategorized",
+              documentId: data.airtable_document_id,
+              ocrStatus: data.processing_status ?? "processed",
+              fileType: file.type || undefined,
+            }),
+          });
+          if (registerResp.ok) {
+            const registered = (await registerResp.json()) as { document?: { id?: string } };
+            if (registered.document?.id) documentId = registered.document.id;
+          }
+        } catch {
+          // Non-fatal — Fly may still have written Airtable; list refresh will show what it can.
+        }
         showToast(
           `Saved to this matter → Documents tab. "${data.filename ?? file.name}" is in the list above.`,
           "success",

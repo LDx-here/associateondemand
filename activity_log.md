@@ -1,3 +1,5 @@
+### [2026-07-28] CHECKPOINT: Pass 55 — live Notes activity/minutes/billable headers; Documents Sheets CRUD + POST register; Fly dual-write scaffold; pytest 124; next build; Vercel + Fly
+
 ### [2026-07-28] CHECKPOINT: pass 54 Journal arc — Case story narrative on Case activity tab; note→drafting-facts heuristic extraction in NoteComposer; documents-sheets-migration runbook; pytest 118; test:note-fact-extraction; next build --webpack; Vercel prod
 
 ### [2026-07-27] CHECKPOINT: prod SSR fix 89b64eb — calendar routed through data-store listAllEvents; Settings skips Airtable People when Sheets primary; degraded-mode banner for unmigrated tables on Airtable 429

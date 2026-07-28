@@ -16,6 +16,7 @@ from app.models.document import Document, ExtractedFact
 from app.pipelines.ocr_pipeline import run_ocr_pipeline, text_quality_score
 from app.pipelines.pii_pipeline import anonymize_text
 from app.services import airtable as at
+from app.services import data_store
 from app.services.fact_enrichment import (
     enrich_facts_with_llm,
     heuristic_facts_need_enrichment,
@@ -174,7 +175,7 @@ def process_uploaded_document(
         text_preview=ocr_text,
     )
 
-    airtable_doc = at.create_document(
+    airtable_doc = data_store.create_document(
         matter_code=external_id,
         title=filename,
         category=str(document_category or cat.get("category") or "uncategorized"),

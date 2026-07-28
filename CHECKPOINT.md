@@ -1,9 +1,20 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-28 (CDT) — Pass 54: Case story narrative + note→facts extraction (Journal arc #23–24)  
+**Last updated:** 2026-07-28 (CDT) — Pass 55: Billable Notes columns + Documents Sheets migration  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 55 (2026-07-28, Sheets — billable columns + Documents):** Did both items LD approved:
+
+1. **Billable Notes columns on live spreadsheet** — wrote `activity` / `minutes` / `billable` headers to Notes G–I via service account (schema already matched). Live round-trip: note with Call/12/true persists and reads back.
+2. **Documents → Google Sheets** — Next.js `documentsBackend()` with list/create/register; assessment templates, firm samples, and deliverable templates read/write Sheets; `POST /api/matters/[id]/documents` registers metadata after Fly OCR so the matter Documents tab populates without waiting for Fly dual-write; MatterDocumentUpload posts that register. Documents tab already had correct headers on the live sheet. Fly scaffold: `services/api/app/services/google_sheets.py` + `data_store.py`; OCR intake calls `data_store.create_document`; dual-write behind `AOD_DOCUMENTS_DUAL_WRITE=1` once Fly secrets are set.
+
+pytest 124 (+6 dual-write tests); `test:google-sheets`, `test:work-entry`; next build `--webpack`; live Sheets doc+note smoke on AOD-1001.
+
+**Needs La'Dajia (Fly OCR dual-write):**  
+`fly secrets set -a associateondemand-api GOOGLE_SHEETS_SPREADSHEET_ID=… GOOGLE_SERVICE_ACCOUNT_JSON='…' AOD_DOCUMENTS_DUAL_WRITE=1`  
+Until then, web register path still lands Documents rows after upload; Fly-only writes stay Airtable.
 
 **Pilot click-through (2026-07-27, La'Dajia's request):** walked the real UI in local demo mode (Dashboard → Matters → matter workbench → Tasks → New Assignment intake → Templates) since no production login credentials are available. Found two distinct, separable problems behind "feels fragmented, not built": (1) every screen narrates the user as a *different* attorney submitting work *to* RMV ("RMV is drafting," the consent checkbox saying "you remain the attorney of record" as if RMV were someone else) — language, not architecture, and exactly the rename work deprioritized earlier tonight, now with concrete evidence it matters; (2) Immigration and PI don't feel like separate organized spaces because **PI was never actually built out** — Templates catalog had exactly one PI deliverable (Demand Letter, "Coming soon") against Immigration's four "Available now" entries plus a 17-variant paragraph library on AOS specifically; Matters list filters (Country/Posture/Court) are immigration-shaped; matter workbench tabs (Procedural timeline, Legal elements) don't have a natural PI home. Full findings + competitor sourcing (eImmigration's intake→workflow→e-filing journey, Clio's PI-specific damages/medical/HIPAA fields) given to La'Dajia; she chose PI depth first, then Immigration breadth (asylum + family-based, not cancellation/VAWA — confirmed with her directly).
 
@@ -98,7 +109,7 @@ pytest 118; next build; Fly + Vercel. Verified live: created a filing-deadline t
 
 **Pass 39 (2026-07-26):** Matter lifecycle automation — Clio-Manage-style stages (Intake → Active → Filed/Awaiting Decision → Resolution → Closed) finished the Tasks-on-Google-Sheets migration slice and made stage moves auto-fire that stage's task checklist (idempotent via `createdFrom` tags). Real events now drive stage automatically: new matter seeds Intake tasks immediately; first assignment submitted nudges Intake→Active; exporting an approved deliverable nudges Active→Filed/Awaiting Decision; closing a matter forces Closed from any stage; reopening resumes Active. Commits `2a152e6`, `cb49671`. pytest 118; next build; Fly + Vercel.
 
-**Next:** Document/OCR-pipeline Sheets migration needs a joint look (Python/Fly side) — see flagged item above. Also still open: `ANTHROPIC_API_KEY` on Fly for smart AOS extract; pilot: New matter → paste facts → save → dispatch AOS brief.
+**Next:** Document/OCR-pipeline Sheets migration needs a joint look (Python/Fly side) — see flagged item above. `ANTHROPIC_API_KEY` is on Fly; still open for pilot: New matter → paste facts → save → dispatch AOS brief.
 
 **Discussed tonight, not built — real candidates for a future pass:** Google Calendar sync (Events schema already has unused `calendar_synced`/`google_calendar_id` columns anticipating this; needs La'Dajia to set up a Google Cloud OAuth app first — her personal calendar, not multi-user, matches the internal-first framing). General external-app integrations (e-signature, Slack, etc.) follow the same optional-API-key pattern already used for Anthropic/Midpage/Fastcase/Stripe/Resend — not phase-gated, just not built yet. Only Clio/Needles-style *competing platform* integrations are actually locked per `LEGAL_BOUNDARIES.md`.
 
@@ -662,6 +673,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 55 (2026-07-28):** Live Notes `activity`/`minutes`/`billable` headers G–I; Documents Sheets list/create/register + assessment/template paths; Fly dual-write scaffold (`AOD_DOCUMENTS_DUAL_WRITE`); pytest 124; next build; Vercel + Fly.
 - **Prod SSR fix (2026-07-27):** Google Sheets primary mode no longer calls Airtable for unmigrated tables (Documents, Legal Elements, PM Inbox, Contacts, …) — empty degrade instead of 429 crash. Restored Airtable quota fallback regardless of `DATA_STORE`. Fixed digests 1798507080, 978696406, 693593980 on `/matters/[id]`, `/inbox`, `/dashboard`. next build; Vercel prod.
 - **Google Sheets production (2026-07-27):** Firm spreadsheet + service account on Vercel (`DATA_STORE=google_sheets`); prod deploy https://aod-next.vercel.app; `/api/health` reports `demoMode: false`.
 - **Pass 38 (2026-07-26):** Real client path + AOS intelligence — paste summary extract (LLM + heuristic), scorecard follow-ups, prior-matter fact templates, Google Sheets skills; pytest 118; test:aos-intelligence.
@@ -699,11 +711,10 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Handwritten note scanning (Journal arc #25)** — anonymize-first OCR round-trip; needs `ANTHROPIC_API_KEY` on Fly + architecture for reversible pseudonymization per La'Dajia's decision.
-2. **Documents Sheets migration (Python/Fly)** — implement dual-write per `docs/runbooks/documents-sheets-migration.md`; Fly needs `GOOGLE_SERVICE_ACCOUNT_JSON` + `GOOGLE_SHEETS_SPREADSHEET_ID` secrets.
-3. **Pilot real client AOS on prod** — New matter in Google Sheets → paste summary → Extract facts → Save → dispatch `aos-discretionary-brief` (smart extract blocked until Fly Anthropic key set).
-4. **Sheets Notes headers (La'Dajia)** — add `activity`, `minutes`, `billable` columns G–I on live Notes tab so billable time logs persist in prod (Pass 51).
-5. **Retest lifecycle on prod** — matter Tasks tab → stage PATCH → Record decision on Filed/Awaiting Decision matters.
+1. **Fly Documents dual-write secrets** — set `GOOGLE_SHEETS_SPREADSHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `AOD_DOCUMENTS_DUAL_WRITE=1` on `associateondemand-api` so OCR uploads also land on the Sheets Documents tab (web register path already works).
+2. **Handwritten note scanning (Journal arc #25)** — anonymize-first OCR round-trip; reversible pseudonymization per La'Dajia's decision.
+3. **Pilot real client AOS on prod** — New matter in Google Sheets → paste summary → Extract facts → Save → dispatch `aos-discretionary-brief`.
+4. **Retest lifecycle on prod** — matter Tasks tab → stage PATCH → Record decision on Filed/Awaiting Decision matters.
 
 ## Blockers
 
