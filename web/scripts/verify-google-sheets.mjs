@@ -14,6 +14,8 @@ assert.equal(SHEET_TABS.matters, "Matters");
 assert.equal(SHEET_TABS.notes, "Notes");
 assert.ok(TAB_HEADERS.matters.includes("matter_id"));
 assert.ok(TAB_HEADERS.notes.includes("content"));
+assert.ok(TAB_HEADERS.pmInbox.includes("matter_id"));
+assert.ok(TAB_HEADERS.pmInbox.includes("options"));
 
 // Without env creds, should be demo unless Airtable is configured
 if (!process.env.GOOGLE_SHEETS_SPREADSHEET_ID) {

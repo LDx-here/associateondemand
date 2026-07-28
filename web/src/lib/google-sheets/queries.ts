@@ -2,7 +2,14 @@
  * Google Sheets read/write — Matters + Notes (Phase 1 migration slice).
  */
 
-import type { CalendarEvent, CaseAssessment, Contact, LegalElementRow, Matter, Note, Task } from "../types";
+import type { CalendarEvent, CaseAssessment, Contact, InboxItem, LegalElementRow, Matter, Note, Task } from "../types";
+import type { AssignmentStatus, AssignmentTier } from "../types";
+import { buildDeliveredHistory, isValidAssignmentTransition } from "../assignment-transitions";
+import {
+  assignmentOptionsFromItem,
+  inboxItemFromParsedFields,
+  serializeAssignmentOptions,
+} from "../pm-inbox-options";
 import { emptyCaseAssessment, parseCaseAssessment, serializeCaseAssessment } from "../case-assessment";
 import { DEFAULT_LIFECYCLE_STAGE } from "../matter-lifecycle-stage";
 import { FIRM_TEMPLATE_MATTER_ID } from "../assessment-documents";
@@ -679,4 +686,259 @@ export async function updateTaskInGoogleSheets(
   if (patch.isFilingDeadline !== undefined) updated.is_filing_deadline = patch.isFilingDeadline ? "true" : "";
   await updateSheetRow("tasks", _sheetRow, rowToValues(headers, updated));
   return mapTaskRow(updated);
+}
+
+function mapInboxRow(row: Record<string, string>): InboxItem {
+  return inboxItemFromParsedFields({
+    id: row.row_id,
+    title: row.title,
+    matterId: row.matter_id,
+    agent: row.agent,
+    whatTried: row.what_tried,
+    whatNeeded: row.what_needed,
+    optionsRaw: row.options,
+    status: row.status,
+    resolution: row.resolution,
+    createdAt: row.created_at,
+    resolvedAt: row.resolved_at || null,
+  });
+}
+
+async function findInboxRow(itemId: string): Promise<(Record<string, string> & { _sheetRow: number }) | null> {
+  const rows = await readSheetTab("pmInbox", { noCache: true });
+  return rows.find((r) => r.row_id === itemId) ?? null;
+}
+
+async function updateInboxRow(itemId: string, patch: Record<string, string>): Promise<InboxItem | null> {
+  const existing = await findInboxRow(itemId);
+  if (!existing) return null;
+  const headers = TAB_HEADERS.pmInbox;
+  const { _sheetRow, ...rowData } = existing;
+  const updated: Record<string, string> = { ...rowData, ...patch };
+  await updateSheetRow("pmInbox", _sheetRow, rowToValues(headers, updated));
+  return mapInboxRow(updated);
+}
+
+export async function listInboxItemsFromGoogleSheets(): Promise<InboxItem[]> {
+  const rows = await readSheetTab("pmInbox");
+  return rows.map(mapInboxRow).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
+export async function getInboxItemByIdFromGoogleSheets(itemId: string): Promise<InboxItem | null> {
+  const row = await findInboxRow(itemId);
+  return row ? mapInboxRow(row) : null;
+}
+
+export async function createAssignmentInGoogleSheets(payload: {
+  matterCode: string;
+  deliverableType: string;
+  tier: AssignmentTier;
+  facts: string;
+  priority?: string;
+  dueDate?: string | null;
+  submittedBy?: string;
+  sampleDiscountEligible?: boolean;
+  discountApplied?: boolean;
+  paymentStatus?: "pending" | "paid" | "invoice";
+  stripeSessionId?: string;
+  amountCents?: number;
+  deliverableCatalogId?: string;
+  conflictReviewRequired?: boolean;
+  opposingParty?: string;
+  opposingCounsel?: string;
+  source?: "internal" | "partner";
+  partnerEmail?: string;
+  partnerFirmName?: string;
+}): Promise<InboxItem> {
+  const resolved = await findMatterRow(payload.matterCode);
+  if (!resolved) throw new Error(`Matter not found: ${payload.matterCode}`);
+  const matterCode = resolved.matter_id;
+  const now = new Date().toISOString();
+  const sourceNote =
+    payload.source === "partner"
+      ? `Partner assignment submitted${payload.partnerFirmName ? ` by ${payload.partnerFirmName}` : ""}${payload.partnerEmail ? ` (${payload.partnerEmail})` : ""}.`
+      : "Assignment submitted via intake form.";
+  const history = [
+    {
+      status: "Submitted",
+      note: sourceNote,
+      at: now,
+      by: payload.submittedBy ?? "Attorney",
+    },
+  ];
+  const headers = TAB_HEADERS.pmInbox;
+  const rowId = newRowId("inbox");
+  const row: Record<string, string> = {
+    row_id: rowId,
+    title: `${payload.deliverableType} \u2014 ${payload.tier} tier`,
+    matter_id: matterCode,
+    agent: "PM Orchestrator",
+    what_tried: sourceNote,
+    what_needed: payload.facts.slice(0, 4000),
+    options: serializeAssignmentOptions({
+      deliverableType: payload.deliverableType,
+      tier: payload.tier,
+      facts: payload.facts,
+      priority: payload.priority,
+      dueDate: payload.dueDate,
+      sampleDiscountEligible: payload.sampleDiscountEligible,
+      discountApplied: payload.discountApplied,
+      paymentStatus: payload.paymentStatus,
+      stripeSessionId: payload.stripeSessionId,
+      amountCents: payload.amountCents,
+      deliverableCatalogId: payload.deliverableCatalogId,
+      conflictReviewRequired: payload.conflictReviewRequired,
+      opposingParty: payload.opposingParty,
+      opposingCounsel: payload.opposingCounsel,
+      source: payload.source,
+      partnerEmail: payload.partnerEmail,
+      partnerFirmName: payload.partnerFirmName,
+      history,
+    }),
+    status: "Submitted",
+    resolution: "",
+    created_at: now,
+    resolved_at: "",
+  };
+  await appendSheetRow("pmInbox", rowToValues(headers, row));
+  return mapInboxRow(row);
+}
+
+export async function updateAssignmentStatusInGoogleSheets(
+  itemId: string,
+  nextStatus: AssignmentStatus,
+  options?: { note?: string; by?: string },
+): Promise<InboxItem> {
+  const existing = await findInboxRow(itemId);
+  if (!existing) throw new Error(`Inbox item not found: ${itemId}`);
+  const current = mapInboxRow(existing);
+  if (!isValidAssignmentTransition(current.status, nextStatus)) {
+    throw new Error(`Cannot move assignment from "${current.status}" to "${nextStatus}"`);
+  }
+  const now = new Date().toISOString();
+  const history = [
+    ...(current.history ?? []),
+    { status: nextStatus, note: options?.note?.trim() || undefined, at: now, by: options?.by ?? "Attorney" },
+  ];
+  const patch: Record<string, string> = {
+    status: nextStatus,
+    options: serializeAssignmentOptions(assignmentOptionsFromItem(current, history)),
+  };
+  if (options?.note?.trim()) patch.resolution = options.note.trim();
+  if (nextStatus === "Approved" || nextStatus === "Returned") patch.resolved_at = now;
+  const updated = await updateInboxRow(itemId, patch);
+  if (!updated) throw new Error(`Inbox item not found: ${itemId}`);
+  return updated;
+}
+
+export async function markAssignmentDeliveredInGoogleSheets(
+  itemId: string,
+  options?: { exportKind?: string; by?: string },
+): Promise<InboxItem | null> {
+  const existing = await findInboxRow(itemId);
+  if (!existing) return null;
+  const current = mapInboxRow(existing);
+  if (current.kind !== "assignment" || current.status !== "Approved") return null;
+  if (current.deliveredAt) return current;
+
+  const { deliveredAt, history } = buildDeliveredHistory(current, options);
+  return updateInboxRow(itemId, {
+    options: serializeAssignmentOptions({
+      ...assignmentOptionsFromItem(current, history),
+      deliveredAt,
+    }),
+  });
+}
+
+export async function updateAssignmentPaymentInGoogleSheets(
+  itemId: string,
+  patch: {
+    paymentStatus?: "pending" | "paid" | "invoice";
+    stripeSessionId?: string;
+    amountCents?: number;
+  },
+): Promise<InboxItem | null> {
+  const existing = await findInboxRow(itemId);
+  if (!existing) return null;
+  const current = mapInboxRow(existing);
+  if (current.kind !== "assignment") return null;
+
+  const now = new Date().toISOString();
+  const paymentStatus = patch.paymentStatus ?? current.paymentStatus;
+  const stripeSessionId = patch.stripeSessionId ?? current.stripeSessionId;
+  const amountCents = patch.amountCents ?? current.amountCents;
+
+  const history =
+    patch.paymentStatus === "paid" && current.paymentStatus !== "paid"
+      ? [
+          ...(current.history ?? []),
+          {
+            status: "Payment received",
+            note: stripeSessionId ? `Stripe session ${stripeSessionId}` : "Checkout completed.",
+            at: now,
+            by: "Stripe",
+          },
+        ]
+      : (current.history ?? []);
+
+  const rowPatch: Record<string, string> = {
+    options: serializeAssignmentOptions({
+      ...assignmentOptionsFromItem(current, history),
+      paymentStatus,
+      stripeSessionId,
+      amountCents,
+    }),
+  };
+  if (patch.paymentStatus === "paid") {
+    rowPatch.what_tried = "Payment received. PM dispatch started.";
+  }
+  return updateInboxRow(itemId, rowPatch);
+}
+
+export async function resolveInboxItemInGoogleSheets(
+  itemId: string,
+  resolution: string,
+  status: "Resolved" | "Dismissed" = "Resolved",
+): Promise<InboxItem> {
+  const now = new Date().toISOString();
+  const updated = await updateInboxRow(itemId, {
+    status,
+    resolution,
+    resolved_at: now,
+  });
+  if (!updated) throw new Error(`Inbox item not found: ${itemId}`);
+  return updated;
+}
+
+export async function createInboxItemInGoogleSheets(payload: {
+  title: string;
+  matterCode?: string;
+  agent: string;
+  whatTried: string;
+  whatNeeded: string;
+  options?: string[];
+}): Promise<InboxItem> {
+  const headers = TAB_HEADERS.pmInbox;
+  const rowId = newRowId("inbox");
+  const now = new Date().toISOString();
+  let matterCode = "";
+  if (payload.matterCode) {
+    const resolved = await findMatterRow(payload.matterCode);
+    matterCode = resolved?.matter_id ?? payload.matterCode;
+  }
+  const row: Record<string, string> = {
+    row_id: rowId,
+    title: payload.title,
+    matter_id: matterCode,
+    agent: payload.agent,
+    what_tried: payload.whatTried,
+    what_needed: payload.whatNeeded,
+    options: JSON.stringify(payload.options ?? []),
+    status: "Pending",
+    resolution: "",
+    created_at: now,
+    resolved_at: "",
+  };
+  await appendSheetRow("pmInbox", rowToValues(headers, row));
+  return mapInboxRow(row);
 }

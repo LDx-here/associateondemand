@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 
-import {
-  resolveInboxItemInAirtable,
-  type InboxItem,
-} from "@/lib/airtable/queries";
-import { isDemoMode } from "@/lib/data-store";
+import { isDemoMode, resolveInboxItem } from "@/lib/data-store";
+import type { InboxItem } from "@/lib/types";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -54,7 +51,7 @@ export async function POST(req: Request, ctx: Ctx) {
   const { itemId } = await ctx.params;
   if (isDemoMode()) {
     return NextResponse.json(
-      { error: "Demo mode — PM Inbox resolution requires a live Airtable connection." },
+      { error: "Demo mode — PM Inbox resolution requires a live data store connection." },
       { status: 503 },
     );
   }
@@ -79,7 +76,7 @@ export async function POST(req: Request, ctx: Ctx) {
   const status: "Resolved" | "Dismissed" =
     body.status === "Dismissed" ? "Dismissed" : "Resolved";
   try {
-    const item = await resolveInboxItemInAirtable(itemId, resolution, status);
+    const item = await resolveInboxItem(itemId, resolution, status);
 
     const option = (body.option ?? resolution).trim().toLowerCase();
     let pmResume: Awaited<ReturnType<typeof resumePmAfterApprove>> | undefined;

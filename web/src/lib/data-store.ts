@@ -40,6 +40,7 @@ import {
   updateAssignmentPaymentInAirtable,
   markAssignmentDeliveredInAirtable,
   getInboxItemByIdFromAirtable,
+  resolveInboxItemInAirtable,
   updateLegalElementInAirtable,
   updateMatterDeadlineInAirtable,
   updateMatterInAirtable,
@@ -82,6 +83,13 @@ import {
   updateMatterDeadlineInGoogleSheets,
   updateMatterInGoogleSheets,
   updateNoteInGoogleSheets,
+  listInboxItemsFromGoogleSheets,
+  getInboxItemByIdFromGoogleSheets,
+  createAssignmentInGoogleSheets,
+  updateAssignmentStatusInGoogleSheets,
+  updateAssignmentPaymentInGoogleSheets,
+  markAssignmentDeliveredInGoogleSheets,
+  resolveInboxItemInGoogleSheets,
 } from "./google-sheets/queries";
 import {
   isValidLifecycleTransition,
@@ -271,6 +279,28 @@ function eventsBackend() {
       };
 }
 
+function inboxBackend() {
+  return usesGoogleSheets()
+    ? {
+        list: listInboxItemsFromGoogleSheets,
+        getById: getInboxItemByIdFromGoogleSheets,
+        createAssignment: createAssignmentInGoogleSheets,
+        updateStatus: updateAssignmentStatusInGoogleSheets,
+        updatePayment: updateAssignmentPaymentInGoogleSheets,
+        markDelivered: markAssignmentDeliveredInGoogleSheets,
+        resolve: resolveInboxItemInGoogleSheets,
+      }
+    : {
+        list: listInboxItemsFromAirtable,
+        getById: getInboxItemByIdFromAirtable,
+        createAssignment: createAssignmentInAirtable,
+        updateStatus: updateAssignmentStatusInAirtable,
+        updatePayment: updateAssignmentPaymentInAirtable,
+        markDelivered: markAssignmentDeliveredInAirtable,
+        resolve: resolveInboxItemInAirtable,
+      };
+}
+
 export function isQuotaFallbackMode(): boolean {
   return quotaFallbackActive;
 }
@@ -331,7 +361,7 @@ async function readPrimary<T>(
 }
 
 /**
- * Tables not yet migrated to Google Sheets (Documents, Legal Elements, PM Inbox, …).
+ * Tables not yet migrated to Google Sheets (Documents — Python/Fly OCR pipeline).
  * When Sheets is primary, skip Airtable entirely so quota errors cannot crash SSR.
  */
 async function readAirtableLegacy<T>(opts: {
@@ -1177,8 +1207,11 @@ const OPEN_INBOX_STATUSES = new Set(["Pending", "Submitted", "In progress", "Rea
 
 export async function listInboxItems(): Promise<InboxItem[]> {
   if (isDemoMode()) return listInboxItemsDemo();
-  if (usesGoogleSheets()) return [];
-  return withSampleFallback(() => listInboxItemsDemo(), () => listInboxItemsFromAirtable());
+  return readPrimary(
+    () => listInboxItemsDemo(),
+    () => inboxBackend().list(),
+    [],
+  );
 }
 
 export async function countUnreadInbox(): Promise<number> {
@@ -1213,16 +1246,27 @@ export async function createAssignment(payload: {
   partnerFirmName?: string;
 }): Promise<InboxItem> {
   if (isDemoMode()) return createAssignmentDemo(payload);
-  return createAssignmentInAirtable({ matterCode: payload.matterId, ...payload });
+  return inboxBackend().createAssignment({ matterCode: payload.matterId, ...payload });
 }
 
 export async function getInboxItemById(itemId: string): Promise<InboxItem | null> {
   if (isDemoMode()) return getInboxItemByIdDemo(itemId);
-  if (usesGoogleSheets()) return null;
-  return withSampleFallback(
+  return readPrimary(
     () => getInboxItemByIdDemo(itemId),
-    () => getInboxItemByIdFromAirtable(itemId),
+    () => inboxBackend().getById(itemId),
+    null,
   );
+}
+
+export async function resolveInboxItem(
+  itemId: string,
+  resolution: string,
+  status: "Resolved" | "Dismissed" = "Resolved",
+): Promise<InboxItem> {
+  if (isDemoMode()) {
+    throw new Error("Demo mode — resolve inbox item via demo UI only.");
+  }
+  return inboxBackend().resolve(itemId, resolution, status);
 }
 
 export async function updateAssignmentPayment(
@@ -1234,7 +1278,7 @@ export async function updateAssignmentPayment(
   },
 ): Promise<InboxItem | null> {
   if (isDemoMode()) return updateAssignmentPaymentDemo(itemId, patch);
-  return updateAssignmentPaymentInAirtable(itemId, patch);
+  return inboxBackend().updatePayment(itemId, patch);
 }
 
 export async function updateAssignmentStatus(
@@ -1243,7 +1287,7 @@ export async function updateAssignmentStatus(
   options?: { note?: string; by?: string },
 ): Promise<InboxItem | null> {
   if (isDemoMode()) return updateAssignmentStatusDemo(itemId, nextStatus, options);
-  return updateAssignmentStatusInAirtable(itemId, nextStatus, options);
+  return inboxBackend().updateStatus(itemId, nextStatus, options);
 }
 
 export async function markAssignmentDelivered(
@@ -1251,7 +1295,7 @@ export async function markAssignmentDelivered(
   options?: { exportKind?: string; by?: string },
 ): Promise<InboxItem | null> {
   if (isDemoMode()) return markAssignmentDeliveredDemo(itemId, options);
-  return markAssignmentDeliveredInAirtable(itemId, options);
+  return inboxBackend().markDelivered(itemId, options);
 }
 
 /** Assignment-kind PM Inbox rows linked to a matter code (e.g. AOD-1001). */
