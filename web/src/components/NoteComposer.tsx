@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 
 import type { TaskDetectionResult } from "@/lib/task-detection";
 import { detectTaskFromNote } from "@/lib/task-detection";
+import type { DraftingFactsPayload } from "@/lib/practice-area-facts";
+import {
+  suggestFactMergeFromNote,
+  type NoteFactSuggestion,
+} from "@/lib/note-fact-extraction";
 import type { WorkActivity } from "@/lib/work-entry";
 import {
   DEFAULT_MINUTES,
@@ -14,14 +19,32 @@ import {
 
 const DEBOUNCE_MS = 380;
 
-export function NoteComposer({ matterId, onSaved }: { matterId: string; onSaved?: () => void }) {
+export function NoteComposer({
+  matterId,
+  caseType,
+  onSaved,
+}: {
+  matterId: string;
+  caseType: string;
+  onSaved?: () => void;
+}) {
   const [content, setContent] = useState("");
   const [suggestion, setSuggestion] = useState<TaskDetectionResult | null>(null);
+  const [factSuggestion, setFactSuggestion] = useState<NoteFactSuggestion | null>(null);
+  const [draftingFacts, setDraftingFacts] = useState<DraftingFactsPayload | null>(null);
   const [dismissedForContent, setDismissedForContent] = useState<string | null>(null);
+  const [dismissedFactsForContent, setDismissedFactsForContent] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [activity, setActivity] = useState<WorkActivity | null>(null);
   const [minutes, setMinutes] = useState<number | null>(null);
   const [billable, setBillable] = useState(true);
+
+  useEffect(() => {
+    void fetch(`/api/matters/${matterId}/drafting-facts`)
+      .then((r) => r.json())
+      .then((data: { facts?: DraftingFactsPayload | null }) => setDraftingFacts(data.facts ?? null))
+      .catch(() => setDraftingFacts(null));
+  }, [matterId]);
 
   /** Picking the activity fills the time too — one tap logs a complete entry. */
   function pickActivity(next: WorkActivity) {
@@ -45,16 +68,23 @@ export function NoteComposer({ matterId, onSaved }: { matterId: string; onSaved?
 
   useEffect(() => {
     const t = window.setTimeout(() => {
-      const detected = detectTaskFromNote(content);
       const token = content.trim();
+      const detected = detectTaskFromNote(content);
       if (detected && dismissedForContent === token) {
         setSuggestion(null);
-        return;
+      } else {
+        setSuggestion(detected && dismissedForContent !== token ? detected : null);
       }
-      setSuggestion(detected && dismissedForContent !== token ? detected : null);
+
+      const facts = suggestFactMergeFromNote(content, matterId, draftingFacts, caseType);
+      if (facts && dismissedFactsForContent === token) {
+        setFactSuggestion(null);
+      } else {
+        setFactSuggestion(facts && dismissedFactsForContent !== token ? facts : null);
+      }
     }, DEBOUNCE_MS);
     return () => window.clearTimeout(t);
-  }, [content, dismissedForContent]);
+  }, [content, dismissedForContent, dismissedFactsForContent, matterId, caseType, draftingFacts]);
 
   async function saveNote() {
     setBusy(true);
@@ -66,7 +96,9 @@ export function NoteComposer({ matterId, onSaved }: { matterId: string; onSaved?
       });
       setContent("");
       setSuggestion(null);
+      setFactSuggestion(null);
       setDismissedForContent(null);
+      setDismissedFactsForContent(null);
       resetWork();
       onSaved?.();
     } finally {
@@ -78,6 +110,32 @@ export function NoteComposer({ matterId, onSaved }: { matterId: string; onSaved?
     const token = content.trim();
     setDismissedForContent(token);
     setSuggestion(null);
+  }
+
+  function dismissFactsBanner() {
+    const token = content.trim();
+    setDismissedFactsForContent(token);
+    setFactSuggestion(null);
+  }
+
+  async function mergeFactsIntoChecklist() {
+    if (!factSuggestion) return;
+    setBusy(true);
+    try {
+      const resp = await fetch(`/api/matters/${matterId}/drafting-facts`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ facts: factSuggestion.mergedPayload }),
+      });
+      if (!resp.ok) return;
+      const data = (await resp.json()) as { facts?: DraftingFactsPayload };
+      if (data.facts) setDraftingFacts(data.facts);
+      setFactSuggestion(null);
+      setDismissedFactsForContent(content.trim());
+      onSaved?.();
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function createNoteAndTask() {
@@ -111,6 +169,40 @@ export function NoteComposer({ matterId, onSaved }: { matterId: string; onSaved?
   return (
     <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-4">
       <label className="text-sm font-medium text-slate-800">New note</label>
+      {factSuggestion ? (
+        <div
+          role="status"
+          className="rounded-md border border-sky-200 bg-sky-50 p-3 text-xs text-sky-950"
+        >
+          <p className="font-medium">Add to case facts?</p>
+          <p className="mt-1 text-sky-900">
+            Detected {factSuggestion.filledFieldIds.length} checklist field
+            {factSuggestion.filledFieldIds.length === 1 ? "" : "s"}:{" "}
+            {factSuggestion.fieldLabels.join(", ")}.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded-md bg-sky-900 px-2 py-1 text-xs font-medium text-white hover:bg-sky-800 disabled:opacity-50"
+              disabled={busy}
+              onClick={() => void mergeFactsIntoChecklist()}
+            >
+              Add to checklist
+            </button>
+            <button
+              type="button"
+              className="rounded-md border border-sky-300 bg-white px-2 py-1 text-xs font-medium text-sky-900 hover:bg-sky-100 disabled:opacity-50"
+              disabled={busy}
+              onClick={dismissFactsBanner}
+            >
+              Dismiss
+            </button>
+          </div>
+          <p className="mt-2 text-[0.65rem] text-sky-800">
+            Only empty checklist fields are filled — your existing edits are not overwritten.
+          </p>
+        </div>
+      ) : null}
       {suggestion ? (
         <div
           role="status"

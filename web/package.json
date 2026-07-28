@@ -28,6 +28,7 @@
     "test:matter-lifecycle-stage": "tsx scripts/verify-matter-lifecycle-stage.mjs",
     "test:work-entry": "tsx scripts/verify-work-entry.mjs",
     "test:pm-inbox-options": "tsx scripts/verify-pm-inbox-options.mjs",
+    "test:note-fact-extraction": "tsx scripts/verify-note-fact-extraction.mjs",
     "test:practice-import": "tsx scripts/verify-practice-import.mjs",
     "scan:practice": "tsx scripts/scan-practice.mjs"
   },

@@ -3,6 +3,7 @@
 import { ScrollText } from "lucide-react";
 import { useState } from "react";
 
+import { CaseNarrativePanel } from "@/components/CaseNarrativePanel";
 import { EmptyState } from "@/components/EmptyState";
 import { NoteComposer } from "@/components/NoteComposer";
 import { EditableOutputMemo } from "@/components/EditableOutputMemo";
@@ -11,12 +12,16 @@ import { rollUpWork, toBillableHours } from "@/lib/work-entry";
 
 export function CaseActivityPanel({
   matterId,
+  caseType,
+  matterTitle,
   timeline,
   notes,
   refreshKey,
   onRefresh,
 }: {
   matterId: string;
+  caseType: string;
+  matterTitle?: string;
   timeline: TimelineEntry[];
   notes: Note[];
   refreshKey: number;
@@ -40,7 +45,9 @@ export function CaseActivityPanel({
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="space-y-4">
+      <CaseNarrativePanel notes={notes} matterTitle={matterTitle} />
+      <div className="grid gap-4 lg:grid-cols-2">
       <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Chronological activity</p>
         <div className="flex flex-wrap gap-2 text-xs">
@@ -94,7 +101,7 @@ export function CaseActivityPanel({
       </div>
 
       <div className="space-y-3">
-        <NoteComposer matterId={matterId} onSaved={onRefresh} />
+        <NoteComposer matterId={matterId} caseType={caseType} onSaved={onRefresh} />
         <ul className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-sm">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Case notes ({notes.length})</p>
@@ -153,6 +160,7 @@ export function CaseActivityPanel({
           )}
         </ul>
       </div>
+    </div>
     </div>
   );
 }

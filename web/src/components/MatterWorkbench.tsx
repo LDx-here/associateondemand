@@ -321,6 +321,8 @@ export function MatterWorkbench({
       {tab === "Case activity" ? (
         <CaseActivityPanel
           matterId={matter.matterId}
+          caseType={matterHeader.caseType}
+          matterTitle={matterHeader.title ?? matterHeader.matterId}
           timeline={timeline}
           notes={activityNotes}
           refreshKey={refreshKey}
