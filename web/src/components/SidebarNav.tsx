@@ -49,7 +49,8 @@ const SECONDARY_NAV: SidebarNavItem[] = [
   { href: "/book", label: "Book consultation", icon: Calendar },
   { href: "/intake/upload", label: "Intake upload", icon: Upload },
   { href: "/knowledge-map", label: "Knowledge map", icon: Map },
-  { href: "/import/eimmigration", label: "Import", icon: FileUp },
+  { href: "/import/practice", label: "Import practice", icon: FileUp },
+  { href: "/import/eimmigration", label: "Import eImmigration", icon: FileUp },
 ];
 
 function NavLink({ href, label, icon: Icon }: SidebarNavItem) {
