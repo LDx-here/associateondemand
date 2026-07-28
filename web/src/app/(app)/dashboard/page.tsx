@@ -27,6 +27,7 @@ import {
   recentActivity,
   upcomingDeadlines,
 } from "@/lib/dashboard-aggregates";
+import { notesMissingTime, rollUpWorkSince, toBillableHours } from "@/lib/work-entry";
 import {
   countUnreadInbox,
   getFirmMemoryStatus,
@@ -98,8 +99,12 @@ export default async function DashboardPage() {
   } catch {
     /* keep seed audit log only */
   }
+  const allNotes = demo ? (seed?.notes ?? []) : liveNotes;
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const workThisMonth = rollUpWorkSince(allNotes, monthStart);
+  const untimedNotes = notesMissingTime(allNotes).length;
   const activity = recentActivity({
-    notes: demo ? (seed?.notes ?? []) : liveNotes,
+    notes: allNotes,
     completedTasks: demo
       ? (seed?.tasks.filter((t) => t.status === "Done") ?? [])
       : tasks.filter((t) => t.status === "Done"),
@@ -229,11 +234,15 @@ export default async function DashboardPage() {
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          label="Hours saved this month"
-          value={overflow.hoursSavedThisMonth}
-          hint="Estimated from completed overflow deliverables"
+          label="Billable hours logged"
+          value={toBillableHours(workThisMonth.billableMinutes)}
+          hint={
+            untimedNotes > 0
+              ? `This month · ${untimedNotes} note${untimedNotes === 1 ? "" : "s"} with no time logged`
+              : "This month, from notes you logged time on"
+          }
           icon={Clock3}
-          tone="positive"
+          tone={untimedNotes > 0 ? "attention" : "positive"}
         />
         <KpiCard
           label="Deliverables in review"

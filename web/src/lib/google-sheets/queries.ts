@@ -7,6 +7,7 @@ import { emptyCaseAssessment, parseCaseAssessment, serializeCaseAssessment } fro
 import { DEFAULT_LIFECYCLE_STAGE } from "../matter-lifecycle-stage";
 import { FIRM_TEMPLATE_MATTER_ID } from "../assessment-documents";
 import { MATTER_STATUS_CLOSED } from "../matter-status";
+import type { NoteWorkEntry } from "../work-entry";
 import {
   appendSheetRow,
   newRowId,
@@ -58,6 +59,7 @@ function mapTaskRow(row: Record<string, string>): Task {
 }
 
 function mapNoteRow(row: Record<string, string>): Note {
+  const minutes = Number(row.minutes);
   return {
     id: row.row_id,
     matterId: row.matter_id,
@@ -65,6 +67,10 @@ function mapNoteRow(row: Record<string, string>): Note {
     content: row.content ?? "",
     createdAt: row.created_at || new Date().toISOString(),
     type: row.type || "Manual",
+    activity: row.activity || undefined,
+    minutes: Number.isFinite(minutes) && minutes > 0 ? minutes : undefined,
+    // Blank stays billable — only an explicit "false" marks a write-off.
+    billable: row.billable === "" || row.billable === undefined ? undefined : row.billable !== "false",
   };
 }
 
@@ -223,6 +229,7 @@ export async function createNoteInGoogleSheets(
   content: string,
   author: string,
   type = "Manual",
+  work?: NoteWorkEntry | null,
 ): Promise<Note> {
   const matter = await findMatterRow(matterCode);
   if (!matter && matterCode !== FIRM_TEMPLATE_MATTER_ID) {
@@ -238,6 +245,9 @@ export async function createNoteInGoogleSheets(
     author,
     created_at: new Date().toISOString(),
     type,
+    activity: work?.activity ?? "",
+    minutes: work ? String(work.minutes) : "",
+    billable: work ? String(work.billable) : "",
   };
   await appendSheetRow("notes", rowToValues(headers, row));
   return mapNoteRow(row);

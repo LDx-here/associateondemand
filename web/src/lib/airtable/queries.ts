@@ -648,6 +648,13 @@ export async function createNoteInAirtable(
   content: string,
   author: string,
   type: string = "Attorney",
+  /**
+   * Work capture is Google-Sheets-native (no Airtable Notes fields exist for
+   * it, and Airtable is retired operationally). Accepted for signature parity
+   * with the Sheets backend so this dormant path keeps compiling; the note
+   * still saves, it just carries no time entry.
+   */
+  _work?: unknown,
 ): Promise<Note> {
   const resolved = await resolveMatterRecordIdForWrite(matterCode);
   const n = F.notes;

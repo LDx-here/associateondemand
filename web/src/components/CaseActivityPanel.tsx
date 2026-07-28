@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { NoteComposer } from "@/components/NoteComposer";
 import { EditableOutputMemo } from "@/components/EditableOutputMemo";
 import type { Note, TimelineEntry } from "@/lib/types";
+import { rollUpWork, toBillableHours } from "@/lib/work-entry";
 
 export function CaseActivityPanel({
   matterId,
@@ -25,6 +26,7 @@ export function CaseActivityPanel({
     () => new Set(["note", "task_created", "task_completed", "document", "event", "agent"]),
   );
   const [expandedTimelineId, setExpandedTimelineId] = useState<string | null>(null);
+  const matterWork = rollUpWork(notes);
 
   const filteredTimeline = timeline.filter((e) => timelineKinds.has(e.kind));
 
@@ -94,7 +96,20 @@ export function CaseActivityPanel({
       <div className="space-y-3">
         <NoteComposer matterId={matterId} onSaved={onRefresh} />
         <ul className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Case notes ({notes.length})</p>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Case notes ({notes.length})</p>
+            {matterWork.entryCount > 0 ? (
+              <p className="text-xs text-slate-600">
+                <span className="font-semibold text-slate-900">
+                  {toBillableHours(matterWork.billableMinutes)} hr
+                </span>{" "}
+                billable on this matter
+                {matterWork.nonBillableMinutes > 0
+                  ? ` · ${toBillableHours(matterWork.nonBillableMinutes)} hr no charge`
+                  : ""}
+              </p>
+            ) : null}
+          </div>
           {notes.length === 0 ? (
             <li className="text-xs text-slate-500">No notes yet.</li>
           ) : (
@@ -106,7 +121,21 @@ export function CaseActivityPanel({
                 }`}
               >
                 <p className="text-xs text-slate-500">
-                  {n.author} · {new Date(n.createdAt).toLocaleString()} · {n.type}
+                  {n.author} · {new Date(n.createdAt).toLocaleString()}
+                  {/* The activity badge below already says what this was — "Manual" adds nothing. */}
+                  {n.activity && n.minutes ? "" : ` · ${n.type}`}
+                  {n.activity && n.minutes ? (
+                    <span
+                      className={
+                        n.billable === false
+                          ? "ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[0.65rem] font-medium text-slate-600"
+                          : "ml-1.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[0.65rem] font-medium text-emerald-900"
+                      }
+                    >
+                      {n.activity} · {toBillableHours(n.minutes)} hr
+                      {n.billable === false ? " (no charge)" : ""}
+                    </span>
+                  ) : null}
                 </p>
                 {n.type === "Agent" ? (
                   <EditableOutputMemo

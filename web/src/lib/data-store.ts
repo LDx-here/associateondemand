@@ -155,6 +155,7 @@ import type {
   Task,
   TimelineEntry,
 } from "./types";
+import type { NoteWorkEntry } from "./work-entry";
 
 export { isDemoMode, usesGoogleSheets } from "./data-store-config";
 
@@ -790,6 +791,7 @@ export async function createNoteForMatter(
   content: string,
   author: string,
   type = "Manual",
+  work?: NoteWorkEntry | null,
 ): Promise<Note> {
   if (isDemoMode()) {
     const seed = await loadDemoSeed();
@@ -800,12 +802,15 @@ export async function createNoteForMatter(
       content,
       createdAt: new Date().toISOString(),
       type,
+      ...(work
+        ? { activity: work.activity, minutes: work.minutes, billable: work.billable }
+        : {}),
     };
     seed.notes.push(note);
     await persistSeed();
     return note;
   }
-  return notesBackend().create(matterId, content, author, type);
+  return notesBackend().create(matterId, content, author, type, work ?? null);
 }
 
 export async function getDraftingFactsForMatter(matterId: string): Promise<DraftingFactsPayload | null> {

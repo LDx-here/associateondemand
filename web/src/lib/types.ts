@@ -90,6 +90,10 @@ export type Note = {
   content: string;
   createdAt: string;
   type: string;
+  /** Work capture — a note can also be a billable work entry (see work-entry.ts). */
+  activity?: string;
+  minutes?: number;
+  billable?: boolean;
 };
 
 export type LegalElementRow = {
