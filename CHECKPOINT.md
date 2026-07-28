@@ -1,11 +1,13 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-28 (CDT) — Pass 51: every note is now a billable work entry (first time capture has ever existed)  
+**Last updated:** 2026-07-28 (CDT) — Pass 53: PM Inbox migrated to Google Sheets (production inbox no longer empty)  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
 
 **Pilot click-through (2026-07-27, La'Dajia's request):** walked the real UI in local demo mode (Dashboard → Matters → matter workbench → Tasks → New Assignment intake → Templates) since no production login credentials are available. Found two distinct, separable problems behind "feels fragmented, not built": (1) every screen narrates the user as a *different* attorney submitting work *to* RMV ("RMV is drafting," the consent checkbox saying "you remain the attorney of record" as if RMV were someone else) — language, not architecture, and exactly the rename work deprioritized earlier tonight, now with concrete evidence it matters; (2) Immigration and PI don't feel like separate organized spaces because **PI was never actually built out** — Templates catalog had exactly one PI deliverable (Demand Letter, "Coming soon") against Immigration's four "Available now" entries plus a 17-variant paragraph library on AOS specifically; Matters list filters (Country/Posture/Court) are immigration-shaped; matter workbench tabs (Procedural timeline, Legal elements) don't have a natural PI home. Full findings + competitor sourcing (eImmigration's intake→workflow→e-filing journey, Clio's PI-specific damages/medical/HIPAA fields) given to La'Dajia; she chose PI depth first, then Immigration breadth (asylum + family-based, not cancellation/VAWA — confirmed with her directly).
+
+**Pass 53 (2026-07-28, Phase 2 Sheets — PM Inbox):** Production `/inbox` and assignment intake were returning empty on Google Sheets mode because PM Inbox still read/wrote Airtable (quota exhausted). Migrated full PM Inbox CRUD to the `PM Inbox` tab: list, get-by-id, create assignment, status transitions, payment updates, mark delivered, and agent-flag resolve. Extracted shared `lib/pm-inbox-options.ts` (parse/serialize the `options` JSON column) used by both Airtable and Sheets backends. Wired `inboxBackend()` factory in `data-store.ts`; resolve API route now goes through data-store instead of calling Airtable directly. **User-visible:** new assignments from `/assignments/new` persist to Sheets and appear on the Inbox Kanban; approve/return/status actions round-trip; dashboard open-assignment KPIs populate again. Documents tab still Airtable-only (Python/Fly OCR — joint look still needed). pytest 118; `test:pm-inbox-options`, `test:google-sheets`, `test:assignment-transitions`; next build `--webpack`; Vercel prod (`d4e7faf`).
 
 **Pass 51 (2026-07-28, Journal pass 1 — note = billable work entry):** La'Dajia articulated the actual product vision this session: **one note = one work event = facts about the case.** One frictionless input, three outputs — a billable work entry, structured case facts, and a line in the case's readable story. Her words: "I lose lots of time not billed bc i am doing things for the first time a lot of the time... release as much friction from reconstructing a case again. the workflow shall be blissful." Plus "secure and trustworthy."
 
@@ -690,10 +692,10 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 ## Next step
 
 1. **Pilot real client AOS on prod** — New matter in Google Sheets → paste summary → Extract facts → Save → dispatch `aos-discretionary-brief`.
-2. **Phase 2 Sheets migration** — PM Inbox, Documents, Legal Elements, Contacts tabs (currently empty degrade on Sheets).
+2. **Documents Sheets migration (Python/Fly)** — OCR pipeline still writes Airtable only; matter Documents tab empty on Sheets until cross-service work (see flagged item in Pass 42).
 3. **Optional smart extract** — `fly secrets set ANTHROPIC_API_KEY=... -a associateondemand-api` (heuristic extract works without it).
-4. **Retest lifecycle on prod** — matter Tasks tab → stage PATCH → Record decision on Filed/Awaiting Decision matters.
-5. **Share site guide** — https://aod-next.vercel.app/help
+4. **Sheets Notes headers (La'Dajia)** — add `activity`, `minutes`, `billable` columns G–I on live Notes tab so billable time logs persist in prod (Pass 51).
+5. **Retest lifecycle on prod** — matter Tasks tab → stage PATCH → Record decision on Filed/Awaiting Decision matters.
 
 ## Blockers
 
