@@ -1,16 +1,22 @@
 import { NextResponse } from "next/server";
 
 import { createMatter, createNoteForMatter } from "@/lib/data-store";
+import { getDataStoreKind, isDemoMode } from "@/lib/data-store-config";
 import { caseTypeFor, type ProposedMatter } from "@/lib/practice-import";
 import { scanPractice } from "@/lib/practice-import-fs";
 
 export const runtime = "nodejs";
-/** Reads the local filesystem — never cache. */
+/** Reads Drive API or local filesystem — never cache. */
 export const dynamic = "force-dynamic";
 
 /** GET — propose matters from the firm's client folders. Read-only. */
 export async function GET() {
-  return NextResponse.json(await scanPractice());
+  const scan = await scanPractice();
+  return NextResponse.json({
+    ...scan,
+    dataStore: getDataStoreKind(),
+    demoMode: isDemoMode(),
+  });
 }
 
 type ImportBody = {
@@ -76,7 +82,8 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ imported, failed });
+
+  return NextResponse.json({ imported, failed, dataStore: getDataStoreKind(), demoMode: isDemoMode() });
 }
 
 function summarize(m: ProposedMatter): string {

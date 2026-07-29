@@ -12,11 +12,16 @@ type Scan = {
   available: boolean;
   matters: ProposedMatter[];
   reason?: string;
+  source?: "drive" | "local" | "none";
+  dataStore?: string;
+  demoMode?: boolean;
 };
 
 type ImportResult = {
   imported: { matterNumber: string; matterId: string; clientName: string }[];
   failed: { matterNumber: string; error: string }[];
+  dataStore?: string;
+  demoMode?: boolean;
 };
 
 /** Quiet long enough to be worth flagging on an open matter. */
@@ -88,12 +93,22 @@ export function PracticeImportReview() {
   if (!scan.available) {
     return (
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-        <p className="font-medium">Case folder not reachable</p>
+        <p className="font-medium">Case folder not reachable on this server</p>
         <p className="mt-1">{scan.reason}</p>
         <p className="mt-2 font-mono text-xs text-amber-900 break-all">{scan.root}</p>
         <p className="mt-2 text-xs">
-          Run the app on the computer where your Drive is synced, then reload this page. Imported
-          matters save to Google Sheets, so they appear on the live site afterwards.
+          On production, set <code className="rounded bg-amber-100 px-1">AOD_PRACTICE_DRIVE_FOLDER_ID</code>{" "}
+          (folder ID from the Drive URL for &ldquo;03 Clients Active&rdquo;), keep{" "}
+          <code className="rounded bg-amber-100 px-1">GOOGLE_SERVICE_ACCOUNT_JSON</code> as inline JSON,
+          enable the Google Drive API, and share that folder with the service account email as Viewer.
+          Locally you can still use synced Drive (
+          <code className="rounded bg-amber-100 px-1">cd web && npm run dev</code> →{" "}
+          <code className="rounded bg-amber-100 px-1">/import/practice</code>
+          ). Records write to {scan.dataStore ?? "your shared store"} so{" "}
+          <a className="underline" href="https://aod-next.vercel.app/matters">
+            production Matters
+          </a>{" "}
+          updates after refresh.
         </p>
       </div>
     );
@@ -106,6 +121,21 @@ export function PracticeImportReview() {
           <p className="font-medium">
             Imported {result.imported.length} matter{result.imported.length === 1 ? "" : "s"}.
           </p>
+          {result.demoMode ? (
+            <p className="mt-2 rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-950">
+              Wrote to <strong>sample/demo store</strong> — production will not show these. Check
+              local <code>.env.local</code> has Google Sheets or Airtable credentials (not{" "}
+              <code>AOD_FORCE_DEMO_MODE=true</code>).
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-emerald-800">
+              Saved to <strong>{result.dataStore ?? "shared store"}</strong>. Refresh{" "}
+              <a className="underline" href="https://aod-next.vercel.app/matters">
+                production Matters
+              </a>{" "}
+              to see them.
+            </p>
+          )}
           <ul className="mt-2 space-y-1">
             {result.imported.map((m) => (
               <li key={m.matterNumber}>
@@ -147,8 +177,16 @@ export function PracticeImportReview() {
     <div className="space-y-4">
       <p className="text-sm text-slate-600">
         Found <span className="font-semibold text-slate-900">{scan.matters.length}</span> matters in
-        your case folders. Everything is selected — uncheck anything you do not want, then import.
+        your case folders
+        {scan.source === "drive" ? " (Google Drive)" : scan.source === "local" ? " (local Drive sync)" : ""}
+        . Everything is selected — uncheck anything you do not want, then import.
       </p>
+      {scan.demoMode ? (
+        <p className="rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-950">
+          Demo mode is on — imported matters will not appear on production until Google Sheets (or
+          Airtable) credentials are configured and <code>AOD_FORCE_DEMO_MODE</code> is unset.
+        </p>
+      ) : null}
 
       <ul className="space-y-3">
         {scan.matters.map((m) => {

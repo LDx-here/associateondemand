@@ -60,7 +60,27 @@ assert.equal(normalizeClientName("Konst,"), "Konst");
 assert.equal(inferPracticeArea("Personal Injury"), "personal_injury");
 assert.equal(inferPracticeArea("Property Damage Only"), "property_damage");
 assert.equal(inferPracticeArea("Immigration"), "immigration");
+assert.equal(inferPracticeArea("IIA"), "immigration", "IIA nests under Immigration");
 assert.equal(inferPracticeArea("Leads"), "unknown");
+
+// Nested Immigration/IIA/client — parentFolder may be IIA or Immigration after
+// the scan orchestrator prefers a known practice-area ancestor.
+const iiaClient = buildProposedMatter({
+  folderName: "2026-001-Viazovikova, Aigul",
+  parentFolder: "Immigration",
+  files: [{ name: "IIA Service Agreement_Aigul Viazovikova.docx", modifiedAt: "2026-01-15T10:00:00Z" }],
+});
+assert.ok(iiaClient);
+assert.equal(iiaClient.practiceArea, "immigration");
+assert.equal(
+  buildProposedMatter({
+    folderName: "2026-001-Viazovikova, Aigul",
+    parentFolder: "IIA",
+    files: [],
+  })?.practiceArea,
+  "immigration",
+  "IIA parent folder maps to immigration",
+);
 
 // --- Document classification, using real filenames --------------------------
 assert.equal(classifyDocument("470508-complaint - 1of1-2168715.pdf").category, "Court Filing");

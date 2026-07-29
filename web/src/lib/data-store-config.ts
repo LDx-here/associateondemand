@@ -5,19 +5,17 @@
  * When unset, Google Sheets wins if configured; otherwise Airtable; otherwise demo mode.
  */
 
+import { getServiceAccountEmail } from "./google-auth";
+
 export type DataStoreKind = "google_sheets" | "airtable" | "demo";
 
+/**
+ * Must accept every credential form the auth layer accepts — inline JSON *and*
+ * `GOOGLE_APPLICATION_CREDENTIALS` file paths — or a local machine with a
+ * credentials file silently falls back to demo data while Sheets calls work.
+ */
 function loadServiceAccountEmail(): string | null {
-  const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
-  if (inline) {
-    try {
-      const parsed = JSON.parse(inline) as { client_email?: string };
-      return parsed.client_email?.trim() || null;
-    } catch {
-      return null;
-    }
-  }
-  return process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim() || null;
+  return getServiceAccountEmail() || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim() || null;
 }
 
 export function isAirtableConfigured(): boolean {

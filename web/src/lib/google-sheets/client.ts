@@ -2,48 +2,17 @@
  * Google Sheets API client (service account). Credentials never reach the browser.
  */
 
-import fs from "node:fs";
-
-import { JWT } from "google-auth-library";
+import { getGoogleAccessToken, GOOGLE_DEFAULT_SCOPES } from "../google-auth";
 
 import { SHEET_TABS, TAB_HEADERS, type SheetTabKey } from "./schema";
 
-const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 
-type ServiceAccountJson = {
-  client_email: string;
-  private_key: string;
-};
-
 type ParsedRow = Record<string, string> & { _sheetRow: number };
-
-let jwtClient: JWT | null = null;
-let accessTokenCache: { token: string; expiresAt: number } | null = null;
 
 /** In-memory read cache — reduces duplicate SSR fetches (TTL 30s). */
 const readCache = new Map<string, { at: number; rows: ParsedRow[] }>();
 const READ_CACHE_TTL_MS = 30_000;
-
-function loadServiceAccount(): ServiceAccountJson | null {
-  const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
-  if (inline) {
-    try {
-      return JSON.parse(inline) as ServiceAccountJson;
-    } catch {
-      return null;
-    }
-  }
-  const path = process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim();
-  if (path) {
-    try {
-      return JSON.parse(fs.readFileSync(path, "utf8")) as ServiceAccountJson;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
 
 export function getSpreadsheetId(): string | null {
   const id = process.env.GOOGLE_SHEETS_SPREADSHEET_ID?.trim();
@@ -79,35 +48,8 @@ export function getSpreadsheetExportUrl(format: "csv" | "xlsx" = "csv"): string 
   return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv`;
 }
 
-function getJwt(): JWT {
-  if (jwtClient) return jwtClient;
-  const sa = loadServiceAccount();
-  if (!sa?.client_email || !sa?.private_key) {
-    throw new Error("Google service account credentials not configured");
-  }
-  jwtClient = new JWT({
-    email: sa.client_email,
-    key: sa.private_key,
-    scopes: [SHEETS_SCOPE],
-  });
-  return jwtClient;
-}
-
-async function getAccessToken(): Promise<string> {
-  const now = Date.now();
-  if (accessTokenCache && accessTokenCache.expiresAt > now + 60_000) {
-    return accessTokenCache.token;
-  }
-  const client = getJwt();
-  const res = await client.getAccessToken();
-  const token = res.token;
-  if (!token) throw new Error("Failed to obtain Google access token");
-  accessTokenCache = { token, expiresAt: now + 3_300_000 };
-  return token;
-}
-
 async function sheetsFetch(path: string, init?: RequestInit): Promise<Response> {
-  const token = await getAccessToken();
+  const token = await getGoogleAccessToken(GOOGLE_DEFAULT_SCOPES);
   const resp = await fetch(`${SHEETS_API}${path}`, {
     ...init,
     headers: {

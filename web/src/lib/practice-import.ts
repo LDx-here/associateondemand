@@ -19,6 +19,8 @@ export type ImportedPracticeArea =
 /** Folder → practice area. Keys are the firm's actual folder names. */
 const AREA_BY_FOLDER: Record<string, ImportedPracticeArea> = {
   immigration: "immigration",
+  /** Nested under Immigration (e.g. Immigration/IIA/2026-001-…). */
+  iia: "immigration",
   "personal injury": "personal_injury",
   "property damage only": "property_damage",
   "property damage": "property_damage",

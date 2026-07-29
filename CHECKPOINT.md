@@ -1,9 +1,17 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-28 (CDT) — Fly Documents dual-write secrets enabled  
+**Last updated:** 2026-07-29 (CDT) — Drive practice scan live; demo-mode fallback fixed  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 57 (2026-07-29, Drive scan verified end to end):** `03 Clients Active` (folder `1KWQBvPgup47BFhp4KRCdg30Vi9Gn3_FW`) shared with the service account, so the Drive scan returns **7 matters** — including `Immigration/IIA/` clients (Limbu 2026-004, Viazovikova 2026-001) the local filesystem walk missed. `AOD_PRACTICE_DRIVE_FOLDER_ID` set locally and on Vercel (Production/Development/Preview).
+
+Runtime logs exposed a second, separate defect: **`data-store-config.ts` only recognized inline `GOOGLE_SERVICE_ACCOUNT_JSON`**, so a machine authenticating with `GOOGLE_APPLICATION_CREDENTIALS` (a file path — the local setup) reported `dataStore: "demo"` while Sheets calls actually worked. Imports would have silently gone nowhere. Store detection now reuses `google-auth.ts`'s loader, which accepts both forms. Verified: `demoMode: false`, and importing 2026-006 created `AOD-1003` in Sheets.
+
+Local `next dev` / `next build` need `--webpack` on this Mac: `@next/swc-darwin-arm64` is not installed, so Turbopack refuses to start (WASM bindings only).
+
+**Next step:** import the remaining 6 matters from `/import/practice` on production, then verify they render on `/matters`.
 
 **Pass 56 (2026-07-28, practice import → Drive API):** `/import/practice` on Vercel no longer depends on a Mac Google Drive sync path. Scan order: Drive API when `AOD_PRACTICE_DRIVE_FOLDER_ID` (or `GOOGLE_DRIVE_CLIENTS_FOLDER_ID`) + SA credentials are set; else local filesystem. Shared `google-auth.ts` JWT with Sheets + Drive readonly scopes (invalidates when scopes change). Folder walk deepened to 3 levels so `Immigration/IIA/client` is found; IIA maps to immigration. UI + `.env.local.example` document share-with-SA + Drive API enablement.
 

@@ -156,6 +156,10 @@ Google Sheets API (default): ~300 read requests/minute per project, 60 write/min
 | Notes not saving | `matter_id` column must match an existing `matter_id` on Matters tab |
 | Still hitting Airtable limits | Set `DATA_STORE=google_sheets`; remove or unset `AIRTABLE_PAT` on Vercel to avoid accidental Airtable reads |
 
+## Practice import (`/import/practice`) via Drive API
+
+On Vercel there is no Mac Drive sync path. Set `AOD_PRACTICE_DRIVE_FOLDER_ID` to the folder ID from the Drive URL for **03 Clients Active**, enable **Google Drive API** on the same GCP project, and share that folder with the service account email as **Viewer**. Keep `GOOGLE_SERVICE_ACCOUNT_JSON` as inline JSON (not a file path). Locally, omit the folder ID to keep using the synced filesystem path.
+
 ## Related
 
 - [`docs/runbooks/airtable-base-setup.md`](./airtable-base-setup.md) — legacy Airtable setup
