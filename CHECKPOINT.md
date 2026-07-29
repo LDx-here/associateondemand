@@ -1,9 +1,11 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-28 (CDT) — Pass 55: Billable Notes columns + Documents Sheets migration  
+**Last updated:** 2026-07-28 (CDT) — Fly Documents dual-write secrets enabled  
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Pass 56 (2026-07-28, practice import → Drive API):** `/import/practice` on Vercel no longer depends on a Mac Google Drive sync path. Scan order: Drive API when `AOD_PRACTICE_DRIVE_FOLDER_ID` (or `GOOGLE_DRIVE_CLIENTS_FOLDER_ID`) + SA credentials are set; else local filesystem. Shared `google-auth.ts` JWT with Sheets + Drive readonly scopes (invalidates when scopes change). Folder walk deepened to 3 levels so `Immigration/IIA/client` is found; IIA maps to immigration. UI + `.env.local.example` document share-with-SA + Drive API enablement.
 
 **Pass 55 (2026-07-28, Sheets — billable columns + Documents):** Did both items LD approved:
 
@@ -12,9 +14,7 @@
 
 pytest 124 (+6 dual-write tests); `test:google-sheets`, `test:work-entry`; next build `--webpack`; live Sheets doc+note smoke on AOD-1001.
 
-**Needs La'Dajia (Fly OCR dual-write):**  
-`fly secrets set -a associateondemand-api GOOGLE_SHEETS_SPREADSHEET_ID=… GOOGLE_SERVICE_ACCOUNT_JSON='…' AOD_DOCUMENTS_DUAL_WRITE=1`  
-Until then, web register path still lands Documents rows after upload; Fly-only writes stay Airtable.
+**Fly Documents dual-write (2026-07-28, ops):** Set on `associateondemand-api`: `GOOGLE_SHEETS_SPREADSHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `AOD_DOCUMENTS_DUAL_WRITE=1` (Deployed). `ANTHROPIC_API_KEY` already on Fly. Health `/health` ok. `DATA_STORE=google_sheets` not set yet (Airtable Documents writes still primary; dual-write appends Sheets). Manual verify: upload PDF on matter Documents → row on Sheets Documents tab.
 
 **Pilot click-through (2026-07-27, La'Dajia's request):** walked the real UI in local demo mode (Dashboard → Matters → matter workbench → Tasks → New Assignment intake → Templates) since no production login credentials are available. Found two distinct, separable problems behind "feels fragmented, not built": (1) every screen narrates the user as a *different* attorney submitting work *to* RMV ("RMV is drafting," the consent checkbox saying "you remain the attorney of record" as if RMV were someone else) — language, not architecture, and exactly the rename work deprioritized earlier tonight, now with concrete evidence it matters; (2) Immigration and PI don't feel like separate organized spaces because **PI was never actually built out** — Templates catalog had exactly one PI deliverable (Demand Letter, "Coming soon") against Immigration's four "Available now" entries plus a 17-variant paragraph library on AOS specifically; Matters list filters (Country/Posture/Court) are immigration-shaped; matter workbench tabs (Procedural timeline, Legal elements) don't have a natural PI home. Full findings + competitor sourcing (eImmigration's intake→workflow→e-filing journey, Clio's PI-specific damages/medical/HIPAA fields) given to La'Dajia; she chose PI depth first, then Immigration breadth (asylum + family-based, not cancellation/VAWA — confirmed with her directly).
 
@@ -673,6 +673,7 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Last completed
 
+- **Pass 56 (2026-07-28):** Practice import via Google Drive API for Vercel — shared SA auth (Sheets + Drive readonly scopes), `google-drive/client.ts`, scan orchestrator prefers Drive folder ID then local sync, 3-level folder walk (Immigration/IIA/client), env + UI copy. Local Mac sync still works when Drive folder ID unset.
 - **Pass 55 (2026-07-28):** Live Notes `activity`/`minutes`/`billable` headers G–I; Documents Sheets list/create/register + assessment/template paths; Fly dual-write scaffold (`AOD_DOCUMENTS_DUAL_WRITE`); pytest 124; next build; Vercel + Fly.
 - **Prod SSR fix (2026-07-27):** Google Sheets primary mode no longer calls Airtable for unmigrated tables (Documents, Legal Elements, PM Inbox, Contacts, …) — empty degrade instead of 429 crash. Restored Airtable quota fallback regardless of `DATA_STORE`. Fixed digests 1798507080, 978696406, 693593980 on `/matters/[id]`, `/inbox`, `/dashboard`. next build; Vercel prod.
 - **Google Sheets production (2026-07-27):** Firm spreadsheet + service account on Vercel (`DATA_STORE=google_sheets`); prod deploy https://aod-next.vercel.app; `/api/health` reports `demoMode: false`.
@@ -711,10 +712,11 @@ Full index: [`.aod-context/README.md`](.aod-context/README.md) · [`docs/strateg
 
 ## Next step
 
-1. **Fly Documents dual-write secrets** — set `GOOGLE_SHEETS_SPREADSHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `AOD_DOCUMENTS_DUAL_WRITE=1` on `associateondemand-api` so OCR uploads also land on the Sheets Documents tab (web register path already works).
-2. **Handwritten note scanning (Journal arc #25)** — anonymize-first OCR round-trip; reversible pseudonymization per La'Dajia's decision.
-3. **Pilot real client AOS on prod** — New matter in Google Sheets → paste summary → Extract facts → Save → dispatch `aos-discretionary-brief`.
-4. **Retest lifecycle on prod** — matter Tasks tab → stage PATCH → Record decision on Filed/Awaiting Decision matters.
+1. **Practice import on Vercel** — set `AOD_PRACTICE_DRIVE_FOLDER_ID` (03 Clients Active folder ID), ensure `GOOGLE_SERVICE_ACCOUNT_JSON` is inline JSON, enable Drive API, share folder with SA as Viewer; verify `/import/practice` lists matters (watch demoMode).
+2. **Verify Fly Documents dual-write** — upload a PDF on a matter Documents tab; confirm a new row on the Sheets Documents tab (secrets already Deployed; web register path also writes).
+3. **Handwritten note scanning (Journal arc #25)** — anonymize-first OCR round-trip; reversible pseudonymization per La'Dajia's decision.
+4. **Pilot real client AOS on prod** — New matter in Google Sheets → paste summary → Extract facts → Save → dispatch `aos-discretionary-brief`.
+5. **Retest lifecycle on prod** — matter Tasks tab → stage PATCH → Record decision on Filed/Awaiting Decision matters.
 
 ## Blockers
 
@@ -722,6 +724,7 @@ All remaining blockers are **attorney-side** (no code work required):
 
 | Blocker | Owner | Notes |
 |---------|-------|-------|
+| Practice Drive folder on Vercel | La'Dajia | `AOD_PRACTICE_DRIVE_FOLDER_ID` + share "03 Clients Active" with SA email as Viewer; enable Drive API on GCP |
 | Pilot attorney queue | La'Dajia | Which friendly external solos / RMV overflow matters first |
 | Bar counsel for B2B overflow + $99 self-serve tier | La'Dajia | Required before self-serve AI tier ships (Phase 3+ gate) |
 | Supabase custom SMTP (Resend) | La'Dajia | Magic link / password reset — **password sign-in works**; see `docs/runbooks/auth-email-setup.md` |
