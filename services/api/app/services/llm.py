@@ -77,7 +77,23 @@ def generate_text(
                 json=payload,
             )
             if resp.status_code >= 400:
-                LOGGER.warning("anthropic error %s: %s", resp.status_code, resp.text[:400])
+                # A bad key is a configuration failure, not "LLM unavailable".
+                # Returning None here makes every agent fall back to a template,
+                # which reads to the attorney as normal operation — the drafting
+                # pipeline ran in template mode for days behind a logged 401
+                # nobody saw. Auth and quota failures get logged at error level
+                # so they surface in `flyctl logs` without being hunted for.
+                if resp.status_code in (401, 403):
+                    LOGGER.error(
+                        "ANTHROPIC_API_KEY rejected (%s) — every agent will fall back to "
+                        "template output until this is fixed: %s",
+                        resp.status_code,
+                        resp.text[:400],
+                    )
+                elif resp.status_code == 429:
+                    LOGGER.error("anthropic rate limited (429): %s", resp.text[:400])
+                else:
+                    LOGGER.warning("anthropic error %s: %s", resp.status_code, resp.text[:400])
                 return None
             data = resp.json()
             blocks = data.get("content") or []
