@@ -1,9 +1,12 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-29 (CDT) — Drive practice scan live; demo-mode fallback fixed  
+**Last updated:** 2026-07-29 (CDT) — Anthropic key on Fly returns 401
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
+
+**Anthropic credits check (2026-07-29):** `ANTHROPIC_API_KEY` is present/Deployed on `associateondemand-api`, but live PM research smoke still returns `llm: template`. Fly logs: Anthropic **401 invalid x-api-key** (not a credit/billing error). Credits alone do not unblock — rotate/replace the Fly secret with a valid key (`fly secrets set ANTHROPIC_API_KEY=… -a associateondemand-api`). `AOD_AOS_USE_API` intentionally unset (library FILL default; smart paste extract needs only a valid Anthropic key).
+
 
 **Pass 57 (2026-07-29, Drive scan verified end to end):** `03 Clients Active` (folder `1KWQBvPgup47BFhp4KRCdg30Vi9Gn3_FW`) shared with the service account, so the Drive scan returns **7 matters** — including `Immigration/IIA/` clients (Limbu 2026-004, Viazovikova 2026-001) the local filesystem walk missed. `AOD_PRACTICE_DRIVE_FOLDER_ID` set locally and on Vercel (Production/Development/Preview).
 
