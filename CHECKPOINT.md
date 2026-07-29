@@ -9,9 +9,11 @@
 
 Runtime logs exposed a second, separate defect: **`data-store-config.ts` only recognized inline `GOOGLE_SERVICE_ACCOUNT_JSON`**, so a machine authenticating with `GOOGLE_APPLICATION_CREDENTIALS` (a file path — the local setup) reported `dataStore: "demo"` while Sheets calls actually worked. Imports would have silently gone nowhere. Store detection now reuses `google-auth.ts`'s loader, which accepts both forms. Verified: `demoMode: false`, and importing 2026-006 created `AOD-1003` in Sheets.
 
-Local `next dev` / `next build` need `--webpack` on this Mac: `@next/swc-darwin-arm64` is not installed, so Turbopack refuses to start (WASM bindings only).
+All 7 practice matters are now in Sheets: AOD-1003 Makhammad (Immigration), AOD-1004 Augustine (Other — folder is empty, so nothing to infer from), AOD-1005 Sarmila Limbu (Immigration), AOD-1006 Tina Akyaa (PI), AOD-1007 Jeremiah Hammond (PI), AOD-1008 Aigul Viazovikova (Immigration), AOD-1009 John Konst (Property Damage — Diminished Value).
 
-**Next step:** import the remaining 6 matters from `/import/practice` on production, then verify they render on `/matters`.
+**Local `next` install was partially truncated** — `@next/swc-darwin-arm64/next-swc.darwin-arm64.node` and `next/dist/compiled/next-server/app-page-turbo.runtime.dev.js` were missing while their sourcemaps remained, so Turbopack refused to start and API routes 500'd under it. Reinstalling both packages fixed it; `npm run dev` no longer needs `--webpack`. Watch for this recurring — it looks like an interrupted install.
+
+**Next step:** confirm the imported matters read well on production `/matters` (case types, Import notes), and decide whether Augustine should stay as an empty matter.
 
 **Pass 56 (2026-07-28, practice import → Drive API):** `/import/practice` on Vercel no longer depends on a Mac Google Drive sync path. Scan order: Drive API when `AOD_PRACTICE_DRIVE_FOLDER_ID` (or `GOOGLE_DRIVE_CLIENTS_FOLDER_ID`) + SA credentials are set; else local filesystem. Shared `google-auth.ts` JWT with Sheets + Drive readonly scopes (invalidates when scopes change). Folder walk deepened to 3 levels so `Immigration/IIA/client` is found; IIA maps to immigration. UI + `.env.local.example` document share-with-SA + Drive API enablement.
 
