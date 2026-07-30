@@ -77,7 +77,11 @@ function testAssessmentOcrPayloadRoundTrip() {
   assert.equal(parsed?.title, "assessment.pdf");
   const block = formatAssessmentOcrForAgents(parsed);
   assert.match(block, /Case assessment document/);
-  assert.match(block, /entry_date/);
+  // formatAssessmentOcrForAgents renders fact_type through factDisplayLabel,
+  // which humanizes machine keys (underscores -> spaces) for attorney/LLM
+  // readability — assert on the rendered label, not the raw fact_type.
+  assert.match(block, /entry date/);
+  assert.match(block, /\[needs review\]/);
 }
 
 function testFactDisplayValuePrefersEdited() {
