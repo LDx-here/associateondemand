@@ -332,7 +332,7 @@ export default async function DashboardPage() {
           <Link href="/firm-memory" className="font-medium underline-offset-2 hover:underline">
             Set up your firm profile
           </Link>{" "}
-          so overflow counsel drafts read like your in-house associate.
+          so drafts come back written in your style.
         </section>
       ) : null}
 
@@ -397,7 +397,7 @@ export default async function DashboardPage() {
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-4 py-3">
           <h2 className="font-medium text-slate-900">Upcoming deadlines (next 30 days)</h2>
-          <p className="text-xs text-slate-500">Internal matter deadlines — not overflow assignment due dates.</p>
+          <p className="text-xs text-slate-500">Filing and internal deadlines across your caseload.</p>
         </div>
         <table className="min-w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
@@ -467,7 +467,7 @@ export default async function DashboardPage() {
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-4 py-3">
           <h2 className="font-medium text-slate-900">Recent activity</h2>
-          <p className="text-xs text-slate-500">Last 7 days — notes, completed tasks, and overflow workflow.</p>
+          <p className="text-xs text-slate-500">Last 7 days — notes, completed tasks, and drafting activity.</p>
         </div>
         {activity.length === 0 ? (
           <EmptyState

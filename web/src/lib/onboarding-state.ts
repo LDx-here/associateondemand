@@ -39,7 +39,7 @@ export const ONBOARDING_STEP_META: Record<
   "firm-memory": {
     title: "Set up Firm Memory",
     detail:
-      "Upload style samples so overflow counsel drafts read like your in-house associate. Takes about five minutes.",
+      "Upload style samples so drafts come back written in your style. Takes about five minutes.",
     href: "/firm-memory",
     cta: "Open Firm Memory setup",
   },
