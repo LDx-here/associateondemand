@@ -31,7 +31,9 @@
     "test:note-fact-extraction": "tsx scripts/verify-note-fact-extraction.mjs",
     "test:practice-import": "tsx scripts/verify-practice-import.mjs",
     "scan:practice": "tsx scripts/scan-practice.mjs",
-    "test:practice-pulse": "tsx scripts/verify-practice-pulse.mjs"
+    "test:practice-pulse": "tsx scripts/verify-practice-pulse.mjs",
+    "test:case-state": "tsx scripts/verify-case-state.mjs",
+    "scan:case-state": "tsx scripts/scan-case-state.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 
 import { GettingStartedBanner, OnboardingWizard } from "@/components/OnboardingWizard";
-import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { ResumeIntakeBanner } from "@/components/ResumeIntakeBanner";
 import { EmptyState } from "@/components/EmptyState";
 import { DashboardCharts } from "@/components/DashboardCharts";
@@ -44,7 +43,6 @@ import {
 import { dataStoreLabel, usesGoogleSheets } from "@/lib/data-store-config";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
 import { getSupabaseSessionUser } from "@/lib/supabase/server";
-import { partnerSubmissionUrl } from "@/lib/partner-submission";
 import { btnPrimary, linkMatter } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
 
@@ -125,8 +123,6 @@ export default async function DashboardPage() {
     year: "numeric",
   });
 
-  const partnerLink = partnerSubmissionUrl();
-
   const statusCounts = [...new Set(matters.map((m) => m.status || "Unknown"))]
     .map((name) => ({ name, value: matters.filter((m) => (m.status || "Unknown") === name).length }))
     .filter((row) => row.value > 0);
@@ -178,15 +174,6 @@ export default async function DashboardPage() {
       <GettingStartedBanner />
       <ResumeIntakeBanner />
 
-      <section className="rounded-lg border border-sky-200 bg-sky-50/40 px-4 py-3 text-sm text-sky-950">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <strong>Partner submission link</strong> — send external firms to submit overflow work with quoted flat fees.
-            <p className="mt-1 font-mono text-xs text-sky-900">{partnerLink}</p>
-          </div>
-          <CopyLinkButton url={partnerLink} label="Copy partner link" />
-        </div>
-      </section>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Link
