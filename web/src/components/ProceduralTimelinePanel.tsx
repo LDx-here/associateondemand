@@ -22,8 +22,15 @@ export function ProceduralTimelinePanel({ matterId }: { matterId: string }) {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
-  useEffect(() => {
+  // Show the loading state immediately (same render) when switching matters,
+  // rather than synchronously inside the effect below.
+  const [prevMatterId, setPrevMatterId] = useState(matterId);
+  if (matterId !== prevMatterId) {
+    setPrevMatterId(matterId);
     setLoading(true);
+  }
+
+  useEffect(() => {
     let cancelled = false;
 
     void (async () => {

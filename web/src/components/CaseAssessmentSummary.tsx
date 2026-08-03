@@ -56,11 +56,16 @@ export function CaseAssessmentSummary({
   const practiceArea = matterPracticeArea(matter);
   const payload = assessmentDoc ? fetchedPayload : null;
 
+  // Clear the stale payload during render when the assessment doc disappears
+  // (e.g. matter switch) instead of synchronously in the effect below.
+  const [prevAssessmentDocId, setPrevAssessmentDocId] = useState(assessmentDocId);
+  if (assessmentDocId !== prevAssessmentDocId) {
+    setPrevAssessmentDocId(assessmentDocId);
+    if (!assessmentDocId) setFetchedPayload(null);
+  }
+
   useEffect(() => {
-    if (!assessmentDocId) {
-      setFetchedPayload(null);
-      return;
-    }
+    if (!assessmentDocId) return;
     void fetch(`/api/matters/${matter.matterId}/case-assessment-document`)
       .then((r) => r.json())
       .then((data: { payload?: AssessmentOcrPayload | null }) => setFetchedPayload(data.payload ?? null))

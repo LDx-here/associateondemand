@@ -11,7 +11,7 @@ import {
   CheckSquare,
   Link2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { KnowledgeCategory, KnowledgeMapData, KnowledgeTopic } from "@/lib/knowledge-map/types";
 import { tabActive, tabInactive } from "@/lib/ui-classes";
@@ -220,15 +220,12 @@ function readTopicFilterFromUrl(): { filterIds: string[] | null; selectedId: str
 export function FirmKnowledgeMap({ data }: { data: KnowledgeMapData }) {
   const firstId = data.categories[0]?.topics[0]?.id ?? null;
   const initial = typeof window !== "undefined" ? readTopicFilterFromUrl() : { filterIds: null, selectedId: null };
+  // `initial` already reads the URL synchronously above (this is a client-only
+  // component), so the mount-time state below reflects the real hash/query on
+  // first render — no separate effect is needed to re-derive the same values.
   const [filterIds, setFilterIds] = useState<string[] | null>(initial.filterIds);
   const [selectedId, setSelectedId] = useState<string | null>(initial.selectedId ?? firstId);
   const [view, setView] = useState<ViewMode>("outline");
-
-  useEffect(() => {
-    const { filterIds: nextFilter, selectedId: nextSelected } = readTopicFilterFromUrl();
-    if (nextFilter?.length) setFilterIds(nextFilter);
-    if (nextSelected) setSelectedId(nextSelected);
-  }, []);
 
   const topicById = useMemo(() => {
     const map = new Map<string, KnowledgeTopic>();

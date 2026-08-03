@@ -192,9 +192,14 @@ export function MatterTasksPanel({
   const [deliverableId, setDeliverableId] = useState<string | undefined>();
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
+  // Re-sync local tasks when the parent refetches a new `initialTasks` array.
+  // Adjusted during render rather than in a useEffect per
+  // https://react.dev/learn/you-might-not-need-an-effect.
+  const [prevInitialTasks, setPrevInitialTasks] = useState(initialTasks);
+  if (initialTasks !== prevInitialTasks) {
+    setPrevInitialTasks(initialTasks);
     setTasks(initialTasks);
-  }, [initialTasks]);
+  }
 
   useEffect(() => {
     void fetch(`/api/matters/${matterId}/drafting-facts`)
