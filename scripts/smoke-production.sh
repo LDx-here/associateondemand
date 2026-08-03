@@ -10,7 +10,10 @@ echo "== Web auth gate (expect 307 to login) =="
 curl -sfI "$WEB/dashboard" | grep -i '^location:' || { echo "FAIL: dashboard should redirect"; exit 1; }
 
 echo "== API health =="
-HEALTH="$(curl -sf "$API/health")"
+# /health is liveness-only (fast, no network I/O) so Fly's probe stops timing
+# out; dependency status moved to /health/deps, which is what this asserts on.
+curl -sf "$API/health" > /dev/null || { echo "FAIL: API not live"; exit 1; }
+HEALTH="$(curl -sf "$API/health/deps")"
 echo "$HEALTH" | python3 -c "
 import sys,json
 d=json.load(sys.stdin)

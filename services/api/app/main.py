@@ -113,6 +113,29 @@ def presidio_stub_ok() -> bool:
 
 @app.get("/health")
 def health(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
+    """Liveness only — is this process up and serving?
+
+    Deliberately does no network I/O. This endpoint is what Fly's health check
+    hits every 30s, and it used to dial Postgres, Redis, and Qdrant on every
+    probe. Against a cold-starting machine on a 5s timeout that reliably
+    failed, so Fly reported the app unhealthy and traffic saw intermittent
+    errors. Dependency status now lives on /health/deps.
+    """
+    return {
+        "service": settings.app_name,
+        "status": "ok",
+        "tier": settings.aod_pii_tier,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/health/deps")
+def health_deps(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
+    """Readiness — checks every downstream dependency. Not on the hot path.
+
+    Returns the same shape /health used to return, so existing smoke tests and
+    dashboards keep working by pointing here instead.
+    """
     qdrant = qdrant_ok(settings.qdrant_url, settings.qdrant_api_key)
 
     deps = {

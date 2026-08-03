@@ -18,12 +18,20 @@ primary_region = 'iad'
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
-  min_machines_running = 0
+  # Keep one machine warm. With 0, every machine stopped when idle and the
+  # next request paid a cold start — /health was measured at 19.9s, and agent
+  # dispatches timed out before returning. One always-on shared-cpu-1x is a
+  # few dollars a month; a 20-second first request is not usable.
+  min_machines_running = 1
   processes = ['app']
 
   [[http_service.checks]]
     interval = '30s'
-    timeout = '5s'
+    # /health is liveness-only now (no network I/O), so it answers fast — but
+    # allow headroom for a machine that is still booting rather than marking
+    # it unhealthy mid-start.
+    timeout = '10s'
+    grace_period = '20s'
     method = 'GET'
     path = '/health'
 
