@@ -10,6 +10,7 @@
 #   AOD_API_URL             — Fly/docker API for optional real PM dispatch probe
 
 set -euo pipefail
+set -m # job control: background jobs get their own process group so cleanup can kill the whole npm -> next-server tree, not just the immediate child
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 cd "$ROOT"
 
@@ -18,11 +19,26 @@ WEB="http://127.0.0.1:${PORT}"
 SERVER_PID=""
 STARTED_SERVER=0
 
+SERVER_LOG="$(mktemp -t aod-smoke-server.XXXXXX.log)"
+
 cleanup() {
   if [[ "$STARTED_SERVER" == "1" && "${SMOKE_KEEP_SERVER:-0}" != "1" && -n "$SERVER_PID" ]]; then
-    kill "$SERVER_PID" 2>/dev/null || true
+    # `npm run start` forks `next-server` as a further child; killing just the
+    # npm subshell PID does not reliably kill that descendant, which can be
+    # reparented to init and — critically — keeps holding this script's
+    # inherited stdout/stderr pipe open forever (hangs any caller piping our
+    # output, e.g. `| tail`). `set -m` above puts the whole job in its own
+    # process group (PGID == SERVER_PID), so signal the group, not just the PID.
+    kill -- "-${SERVER_PID}" 2>/dev/null || kill "$SERVER_PID" 2>/dev/null || true
     wait "$SERVER_PID" 2>/dev/null || true
+    # Belt-and-suspenders in case the group kill missed a reparented process.
+    if command -v fuser >/dev/null 2>&1; then
+      fuser -k "${PORT}/tcp" 2>/dev/null || true
+    elif command -v lsof >/dev/null 2>&1; then
+      lsof -ti tcp:"${PORT}" 2>/dev/null | xargs -r kill -9 2>/dev/null || true
+    fi
   fi
+  rm -f "$SERVER_LOG" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -34,8 +50,8 @@ if ! curl -sf "$WEB/api/health" >/dev/null 2>&1; then
     cd "$ROOT/web"
     export AOD_AUTH_ENABLED=false
     export AOD_FORCE_DEMO_MODE=true
-    npm run build >/dev/null
-    PORT="$PORT" AOD_FORCE_DEMO_MODE=true AOD_AUTH_ENABLED=false npm run start
+    npm run build >>"$SERVER_LOG" 2>&1
+    PORT="$PORT" AOD_FORCE_DEMO_MODE=true AOD_AUTH_ENABLED=false npm run start >>"$SERVER_LOG" 2>&1
   ) &
   SERVER_PID=$!
   STARTED_SERVER=1
@@ -46,6 +62,11 @@ if ! curl -sf "$WEB/api/health" >/dev/null 2>&1; then
     fi
     sleep 2
   done
+  if ! curl -sf "$WEB/api/health" >/dev/null 2>&1; then
+    echo "FAIL: web server did not become healthy — server log ($SERVER_LOG):"
+    tail -n 80 "$SERVER_LOG" 2>/dev/null || true
+    exit 1
+  fi
 fi
 
 HEALTH="$(curl -sf "$WEB/api/health")"
