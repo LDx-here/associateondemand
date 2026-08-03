@@ -131,10 +131,18 @@ export function firmMemoryCompleteness(status: {
 }
 
 /** Subtitle for overflow partner vs RMV internal (email-domain heuristic). */
+/**
+ * Dashboard subtitle. The firm's own domain gets practice framing; outside
+ * firms using the partner funnel get the overflow-counsel framing.
+ *
+ * These were previously inverted — the operator's own domain was told this
+ * was "your overflow counsel queue — verified deliverables for partner
+ * firms," describing a marketplace rather than her caseload.
+ */
 export function overflowWelcomeSubtitle(email?: string | null): string {
   const domain = email?.split("@")[1]?.toLowerCase() ?? "";
   if (domain.includes("recovermyvalue") || domain.includes("rmv")) {
-    return "Your overflow counsel queue — verified deliverables for partner firms.";
+    return "Your caseload at a glance — what needs attention, what's due, what you've billed.";
   }
   return "Capacity relief from verified overflow counsel — submit assignments, review deliverables, sign off.";
 }

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import {
   Activity,
+  AlertTriangle,
   Briefcase,
+  CalendarClock,
   CheckCircle2,
   Clock3,
   FilePlus2,
@@ -28,6 +30,7 @@ import {
   upcomingDeadlines,
 } from "@/lib/dashboard-aggregates";
 import { notesMissingTime, rollUpWorkSince, toBillableHours } from "@/lib/work-entry";
+import { mattersNeedingAttention, practicePulse } from "@/lib/practice-pulse";
 import {
   countUnreadInbox,
   getFirmMemoryStatus,
@@ -100,6 +103,8 @@ export default async function DashboardPage() {
     /* keep seed audit log only */
   }
   const allNotes = demo ? (seed?.notes ?? []) : liveNotes;
+  const attention = mattersNeedingAttention(matters, allNotes, tasks, now);
+  const pulse = practicePulse(matters, allNotes, tasks, now);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const workThisMonth = rollUpWorkSince(allNotes, monthStart);
   const untimedNotes = notesMissingTime(allNotes).length;
@@ -232,7 +237,39 @@ export default async function DashboardPage() {
         </Link>
       </section>
 
+      {/*
+        These four measure the practice, not the overflow-counsel marketplace.
+        The previous row counted partner submissions and deliverables in
+        review — metrics for a business this firm does not run, which read
+        zero while real cases sat quiet for months.
+      */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard
+          label="Needs your attention"
+          value={pulse.needsAttention}
+          hint={
+            pulse.needsAttention > 0
+              ? "Gone quiet, never started, or nothing scheduled"
+              : "Every open matter is moving"
+          }
+          icon={AlertTriangle}
+          tone={pulse.needsAttention > 0 ? "attention" : "positive"}
+        />
+        <KpiCard
+          label="Due in 14 days"
+          value={pulse.dueSoon}
+          hint="Matters with a deadline coming up"
+          icon={CalendarClock}
+          tone={pulse.dueSoon > 0 ? "attention" : "neutral"}
+        />
+        <KpiCard
+          label="Open matters"
+          value={pulse.openMatters}
+          hint={`${pulse.onTrack} moving and scheduled`}
+          icon={Briefcase}
+          tone="neutral"
+          href="/matters"
+        />
         <KpiCard
           label="Billable hours logged"
           value={toBillableHours(workThisMonth.billableMinutes)}
@@ -244,33 +281,50 @@ export default async function DashboardPage() {
           icon={Clock3}
           tone={untimedNotes > 0 ? "attention" : "positive"}
         />
-        <KpiCard
-          label="Deliverables in review"
-          value={overflow.deliverablesInReview}
-          hint="Ready for your sign-off"
-          icon={Inbox}
-          tone={overflow.deliverablesInReview > 0 ? "attention" : "neutral"}
-        />
-        <KpiCard
-          label="Open assignments"
-          value={overflow.openAssignments}
-          hint="Submitted or in progress"
-          icon={Briefcase}
-          tone="neutral"
-        />
-        <KpiCard
-          label="Firm Memory saved"
-          value={firmMemory.templateCount + firmMemory.sampleCount + firmMemory.stylePreferenceCount}
-          hint={
-            firmMemory.configured
-              ? `${firmMemory.templateCount} templates · ${firmMemory.sampleCount} samples · ${firmMemory.stylePreferenceCount} style prefs`
-              : "Upload samples at Firm Memory to teach your firm's style"
-          }
-          icon={Sparkles}
-          tone={firmMemoryPct >= 66 ? "positive" : "attention"}
-          href="/firm-memory"
-        />
       </section>
+
+      {attention.length > 0 ? (
+        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-sm font-semibold text-slate-900">Needs your attention</h2>
+            <Link href="/matters" className="text-xs text-slate-500 underline-offset-2 hover:underline">
+              All matters →
+            </Link>
+          </div>
+          <ul className="mt-3 space-y-2">
+            {attention.slice(0, 6).map((item) => (
+              <li
+                key={item.matter.matterId}
+                className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2 first:border-0 first:pt-0"
+              >
+                <Link
+                  href={`/matters/${item.matter.matterId}`}
+                  className="font-medium text-slate-900 underline-offset-2 hover:underline"
+                >
+                  {item.matter.title || item.matter.clientName}
+                </Link>
+                <span className="flex items-center gap-2 text-xs">
+                  <span className="text-slate-500">{item.matter.caseType}</span>
+                  <span
+                    className={
+                      item.reason === "no_deadline"
+                        ? "rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-900"
+                        : "rounded-full bg-rose-50 px-2 py-0.5 font-medium text-rose-900"
+                    }
+                  >
+                    {item.label}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          {attention.length > 6 ? (
+            <p className="mt-2 text-xs text-slate-500">
+              +{attention.length - 6} more on the Matters page.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {!firmMemory.configured ? (
         <section className="rounded-lg border border-amber-200 bg-amber-50/50 px-4 py-3 text-sm text-amber-950">
@@ -282,26 +336,37 @@ export default async function DashboardPage() {
         </section>
       ) : null}
 
+      {/*
+        Drafting/review counts belong here rather than in the headline row —
+        they matter, but "which client needs me" comes first.
+      */}
       <section className="grid gap-4 sm:grid-cols-3">
         <KpiCard
-          label="Active projects"
-          value={overflow.activeProjects}
-          hint="Assignments in your overflow pipeline"
-          icon={Briefcase}
+          label="Drafts awaiting your review"
+          value={overflow.deliverablesInReview}
+          hint="Ready for your sign-off"
+          icon={Inbox}
+          tone={overflow.deliverablesInReview > 0 ? "attention" : "neutral"}
+          href="/inbox"
         />
         <KpiCard
           label="Completed this month"
           value={overflow.completedThisMonth}
-          hint="Approved deliverables — capacity you did not have to draft"
+          hint="Approved deliverables"
           icon={CheckCircle2}
           tone="positive"
         />
         <KpiCard
-          label="Inbox items open"
-          value={inboxUnread}
-          hint="Assignments and alerts awaiting action"
-          icon={Inbox}
-          tone={inboxUnread > 0 ? "attention" : "neutral"}
+          label="Firm Memory saved"
+          value={firmMemory.templateCount + firmMemory.sampleCount + firmMemory.stylePreferenceCount}
+          hint={
+            firmMemory.configured
+              ? `${firmMemory.templateCount} templates · ${firmMemory.sampleCount} samples · ${firmMemory.stylePreferenceCount} style prefs`
+              : "Upload samples so drafts read in your style"
+          }
+          icon={Sparkles}
+          tone={firmMemoryPct >= 66 ? "positive" : "attention"}
+          href="/firm-memory"
         />
       </section>
 
