@@ -22,6 +22,10 @@ export function FirmLetterheadSettings() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    // Intentional: `getFirmLetterhead` reads localStorage, a browser-only
+    // external system unavailable at render time (and during SSR) — this
+    // must run post-mount, not be computed during render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- external-system (localStorage) sync
     setProfile(getFirmLetterhead());
     setLoaded(true);
   }, []);

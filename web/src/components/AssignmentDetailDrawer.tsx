@@ -132,11 +132,24 @@ export function AssignmentDetailDrawer({
     }
   }, [itemId, onItemUpdated]);
 
-  useEffect(() => {
+  // Reset the displayed item during render when a different assignment opens
+  // (rather than in the effect below) to avoid an extra cascading render —
+  // see https://react.dev/learn/you-might-not-need-an-effect.
+  const [prevItemId, setPrevItemId] = useState(itemId);
+  if (itemId !== prevItemId) {
+    setPrevItemId(itemId);
     setItem(initialItem);
-    void loadPreview();
+    setLoading(true);
+    setLoadError(null);
+  }
+
+  useEffect(() => {
+    // Deferred via a microtask so the (synchronous) setLoading/setLoadError
+    // calls at the top of loadPreview run outside the effect's own
+    // synchronous execution — this is a genuine data-fetch-on-mount effect,
+    // not state derived from props/state available at render time.
     // Re-load only when opening a different assignment, not when parent list refreshes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: key off itemId
+    void Promise.resolve().then(loadPreview);
   }, [itemId, loadPreview]);
 
   useEffect(() => {

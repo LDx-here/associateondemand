@@ -15,7 +15,12 @@ export function KnowledgeMapShell({ firmKnowledge }: { firmKnowledge: KnowledgeM
   const [tab, setTab] = useState<Tab>("firm");
 
   useEffect(() => {
+    // Intentional: read the browser hash post-hydration and sync it into React
+    // state. The initial `"firm"` default must stay hash-independent so SSR
+    // and the first client render match; only after mount can we safely
+    // resolve the real tab from `window.location`.
     const hash = typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- external-system sync, see comment above
     if (hash.startsWith("patterns") || hash === "pattern-graph") setTab("patterns");
     if (hash.startsWith("firm-knowledge") || hash === "firm" || hash.startsWith("firm&")) setTab("firm");
   }, []);

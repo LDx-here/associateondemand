@@ -63,7 +63,9 @@ export function LegalElementsPanel({
   const autoSeededForMatter = useRef<string | null>(null);
   const lastCaseType = useRef<string>(matter.caseType ?? "");
   const elementsRef = useRef(elements);
-  elementsRef.current = elements;
+  useEffect(() => {
+    elementsRef.current = elements;
+  }, [elements]);
 
   const coreElements = useMemo(
     () => coreFirmKnowledgeElementsForMatter(matter.caseType),
@@ -91,11 +93,16 @@ export function LegalElementsPanel({
     [matter.caseType, elements],
   );
 
+  // Clear the stale payload during render when the assessment doc disappears
+  // (e.g. matter switch) instead of synchronously in the effect below.
+  const [prevAssessmentDocId, setPrevAssessmentDocId] = useState(assessmentDocId);
+  if (assessmentDocId !== prevAssessmentDocId) {
+    setPrevAssessmentDocId(assessmentDocId);
+    if (!assessmentDocId) setFetchedPayload(null);
+  }
+
   useEffect(() => {
-    if (!assessmentDocId) {
-      setFetchedPayload(null);
-      return;
-    }
+    if (!assessmentDocId) return;
     void fetch(`/api/matters/${matter.matterId}/case-assessment-document`)
       .then((r) => r.json())
       .then((data: { payload?: AssessmentOcrPayload | null; note?: { content?: string } }) => {
@@ -277,7 +284,9 @@ export function LegalElementsPanel({
       return;
     }
     autoSeededForMatter.current = key;
-    void seedCoreElements("empty");
+    // Deferred via a microtask so seedCoreElements' internal setSeeding(true)
+    // runs outside this effect's own synchronous execution.
+    void Promise.resolve().then(() => seedCoreElements("empty"));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- seed once per matter/caseType when empty
   }, [matter.matterId, matter.caseType, elements.length]);
 

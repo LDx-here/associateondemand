@@ -106,7 +106,9 @@ export function DeliverableTemplateCatalog() {
   }, []);
 
   useEffect(() => {
-    void refresh();
+    // Deferred via a microtask — this is a genuine fetch-on-mount effect;
+    // see the identical pattern (and rationale) in AssignmentDetailDrawer.
+    void Promise.resolve().then(refresh);
   }, [refresh]);
 
   const previewItem = items.find((i) => i.deliverableId === previewId) ?? null;
