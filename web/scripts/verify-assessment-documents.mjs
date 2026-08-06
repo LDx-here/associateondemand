@@ -77,7 +77,12 @@ function testAssessmentOcrPayloadRoundTrip() {
   assert.equal(parsed?.title, "assessment.pdf");
   const block = formatAssessmentOcrForAgents(parsed);
   assert.match(block, /Case assessment document/);
-  assert.match(block, /entry_date/);
+  // formatAssessmentOcrForAgents renders the human label ("entry date"), not
+  // the raw snake_case fact_type ("entry_date") — the label change shipped
+  // with the LLM fact-enrichment pass. Assert the human-readable form plus
+  // the value and review tag so a regression to raw fact_type is caught.
+  assert.match(block, /entry date: 2019 \[needs review\]/);
+  assert.doesNotMatch(block, /entry_date/);
 }
 
 function testFactDisplayValuePrefersEdited() {

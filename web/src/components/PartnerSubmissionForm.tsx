@@ -13,7 +13,7 @@ import {
 } from "@/lib/intake-disclaimer";
 import {
   DELIVERABLE_CATALOG,
-  billingNoteForPartnerFirm,
+  billingNoteFor,
   deliverableById,
   formatCatalogQuote,
   isPhase0LaunchSku,
@@ -80,8 +80,6 @@ export function PartnerSubmissionForm({ initialEmail = "", initialDeliverableId 
     () => mergeFactsForDispatch(structuredFacts, facts),
     [structuredFacts, facts],
   );
-  const billingNote = billingNoteForPartnerFirm();
-
   useEffect(() => {
     if (searchParams.get("payment") === "success") {
       showToast("Payment received — RMV will begin work on your deliverable.", "success");
@@ -295,7 +293,7 @@ export function PartnerSubmissionForm({ initialEmail = "", initialDeliverableId 
           <div className="space-y-1">
             <p className="text-xs text-slate-500">{selectedCatalog.description}</p>
             <p className="text-sm font-medium text-slate-800">{formatCatalogQuote(selectedCatalog)}</p>
-            <p className="text-xs text-slate-500">{selectedCatalog.pricing?.note ?? billingNote}</p>
+            <p className="text-xs text-slate-500">{billingNoteFor(selectedCatalog, true)}</p>
           </div>
         ) : null}
         {fieldErrors.deliverable ? <p className="text-sm text-rose-700">{fieldErrors.deliverable}</p> : null}

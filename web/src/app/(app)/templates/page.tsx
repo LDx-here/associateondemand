@@ -5,11 +5,11 @@ import { DeliverableTemplateCatalog } from "@/components/DeliverableTemplateCata
 import { FirmAssessmentTemplates } from "@/components/FirmAssessmentTemplates";
 import { FirmMemoryBadge } from "@/components/FirmMemoryBadge";
 import { SmartTemplatesCatalog } from "@/components/SmartTemplatesCatalog";
-import { billingNoteForPartnerFirm } from "@/lib/deliverable-catalog";
+import { INTERNAL_ASSIGNMENT_BILLING_NOTE } from "@/lib/deliverable-catalog";
 import { btnPrimary } from "@/lib/ui-classes";
 
 export default function TemplateCatalogPage() {
-  const billingNote = billingNoteForPartnerFirm();
+  const billingNote = INTERNAL_ASSIGNMENT_BILLING_NOTE;
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
