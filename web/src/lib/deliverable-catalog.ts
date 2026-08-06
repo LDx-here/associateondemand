@@ -10,6 +10,18 @@ export type DeliverablePricing = {
   /** Flat-fee range in USD (Monetization Strategy). */
   minUsd: number;
   maxUsd: number;
+  /**
+   * Entry-specific advisory unrelated to *who* is billed (e.g. a first-of-kind
+   * setup surcharge). Shown alongside the contextual billing note in both the
+   * internal and partner-facing flows.
+   */
+  advisory?: string;
+  /**
+   * Partner-facing billing framing ("quoted flat fee for partner firm...").
+   * Only accurate when a genuine third-party firm is submitting work via
+   * `/partner/submit` — use `billingNoteFor()` rather than reading this
+   * directly so internal, single-attorney usage doesn't inherit it.
+   */
   note?: string;
   /** Whether intake can apply sample prior-work discount. */
   sampleDiscountEligible?: boolean;
@@ -21,13 +33,22 @@ export type DeliverablePricing = {
 export const PARTNER_FIRM_BILLING_NOTE =
   "Quoted flat fee for partner firm — invoiced off-platform. RMV does not pay through this dashboard.";
 
+/**
+ * Internal assignment intake / template catalog copy — the attorney is
+ * dispatching agents on her own matter, not being billed by (or invoicing
+ * through) a marketplace. Pricing shown here is a scope reference, not a
+ * charge that runs through this dashboard.
+ */
+export const INTERNAL_ASSIGNMENT_BILLING_NOTE =
+  "Reference pricing for your own case tracking — this dashboard does not bill or invoice through it.";
+
 /** @deprecated use PARTNER_FIRM_BILLING_NOTE or billingNoteForPartnerFirm() */
 export const PHASE0_BILLING_NOTE_OFFLINE = PARTNER_FIRM_BILLING_NOTE;
 
 /** @deprecated use PARTNER_FIRM_BILLING_NOTE */
 export const PHASE0_BILLING_NOTE = PARTNER_FIRM_BILLING_NOTE;
 
-/** Billing copy for templates, intake, and Settings — partner pays RMV, not the operator. */
+/** @deprecated partner-only framing — use billingNoteFor(entry, isPartnerSubmission) so internal screens don't inherit "partner firm" language. */
 export function billingNoteForPartnerFirm(): string {
   return PARTNER_FIRM_BILLING_NOTE;
 }
@@ -35,6 +56,23 @@ export function billingNoteForPartnerFirm(): string {
 /** @deprecated use billingNoteForPartnerFirm() — stripeConfigured ignored (no operator checkout). */
 export function billingNoteForStripe(_stripeConfigured?: boolean): string {
   return PARTNER_FIRM_BILLING_NOTE;
+}
+
+/**
+ * Billing copy for a catalog entry, aware of which flow is rendering it.
+ * `/partner/submit` (a genuine outside firm) keeps the partner-invoicing
+ * framing; the internal `/assignments/new` and `/templates` surfaces (the
+ * attorney's own system) get honest "this is just a reference" copy instead.
+ */
+export function billingNoteFor(
+  entry: Pick<DeliverableCatalogEntry, "pricing">,
+  isPartnerSubmission: boolean,
+): string {
+  const advisory = entry.pricing?.advisory ? `${entry.pricing.advisory} ` : "";
+  const contextNote = isPartnerSubmission
+    ? entry.pricing?.note ?? PARTNER_FIRM_BILLING_NOTE
+    : INTERNAL_ASSIGNMENT_BILLING_NOTE;
+  return `${advisory}${contextNote}`;
 }
 
 /** Phase 0 launch SKUs — immigration brief, motion, hearing packet, research upsell, PI demand letter. */
@@ -165,7 +203,8 @@ export const DELIVERABLE_CATALOG: DeliverableCatalogEntry[] = [
     pricing: {
       minUsd: 250,
       maxUsd: 450,
-      note: `Setup surcharge may apply on first use of a new motion type. ${PHASE0_BILLING_NOTE_OFFLINE}`,
+      advisory: "Setup surcharge may apply on first use of a new motion type.",
+      note: PHASE0_BILLING_NOTE_OFFLINE,
       sampleDiscountEligible: true,
       sampleDiscountPercent: SAMPLE_DISCOUNT_PERCENT,
     },

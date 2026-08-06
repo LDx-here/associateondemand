@@ -33,7 +33,7 @@ import { FirmMemoryPrompt } from "@/components/FirmMemoryPrompt";
 import { PracticeAreaFactGuide } from "@/components/PracticeAreaFactGuide";
 import {
   DELIVERABLE_CATALOG,
-  billingNoteForPartnerFirm,
+  billingNoteFor,
   deliverableById,
   formatCatalogQuote,
   formatPricingRange,
@@ -221,7 +221,6 @@ export function AssignmentIntakeForm({
 
   const sampleEligible = selectedCatalog ? isSampleDiscountEligible(selectedCatalog) : false;
   const discountNote = selectedCatalog ? sampleDiscountNote(selectedCatalog) : null;
-  const billingNote = billingNoteForPartnerFirm();
 
   const applyOcrMerge = useCallback(
     (ocrFacts: Array<{ fact_type: string; value: string }>, ocrText?: string) => {
@@ -713,9 +712,7 @@ export function AssignmentIntakeForm({
               </p>
             ) : null}
             {discountNote ? <p className="text-xs text-violet-800">{discountNote}</p> : null}
-            <p className="text-xs text-slate-500">
-              {selectedCatalog.pricing?.note ?? billingNote}
-            </p>
+            <p className="text-xs text-slate-500">{billingNoteFor(selectedCatalog, false)}</p>
             {!isPhase0LaunchSku(selectedCatalog.id) ? (
               <p className="text-xs text-amber-800">
                 Coming soon for external clients — available for internal testing.

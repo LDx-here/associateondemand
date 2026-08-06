@@ -5,6 +5,7 @@
 import {
   DELIVERABLE_CATALOG,
   PHASE0_LAUNCH_SKU_IDS,
+  billingNoteFor,
   deliverableById,
   formatCatalogQuote,
   isPhase0LaunchSku,
@@ -48,6 +49,22 @@ for (const id of requiredDayOne) {
 if (DELIVERABLE_CATALOG.some((e, i, arr) => arr.findIndex((x) => x.id === e.id) !== i)) {
   console.error("FAIL: duplicate catalog IDs");
   failed++;
+}
+
+// Internal /assignments/new and /templates are the attorney's own system, not a
+// marketplace — billingNoteFor(entry, false) must never inherit "partner firm"
+// invoicing language (see docs/runbooks/project-debt-and-cleanup.md root cause #2).
+for (const entry of DELIVERABLE_CATALOG.filter((e) => e.pricing)) {
+  const internalNote = billingNoteFor(entry, false);
+  if (/partner firm/i.test(internalNote)) {
+    console.error(`FAIL: internal billing note for "${entry.id}" leaks partner-firm framing: "${internalNote}"`);
+    failed++;
+  }
+  const partnerNote = billingNoteFor(entry, true);
+  if (!/partner firm|invoiced/i.test(partnerNote)) {
+    console.error(`FAIL: partner billing note for "${entry.id}" lost its invoicing framing: "${partnerNote}"`);
+    failed++;
+  }
 }
 
 if (failed > 0) {
