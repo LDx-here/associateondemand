@@ -1,6 +1,18 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-07-29 (CDT) — Anthropic key on Fly returns 401
+**Last updated:** 2026-08-07 (CDT) — Pass 57: case story (matter as prose)
+
+**Pass 57 (2026-08-07, Journal 2 / task #23):** Case story panel — the matter rendered as prose above the tabbed workbench. `lib/case-story.ts` composes sentences in the order the attorney actually asks when reopening a file: where it stands, when she last worked it, what is coming, what she has put in, who else is on it. Sentences are omitted when data is absent rather than printing "Next deadline: —", which is what made the old view unreadable. Carries the machine-note distinction through, so an imported-but-untouched matter reads "You have not logged any work on it yet."
+
+**Bug caught while testing, worth remembering:** a date-only deadline ("2026-08-14") parses as UTC midnight and rendered as "August 13" in any timezone behind UTC — a filing deadline shown a day early. Date-only values are now constructed as local dates. Worth grepping for elsewhere; `formatDate` helpers in other files may have the same shape.
+
+Verified on production against AOD-1008 (Viazovikova): reads "This matter is awaiting scheduling. You have not logged any work on it yet. Nothing is scheduled on it."
+
+**Open discrepancy found on that page, not yet fixed:** the imported summary says "40 documents on file" while the Overview tab shows "Documents on file: 0". The importer counted files in the Drive folder but never created Document rows, so her documents are described but not actually in the system. Next pass should reconcile — either create Document records on import or stop claiming a count the app cannot show.
+
+136 pytest; 7 web suites (case-story, practice-pulse, case-state, work-entry, practice-import, facts, catalog); next build; Vercel.
+
+**Previously:** 2026-07-29 (CDT) — Anthropic key on Fly returns 401
 **Workspace:** `/Users/ladaj/Developer/AssociateOnDemand`  
 **Branch:** `cursor/phase0-foundation`  
 **Remote:** `origin` → `git@github.com:LDx-here/associateondemand.git`
