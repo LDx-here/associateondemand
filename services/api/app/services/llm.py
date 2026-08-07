@@ -181,6 +181,10 @@ def check_connection(timeout_s: float = 15.0) -> dict[str, Any]:
     """
     key = os.getenv("ANTHROPIC_API_KEY", "").strip()
     model = os.getenv("LLM_DEFAULT_MODEL", DEFAULT_MODEL)
+    # Always attach analyzer state: drafting needs BOTH a valid key and a
+    # reachable analyzer, and a dead key must not hide whether the second
+    # half is wired up.
+    pii = pii_readiness()
 
     if not key:
         return {
@@ -189,6 +193,7 @@ def check_connection(timeout_s: float = 15.0) -> dict[str, Any]:
             "reason": "not_configured",
             "detail": "ANTHROPIC_API_KEY is not set. Drafting runs on templates.",
             "model": model,
+            "pii": pii,
         }
 
     try:
@@ -213,6 +218,7 @@ def check_connection(timeout_s: float = 15.0) -> dict[str, Any]:
             "reason": "network_error",
             "detail": f"Could not reach Anthropic: {exc}",
             "model": model,
+            "pii": pii,
         }
 
     if resp.status_code == 200:
@@ -220,7 +226,6 @@ def check_connection(timeout_s: float = 15.0) -> dict[str, Any]:
         # without a reachable analyzer every call is refused before it is
         # made. Report that here rather than letting drafting look available
         # and then silently return nothing.
-        pii = pii_readiness()
         if not pii["ready"]:
             return {
                 "configured": True,
@@ -228,8 +233,9 @@ def check_connection(timeout_s: float = 15.0) -> dict[str, Any]:
                 "reason": "pii_blocked",
                 "detail": pii["detail"],
                 "model": model,
+                "pii": pii,
             }
-        return {"configured": True, "working": True, "reason": "ok", "detail": "", "model": model}
+        return {"configured": True, "working": True, "reason": "ok", "detail": "", "model": model, "pii": pii}
 
     reason_by_status = {
         401: (
@@ -251,6 +257,7 @@ def check_connection(timeout_s: float = 15.0) -> dict[str, Any]:
         "reason": reason,
         "detail": detail,
         "model": model,
+        "pii": pii,
     }
 
 
@@ -280,7 +287,9 @@ def pii_readiness() -> dict[str, Any]:
         }
 
     try:
-        with httpx.Client(timeout=5.0) as client:
+        # Presidio loads spaCy models on its first request (~20s cold, fast
+        # after). A short probe reported a healthy analyzer as unreachable.
+        with httpx.Client(timeout=40.0) as client:
             resp = client.post(
                 f"{analyzer.rstrip('/')}/analyze",
                 json={"text": "health probe", "language": "en"},

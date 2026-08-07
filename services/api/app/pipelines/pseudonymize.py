@@ -130,7 +130,7 @@ def _merge_spans(spans: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return kept
 
 
-def scrub(text: str, *, timeout_s: float = 10.0, require_presidio: bool = True) -> Scrubbed:
+def scrub(text: str, *, timeout_s: float = 40.0, require_presidio: bool = True) -> Scrubbed:
     """Replace PII with stable tokens, returning the mapping needed to restore.
 
     `require_presidio=True` fails closed when the analyzer is unreachable: the

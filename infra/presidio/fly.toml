@@ -1,0 +1,37 @@
+# Presidio analyzer — PII detection sidecar for the AOD API.
+#
+# Runs as its own Fly app so it can be sized independently (spaCy models need
+# ~1GB) and reached over Fly's private network at presidio-analyzer.internal.
+# It is NOT exposed publicly: client text must never traverse the open
+# internet on its way to the analyzer.
+
+app = 'aod-presidio-analyzer'
+primary_region = 'iad'
+
+[build]
+  image = 'mcr.microsoft.com/presidio-analyzer:latest'
+
+[env]
+  PORT = '3000'
+  WORKERS = '1'
+
+# The stock entrypoint runs `gunicorn -b 0.0.0.0:$PORT`, which is IPv4-only.
+# Fly's private 6PN network is IPv6-only, so aod-presidio-analyzer.internal
+# resolved but every connection was refused. Binding [::] accepts both.
+[experimental]
+  cmd = ['poetry', 'run', 'gunicorn', '-w', '1', '-b', '[::]:3000', 'app:create_app()']
+
+# No [http_service] block on purpose — no public IP, no external listener.
+# The API reaches it via 6PN private networking only.
+[[services]]
+  internal_port = 3000
+  protocol = 'tcp'
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  # Drafting blocks entirely when this is down, so keep one warm rather than
+  # paying a model-load cold start on the attorney's first draft.
+  min_machines_running = 1
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '2gb'
