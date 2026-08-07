@@ -146,6 +146,10 @@ def test_generate_text_passes_thinking_and_omits_temperature(monkeypatch):
             return FakeResp()
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test-key")
+    # This test covers the thinking/temperature payload, not PII handling;
+    # pseudonymization fails closed without a Presidio analyzer and would
+    # short-circuit the call before a payload is ever built.
+    monkeypatch.setenv("AOD_PSEUDONYMIZE", "off")
     with patch("app.services.llm.httpx.Client", FakeClient):
         out = generate_text(
             system="sys",
@@ -176,6 +180,10 @@ def test_generate_aos_brief_api_path_uses_full_system_and_thinking(monkeypatch, 
         )
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test-key")
+    # This test covers the thinking/temperature payload, not PII handling;
+    # pseudonymization fails closed without a Presidio analyzer and would
+    # short-circuit the call before a payload is ever built.
+    monkeypatch.setenv("AOD_PSEUDONYMIZE", "off")
     monkeypatch.setenv("AOD_AOS_USE_API", "1")
     with patch("app.services.llm.is_configured", return_value=True), patch(
         "app.services.llm.generate_text", side_effect=fake_generate_text

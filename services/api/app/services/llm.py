@@ -39,6 +39,32 @@ def generate_text(
     if not api_key:
         return None
 
+    # Scrub client PII before anything leaves the firm boundary, and restore
+    # the real values on the way back so the attorney never sees a token.
+    #
+    # This sits here rather than at each call site deliberately: every agent
+    # funnels through generate_text(), so covering this one function means no
+    # future caller can forget. Set AOD_PSEUDONYMIZE=off only for local work
+    # against non-client text.
+    pseudonymize = os.getenv("AOD_PSEUDONYMIZE", "on").strip().lower() != "off"
+    mapping: dict[str, str] = {}
+    if pseudonymize:
+        from app.pipelines.pseudonymize import restore, scrub
+
+        scrubbed_system = scrub(system)
+        scrubbed_user = scrub(user)
+        if not (scrubbed_system.ok and scrubbed_user.ok):
+            # Fail closed. Sending raw client text because a sidecar is down
+            # is exactly the silent-degradation pattern that hid a 401 for
+            # weeks — with far worse consequences here.
+            LOGGER.error(
+                "refusing to send text to Anthropic: %s",
+                scrubbed_system.reason or scrubbed_user.reason,
+            )
+            return None
+        mapping = {**scrubbed_system.mapping, **scrubbed_user.mapping}
+        system, user = scrubbed_system.text, scrubbed_user.text
+
     resolved_max = max_tokens
     if thinking and thinking.get("type") == "enabled":
         budget = int(thinking.get("budget_tokens") or 0)
@@ -99,7 +125,18 @@ def generate_text(
             blocks = data.get("content") or []
             parts = [b.get("text", "") for b in blocks if b.get("type") == "text"]
             text = "".join(parts).strip()
-            return text or None
+            if not text:
+                return None
+            if mapping:
+                from app.pipelines.pseudonymize import has_unrestored_tokens, restore
+
+                text = restore(text, mapping)
+                if has_unrestored_tokens(text):
+                    # A token the model invented or mangled would surface to
+                    # the attorney as gibberish in her own case file.
+                    LOGGER.error("model output contained an unrestorable token; discarding")
+                    return None
+            return text
     except httpx.HTTPError:
         LOGGER.exception("anthropic request failed")
         return None
@@ -179,6 +216,19 @@ def check_connection(timeout_s: float = 15.0) -> dict[str, Any]:
         }
 
     if resp.status_code == 200:
+        # A valid key is not sufficient: pseudonymization fails closed, so
+        # without a reachable analyzer every call is refused before it is
+        # made. Report that here rather than letting drafting look available
+        # and then silently return nothing.
+        pii = pii_readiness()
+        if not pii["ready"]:
+            return {
+                "configured": True,
+                "working": False,
+                "reason": "pii_blocked",
+                "detail": pii["detail"],
+                "model": model,
+            }
         return {"configured": True, "working": True, "reason": "ok", "detail": "", "model": model}
 
     reason_by_status = {
@@ -202,3 +252,48 @@ def check_connection(timeout_s: float = 15.0) -> dict[str, Any]:
         "detail": detail,
         "model": model,
     }
+
+
+def pii_readiness() -> dict[str, Any]:
+    """Whether client text can legally leave the firm boundary right now.
+
+    Pseudonymization fails closed by design, so a missing analyzer blocks all
+    drafting. That is the correct behaviour and a deliberate trade: no draft
+    is worth transmitting a client's A-number in the clear.
+    """
+    if os.getenv("AOD_PSEUDONYMIZE", "on").strip().lower() == "off":
+        return {
+            "ready": True,
+            "detail": "",
+            "note": "AOD_PSEUDONYMIZE=off — client text is sent unscrubbed. Local use only.",
+        }
+
+    analyzer = os.getenv("PRESIDIO_ANALYZER_URL", "").strip()
+    if not analyzer:
+        return {
+            "ready": False,
+            "detail": (
+                "AI drafting is blocked because the PII analyzer is not deployed. Client notes "
+                "contain A-numbers, immigration status, and medical detail, so text is never sent "
+                "unscrubbed. Deploy Presidio and set PRESIDIO_ANALYZER_URL to enable drafting."
+            ),
+        }
+
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            resp = client.post(
+                f"{analyzer.rstrip('/')}/analyze",
+                json={"text": "health probe", "language": "en"},
+            )
+        if resp.status_code >= 400:
+            return {
+                "ready": False,
+                "detail": f"PII analyzer responded {resp.status_code}. Drafting stays blocked.",
+            }
+    except httpx.HTTPError as exc:
+        return {
+            "ready": False,
+            "detail": f"PII analyzer unreachable ({exc}). Drafting stays blocked.",
+        }
+
+    return {"ready": True, "detail": ""}
