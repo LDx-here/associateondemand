@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { AiStatusBanner } from "@/components/AiStatusBanner";
 import { GettingStartedBanner, OnboardingWizard } from "@/components/OnboardingWizard";
 import { ResumeIntakeBanner } from "@/components/ResumeIntakeBanner";
 import { EmptyState } from "@/components/EmptyState";
@@ -170,6 +171,7 @@ export default async function DashboardPage() {
         </Link>
       </header>
 
+      <AiStatusBanner />
       <OnboardingWizard />
       <GettingStartedBanner />
       <ResumeIntakeBanner />

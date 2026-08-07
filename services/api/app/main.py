@@ -159,6 +159,18 @@ def health_deps(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
     }
 
 
+@app.get("/ai-status")
+def ai_status() -> dict[str, Any]:
+    """Whether the Anthropic key actually works — not merely whether it is set.
+
+    Surfaced in the UI so a rejected key shows as an error instead of quietly
+    degrading every draft to template output.
+    """
+    from app.services.llm import check_connection
+
+    return check_connection()
+
+
 @app.get("/")
 def root() -> dict[str, str]:
     return {"message": "AssociateOnDemand API online", "docs": "/docs", "health": "/health"}

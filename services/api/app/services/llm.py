@@ -129,3 +129,76 @@ def aos_max_tokens() -> int:
         return int(os.getenv("AOD_AOS_MAX_TOKENS", "16000").strip() or "16000")
     except ValueError:
         return 16000
+
+
+def check_connection(timeout_s: float = 15.0) -> dict[str, Any]:
+    """Actually call Anthropic and report whether the key works.
+
+    `is_configured()` only reports that a key *string* is present — it returns
+    True for a revoked, expired, or wrong-account key. That gap is how this
+    system ran in template mode for weeks: the key was set, so everything
+    reported healthy, while every request 401'd and silently fell back.
+
+    This makes one cheap call and reports the truth, so "the key is set" and
+    "the key works" stop being the same answer.
+    """
+    key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    model = os.getenv("LLM_DEFAULT_MODEL", DEFAULT_MODEL)
+
+    if not key:
+        return {
+            "configured": False,
+            "working": False,
+            "reason": "not_configured",
+            "detail": "ANTHROPIC_API_KEY is not set. Drafting runs on templates.",
+            "model": model,
+        }
+
+    try:
+        with httpx.Client(timeout=httpx.Timeout(timeout_s, connect=5.0)) as client:
+            resp = client.post(
+                ANTHROPIC_API_URL,
+                headers={
+                    "x-api-key": key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "max_tokens": 8,
+                    "messages": [{"role": "user", "content": "Reply with OK."}],
+                },
+            )
+    except httpx.HTTPError as exc:
+        return {
+            "configured": True,
+            "working": False,
+            "reason": "network_error",
+            "detail": f"Could not reach Anthropic: {exc}",
+            "model": model,
+        }
+
+    if resp.status_code == 200:
+        return {"configured": True, "working": True, "reason": "ok", "detail": "", "model": model}
+
+    reason_by_status = {
+        401: (
+            "invalid_key",
+            "The API key is set but Anthropic rejected it (401). This is not a billing "
+            "problem — credits do not fix a rejected key. Generate a key at "
+            "console.anthropic.com/settings/keys; a Claude.ai subscription key will not work.",
+        ),
+        403: ("forbidden", "The key was accepted but lacks permission for this model (403)."),
+        404: ("bad_model", f"Model '{model}' was not found (404). Check LLM_DEFAULT_MODEL."),
+        429: ("rate_limited", "The key is valid but rate limited or out of credits (429)."),
+    }
+    reason, detail = reason_by_status.get(
+        resp.status_code, ("error", f"Anthropic returned {resp.status_code}.")
+    )
+    return {
+        "configured": True,
+        "working": False,
+        "reason": reason,
+        "detail": detail,
+        "model": model,
+    }
