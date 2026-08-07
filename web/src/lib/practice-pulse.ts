@@ -9,10 +9,17 @@
  */
 
 import type { Matter, Note, Task } from "./types";
+import { isClosedMatterStatus } from "./matter-status";
 
-/** Open matters only — closed ones are not "attention" candidates. */
+/**
+ * Open matters only — closed ones are not "attention" candidates.
+ *
+ * Uses the canonical status helper rather than comparing to "closed": the
+ * app has two closed states, Closed and Archived, and a local string compare
+ * missed Archived — an archived matter kept appearing on the attention list.
+ */
 function isOpen(matter: Matter): boolean {
-  return (matter.status ?? "").toLowerCase() !== "closed";
+  return !isClosedMatterStatus(matter.status ?? "");
 }
 
 /**

@@ -148,3 +148,20 @@ const empty = practicePulse([], [], [], NOW);
 assert.deepEqual(empty, { openMatters: 0, needsAttention: 0, dueSoon: 0, onTrack: 0 });
 
 console.log("verify-practice-pulse: OK");
+
+// Archived is a closed state too. A local `status !== "closed"` compare missed
+// it, so an archived matter kept appearing on the attention list.
+const archived = practicePulse(
+  [
+    { id: "a", matterId: "ARCHIVED", clientName: "x", caseType: "PI", status: "Archived" },
+    { id: "b", matterId: "CLOSED", clientName: "y", caseType: "PI", status: "Closed" },
+    { id: "c", matterId: "LIVE", clientName: "z", caseType: "PI", status: "Open" },
+  ],
+  [],
+  [],
+  NOW,
+);
+assert.equal(archived.openMatters, 1, "Archived and Closed are both excluded");
+assert.equal(archived.needsAttention, 1, "only the live matter is flagged");
+
+console.log("verify-practice-pulse: closed-state handling OK");
