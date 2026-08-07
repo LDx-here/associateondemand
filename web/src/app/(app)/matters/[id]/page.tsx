@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { CaseStoryPanel } from "@/components/CaseStoryPanel";
 import { MatterWorkbench } from "@/components/MatterWorkbench";
 import {
   buildTimeline,
@@ -52,7 +53,17 @@ export default async function MatterDetailPage({ params }: Props) {
   const sheetsEnabled = demo || usesGoogleSheets();
 
   return (
-    <MatterWorkbench
+    <div className="space-y-4">
+      {/* Prose first: where this stands and when it was last worked, before
+          the tabbed workbench where the work actually happens. */}
+      <CaseStoryPanel
+        matter={matter}
+        notes={notes}
+        tasks={tasks}
+        contacts={contacts}
+        documents={documents}
+      />
+      <MatterWorkbench
       demoMode={demo}
       sheetsEnabled={sheetsEnabled}
       matter={matter}
@@ -66,6 +77,7 @@ export default async function MatterDetailPage({ params }: Props) {
       initialAgentAlerts={agentAlerts}
       initialContacts={contacts}
       allContacts={allContacts}
-    />
+      />
+    </div>
   );
 }
