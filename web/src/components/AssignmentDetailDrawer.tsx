@@ -133,6 +133,8 @@ export function AssignmentDetailDrawer({
   }, [itemId, onItemUpdated]);
 
   useEffect(() => {
+    // Reset to the freshly opened assignment before refetching its preview.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset on itemId change
     setItem(initialItem);
     void loadPreview();
     // Re-load only when opening a different assignment, not when parent list refreshes.

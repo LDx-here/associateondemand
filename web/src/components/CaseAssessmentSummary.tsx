@@ -58,6 +58,8 @@ export function CaseAssessmentSummary({
 
   useEffect(() => {
     if (!assessmentDocId) {
+      // Clear stale payload when the matter no longer has an assessment document on file.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset on doc removal
       setFetchedPayload(null);
       return;
     }

@@ -23,6 +23,7 @@ export function ProceduralTimelinePanel({ matterId }: { matterId: string }) {
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: mark loading before fetch
     setLoading(true);
     let cancelled = false;
 
