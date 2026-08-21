@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import type { TaskDetectionResult } from "@/lib/task-detection";
 import { detectTaskFromNote } from "@/lib/task-detection";
+import { detectWorkFromNote, type WorkSuggestion } from "@/lib/work-detection";
 import type { DraftingFactsPayload } from "@/lib/practice-area-facts";
 import {
   suggestFactMergeFromNote,
@@ -38,6 +39,10 @@ export function NoteComposer({
   const [activity, setActivity] = useState<WorkActivity | null>(null);
   const [minutes, setMinutes] = useState<number | null>(null);
   const [billable, setBillable] = useState(true);
+  // Set once she touches the chips, so an inferred entry never overwrites a
+  // deliberate choice.
+  const [workTouched, setWorkTouched] = useState(false);
+  const [inferred, setInferred] = useState<WorkSuggestion | null>(null);
 
   useEffect(() => {
     void fetch(`/api/matters/${matterId}/drafting-facts`)
@@ -48,6 +53,7 @@ export function NoteComposer({
 
   /** Picking the activity fills the time too — one tap logs a complete entry. */
   function pickActivity(next: WorkActivity) {
+    setWorkTouched(true);
     if (activity === next) {
       setActivity(null);
       setMinutes(null);
@@ -58,6 +64,8 @@ export function NoteComposer({
   }
 
   function resetWork() {
+    setWorkTouched(false);
+    setInferred(null);
     setActivity(null);
     setMinutes(null);
     setBillable(true);
@@ -74,6 +82,15 @@ export function NoteComposer({
         setSuggestion(null);
       } else {
         setSuggestion(detected && dismissedForContent !== token ? detected : null);
+      }
+
+      // Read the work out of what she already wrote. Only fills the chips
+      // while she has not touched them herself — her pick always wins.
+      const work = detectWorkFromNote(content);
+      setInferred(work);
+      if (!workTouched) {
+        setActivity(work?.activity ?? null);
+        setMinutes(work?.minutes ?? null);
       }
 
       const facts = suggestFactMergeFromNote(content, matterId, draftingFacts, caseType);
@@ -310,6 +327,16 @@ export function NoteComposer({
           <p className="text-[0.7rem] text-slate-600">
             Saves as <span className="font-medium text-slate-800">{activity}</span> —{" "}
             {toBillableHours(minutes)} hr{billable ? "" : " (no charge)"}.
+            {/* Say why it filled itself in, so the entry reads as a proposal
+                she can correct rather than something the system decided. */}
+            {!workTouched && inferred ? (
+              <span className="text-slate-500">
+                {" "}
+                Read from &ldquo;{inferred.matchedOn}&rdquo;
+                {inferred.durationFromNote ? " and the time you wrote" : ""} — change it if
+                that&rsquo;s wrong.
+              </span>
+            ) : null}
           </p>
         ) : (
           <p className="text-[0.7rem] text-slate-500">

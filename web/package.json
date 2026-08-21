@@ -34,7 +34,8 @@
     "test:practice-pulse": "tsx scripts/verify-practice-pulse.mjs",
     "test:case-state": "tsx scripts/verify-case-state.mjs",
     "scan:case-state": "tsx scripts/scan-case-state.mjs",
-    "test:case-story": "tsx scripts/verify-case-story.mjs"
+    "test:case-story": "tsx scripts/verify-case-story.mjs",
+    "test:work-detection": "tsx scripts/verify-work-detection.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
