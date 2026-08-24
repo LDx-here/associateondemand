@@ -63,7 +63,9 @@ export function LegalElementsPanel({
   const autoSeededForMatter = useRef<string | null>(null);
   const lastCaseType = useRef<string>(matter.caseType ?? "");
   const elementsRef = useRef(elements);
-  elementsRef.current = elements;
+  useEffect(() => {
+    elementsRef.current = elements;
+  }, [elements]);
 
   const coreElements = useMemo(
     () => coreFirmKnowledgeElementsForMatter(matter.caseType),
@@ -93,6 +95,8 @@ export function LegalElementsPanel({
 
   useEffect(() => {
     if (!assessmentDocId) {
+      // Clear stale payload when the matter no longer has an assessment document on file.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset on doc removal
       setFetchedPayload(null);
       return;
     }
@@ -277,6 +281,7 @@ export function LegalElementsPanel({
       return;
     }
     autoSeededForMatter.current = key;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: seedCoreElements sets loading state
     void seedCoreElements("empty");
     // eslint-disable-next-line react-hooks/exhaustive-deps -- seed once per matter/caseType when empty
   }, [matter.matterId, matter.caseType, elements.length]);

@@ -22,6 +22,8 @@ export function FirmLetterheadSettings() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    // localStorage only exists client-side, so the real profile loads after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: one-time client hydration
     setProfile(getFirmLetterhead());
     setLoaded(true);
   }, []);
