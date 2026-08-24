@@ -1,6 +1,24 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-08-07 (CDT) — Pass 57: case story (matter as prose)
+**Last updated:** 2026-08-24 (CDT) — Pass 59: the Five Anchors intake (manual, no AI)
+
+**Pass 59 (2026-08-24, the Five Anchors intake — manual-first):** The blueprint's intake structure as a real screen, on a new **Case anchors** tab in the matter workbench: Facts, Legal context, Documents and evidence, Procedural posture, Uncertainty and gaps.
+
+Built to work with no model in the loop, per her instruction: *"lets build the non ai scaffolding as you wrote, but in a way where it functions still without ai. where it is intuitively prepared, manual, and then we will one day add the ai intuitiveness."* Every one of the 19 prompts is answerable by typing today. Extraction, when the key is sorted, fills these same fields so she corrects rather than composes — the screen does not change shape.
+
+The fifth anchor is weighted deliberately. `intakeReadiness()` reports `gapsAddressed` as its own flag alongside the percentage, and the panel shows an amber callout while gaps is empty, because an intake that reads complete but never states what it does not know is precisely the failure the blueprint exists to prevent.
+
+Persists as one typed `Anchors` Note per matter (`lib/five-anchors.ts` serialize/parse), the same pattern drafting facts use — no new Sheets tab or column, and `findAnchors` was added to both the Sheets and the dormant Airtable backends. Autosaves on a debounce and on blur; no Save button.
+
+**Defect found while verifying, fixed in the same pass:** structured payload notes were rendering as events in the case-story timeline. The anchors note showed under "Recently on this matter" as a bare **"Anchors"**, and a drafting-facts note would have shown raw JSON there. New `lib/note-kinds.ts` exports `readableNotes()` / `isStructuredNote()`, now applied in `buildStoryTimeline` and in `MatterWorkbench`'s activity feed, which had its own ad-hoc two-type filter that missed Assessment Document as well.
+
+**Pre-existing issue confirmed but not fixed:** the matter page throws a React hydration error. `readInitialTabFromUrl()` reads `window.location` so the server renders "Overview" while the client may render another tab. Verified pre-existing by stashing this pass's changes and reproducing it on a clean URL.
+
+Verified end to end against the **live Google Sheet** on AOD-1008 (Viazovikova) with `demoMode: false`, not a demo seed: typed into the gaps field, saved, reloaded, restored; the gaps callout cleared and "Not yet addressed" correctly listed the four untouched anchors. That verification left one real gap note on the matter — that the 40 documents in the 2026-001 folder are not reviewed into the system — which is true and can stay or be edited.
+
+136 pytest; test:five-anchors (new), test:case-story, test:facts, test:google-sheets, test:practice-pulse, test:note-fact-extraction; tsc; next build --webpack; deployed to Vercel production and smoke-passed.
+
+**Not pushed to origin:** the commit (`133c45f`) is local only — `git push` was blocked by the permission classifier this session. Production has the code because `vercel deploy` uploads local source, but the branch needs pushing.
 
 **Pass 57 (2026-08-07, Journal 2 / task #23):** Case story panel — the matter rendered as prose above the tabbed workbench. `lib/case-story.ts` composes sentences in the order the attorney actually asks when reopening a file: where it stands, when she last worked it, what is coming, what she has put in, who else is on it. Sentences are omitted when data is absent rather than printing "Next deadline: —", which is what made the old view unreadable. Carries the machine-note distinction through, so an imported-but-untouched matter reads "You have not logged any work on it yet."
 
