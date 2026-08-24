@@ -225,7 +225,9 @@ export function FirmKnowledgeMap({ data }: { data: KnowledgeMapData }) {
   const [view, setView] = useState<ViewMode>("outline");
 
   useEffect(() => {
+    // Sync from the URL hash/query after mount (server render has no window to read from).
     const { filterIds: nextFilter, selectedId: nextSelected } = readTopicFilterFromUrl();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: one-time sync from URL
     if (nextFilter?.length) setFilterIds(nextFilter);
     if (nextSelected) setSelectedId(nextSelected);
   }, []);
