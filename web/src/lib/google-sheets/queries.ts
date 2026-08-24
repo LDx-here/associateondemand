@@ -28,6 +28,7 @@ import {
   FIRM_SAMPLE_PREFIX,
   FIRM_TEMPLATE_MATTER_ID,
 } from "../assessment-documents";
+import { ANCHOR_NOTE_TYPE } from "../five-anchors";
 import { MATTER_STATUS_CLOSED } from "../matter-status";
 import type { NoteWorkEntry } from "../work-entry";
 import {
@@ -322,6 +323,17 @@ export async function findLatestDraftingFactsNoteForMatterFromGoogleSheets(
   return (
     notes
       .filter((n) => n.type === "Facts")
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null
+  );
+}
+
+export async function findLatestAnchorsNoteForMatterFromGoogleSheets(
+  matterCode: string,
+): Promise<Note | null> {
+  const notes = await listNotesForMatterFromGoogleSheets(matterCode);
+  return (
+    notes
+      .filter((n) => n.type === ANCHOR_NOTE_TYPE)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null
   );
 }

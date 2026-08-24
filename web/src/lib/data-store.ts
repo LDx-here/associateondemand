@@ -45,6 +45,7 @@ import {
   updateMatterDeadlineInAirtable,
   updateMatterInAirtable,
   updateNoteInAirtable,
+  findLatestAnchorsNoteForMatter,
 } from "./airtable/queries";
 import { isAirtableQuotaError } from "./airtable/client";
 import { isDemoMode, usesGoogleSheets } from "./data-store-config";
@@ -96,6 +97,7 @@ import {
   listDeliverableTemplateDocumentsFromGoogleSheets,
   createDocumentInGoogleSheets,
   registerDocumentInGoogleSheets,
+  findLatestAnchorsNoteForMatterFromGoogleSheets,
 } from "./google-sheets/queries";
 import {
   isValidLifecycleTransition,
@@ -117,6 +119,12 @@ import {
   serializeDraftingFacts,
   type DraftingFactsPayload,
 } from "./practice-area-facts";
+import {
+  ANCHOR_NOTE_TYPE,
+  parseAnchorIntakeNote,
+  serializeAnchorIntake,
+  type AnchorIntake,
+} from "./five-anchors";
 import {
   createAssignmentDemo,
   addDocument as addDocumentDemo,
@@ -205,6 +213,7 @@ function notesBackend() {
         findAgent: findLatestAgentNoteForMatterFromGoogleSheets,
         findProcedural: findLatestProceduralTimelineNoteForMatterFromGoogleSheets,
         findFacts: findLatestDraftingFactsNoteForMatterFromGoogleSheets,
+        findAnchors: findLatestAnchorsNoteForMatterFromGoogleSheets,
         findAssessmentOcr: findLatestAssessmentOcrNoteForMatterFromGoogleSheets,
       }
     : {
@@ -215,6 +224,7 @@ function notesBackend() {
         findAgent: findLatestAgentNoteForMatter,
         findProcedural: findLatestProceduralTimelineNoteForMatter,
         findFacts: findLatestDraftingFactsNoteForMatter,
+        findAnchors: findLatestAnchorsNoteForMatter,
         findAssessmentOcr: findLatestAssessmentOcrNoteForMatter,
       };
 }
@@ -982,6 +992,73 @@ export async function saveDraftingFactsForMatter(
     await nb.update(existing.id, matterId, content, "Attorney");
   } else {
     await nb.create(matterId, content, "Attorney", "Facts");
+  }
+  return normalized;
+}
+
+/**
+ * The Five Anchors intake for a matter. Stored as one typed Note per matter,
+ * the same way drafting facts persist — no new Sheets tab or column needed.
+ */
+export async function getAnchorIntakeForMatter(matterId: string): Promise<AnchorIntake | null> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const note = seed.notes
+      .filter((n) => n.matterId === matterId && n.type === ANCHOR_NOTE_TYPE)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    if (!note) return null;
+    return parseAnchorIntakeNote(note.content, matterId);
+  }
+  try {
+    const note = await notesBackend().findAnchors(matterId);
+    if (!note) return null;
+    return parseAnchorIntakeNote(note.content, matterId);
+  } catch (error) {
+    console.warn(`[AOD] anchor intake read failed for ${matterId}:`, error);
+    return null;
+  }
+}
+
+export async function saveAnchorIntakeForMatter(
+  matterId: string,
+  intake: AnchorIntake,
+): Promise<AnchorIntake> {
+  const matter = await getMatterByCode(matterId);
+  if (!matter) throw new Error(`Matter not found: ${matterId}`);
+  const normalized: AnchorIntake = {
+    ...intake,
+    matterId,
+    updatedAt: new Date().toISOString(),
+  };
+  const content = serializeAnchorIntake(normalized);
+
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const existing = seed.notes
+      .filter((n) => n.matterId === matterId && n.type === ANCHOR_NOTE_TYPE)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    if (existing) {
+      existing.content = content;
+      existing.author = "Attorney";
+      return normalized;
+    }
+    seed.notes.push({
+      id: `note-${Date.now()}`,
+      matterId,
+      author: "Attorney",
+      content,
+      createdAt: new Date().toISOString(),
+      type: ANCHOR_NOTE_TYPE,
+    });
+    return normalized;
+  }
+
+  const nb = notesBackend();
+  const existing = await nb.findAnchors(matterId);
+  if (existing) {
+    await nb.update(existing.id, matterId, content, "Attorney");
+  } else {
+    await nb.create(matterId, content, "Attorney", ANCHOR_NOTE_TYPE);
   }
   return normalized;
 }

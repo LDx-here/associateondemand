@@ -191,6 +191,24 @@ const multiline = buildStoryTimeline(
 );
 assert.equal(multiline[0].label, "First line");
 
+// Structured payload notes are storage, not events. Before this filter the
+// anchors intake showed up in "Recently on this matter" as a bare "Anchors",
+// and a drafting-facts note would have shown a slab of JSON.
+const structured = buildStoryTimeline(
+  matter(),
+  [
+    note("2026-08-05T12:00:00Z", { content: "Anchors\n{\"answers\":{}}", type: "Anchors" }),
+    note("2026-08-04T12:00:00Z", { content: '{"v":1,"practiceArea":"Immigration"}', type: "Facts" }),
+    note("2026-08-03T12:00:00Z", { content: '{"entries":[]}', type: "Procedural" }),
+    note("2026-08-02T12:00:00Z", { content: '{"pages":[]}', type: "Assessment Document" }),
+    note("2026-08-01T12:00:00Z", { content: "Called client about the hearing." }),
+  ],
+  [],
+  [],
+);
+assert.equal(structured.length, 1, "only the note she actually wrote is an event");
+assert.equal(structured[0].label, "Called client about the hearing.");
+
 assert.deepEqual(buildStoryTimeline(matter(), [], [], []), [], "empty case is safe");
 
 console.log("verify-case-story: OK");

@@ -37,9 +37,12 @@ import { MatterDocumentUpload, type DocumentUploadPayload } from "./MatterDocume
 import { cacheDocumentPreview, setBlobPreview } from "@/lib/document-preview-cache";
 import { MatterDocumentsList } from "./MatterDocumentsList";
 import { MatterHeaderEditModal } from "./MatterHeaderEditModal";
+import { MatterAnchorsPanel } from "./MatterAnchorsPanel";
+import { readableNotes } from "@/lib/note-kinds";
 
 const tabs = [
   "Overview",
+  "Case anchors",
   "Documents",
   "Case activity",
   "Procedural timeline",
@@ -173,7 +176,7 @@ export function MatterWorkbench({
     setTab("Documents");
   }
 
-  const activityNotes = notes.filter((n) => n.type !== "Procedural" && n.type !== "Facts");
+  const activityNotes = readableNotes(notes);
 
   return (
     <div className="space-y-4">
@@ -293,6 +296,8 @@ export function MatterWorkbench({
           demoMode={demoMode}
         />
       ) : null}
+
+      {tab === "Case anchors" ? <MatterAnchorsPanel matterId={matter.matterId} /> : null}
 
       {tab === "Documents" ? (
         <div className="space-y-4">

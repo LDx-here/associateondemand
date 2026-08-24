@@ -17,6 +17,7 @@
  */
 
 import type { Contact, Matter, Note, Task } from "./types";
+import { readableNotes } from "./note-kinds";
 import { lastAttorneyActivityAt } from "./practice-pulse";
 import { rollUpWork, toBillableHours } from "./work-entry";
 
@@ -207,7 +208,9 @@ export function buildStoryTimeline(
 ): StoryEvent[] {
   const events: StoryEvent[] = [];
 
-  for (const note of notes) {
+  // Structured payload notes (facts, anchors, OCR) are storage, not events —
+  // their first line is a type marker or raw JSON, never a sentence.
+  for (const note of readableNotes(notes)) {
     if (note.matterId !== matter.matterId) continue;
     const firstLine = note.content.split("\n")[0]?.trim() ?? "";
     events.push({

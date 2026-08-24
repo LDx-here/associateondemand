@@ -30,6 +30,7 @@ import {
   isFirmSampleDocument,
   parseDocumentCategory,
 } from "../assessment-documents";
+import { ANCHOR_NOTE_TYPE } from "../five-anchors";
 import { MATTER_STATUS_CLOSED } from "../matter-status";
 import { ASSIGNMENT_TRANSITIONS, buildDeliveredHistory, isValidAssignmentTransition } from "../assignment-transitions";
 import {
@@ -724,6 +725,14 @@ export async function findLatestDraftingFactsNoteForMatter(matterCode: string): 
     .filter((note) => note.type === "Facts")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return factNotes[0] ?? null;
+}
+
+export async function findLatestAnchorsNoteForMatter(matterCode: string): Promise<Note | null> {
+  const notes = await listNotesForMatterFromAirtable(matterCode);
+  const anchorNotes = notes
+    .filter((note) => note.type === ANCHOR_NOTE_TYPE)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return anchorNotes[0] ?? null;
 }
 
 export async function listLegalElementsFromAirtable(matterCode: string): Promise<LegalElementRow[]> {
