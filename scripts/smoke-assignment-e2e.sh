@@ -10,6 +10,11 @@
 #   AOD_API_URL             — Fly/docker API for optional real PM dispatch probe
 
 set -euo pipefail
+# Run the backgrounded dev server in its own process group so cleanup can kill
+# the whole tree (npm run start -> next start -> next-server), not just the
+# immediate child — otherwise an orphaned next-server can outlive this script
+# and keep any caller's pipe (e.g. `| tail`) open forever.
+set -m
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 cd "$ROOT"
 
@@ -17,12 +22,23 @@ PORT="${SMOKE_WEB_PORT:-3099}"
 WEB="http://127.0.0.1:${PORT}"
 SERVER_PID=""
 STARTED_SERVER=0
+SERVER_LOG="$(mktemp -t aod-smoke-web-server.XXXXXX.log)"
 
 cleanup() {
-  if [[ "$STARTED_SERVER" == "1" && "${SMOKE_KEEP_SERVER:-0}" != "1" && -n "$SERVER_PID" ]]; then
-    kill "$SERVER_PID" 2>/dev/null || true
-    wait "$SERVER_PID" 2>/dev/null || true
+  if [[ "$STARTED_SERVER" == "1" && "${SMOKE_KEEP_SERVER:-0}" != "1" ]]; then
+    if [[ -n "$SERVER_PID" ]]; then
+      kill -- "-$SERVER_PID" 2>/dev/null || kill "$SERVER_PID" 2>/dev/null || true
+      wait "$SERVER_PID" 2>/dev/null || true
+    fi
+    # Fallback: anything still bound to the smoke port (e.g. a reparented
+    # next-server that escaped the process group) gets killed by PID too.
+    local leftover
+    leftover="$(lsof -ti tcp:"$PORT" 2>/dev/null || true)"
+    if [[ -n "$leftover" ]]; then
+      kill -9 $leftover 2>/dev/null || true
+    fi
   fi
+  rm -f "$SERVER_LOG" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -35,8 +51,8 @@ if ! curl -sf "$WEB/api/health" >/dev/null 2>&1; then
     export AOD_AUTH_ENABLED=false
     export AOD_FORCE_DEMO_MODE=true
     npm run build >/dev/null
-    PORT="$PORT" AOD_FORCE_DEMO_MODE=true AOD_AUTH_ENABLED=false npm run start
-  ) &
+    exec env PORT="$PORT" AOD_FORCE_DEMO_MODE=true AOD_AUTH_ENABLED=false npm run start
+  ) >"$SERVER_LOG" 2>&1 &
   SERVER_PID=$!
   STARTED_SERVER=1
   for i in $(seq 1 45); do
