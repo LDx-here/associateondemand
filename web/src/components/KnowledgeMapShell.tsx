@@ -15,7 +15,9 @@ export function KnowledgeMapShell({ firmKnowledge }: { firmKnowledge: KnowledgeM
   const [tab, setTab] = useState<Tab>("firm");
 
   useEffect(() => {
+    // One-time hydration from the URL hash after mount (unavailable during SSR).
     const hash = typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restores the active tab from the URL hash once on mount
     if (hash.startsWith("patterns") || hash === "pattern-graph") setTab("patterns");
     if (hash.startsWith("firm-knowledge") || hash === "firm" || hash.startsWith("firm&")) setTab("firm");
   }, []);

@@ -63,7 +63,12 @@ export function LegalElementsPanel({
   const autoSeededForMatter = useRef<string | null>(null);
   const lastCaseType = useRef<string>(matter.caseType ?? "");
   const elementsRef = useRef(elements);
-  elementsRef.current = elements;
+  // Keep a ref mirror for the case-type-change effect below without adding
+  // `elements` (which changes on every save) to that effect's deps — mutate it
+  // in an effect rather than during render.
+  useEffect(() => {
+    elementsRef.current = elements;
+  }, [elements]);
 
   const coreElements = useMemo(
     () => coreFirmKnowledgeElementsForMatter(matter.caseType),
@@ -93,6 +98,7 @@ export function LegalElementsPanel({
 
   useEffect(() => {
     if (!assessmentDocId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears stale payload when the assessment document is removed
       setFetchedPayload(null);
       return;
     }
@@ -277,6 +283,7 @@ export function LegalElementsPanel({
       return;
     }
     autoSeededForMatter.current = key;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time seed of core elements when a matter opens empty
     void seedCoreElements("empty");
     // eslint-disable-next-line react-hooks/exhaustive-deps -- seed once per matter/caseType when empty
   }, [matter.matterId, matter.caseType, elements.length]);

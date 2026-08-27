@@ -106,6 +106,9 @@ export function DeliverableTemplateCatalog() {
   }, []);
 
   useEffect(() => {
+    // Fetch-on-mount (also re-runs if `refresh` identity changes) — not derived
+    // render state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- refresh() populates the catalog list from the API on mount
     void refresh();
   }, [refresh]);
 

@@ -23,6 +23,9 @@ export function ProceduralTimelinePanel({ matterId }: { matterId: string }) {
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
+    // Reset loading state on refetch (matterId change) — intentional
+    // synchronization with the prop, not derived render state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- shows the loading state again when matterId changes and a refetch starts
     setLoading(true);
     let cancelled = false;
 
