@@ -225,7 +225,10 @@ export function FirmKnowledgeMap({ data }: { data: KnowledgeMapData }) {
   const [view, setView] = useState<ViewMode>("outline");
 
   useEffect(() => {
+    // One-time hydration from the URL hash/query after mount (SSR has no
+    // `window`, so this can't be computed during the initial render).
     const { filterIds: nextFilter, selectedId: nextSelected } = readTopicFilterFromUrl();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs filter/selection from the URL once on mount
     if (nextFilter?.length) setFilterIds(nextFilter);
     if (nextSelected) setSelectedId(nextSelected);
   }, []);
