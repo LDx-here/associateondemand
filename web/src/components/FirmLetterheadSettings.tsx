@@ -22,6 +22,9 @@ export function FirmLetterheadSettings() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    // localStorage isn't available during SSR, so the profile is hydrated once
+    // on mount rather than computed during the initial render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration from localStorage on mount
     setProfile(getFirmLetterhead());
     setLoaded(true);
   }, []);

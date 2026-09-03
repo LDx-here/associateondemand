@@ -133,6 +133,9 @@ export function AssignmentDetailDrawer({
   }, [itemId, onItemUpdated]);
 
   useEffect(() => {
+    // Reset to the newly opened assignment and refetch its preview — intentional
+    // synchronization with the `itemId` prop, not derived render state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local copy when the drawer opens a different assignment
     setItem(initialItem);
     void loadPreview();
     // Re-load only when opening a different assignment, not when parent list refreshes.

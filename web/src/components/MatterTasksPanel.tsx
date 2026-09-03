@@ -193,6 +193,9 @@ export function MatterTasksPanel({
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
+    // Mirrors the `initialTasks` prop into local editable state when the parent
+    // refetches — intentional synchronization, not derived render state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resyncs local tasks copy when the parent's list changes
     setTasks(initialTasks);
   }, [initialTasks]);
 
