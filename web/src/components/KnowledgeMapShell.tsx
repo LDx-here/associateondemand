@@ -15,7 +15,9 @@ export function KnowledgeMapShell({ firmKnowledge }: { firmKnowledge: KnowledgeM
   const [tab, setTab] = useState<Tab>("firm");
 
   useEffect(() => {
+    // Sync the active tab from the URL hash after mount (server render has no window).
     const hash = typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: one-time sync from URL
     if (hash.startsWith("patterns") || hash === "pattern-graph") setTab("patterns");
     if (hash.startsWith("firm-knowledge") || hash === "firm" || hash.startsWith("firm&")) setTab("firm");
   }, []);

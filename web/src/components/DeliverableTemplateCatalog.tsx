@@ -106,6 +106,7 @@ export function DeliverableTemplateCatalog() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: load catalog on mount
     void refresh();
   }, [refresh]);
 
