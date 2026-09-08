@@ -47,6 +47,7 @@ import {
   updateNoteInAirtable,
   findLatestAnchorsNoteForMatter,
   findLatestJourneyNoteForMatter,
+  findLatestInvoicesNoteForMatter,
 } from "./airtable/queries";
 import { isAirtableQuotaError } from "./airtable/client";
 import { isDemoMode, usesGoogleSheets } from "./data-store-config";
@@ -100,6 +101,7 @@ import {
   registerDocumentInGoogleSheets,
   findLatestAnchorsNoteForMatterFromGoogleSheets,
   findLatestJourneyNoteForMatterFromGoogleSheets,
+  findLatestInvoicesNoteForMatterFromGoogleSheets,
 } from "./google-sheets/queries";
 import {
   isValidLifecycleTransition,
@@ -133,6 +135,12 @@ import {
   serializeJourneyState,
   type JourneyState,
 } from "./case-journey";
+import {
+  INVOICE_NOTE_TYPE,
+  parseInvoicesNote,
+  serializeInvoices,
+  type Invoice,
+} from "./invoice";
 import {
   createAssignmentDemo,
   addDocument as addDocumentDemo,
@@ -223,6 +231,7 @@ function notesBackend() {
         findFacts: findLatestDraftingFactsNoteForMatterFromGoogleSheets,
         findAnchors: findLatestAnchorsNoteForMatterFromGoogleSheets,
         findJourney: findLatestJourneyNoteForMatterFromGoogleSheets,
+        findInvoices: findLatestInvoicesNoteForMatterFromGoogleSheets,
         findAssessmentOcr: findLatestAssessmentOcrNoteForMatterFromGoogleSheets,
       }
     : {
@@ -235,6 +244,7 @@ function notesBackend() {
         findFacts: findLatestDraftingFactsNoteForMatter,
         findAnchors: findLatestAnchorsNoteForMatter,
         findJourney: findLatestJourneyNoteForMatter,
+        findInvoices: findLatestInvoicesNoteForMatter,
         findAssessmentOcr: findLatestAssessmentOcrNoteForMatter,
       };
 }
@@ -1131,6 +1141,79 @@ export async function saveJourneyStateForMatter(
     await nb.create(matterId, content, "Attorney", JOURNEY_NOTE_TYPE);
   }
   return normalized;
+}
+
+/** Client invoices for a matter, kept together in one typed Note. */
+export async function listInvoicesForMatter(matterId: string): Promise<Invoice[]> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const note = seed.notes
+      .filter((n) => n.matterId === matterId && n.type === INVOICE_NOTE_TYPE)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    return note ? parseInvoicesNote(note.content) : [];
+  }
+  try {
+    const note = await notesBackend().findInvoices(matterId);
+    return note ? parseInvoicesNote(note.content) : [];
+  } catch (error) {
+    console.warn(`[AOD] invoice read failed for ${matterId}:`, error);
+    return [];
+  }
+}
+
+export async function saveInvoicesForMatter(
+  matterId: string,
+  invoices: Invoice[],
+): Promise<Invoice[]> {
+  const matter = await getMatterByCode(matterId);
+  if (!matter) throw new Error(`Matter not found: ${matterId}`);
+  const content = serializeInvoices(invoices);
+
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const existing = seed.notes
+      .filter((n) => n.matterId === matterId && n.type === INVOICE_NOTE_TYPE)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    if (existing) {
+      existing.content = content;
+      return invoices;
+    }
+    seed.notes.push({
+      id: `note-${Date.now()}`,
+      matterId,
+      author: "Attorney",
+      content,
+      createdAt: new Date().toISOString(),
+      type: INVOICE_NOTE_TYPE,
+    });
+    return invoices;
+  }
+
+  const nb = notesBackend();
+  const existing = await nb.findInvoices(matterId);
+  if (existing) {
+    await nb.update(existing.id, matterId, content, "Attorney");
+  } else {
+    await nb.create(matterId, content, "Attorney", INVOICE_NOTE_TYPE);
+  }
+  return invoices;
+}
+
+/** Mark one invoice paid. Idempotent — a replayed Stripe webhook is a no-op. */
+export async function markInvoicePaid(
+  matterId: string,
+  invoiceId: string,
+  paidAt = new Date().toISOString(),
+): Promise<boolean> {
+  const invoices = await listInvoicesForMatter(matterId);
+  const target = invoices.find((i) => i.id === invoiceId);
+  if (!target) return false;
+  if (target.status === "paid") return true;
+  await saveInvoicesForMatter(
+    matterId,
+    invoices.map((i) => (i.id === invoiceId ? { ...i, status: "paid" as const, paidAt } : i)),
+  );
+  return true;
 }
 
 export async function getProceduralTimelineForMatter(

@@ -32,7 +32,11 @@ export async function POST(req: Request) {
     if (!result.handled) {
       return NextResponse.json({ received: true, skipped: result.reason });
     }
-    return NextResponse.json({ received: true, inboxItemId: result.inboxItemId });
+    return NextResponse.json({
+      received: true,
+      ...(result.inboxItemId ? { inboxItemId: result.inboxItemId } : {}),
+      ...(result.invoiceId ? { invoiceId: result.invoiceId } : {}),
+    });
   }
 
   return NextResponse.json({ received: true, ignored: event.type });

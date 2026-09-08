@@ -30,6 +30,7 @@ import {
 } from "../assessment-documents";
 import { ANCHOR_NOTE_TYPE } from "../five-anchors";
 import { JOURNEY_NOTE_TYPE } from "../case-journey";
+import { INVOICE_NOTE_TYPE } from "../invoice";
 import { MATTER_STATUS_CLOSED } from "../matter-status";
 import type { NoteWorkEntry } from "../work-entry";
 import {
@@ -324,6 +325,17 @@ export async function findLatestDraftingFactsNoteForMatterFromGoogleSheets(
   return (
     notes
       .filter((n) => n.type === "Facts")
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null
+  );
+}
+
+export async function findLatestInvoicesNoteForMatterFromGoogleSheets(
+  matterCode: string,
+): Promise<Note | null> {
+  const notes = await listNotesForMatterFromGoogleSheets(matterCode);
+  return (
+    notes
+      .filter((n) => n.type === INVOICE_NOTE_TYPE)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null
   );
 }

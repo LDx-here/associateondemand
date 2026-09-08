@@ -38,11 +38,13 @@ import { cacheDocumentPreview, setBlobPreview } from "@/lib/document-preview-cac
 import { MatterDocumentsList } from "./MatterDocumentsList";
 import { MatterHeaderEditModal } from "./MatterHeaderEditModal";
 import { MatterAnchorsPanel } from "./MatterAnchorsPanel";
+import { MatterBillingPanel } from "./MatterBillingPanel";
 import { readableNotes } from "@/lib/note-kinds";
 
 const tabs = [
   "Overview",
   "Case anchors",
+  "Billing",
   "Documents",
   "Case activity",
   "Procedural timeline",
@@ -298,6 +300,15 @@ export function MatterWorkbench({
       ) : null}
 
       {tab === "Case anchors" ? <MatterAnchorsPanel matterId={matter.matterId} /> : null}
+
+      {tab === "Billing" ? (
+        <MatterBillingPanel
+          matterId={matter.matterId}
+          matterTitle={matterHeader.title ?? matterHeader.matterId}
+          notes={notes}
+          contacts={initialContacts}
+        />
+      ) : null}
 
       {tab === "Documents" ? (
         <div className="space-y-4">

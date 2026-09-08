@@ -10,6 +10,7 @@
 
 import { ANCHOR_NOTE_TYPE } from "./five-anchors";
 import { JOURNEY_NOTE_TYPE } from "./case-journey";
+import { INVOICE_NOTE_TYPE } from "./invoice";
 import { ASSESSMENT_DOCUMENT_NOTE_TYPE } from "./assessment-documents";
 import { DRAFTING_FACTS_NOTE_TYPE } from "./practice-area-facts";
 
@@ -22,6 +23,7 @@ export const STRUCTURED_NOTE_TYPES: readonly string[] = [
   ASSESSMENT_DOCUMENT_NOTE_TYPE,
   ANCHOR_NOTE_TYPE,
   JOURNEY_NOTE_TYPE,
+  INVOICE_NOTE_TYPE,
 ];
 
 export function isStructuredNote(note: { type?: string | null }): boolean {
