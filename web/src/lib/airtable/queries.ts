@@ -31,6 +31,7 @@ import {
   parseDocumentCategory,
 } from "../assessment-documents";
 import { ANCHOR_NOTE_TYPE } from "../five-anchors";
+import { JOURNEY_NOTE_TYPE } from "../case-journey";
 import { MATTER_STATUS_CLOSED } from "../matter-status";
 import { ASSIGNMENT_TRANSITIONS, buildDeliveredHistory, isValidAssignmentTransition } from "../assignment-transitions";
 import {
@@ -725,6 +726,14 @@ export async function findLatestDraftingFactsNoteForMatter(matterCode: string): 
     .filter((note) => note.type === "Facts")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return factNotes[0] ?? null;
+}
+
+export async function findLatestJourneyNoteForMatter(matterCode: string): Promise<Note | null> {
+  const notes = await listNotesForMatterFromAirtable(matterCode);
+  const journeyNotes = notes
+    .filter((note) => note.type === JOURNEY_NOTE_TYPE)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return journeyNotes[0] ?? null;
 }
 
 export async function findLatestAnchorsNoteForMatter(matterCode: string): Promise<Note | null> {

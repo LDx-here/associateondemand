@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { CaseJourneyPanel } from "@/components/CaseJourneyPanel";
 import { CaseStoryPanel } from "@/components/CaseStoryPanel";
 import { MatterWorkbench } from "@/components/MatterWorkbench";
 import {
@@ -62,6 +63,13 @@ export default async function MatterDetailPage({ params }: Props) {
         tasks={tasks}
         contacts={contacts}
         documents={documents}
+      />
+      {/* Where this sits in the arc of its case type — read before the tabs,
+          since "where are we and what is next" is the first question. */}
+      <CaseJourneyPanel
+        matterId={matter.matterId}
+        caseType={matter.caseType}
+        proceduralPosture={matter.proceduralPosture}
       />
       <MatterWorkbench
       demoMode={demo}

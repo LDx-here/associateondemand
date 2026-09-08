@@ -29,6 +29,7 @@ import {
   FIRM_TEMPLATE_MATTER_ID,
 } from "../assessment-documents";
 import { ANCHOR_NOTE_TYPE } from "../five-anchors";
+import { JOURNEY_NOTE_TYPE } from "../case-journey";
 import { MATTER_STATUS_CLOSED } from "../matter-status";
 import type { NoteWorkEntry } from "../work-entry";
 import {
@@ -323,6 +324,17 @@ export async function findLatestDraftingFactsNoteForMatterFromGoogleSheets(
   return (
     notes
       .filter((n) => n.type === "Facts")
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null
+  );
+}
+
+export async function findLatestJourneyNoteForMatterFromGoogleSheets(
+  matterCode: string,
+): Promise<Note | null> {
+  const notes = await listNotesForMatterFromGoogleSheets(matterCode);
+  return (
+    notes
+      .filter((n) => n.type === JOURNEY_NOTE_TYPE)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null
   );
 }

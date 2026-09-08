@@ -46,6 +46,7 @@ import {
   updateMatterInAirtable,
   updateNoteInAirtable,
   findLatestAnchorsNoteForMatter,
+  findLatestJourneyNoteForMatter,
 } from "./airtable/queries";
 import { isAirtableQuotaError } from "./airtable/client";
 import { isDemoMode, usesGoogleSheets } from "./data-store-config";
@@ -98,6 +99,7 @@ import {
   createDocumentInGoogleSheets,
   registerDocumentInGoogleSheets,
   findLatestAnchorsNoteForMatterFromGoogleSheets,
+  findLatestJourneyNoteForMatterFromGoogleSheets,
 } from "./google-sheets/queries";
 import {
   isValidLifecycleTransition,
@@ -125,6 +127,12 @@ import {
   serializeAnchorIntake,
   type AnchorIntake,
 } from "./five-anchors";
+import {
+  JOURNEY_NOTE_TYPE,
+  parseJourneyStateNote,
+  serializeJourneyState,
+  type JourneyState,
+} from "./case-journey";
 import {
   createAssignmentDemo,
   addDocument as addDocumentDemo,
@@ -214,6 +222,7 @@ function notesBackend() {
         findProcedural: findLatestProceduralTimelineNoteForMatterFromGoogleSheets,
         findFacts: findLatestDraftingFactsNoteForMatterFromGoogleSheets,
         findAnchors: findLatestAnchorsNoteForMatterFromGoogleSheets,
+        findJourney: findLatestJourneyNoteForMatterFromGoogleSheets,
         findAssessmentOcr: findLatestAssessmentOcrNoteForMatterFromGoogleSheets,
       }
     : {
@@ -225,6 +234,7 @@ function notesBackend() {
         findProcedural: findLatestProceduralTimelineNoteForMatter,
         findFacts: findLatestDraftingFactsNoteForMatter,
         findAnchors: findLatestAnchorsNoteForMatter,
+        findJourney: findLatestJourneyNoteForMatter,
         findAssessmentOcr: findLatestAssessmentOcrNoteForMatter,
       };
 }
@@ -1059,6 +1069,66 @@ export async function saveAnchorIntakeForMatter(
     await nb.update(existing.id, matterId, content, "Attorney");
   } else {
     await nb.create(matterId, content, "Attorney", ANCHOR_NOTE_TYPE);
+  }
+  return normalized;
+}
+
+/** Where a matter stands on its case journey. One typed Note per matter. */
+export async function getJourneyStateForMatter(matterId: string): Promise<JourneyState | null> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const note = seed.notes
+      .filter((n) => n.matterId === matterId && n.type === JOURNEY_NOTE_TYPE)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    if (!note) return null;
+    return parseJourneyStateNote(note.content, matterId);
+  }
+  try {
+    const note = await notesBackend().findJourney(matterId);
+    if (!note) return null;
+    return parseJourneyStateNote(note.content, matterId);
+  } catch (error) {
+    console.warn(`[AOD] journey read failed for ${matterId}:`, error);
+    return null;
+  }
+}
+
+export async function saveJourneyStateForMatter(
+  matterId: string,
+  state: JourneyState,
+): Promise<JourneyState> {
+  const matter = await getMatterByCode(matterId);
+  if (!matter) throw new Error(`Matter not found: ${matterId}`);
+  const normalized: JourneyState = { ...state, matterId, updatedAt: new Date().toISOString() };
+  const content = serializeJourneyState(normalized);
+
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const existing = seed.notes
+      .filter((n) => n.matterId === matterId && n.type === JOURNEY_NOTE_TYPE)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    if (existing) {
+      existing.content = content;
+      existing.author = "Attorney";
+      return normalized;
+    }
+    seed.notes.push({
+      id: `note-${Date.now()}`,
+      matterId,
+      author: "Attorney",
+      content,
+      createdAt: new Date().toISOString(),
+      type: JOURNEY_NOTE_TYPE,
+    });
+    return normalized;
+  }
+
+  const nb = notesBackend();
+  const existing = await nb.findJourney(matterId);
+  if (existing) {
+    await nb.update(existing.id, matterId, content, "Attorney");
+  } else {
+    await nb.create(matterId, content, "Attorney", JOURNEY_NOTE_TYPE);
   }
   return normalized;
 }

@@ -36,7 +36,8 @@
     "scan:case-state": "tsx scripts/scan-case-state.mjs",
     "test:case-story": "tsx scripts/verify-case-story.mjs",
     "test:work-detection": "tsx scripts/verify-work-detection.mjs",
-    "test:five-anchors": "tsx scripts/verify-five-anchors.mjs"
+    "test:five-anchors": "tsx scripts/verify-five-anchors.mjs",
+    "test:case-journey": "tsx scripts/verify-case-journey.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
