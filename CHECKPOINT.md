@@ -1,6 +1,32 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-08-24 (CDT) — Pass 59: the Five Anchors intake (manual, no AI)
+**Last updated:** 2026-09-07 (CDT) — Pass 60-61: case journey + the billing loop
+
+**Pass 61 (2026-09-07, the billing loop):** Her ask: *"you can start a matter, add a contact, and generate an email that can be sent directly to the client with their invoice, and then it's set up with billing for them to just pay."* New **Billing** tab on the matter.
+
+`lib/invoice.ts` builds lines from time logged on notes, plus lines she adds by hand for a flat fee or a case expense. Every invoice records the note ids behind its lines, so `billedNoteIds()` keeps the same hour from going out twice. Money is integer cents end to end; due dates are built as local dates, not UTC. The email is plain text, itemized, and copied — nothing sends from the app, so no client receives a message she has not read.
+
+Stripe: a payment link per invoice via a Checkout Session in payment mode, metadata `{matterId, invoiceId}`. `handleCheckoutSessionCompleted` now routes on that metadata to `markInvoicePaid` (idempotent) while marketplace assignment sessions keep their old path. Requesting a link twice returns the stored URL rather than opening a second way to pay one bill.
+
+**Her hourly rate starts unset and invoicing is blocked until she enters it** — a default rate would put a number on a real client's bill she never chose. Stored in `lib/billing-settings.ts`, same browser-local model as firm letterhead.
+
+**Still needs her:** `STRIPE_SECRET_KEY` + `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are set nowhere (local or Vercel), so the payment-link button returns a clear 503 and the email falls back to "reply and I will send payment details." Verified that path. Also: no time is logged on any real matter yet, so unbilled work reads empty until she starts logging it from the note composer.
+
+Verified on the live Sheet on Hammond AOD-1007 — invoice persisted, lines and total rendered, email generated with correct dates and amounts — then the test invoice was removed, leaving the matter clean.
+
+**Pass 60 (2026-09-07, the case journey):** Her ask: *"the timeline I want to be able to see: okay, this is where we started, this is where we are right now, and based on the template, this is typically the last of the pieces that we'll have to anticipate in preparation."*
+
+`lib/case-journey.ts` carries two journeys transcribed from how she walked her own matters, not from a treatise. **Removal defense** (12 steps): NTA, master calendar scheduled, EOIR-28, written pleadings received and answered, scheduling order received and answered, biometrics, waiting on an individual hearing date, then the packet once that date lands — declaration, country conditions, witness testimony, exhibit index, pre-hearing brief. **Injury claim** (8 steps, the Hammond UM sequence): injury, investigation, letter of rep to the adjuster, adjuster inquiries answered, waiting on the offer, offer received, accounting and liens (case expenses, Medicaid lien, subrogation), disbursement.
+
+The load-bearing idea is `awaiting: "you" | "them"`. Her description kept returning to it — "waiting on biometrics," "waiting on a date for the court," "waiting on the settlement." Every step knows whose move it is, because a status word alone never says. The panel leads with that line.
+
+Manual like the anchors: clicking a step moves the matter. Posture supplies only the opening guess via `proposeCurrentStepId`; a step id missing from a template falls back to asking her rather than showing a wrong position. Persists as a typed `Journey` note.
+
+Verified on the live Sheet against both real matters: Viazovikova AOD-1008 opened at "waiting on an individual hearing date" (step 9 of 12, their move, hearing packet listed) and Hammond AOD-1007 moved by click to "waiting on the settlement offer" (step 5 of 8, their move).
+
+**Process note from her, now standing:** *"it might make more sense for us to plan it, clean it up, and then launch it wherever we're going."* Batch production deploys instead of shipping each slice as it lands.
+
+**GitHub is behind.** `git push` is blocked by the permission classifier in this session, so commits are local only while Vercel deploys carry the code to production from local source. She needs to push, or approve pushes.
 
 **Pass 59 (2026-08-24, the Five Anchors intake — manual-first):** The blueprint's intake structure as a real screen, on a new **Case anchors** tab in the matter workbench: Facts, Legal context, Documents and evidence, Procedural posture, Uncertainty and gaps.
 
