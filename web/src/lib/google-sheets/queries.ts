@@ -31,6 +31,7 @@ import {
 import { ANCHOR_NOTE_TYPE } from "../five-anchors";
 import { JOURNEY_NOTE_TYPE } from "../case-journey";
 import { INVOICE_NOTE_TYPE } from "../invoice";
+import { BILLING_SETTINGS_NOTE_TYPE } from "../billing-settings";
 import { MATTER_STATUS_CLOSED } from "../matter-status";
 import type { NoteWorkEntry } from "../work-entry";
 import {
@@ -325,6 +326,17 @@ export async function findLatestDraftingFactsNoteForMatterFromGoogleSheets(
   return (
     notes
       .filter((n) => n.type === "Facts")
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null
+  );
+}
+
+export async function findLatestBillingSettingsNoteFromGoogleSheets(
+  matterCode: string,
+): Promise<Note | null> {
+  const notes = await listNotesForMatterFromGoogleSheets(matterCode);
+  return (
+    notes
+      .filter((n) => n.type === BILLING_SETTINGS_NOTE_TYPE)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null
   );
 }

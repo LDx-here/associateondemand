@@ -160,4 +160,31 @@ assert.deepEqual(
 assert.deepEqual([...billedNoteIds([invoice])].sort(), ["n1", "n2"]);
 assert.equal(billedNoteIds([]).size, 0);
 
+// --- Billing settings: unset rate must stay unset -----------------------------
+const {
+  DEFAULT_BILLING_SETTINGS,
+  normalizeBillingSettings,
+  parseBillingSettingsNote,
+  serializeBillingSettings,
+  hasBillingRate,
+} = await import("../src/lib/billing-settings.ts");
+
+assert.equal(DEFAULT_BILLING_SETTINGS.hourlyRateCents, null, "no default rate is ever assumed");
+assert.equal(hasBillingRate(DEFAULT_BILLING_SETTINGS), false);
+
+// A zero or negative rate is not a rate — it would bill $0.00 lines silently.
+assert.equal(normalizeBillingSettings({ hourlyRateCents: 0 }).hourlyRateCents, null);
+assert.equal(normalizeBillingSettings({ hourlyRateCents: -100 }).hourlyRateCents, null);
+assert.equal(normalizeBillingSettings({ hourlyRateCents: "250" }).hourlyRateCents, null);
+assert.equal(normalizeBillingSettings({ hourlyRateCents: 25000 }).hourlyRateCents, 25000);
+assert.equal(hasBillingRate(normalizeBillingSettings({ hourlyRateCents: 25000 })), true);
+
+assert.equal(normalizeBillingSettings({ termDays: 0 }).termDays, 30, "bad term falls back to 30");
+assert.equal(normalizeBillingSettings({ termDays: 14 }).termDays, 14);
+
+const settingsNote = serializeBillingSettings({ ...DEFAULT_BILLING_SETTINGS, hourlyRateCents: 30000 });
+assert.equal(parseBillingSettingsNote(settingsNote).hourlyRateCents, 30000);
+assert.equal(parseBillingSettingsNote("").hourlyRateCents, null);
+assert.equal(parseBillingSettingsNote("not json").hourlyRateCents, null, "garbage never yields a rate");
+
 console.log("invoice: all checks passed");

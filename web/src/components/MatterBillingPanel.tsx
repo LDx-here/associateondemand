@@ -10,13 +10,20 @@ import {
   formatInvoiceEmail,
   invoiceTotals,
   nextInvoiceNumber,
+  timeLineAmountCents,
   usdToCents,
   type Invoice,
   type InvoiceLine,
 } from "@/lib/invoice";
-import { getBillingSettings, saveBillingSettings, type BillingSettings } from "@/lib/billing-settings";
+import { DEFAULT_BILLING_SETTINGS, type BillingSettings } from "@/lib/billing-settings";
 import type { Contact, Note } from "@/lib/types";
 import { roundToBillingIncrement } from "@/lib/work-entry";
+
+function todayIso(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
 
 /**
  * Billing for one matter: turn logged work into an invoice, get a payment
@@ -46,12 +53,30 @@ export function MatterBillingPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  const [manual, setManual] = useState({ kind: "expense" as "fee" | "expense", description: "", amount: "" });
+  const [manual, setManual] = useState({
+    kind: "expense" as "fee" | "expense" | "time",
+    description: "",
+    amount: "",
+    hours: "",
+    date: todayIso(),
+  });
 
   useEffect(() => {
-    const s = getBillingSettings();
-    setSettings(s);
-    setRateInput(s.hourlyRateCents ? (s.hourlyRateCents / 100).toFixed(2) : "");
+    let cancelled = false;
+    void fetch("/api/firm/billing")
+      .then((r) => r.json())
+      .then((data: { settings?: BillingSettings }) => {
+        if (cancelled) return;
+        const s = data.settings ?? { ...DEFAULT_BILLING_SETTINGS };
+        setSettings(s);
+        setRateInput(s.hourlyRateCents ? (s.hourlyRateCents / 100).toFixed(2) : "");
+      })
+      .catch(() => {
+        if (!cancelled) setSettings({ ...DEFAULT_BILLING_SETTINGS });
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -93,14 +118,32 @@ export function MatterBillingPanel({
     [matterId],
   );
 
-  function commitRate() {
+  async function commitRate() {
     const cents = usdToCents(rateInput);
     if (cents === null || cents <= 0) {
       setError("Enter an hourly rate like 250 or 250.00.");
       return;
     }
+    if (cents === settings?.hourlyRateCents) return;
     setError(null);
-    setSettings(saveBillingSettings({ hourlyRateCents: cents }));
+    setBusy(true);
+    try {
+      const resp = await fetch("/api/firm/billing", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: { hourlyRateCents: cents } }),
+      });
+      const data = (await resp.json()) as { settings?: BillingSettings; error?: string };
+      if (!resp.ok || !data.settings) {
+        setError(data.error ?? "Could not save your rate.");
+        return;
+      }
+      setSettings(data.settings);
+    } catch {
+      setError("Could not save your rate.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   const rateCents = settings?.hourlyRateCents ?? null;
@@ -125,25 +168,71 @@ export function MatterBillingPanel({
     void persist([...invoices, invoice]);
   }
 
+  /**
+   * Add a line by hand. Time lines exist because work she never wrote a note
+   * for is exactly the work that goes unbilled — her words: "I lose lots of
+   * time not billed."
+   */
   function addManualLine() {
     if (!draft) return;
-    const cents = usdToCents(manual.amount);
-    if (cents === null || cents === 0 || !manual.description.trim()) {
-      setError("A description and an amount like 45.00 are both needed.");
+    if (!manual.description.trim()) {
+      setError("Give the line a description.");
       return;
     }
+
+    let line: InvoiceLine;
+    if (manual.kind === "time") {
+      const hours = Number(manual.hours);
+      if (!rateCents) {
+        setError("Set your hourly rate before adding time.");
+        return;
+      }
+      if (!Number.isFinite(hours) || hours <= 0) {
+        setError("Enter hours like 1.5 or 0.5.");
+        return;
+      }
+      const minutes = Math.round(hours * 60);
+      line = {
+        id: `time-manual-${Date.now()}`,
+        kind: "time",
+        date: manual.date,
+        description: manual.description.trim(),
+        minutes,
+        rateCents,
+        amountCents: timeLineAmountCents(minutes, rateCents),
+      };
+    } else {
+      const cents = usdToCents(manual.amount);
+      if (cents === null || cents === 0) {
+        setError("Enter an amount like 45.00.");
+        return;
+      }
+      line = {
+        id: `${manual.kind}-${Date.now()}`,
+        kind: manual.kind,
+        date: manual.date,
+        description: manual.description.trim(),
+        amountCents: cents,
+      };
+    }
+
     setError(null);
-    const line: InvoiceLine = {
-      id: `${manual.kind}-${Date.now()}`,
-      kind: manual.kind,
-      date: new Date().toISOString().slice(0, 10),
-      description: manual.description.trim(),
-      amountCents: cents,
-    };
     void persist(
       invoices.map((i) => (i.id === draft.id ? { ...i, lines: [...i.lines, line] } : i)),
     );
-    setManual({ ...manual, description: "", amount: "" });
+    setManual({ ...manual, description: "", amount: "", hours: "" });
+  }
+
+  /** Correct the date on a draft line — the day the work happened, not the
+      day it was logged. */
+  function setLineDate(invoiceId: string, lineId: string, date: string) {
+    void persist(
+      invoices.map((i) =>
+        i.id === invoiceId
+          ? { ...i, lines: i.lines.map((l) => (l.id === lineId ? { ...l, date } : l)) }
+          : i,
+      ),
+    );
   }
 
   function removeLine(invoiceId: string, lineId: string) {
@@ -243,14 +332,14 @@ export function MatterBillingPanel({
                 value={rateInput}
                 placeholder="250.00"
                 onChange={(e) => setRateInput(e.target.value)}
-                onBlur={commitRate}
+                onBlur={() => void commitRate()}
               />
               <span className="text-sm text-slate-500">/ hr</span>
             </div>
           </div>
           {rateCents ? (
             <p className="pb-1 text-xs text-slate-500">
-              Saved on this browser. Change it any time.
+              Saved to your firm settings — it follows you to any browser.
             </p>
           ) : (
             <p className="pb-1 text-xs text-amber-800">
@@ -264,10 +353,20 @@ export function MatterBillingPanel({
           {!rateCents ? (
             <p className="text-sm text-slate-600">Enter your rate to see unbilled work.</p>
           ) : unbilledLines.length === 0 ? (
-            <p className="text-sm text-slate-600">
-              No unbilled time on this matter. Time logged on a note — pick an activity when you save
-              one — shows up here ready to invoice.
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-slate-600">
+                No unbilled time yet. Time you log on a note lands here — and you can start an
+                invoice now and add time by hand for work already done.
+              </p>
+              <button
+                type="button"
+                disabled={busy || Boolean(draft)}
+                className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                onClick={startInvoice}
+              >
+                {draft ? "Draft already open" : "Start an invoice"}
+              </button>
+            </div>
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-slate-700">
@@ -328,7 +427,17 @@ export function MatterBillingPanel({
                   {invoice.lines.map((line) => (
                     <li key={line.id} className="flex items-baseline justify-between gap-3 py-1.5 text-sm">
                       <span className="min-w-0 text-slate-700">
-                        <span className="font-mono text-xs text-slate-500">{line.date}</span>{" "}
+                        {invoice.status === "draft" ? (
+                          <input
+                            type="date"
+                            aria-label={`Date for ${line.description}`}
+                            className="mr-1 rounded border border-transparent bg-transparent px-1 font-mono text-xs text-slate-500 hover:border-slate-300"
+                            value={line.date}
+                            onChange={(e) => setLineDate(invoice.id, line.id, e.target.value)}
+                          />
+                        ) : (
+                          <span className="font-mono text-xs text-slate-500">{line.date} </span>
+                        )}
                         {line.description}
                         {line.kind === "time" && line.minutes ? (
                           <span className="text-slate-500">
@@ -372,11 +481,21 @@ export function MatterBillingPanel({
                       aria-label="Line type"
                       className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm"
                       value={manual.kind}
-                      onChange={(e) => setManual({ ...manual, kind: e.target.value as "fee" | "expense" })}
+                      onChange={(e) =>
+                        setManual({ ...manual, kind: e.target.value as "fee" | "expense" | "time" })
+                      }
                     >
                       <option value="expense">Expense</option>
                       <option value="fee">Flat fee</option>
+                      <option value="time">Time</option>
                     </select>
+                    <input
+                      type="date"
+                      aria-label="Line date"
+                      className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+                      value={manual.date}
+                      onChange={(e) => setManual({ ...manual, date: e.target.value })}
+                    />
                     <input
                       aria-label="Line description"
                       placeholder="Certified medical records"
@@ -384,14 +503,25 @@ export function MatterBillingPanel({
                       value={manual.description}
                       onChange={(e) => setManual({ ...manual, description: e.target.value })}
                     />
-                    <input
-                      aria-label="Amount"
-                      inputMode="decimal"
-                      placeholder="45.00"
-                      className="w-24 rounded-md border border-slate-300 px-2 py-1 text-sm"
-                      value={manual.amount}
-                      onChange={(e) => setManual({ ...manual, amount: e.target.value })}
-                    />
+                    {manual.kind === "time" ? (
+                      <input
+                        aria-label="Hours"
+                        inputMode="decimal"
+                        placeholder="1.5 hr"
+                        className="w-24 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                        value={manual.hours}
+                        onChange={(e) => setManual({ ...manual, hours: e.target.value })}
+                      />
+                    ) : (
+                      <input
+                        aria-label="Amount"
+                        inputMode="decimal"
+                        placeholder="45.00"
+                        className="w-24 rounded-md border border-slate-300 px-2 py-1 text-sm"
+                        value={manual.amount}
+                        onChange={(e) => setManual({ ...manual, amount: e.target.value })}
+                      />
+                    )}
                     <button
                       type="button"
                       disabled={busy}

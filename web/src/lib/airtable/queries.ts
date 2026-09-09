@@ -33,6 +33,7 @@ import {
 import { ANCHOR_NOTE_TYPE } from "../five-anchors";
 import { JOURNEY_NOTE_TYPE } from "../case-journey";
 import { INVOICE_NOTE_TYPE } from "../invoice";
+import { BILLING_SETTINGS_NOTE_TYPE } from "../billing-settings";
 import { MATTER_STATUS_CLOSED } from "../matter-status";
 import { ASSIGNMENT_TRANSITIONS, buildDeliveredHistory, isValidAssignmentTransition } from "../assignment-transitions";
 import {
@@ -727,6 +728,14 @@ export async function findLatestDraftingFactsNoteForMatter(matterCode: string): 
     .filter((note) => note.type === "Facts")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return factNotes[0] ?? null;
+}
+
+export async function findLatestBillingSettingsNote(matterCode: string): Promise<Note | null> {
+  const notes = await listNotesForMatterFromAirtable(matterCode);
+  const settingsNotes = notes
+    .filter((note) => note.type === BILLING_SETTINGS_NOTE_TYPE)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return settingsNotes[0] ?? null;
 }
 
 export async function findLatestInvoicesNoteForMatter(matterCode: string): Promise<Note | null> {

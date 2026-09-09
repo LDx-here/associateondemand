@@ -48,6 +48,7 @@ import {
   findLatestAnchorsNoteForMatter,
   findLatestJourneyNoteForMatter,
   findLatestInvoicesNoteForMatter,
+  findLatestBillingSettingsNote,
 } from "./airtable/queries";
 import { isAirtableQuotaError } from "./airtable/client";
 import { isDemoMode, usesGoogleSheets } from "./data-store-config";
@@ -102,6 +103,7 @@ import {
   findLatestAnchorsNoteForMatterFromGoogleSheets,
   findLatestJourneyNoteForMatterFromGoogleSheets,
   findLatestInvoicesNoteForMatterFromGoogleSheets,
+  findLatestBillingSettingsNoteFromGoogleSheets,
 } from "./google-sheets/queries";
 import {
   isValidLifecycleTransition,
@@ -141,6 +143,14 @@ import {
   serializeInvoices,
   type Invoice,
 } from "./invoice";
+import {
+  BILLING_SETTINGS_NOTE_TYPE,
+  DEFAULT_BILLING_SETTINGS,
+  normalizeBillingSettings,
+  parseBillingSettingsNote,
+  serializeBillingSettings,
+  type BillingSettings,
+} from "./billing-settings";
 import {
   createAssignmentDemo,
   addDocument as addDocumentDemo,
@@ -232,6 +242,7 @@ function notesBackend() {
         findAnchors: findLatestAnchorsNoteForMatterFromGoogleSheets,
         findJourney: findLatestJourneyNoteForMatterFromGoogleSheets,
         findInvoices: findLatestInvoicesNoteForMatterFromGoogleSheets,
+        findBillingSettings: findLatestBillingSettingsNoteFromGoogleSheets,
         findAssessmentOcr: findLatestAssessmentOcrNoteForMatterFromGoogleSheets,
       }
     : {
@@ -245,6 +256,7 @@ function notesBackend() {
         findAnchors: findLatestAnchorsNoteForMatter,
         findJourney: findLatestJourneyNoteForMatter,
         findInvoices: findLatestInvoicesNoteForMatter,
+        findBillingSettings: findLatestBillingSettingsNote,
         findAssessmentOcr: findLatestAssessmentOcrNoteForMatter,
       };
 }
@@ -1214,6 +1226,64 @@ export async function markInvoicePaid(
     invoices.map((i) => (i.id === invoiceId ? { ...i, status: "paid" as const, paidAt } : i)),
   );
   return true;
+}
+
+/**
+ * Firm billing settings, kept on the firm-level matter so the rate follows her
+ * to any browser or device rather than living in one localStorage.
+ */
+export async function getBillingSettings(): Promise<BillingSettings> {
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const note = seed.notes
+      .filter((n) => n.matterId === FIRM_TEMPLATE_MATTER_ID && n.type === BILLING_SETTINGS_NOTE_TYPE)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    return note ? parseBillingSettingsNote(note.content) : { ...DEFAULT_BILLING_SETTINGS };
+  }
+  try {
+    const note = await notesBackend().findBillingSettings(FIRM_TEMPLATE_MATTER_ID);
+    return note ? parseBillingSettingsNote(note.content) : { ...DEFAULT_BILLING_SETTINGS };
+  } catch (error) {
+    console.warn("[AOD] billing settings read failed:", error);
+    return { ...DEFAULT_BILLING_SETTINGS };
+  }
+}
+
+export async function saveBillingSettings(patch: Partial<BillingSettings>): Promise<BillingSettings> {
+  const next = normalizeBillingSettings({ ...(await getBillingSettings()), ...patch });
+  const content = serializeBillingSettings(next);
+
+  if (isDemoMode()) {
+    const seed = await loadDemoSeed();
+    const existing = seed.notes
+      .filter((n) => n.matterId === FIRM_TEMPLATE_MATTER_ID && n.type === BILLING_SETTINGS_NOTE_TYPE)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    if (existing) {
+      existing.content = content;
+      return next;
+    }
+    seed.notes.push({
+      id: `note-${Date.now()}`,
+      matterId: FIRM_TEMPLATE_MATTER_ID,
+      author: "Attorney",
+      content,
+      createdAt: new Date().toISOString(),
+      type: BILLING_SETTINGS_NOTE_TYPE,
+    });
+    return next;
+  }
+
+  // The firm matter has to exist before a note can hang off it.
+  await mattersBackend().ensureFirmTemplate();
+
+  const nb = notesBackend();
+  const existing = await nb.findBillingSettings(FIRM_TEMPLATE_MATTER_ID);
+  if (existing) {
+    await nb.update(existing.id, FIRM_TEMPLATE_MATTER_ID, content, "Attorney");
+  } else {
+    await nb.create(FIRM_TEMPLATE_MATTER_ID, content, "Attorney", BILLING_SETTINGS_NOTE_TYPE);
+  }
+  return next;
 }
 
 export async function getProceduralTimelineForMatter(
