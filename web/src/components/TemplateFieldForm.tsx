@@ -124,6 +124,7 @@ export function TemplateFieldForm({
         firmEditable: resolved.lockKind === "firm_editable",
       };
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: recompute boilerplate previews when the field values change
     setSectionPreviews(next);
   }, [map, spec, values]);
 

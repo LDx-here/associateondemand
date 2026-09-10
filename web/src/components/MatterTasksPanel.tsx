@@ -193,6 +193,7 @@ export function MatterTasksPanel({
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync local list to refreshed parent data
     setTasks(initialTasks);
   }, [initialTasks]);
 

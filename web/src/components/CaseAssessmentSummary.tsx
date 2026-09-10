@@ -58,6 +58,7 @@ export function CaseAssessmentSummary({
 
   useEffect(() => {
     if (!assessmentDocId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset: no assessment doc for this matter
       setFetchedPayload(null);
       return;
     }

@@ -133,6 +133,7 @@ export function AssignmentDetailDrawer({
   }, [itemId, onItemUpdated]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync local view state to the newly opened assignment
     setItem(initialItem);
     void loadPreview();
     // Re-load only when opening a different assignment, not when parent list refreshes.

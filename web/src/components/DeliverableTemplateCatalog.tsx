@@ -106,6 +106,7 @@ export function DeliverableTemplateCatalog() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: refresh is async, setState happens after the fetch resolves
     void refresh();
   }, [refresh]);
 

@@ -22,6 +22,7 @@ export function FirmLetterheadSettings() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: browser-only localStorage read, unsafe during SSR render
     setProfile(getFirmLetterhead());
     setLoaded(true);
   }, []);
