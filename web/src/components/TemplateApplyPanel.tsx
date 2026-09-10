@@ -71,6 +71,7 @@ export function TemplateApplyPanel({
   const sourceKey = `${templateId}:${profileId}:${JSON.stringify(hints)}`;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset field values when the template/profile source changes
     setValues(defaultValues);
   }, [sourceKey, defaultValues]);
 

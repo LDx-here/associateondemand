@@ -226,6 +226,7 @@ export function FirmKnowledgeMap({ data }: { data: KnowledgeMapData }) {
 
   useEffect(() => {
     const { filterIds: nextFilter, selectedId: nextSelected } = readTopicFilterFromUrl();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: correct SSR-unavailable URL read after hydration
     if (nextFilter?.length) setFilterIds(nextFilter);
     if (nextSelected) setSelectedId(nextSelected);
   }, []);

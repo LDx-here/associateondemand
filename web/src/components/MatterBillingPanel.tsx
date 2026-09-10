@@ -50,6 +50,7 @@ export function MatterBillingPanel({
 
   useEffect(() => {
     const s = getBillingSettings();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: browser-only localStorage read, unsafe during SSR render
     setSettings(s);
     setRateInput(s.hourlyRateCents ? (s.hourlyRateCents / 100).toFixed(2) : "");
   }, []);

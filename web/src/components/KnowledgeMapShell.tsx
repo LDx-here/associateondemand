@@ -16,6 +16,7 @@ export function KnowledgeMapShell({ firmKnowledge }: { firmKnowledge: KnowledgeM
 
   useEffect(() => {
     const hash = typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: SSR-unavailable URL hash read after hydration
     if (hash.startsWith("patterns") || hash === "pattern-graph") setTab("patterns");
     if (hash.startsWith("firm-knowledge") || hash === "firm" || hash.startsWith("firm&")) setTab("firm");
   }, []);
