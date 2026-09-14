@@ -2,7 +2,7 @@
 
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { TemplateFieldForm } from "@/components/TemplateFieldForm";
 import { useToast } from "@/components/Toast";
@@ -70,9 +70,13 @@ export function TemplateApplyPanel({
   const [values, setValues] = useState<Record<string, string>>(defaultValues);
   const sourceKey = `${templateId}:${profileId}:${JSON.stringify(hints)}`;
 
-  useEffect(() => {
+  // Reset editable values during render (not in an effect) when the template,
+  // profile, or matter hints change — see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [lastSourceKey, setLastSourceKey] = useState(sourceKey);
+  if (sourceKey !== lastSourceKey) {
+    setLastSourceKey(sourceKey);
     setValues(defaultValues);
-  }, [sourceKey, defaultValues]);
+  }
 
   function onTemplateChange(id: string) {
     setTemplateId(id);
