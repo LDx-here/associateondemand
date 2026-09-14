@@ -15,6 +15,7 @@ import { getSpreadsheetUrl } from "@/lib/google-sheets/client";
 import { billingNoteForPartnerFirm } from "@/lib/deliverable-catalog";
 import { partnerSubmissionUrl } from "@/lib/partner-submission";
 import { isStripeConfigured, isStripeTestMode } from "@/lib/stripe-config";
+import { AiStatusBanner } from "@/components/AiStatusBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -247,7 +248,10 @@ export default async function SettingsPage() {
         <header className="border-b border-slate-200 px-4 py-3">
           <h2 className="font-medium text-slate-900">Technical / compliance</h2>
         </header>
-        <div className="px-4 py-4">
+        <div className="space-y-4 px-4 py-4">
+          {/* Moved here from the dashboard. A rejected key still gets said out
+              loud, just not as the first thing on the screen she opens daily. */}
+          <AiStatusBanner />
           <PiiTierComplianceSection />
         </div>
       </section>

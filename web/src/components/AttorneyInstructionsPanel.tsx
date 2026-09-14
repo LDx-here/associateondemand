@@ -46,11 +46,17 @@ export function AttorneyInstructionsPanel({ matterId, initialInstructions = "", 
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-2 flex items-center gap-2">
+    // Collapsed by default: these only reach AI drafts, and they sat open above
+    // the tabs on every matter while drafting falls back to templates.
+    <details className="rounded-lg border border-slate-200 bg-white shadow-sm">
+      <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-900">
         <BookOpen className="h-4 w-4 text-slate-600" aria-hidden />
-        <h2 className="text-sm font-semibold text-slate-900">Attorney instructions</h2>
-      </div>
+        Instructions for AI drafts
+        {initialInstructions.trim() ? (
+          <span className="text-xs font-normal text-slate-500">· on file</span>
+        ) : null}
+      </summary>
+      <div className="border-t border-slate-100 px-4 pb-4 pt-3">
       <p className="mb-3 text-xs text-slate-600">
         Persistent guidance for this matter — tone, structure, citations to emphasize, or items to avoid.
         Included in every agent dispatch.
@@ -70,6 +76,7 @@ export function AttorneyInstructionsPanel({ matterId, initialInstructions = "", 
         <Save className="h-3.5 w-3.5" aria-hidden />
         {busy ? "Saving…" : "Save instructions"}
       </button>
-    </section>
+      </div>
+    </details>
   );
 }

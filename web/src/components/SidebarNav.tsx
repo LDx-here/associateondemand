@@ -31,21 +31,27 @@ type SidebarNavItem = {
   icon: LucideIcon;
 };
 
+/**
+ * What a solo practice reaches for daily sits on top. New assignment and Inbox
+ * belong to the overflow-counsel marketplace, which is parked — they stay
+ * reachable under More tools rather than leading the nav, while Contacts,
+ * Tasks, and Calendar come out from under it.
+ */
 const PRIMARY_NAV: SidebarNavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/assignments/new", label: "New assignment", icon: FilePlus2 },
-  { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/matters", label: "Matters", icon: Briefcase },
+  { href: "/contacts", label: "Contacts", icon: Users },
+  { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/templates", label: "Templates", icon: LayoutTemplate },
 ];
 
 const SECONDARY_NAV: SidebarNavItem[] = [
+  { href: "/assignments/new", label: "New assignment", icon: FilePlus2 },
+  { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/help", label: "How this works", icon: HelpCircle },
   { href: "/firm-memory", label: "Firm Memory", icon: Brain },
   { href: "/settings", label: "Settings", icon: Settings },
-  { href: "/contacts", label: "Contacts", icon: Users },
-  { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/book", label: "Book consultation", icon: Calendar },
   { href: "/intake/upload", label: "Intake upload", icon: Upload },
   { href: "/knowledge-map", label: "Knowledge map", icon: Map },

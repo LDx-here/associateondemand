@@ -26,11 +26,14 @@ export function MatterDocumentsList({
   documents,
   highlightId,
   uploadPreviews = {},
+  importedFolder = null,
 }: {
   matterId: string;
   documents: DocumentRow[];
   highlightId?: string | null;
   uploadPreviews?: Record<string, UploadResult>;
+  /** Set when the matter came from a case-folder import. */
+  importedFolder?: { sourceFolder: string; fileCount: number } | null;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(highlightId ?? null);
   const [prevHighlightId, setPrevHighlightId] = useState(highlightId);
@@ -131,11 +134,22 @@ export function MatterDocumentsList({
             ) : (
               <tr>
                 <td colSpan={6} className="p-0">
-                  <EmptyState
-                    icon={FileText}
-                    title="No documents yet."
-                    description="Upload a case assessment or supporting file below. New uploads appear in this list immediately."
-                  />
+                  {importedFolder && importedFolder.fileCount > 0 ? (
+                    // Say where the files are instead of implying there are none.
+                    <EmptyState
+                      icon={FileText}
+                      title="No documents brought in yet."
+                      description={`"${importedFolder.sourceFolder}" in your Drive has ${importedFolder.fileCount} file${
+                        importedFolder.fileCount === 1 ? "" : "s"
+                      } that haven't been brought in here. Upload any you need below.`}
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={FileText}
+                      title="No documents yet."
+                      description="Upload a case assessment or supporting file below. New uploads appear in this list immediately."
+                    />
+                  )}
                 </td>
               </tr>
             )}

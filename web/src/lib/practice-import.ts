@@ -315,3 +315,22 @@ export function daysSinceActivity(matter: ProposedMatter, now: Date): number | n
   if (!Number.isFinite(last)) return null;
   return Math.floor((now.getTime() - last) / 86_400_000);
 }
+
+/**
+ * Read back what a practice import recorded in a matter's summary: the Drive
+ * folder it came from and how many files that folder held.
+ *
+ * The importer creates the matter but no document records, so the summary
+ * said "40 documents on file" while the Documents tab said none. This lets the
+ * tab say where those files actually are. Mirrors `summarize()` in
+ * app/api/import/practice/route.ts — change both together.
+ */
+export function importedFolderFromSummary(
+  summary: string | null | undefined,
+): { sourceFolder: string; fileCount: number } | null {
+  const text = summary ?? "";
+  const folder = text.match(/Imported from case folder "([^"]+)"/);
+  if (!folder) return null;
+  const count = text.match(/(\d+) documents? on file/);
+  return { sourceFolder: folder[1], fileCount: count ? Number(count[1]) : 0 };
+}

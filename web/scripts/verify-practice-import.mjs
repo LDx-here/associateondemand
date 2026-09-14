@@ -192,4 +192,21 @@ const bare = buildProposedMatter({
 });
 assert.equal(bare.practiceArea, "unknown");
 
+// --- Reading an import back out of a matter summary -------------------------
+const { importedFolderFromSummary } = await import("../src/lib/practice-import.ts");
+assert.deepEqual(
+  importedFolderFromSummary(
+    'Imported from case folder "2026-001-Viazovikova, Aigul" (firm matter 2026-001). 40 documents on file. Last activity 2026-07-13.',
+  ),
+  { sourceFolder: "2026-001-Viazovikova, Aigul", fileCount: 40 },
+);
+assert.deepEqual(
+  importedFolderFromSummary('Imported from case folder "2026-004-Augustine" (firm matter 2026-004).'),
+  { sourceFolder: "2026-004-Augustine", fileCount: 0 },
+  "an empty folder still reads as imported, with zero files",
+);
+assert.equal(importedFolderFromSummary("Client called about the hearing."), null);
+assert.equal(importedFolderFromSummary(""), null);
+assert.equal(importedFolderFromSummary(null), null);
+
 console.log("verify-practice-import: area inference OK");

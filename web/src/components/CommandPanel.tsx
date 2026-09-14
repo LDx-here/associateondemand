@@ -86,7 +86,10 @@ function suggestedPrompts(matter: Matter | null, openAssignment: InboxItem | nul
 export function CommandPanel({ demoMode = false }: { demoMode?: boolean }) {
   const pathname = usePathname();
   const contextMatter = useMemo(() => matterFromPath(pathname), [pathname]);
-  const [open, setOpen] = useState(true);
+  // Closed until asked for. It runs AI drafts, which fall back to templates
+  // while the API key is invalid, and it held 320px of every matter page open
+  // to say so. A draft dispatched from elsewhere still opens it (see onPrefill).
+  const [open, setOpen] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [matterData, setMatterData] = useState<{
@@ -212,13 +215,13 @@ export function CommandPanel({ demoMode = false }: { demoMode?: boolean }) {
       <aside className="flex w-10 shrink-0 flex-col border-l border-slate-200 bg-white">
         <button
           type="button"
-          title="Open draft review panel"
+          title="Open AI drafts panel"
           className="flex h-full flex-col items-center gap-2 py-4 text-slate-600 hover:bg-slate-50"
           onClick={() => setOpen(true)}
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
           <span className="text-[10px] font-semibold uppercase tracking-wide [writing-mode:vertical-rl]">
-            Review
+            AI drafts
           </span>
         </button>
       </aside>
@@ -231,7 +234,7 @@ export function CommandPanel({ demoMode = false }: { demoMode?: boolean }) {
     <aside className="flex w-80 shrink-0 flex-col border-l border-slate-200 bg-white">
       <div className="flex items-start justify-between gap-2 border-b border-slate-200 px-4 py-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">Draft review</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">AI drafts</p>
           {contextMatter && matter ? (
             <div className="mt-2 space-y-1 rounded-md bg-slate-50 px-2 py-2">
               <p className="truncate text-sm font-medium text-slate-900">
@@ -246,9 +249,7 @@ export function CommandPanel({ demoMode = false }: { demoMode?: boolean }) {
                   {deliverableName ?? "Assignment"} —{" "}
                   <span className="font-medium">{openAssignment.status}</span>
                 </p>
-              ) : (
-                <p className="text-xs text-slate-500">No open overflow assignment on this matter.</p>
-              )}
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -266,7 +267,8 @@ export function CommandPanel({ demoMode = false }: { demoMode?: boolean }) {
         <div className="flex-1 space-y-3 overflow-y-auto p-3">
           {history.length === 0 ? (
             <p className="text-xs text-slate-500">
-              Agent drafts and review results appear here after you run work from the matter tabs.
+              Run a summary or draft with the buttons below. Results stay here only until the page
+              reloads.
             </p>
           ) : (
             history.map((entry) => (

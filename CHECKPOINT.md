@@ -1,6 +1,30 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-09-07 (CDT) — Pass 60-61: case journey + the billing loop
+**Last updated:** 2026-09-13 (CDT) — Pass 62: site cleanup, marketplace out of the daily path
+
+**Pass 62 (2026-09-13, site cleanup — the concerns she raised using it):** Scope was her list plus the five issues surfaced from using the app as her. Deeper UX — journey locking, per-stage depth, a categorized activity feed — is going to a separate planning agent first (see below).
+
+**What the Draft Review panel actually was** (she asked): `CommandPanel`, the AI command console mounted in `AppShell` on every page and **open by default at 320px**. Its header showed overflow-assignment status ("No open overflow assignment on this matter"); its body shows only results of AI commands run in the current page session — nothing is stored, so it empties on reload; its footer buttons dispatch AI drafts, which fall back to templates while the Anthropic key is rejected. It never showed her case activity. Now closed by default (a dispatched draft still opens it), relabeled **AI drafts**, overflow line removed, empty-state copy honest that results last until reload.
+
+**Dashboard.** The AI-status banner moved to Settings → Technical / compliance (it stays visible there; local dev will not render it because `NEXT_PUBLIC_API_URL=http://localhost:8000`, while production points at Fly, whose `/ai-status` still reports `invalid_key`). **Bug:** the subtitle branched on email domain and showed marketplace copy ("Capacity relief from verified overflow counsel…") to any non-RMV domain — including her gmail.com — now one line of practice copy (`dashboardWelcomeSubtitle`). New matter replaces New assignment; the quick cards are Open matters / Tasks / Calendar / Contacts. Removed the AI-drafting KPI row, the Firm Memory nag, and the marketplace onboarding wizard + getting-started card ("Welcome — overflow counsel"), which popped a modal over the dashboard in a fresh browser. The Open matters card counted `matters.length` (10, including archived rows and FIRM-TEMPLATES) — now `pulse.openMatters`.
+
+**Sidebar.** Tagline "Overflow counsel · capacity relief" → "Kingdom Counsel Firm". Primary nav is Dashboard, Matters, Contacts, Tasks, Calendar, Templates; New assignment and Inbox moved under More tools. Nothing deleted.
+
+**Matter page.** Removed from the default view: the six-stage drafting strip with "What to do next: Submit an overflow assignment"; the New assignment button; the "Complete facts on Documents tab" chip; the duplicate posture cell; the summary rendered in both the header and the Overview tab (it now reads once, in the case story). The assignment stage chip shows only when an assignment exists — with none it read "Intake" beside a journey at step 9. Attorney instructions collapse to "Instructions for AI drafts".
+
+**New matter form bug.** Case types were immigration sub-types ("Asylum", "CAT", "Motion to Reopen"…) with no Personal Injury, and none matched `proposeJourneyId`, so new matters opened with no journey. Now Immigration / Personal Injury / Property Damage / Other; placeholder follows her "names in Sheets" ruling.
+
+**Documents 0 vs "40 on file."** `ProposedDocument` carries no Drive file ids, so the importer could not create real document records. The Documents tab now says where the files are — `"2026-001-Viazovikova, Aigul" in your Drive has 40 files that haven't been brought in here` — via `importedFolderFromSummary()` (tested). Bringing Drive files in as records is a planning item.
+
+**Hydration error.** No longer fires on dashboard, matter, or settings loads, and the dev overlay shows no issues. The Pass 59 diagnosis (`readInitialTabFromUrl`) was wrong, and the true cause was not isolated — one of the components removed from the default view is the likely source.
+
+**Side effect found:** the billing-settings save on 2026-09-09 created a **FIRM-TEMPLATES** matter row (via `ensureFirmTemplate`). It is Closed and hidden from the default Matters view, but `listMatters()` does not filter it.
+
+**Needs her:** **AOD-1001 "Sample overflow matter"** and **AOD-1002 "nm"**, both created 2026-07-27 before her import, are test rows sitting in "Needs your attention." Archive is her call — not touched.
+
+**Routed to the planning agent, not built:** journey steps are freely clickable rather than locked to progression, and each stage should carry far more depth ("that OCR view"); a categorized activity feed; one fact system instead of the drafting-facts checklist plus Case anchors; Drive documents as records; remaining marketplace copy on /help, the site guide, Settings "Overflow counsel billing", and /partner/submit; the dashboard's "Matters by lifecycle stage" section, a third stage system beside posture and the journey.
+
+Verified locally against the live Sheet: tsc; test suites (practice-import incl. new cases, practice-pulse, case-story, case-journey, five-anchors, invoice, work-entry, google-sheets, facts); browser checks on dashboard, AOD-1008 matter page and Documents tab, Matters list, and Settings, with no console errors; next build --webpack; Vercel production.
 
 **Pass 61 (2026-09-07, the billing loop):** Her ask: *"you can start a matter, add a contact, and generate an email that can be sent directly to the client with their invoice, and then it's set up with billing for them to just pay."* New **Billing** tab on the matter.
 
@@ -38,7 +62,7 @@ Persists as one typed `Anchors` Note per matter (`lib/five-anchors.ts` serialize
 
 **Defect found while verifying, fixed in the same pass:** structured payload notes were rendering as events in the case-story timeline. The anchors note showed under "Recently on this matter" as a bare **"Anchors"**, and a drafting-facts note would have shown raw JSON there. New `lib/note-kinds.ts` exports `readableNotes()` / `isStructuredNote()`, now applied in `buildStoryTimeline` and in `MatterWorkbench`'s activity feed, which had its own ad-hoc two-type filter that missed Assessment Document as well.
 
-**Pre-existing issue confirmed but not fixed:** the matter page throws a React hydration error. `readInitialTabFromUrl()` reads `window.location` so the server renders "Overview" while the client may render another tab. Verified pre-existing by stashing this pass's changes and reproducing it on a clean URL.
+**Pre-existing issue confirmed but not fixed:** the matter page throws a React hydration error. `readInitialTabFromUrl()` reads `window.location` so the server renders "Overview" while the client may render another tab. *(Correction, Pass 62: this cannot mismatch on a URL without `?tab`, which is where it reproduced — the diagnosis was wrong. See Pass 62.)* Verified pre-existing by stashing this pass's changes and reproducing it on a clean URL.
 
 Verified end to end against the **live Google Sheet** on AOD-1008 (Viazovikova) with `demoMode: false`, not a demo seed: typed into the gaps field, saved, reloaded, restored; the gaps callout cleared and "Not yet addressed" correctly listed the four untouched anchors. That verification left one real gap note on the matter — that the 40 documents in the 2026-001 folder are not reviewed into the system — which is true and can stay or be edited.
 

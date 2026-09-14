@@ -4,15 +4,14 @@ import {
   AlertTriangle,
   Briefcase,
   CalendarClock,
-  CheckCircle2,
+  CalendarDays,
+  CheckSquare,
   Clock3,
-  FilePlus2,
   Inbox,
-  Sparkles,
+  Users,
 } from "lucide-react";
 
-import { AiStatusBanner } from "@/components/AiStatusBanner";
-import { GettingStartedBanner, OnboardingWizard } from "@/components/OnboardingWizard";
+import { NewMatterButton } from "@/components/NewMatterButton";
 import { ResumeIntakeBanner } from "@/components/ResumeIntakeBanner";
 import { EmptyState } from "@/components/EmptyState";
 import { DashboardCharts } from "@/components/DashboardCharts";
@@ -20,12 +19,10 @@ import { KpiCard } from "@/components/KpiCard";
 import {
   filingDeadlinesMissingDate,
   filingDeadlinesWithin,
-  firmMemoryCompleteness,
+  dashboardWelcomeSubtitle,
   greeting,
   inboxToActivityEntries,
   matterLifecycleBreakdown,
-  overflowDashboardMetrics,
-  overflowWelcomeSubtitle,
   recentActivity,
   upcomingDeadlines,
 } from "@/lib/dashboard-aggregates";
@@ -33,7 +30,6 @@ import { notesMissingTime, rollUpWorkSince, toBillableHours } from "@/lib/work-e
 import { mattersNeedingAttention, practicePulse } from "@/lib/practice-pulse";
 import {
   countUnreadInbox,
-  getFirmMemoryStatus,
   listAllNotes,
   listAllTasks,
   listInboxItems,
@@ -44,7 +40,7 @@ import {
 import { dataStoreLabel, usesGoogleSheets } from "@/lib/data-store-config";
 import { getMutableSeed } from "@/lib/demo-store-mutable";
 import { getSupabaseSessionUser } from "@/lib/supabase/server";
-import { btnPrimary, linkMatter } from "@/lib/ui-classes";
+import { linkMatter } from "@/lib/ui-classes";
 import { formatDate } from "@/lib/utils";
 
 function daysUntil(value: string | null | undefined, now = new Date()): number | null {
@@ -75,14 +71,6 @@ export default async function DashboardPage() {
     inboxItems = seed?.inboxItems ?? [];
   }
 
-  const overflow = overflowDashboardMetrics(inboxItems, now);
-  let firmMemory = { templateCount: 0, sampleCount: 0, stylePreferenceCount: 0, configured: false };
-  try {
-    firmMemory = await getFirmMemoryStatus();
-  } catch {
-    /* demo or offline */
-  }
-  const firmMemoryPct = firmMemoryCompleteness(firmMemory);
 
   const filingDeadlines14 = filingDeadlinesWithin(tasks, 14, now);
   const filingDeadlinesMissing = filingDeadlinesMissingDate(tasks);
@@ -107,6 +95,7 @@ export default async function DashboardPage() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const workThisMonth = rollUpWorkSince(allNotes, monthStart);
   const untimedNotes = notesMissingTime(allNotes).length;
+  const openTasks = tasks.filter((t) => t.status !== "Done").length;
   const activity = recentActivity({
     notes: allNotes,
     completedTasks: demo
@@ -140,7 +129,7 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-semibold text-slate-900">{greeting(displayName, now)}</h1>
           <p className="text-sm text-slate-600">{todayLabel}</p>
           <p className="mt-1 max-w-2xl text-sm text-slate-600">
-            {overflowWelcomeSubtitle(session?.email)}
+            {dashboardWelcomeSubtitle()}
           </p>
           {demo ? (
             <p className="mt-1 text-xs text-slate-500">
@@ -162,46 +151,17 @@ export default async function DashboardPage() {
             </Link>
           </p>
         </div>
-        <Link
-          href="/assignments/new"
-          className={`${btnPrimary} inline-flex items-center gap-2 whitespace-nowrap`}
-        >
-          <FilePlus2 className="h-4 w-4" aria-hidden />
-          New assignment
-        </Link>
+        <NewMatterButton demoMode={demo} />
       </header>
 
-      <AiStatusBanner />
-      <OnboardingWizard />
-      <GettingStartedBanner />
+      {/* The onboarding wizard and getting-started card walked through the
+          overflow-counsel marketplace ("Welcome — overflow counsel … capacity
+          relief") and popped a modal over the dashboard. Removed here; the
+          components remain for when that phase returns. */}
       <ResumeIntakeBanner />
 
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Link
-          href="/assignments/new"
-          className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-sky-200 hover:bg-sky-50/40"
-        >
-          <FilePlus2 className="h-5 w-5 shrink-0 text-sky-800" aria-hidden />
-          <div>
-            <p className="font-medium text-slate-900">New assignment</p>
-            <p className="text-xs text-slate-600">Start drafting on a new matter</p>
-          </div>
-        </Link>
-        <Link
-          href="/inbox"
-          className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-violet-200 hover:bg-violet-50/40"
-        >
-          <Inbox className="h-5 w-5 shrink-0 text-violet-800" aria-hidden />
-          <div>
-            <p className="font-medium text-slate-900">Review inbox</p>
-            <p className="text-xs text-slate-600">
-              {overflow.deliverablesInReview > 0
-                ? `${overflow.deliverablesInReview} deliverable${overflow.deliverablesInReview === 1 ? "" : "s"} awaiting sign-off`
-                : "Assignments and agent alerts"}
-            </p>
-          </div>
-        </Link>
         <Link
           href="/matters"
           className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40"
@@ -209,19 +169,37 @@ export default async function DashboardPage() {
           <Briefcase className="h-5 w-5 shrink-0 text-emerald-800" aria-hidden />
           <div>
             <p className="font-medium text-slate-900">Open matters</p>
-            <p className="text-xs text-slate-600">{matters.length} in caseload</p>
+            <p className="text-xs text-slate-600">{pulse.openMatters} open</p>
           </div>
         </Link>
         <Link
-          href="/firm-memory"
+          href="/tasks"
+          className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-sky-200 hover:bg-sky-50/40"
+        >
+          <CheckSquare className="h-5 w-5 shrink-0 text-sky-800" aria-hidden />
+          <div>
+            <p className="font-medium text-slate-900">Tasks</p>
+            <p className="text-xs text-slate-600">{openTasks} open</p>
+          </div>
+        </Link>
+        <Link
+          href="/calendar"
+          className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-violet-200 hover:bg-violet-50/40"
+        >
+          <CalendarDays className="h-5 w-5 shrink-0 text-violet-800" aria-hidden />
+          <div>
+            <p className="font-medium text-slate-900">Calendar</p>
+            <p className="text-xs text-slate-600">Hearings and deadlines</p>
+          </div>
+        </Link>
+        <Link
+          href="/contacts"
           className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-amber-200 hover:bg-amber-50/40"
         >
-          <Sparkles className="h-5 w-5 shrink-0 text-amber-800" aria-hidden />
+          <Users className="h-5 w-5 shrink-0 text-amber-800" aria-hidden />
           <div>
-            <p className="font-medium text-slate-900">Firm Memory</p>
-            <p className="text-xs text-slate-600">
-              {firmMemory.configured ? "Style profile configured" : "Set up before first pilot"}
-            </p>
+            <p className="font-medium text-slate-900">Contacts</p>
+            <p className="text-xs text-slate-600">Clients and parties</p>
           </div>
         </Link>
       </section>
@@ -315,50 +293,12 @@ export default async function DashboardPage() {
         </section>
       ) : null}
 
-      {!firmMemory.configured ? (
-        <section className="rounded-lg border border-amber-200 bg-amber-50/50 px-4 py-3 text-sm text-amber-950">
-          <strong>Firm Memory:</strong>{" "}
-          <Link href="/firm-memory" className="font-medium underline-offset-2 hover:underline">
-            Set up your firm profile
-          </Link>{" "}
-          so drafts come back written in your style.
-        </section>
-      ) : null}
-
       {/*
-        Drafting/review counts belong here rather than in the headline row —
-        they matter, but "which client needs me" comes first.
+        Drafts-awaiting-review, completed deliverables, and Firm Memory counts
+        were removed from the dashboard: all three measure AI drafting, which
+        falls back to templates until the API key works, so they read zero.
+        Firm Memory and Inbox remain reachable under More tools.
       */}
-      <section className="grid gap-4 sm:grid-cols-3">
-        <KpiCard
-          label="Drafts awaiting your review"
-          value={overflow.deliverablesInReview}
-          hint="Ready for your sign-off"
-          icon={Inbox}
-          tone={overflow.deliverablesInReview > 0 ? "attention" : "neutral"}
-          href="/inbox"
-        />
-        <KpiCard
-          label="Completed this month"
-          value={overflow.completedThisMonth}
-          hint="Approved deliverables"
-          icon={CheckCircle2}
-          tone="positive"
-        />
-        <KpiCard
-          label="Firm Memory saved"
-          value={firmMemory.templateCount + firmMemory.sampleCount + firmMemory.stylePreferenceCount}
-          hint={
-            firmMemory.configured
-              ? `${firmMemory.templateCount} templates · ${firmMemory.sampleCount} samples · ${firmMemory.stylePreferenceCount} style prefs`
-              : "Upload samples so drafts read in your style"
-          }
-          icon={Sparkles}
-          tone={firmMemoryPct >= 66 ? "positive" : "attention"}
-          href="/firm-memory"
-        />
-      </section>
-
       <DashboardCharts statusCounts={statusCounts} caseTypeCounts={caseTypeCounts} />
 
       {demo || usesGoogleSheets() ? (

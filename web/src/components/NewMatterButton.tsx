@@ -11,7 +11,7 @@ export function NewMatterButton({ demoMode }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [caseType, setCaseType] = useState("Asylum");
+  const [caseType, setCaseType] = useState("Immigration");
   const [country, setCountry] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -66,7 +66,7 @@ export function NewMatterButton({ demoMode }: Props) {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-                placeholder="Short matter description (no client PII)"
+                placeholder="Client name — e.g. Jeremiah Hammond"
               />
             </label>
             <label className="block text-sm">
@@ -76,17 +76,10 @@ export function NewMatterButton({ demoMode }: Props) {
                 onChange={(e) => setCaseType(e.target.value)}
                 className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
               >
-                {[
-                  "Immigration - Adjustment of Status",
-                  "Immigration - Family",
-                  "Immigration - Asylum",
-                  "Asylum",
-                  "Withholding",
-                  "CAT",
-                  "Motion to Reopen",
-                  "Appeal",
-                  "Other",
-                ].map((t) => (
+                {/* The case types her practice actually uses. The old list had no
+                    Personal Injury at all, and sub-types like "Asylum" never
+                    matched a case journey, so new matters opened without one. */}
+                {["Immigration", "Personal Injury", "Property Damage", "Other"].map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>

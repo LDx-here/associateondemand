@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { CloseMatterButton } from "@/components/CloseMatterButton";
@@ -26,11 +25,9 @@ import { MatterAgentAlertReview } from "./MatterAgentAlertReview";
 import { MATTER_REVIEW_REFRESH_EVENT } from "@/lib/matter-review-events";
 import { CaseAssessmentPanel } from "./CaseAssessmentPanel";
 import { AssessmentOnFileChip } from "./AssessmentOnFileChip";
-import { DraftingFactsCompletenessChip } from "./PracticeAreaFactGuide";
 import { MatterStageChip } from "./MatterStageChip";
 import { StatusBadge } from "./StatusBadge";
 import { AttorneyInstructionsPanel } from "./AttorneyInstructionsPanel";
-import { MatterWorkflowStrip } from "./MatterWorkflowStrip";
 import { ResearchInputPanel } from "./ResearchInputPanel";
 import type { UploadResult } from "./IntakeUploadShared";
 import { MatterDocumentUpload, type DocumentUploadPayload } from "./MatterDocumentUpload";
@@ -38,6 +35,7 @@ import { cacheDocumentPreview, setBlobPreview } from "@/lib/document-preview-cac
 import { MatterDocumentsList } from "./MatterDocumentsList";
 import { MatterHeaderEditModal } from "./MatterHeaderEditModal";
 import { MatterAnchorsPanel } from "./MatterAnchorsPanel";
+import { importedFolderFromSummary } from "@/lib/practice-import";
 import { MatterBillingPanel } from "./MatterBillingPanel";
 import { readableNotes } from "@/lib/note-kinds";
 
@@ -193,20 +191,14 @@ export function MatterWorkbench({
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <MatterStageChip assignments={assignments} />
+            {/* Assignment stage only means something once work has been sent
+                out. With none, it read "Intake" beside a journey at step 9. */}
+            {assignments.length > 0 ? <MatterStageChip assignments={assignments} /> : null}
             <AssessmentOnFileChip
               matterId={matterHeader.matterId}
               documents={documents}
               onUploadAssessment={() => setTab("Documents")}
             />
-            <DraftingFactsCompletenessChip
-              matterId={matterHeader.matterId}
-              caseType={matterHeader.caseType}
-              onCompleteFacts={() => setTab("Documents")}
-            />
-            <Link href={`/assignments/new?matterId=${matterHeader.matterId}`} className={btnSecondary}>
-              New assignment
-            </Link>
             <button type="button" className={btnSecondary} onClick={() => setEditOpen(true)}>
               Edit matter
             </button>
@@ -224,15 +216,10 @@ export function MatterWorkbench({
             <dd className={`font-medium ${deadline ? "text-rose-700" : ""}`}>{deadline ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">Procedural posture</dt>
-            <dd>{matterHeader.proceduralPosture ?? matterHeader.posture ?? "—"}</dd>
-          </div>
-          <div>
             <dt className="text-slate-500">Court / judge</dt>
             <dd>{[matterHeader.court, matterHeader.judge].filter(Boolean).join(" · ") || "—"}</dd>
           </div>
         </dl>
-        <p className="mt-2 text-sm text-slate-700">{matterHeader.summary}</p>
         {matterHeader.vulnerabilityFlags.length ? (
           <div className="mt-2 flex flex-wrap gap-1">
             {matter.vulnerabilityFlags.map((flag) => (
@@ -246,8 +233,6 @@ export function MatterWorkbench({
           </div>
         ) : null}
       </header>
-
-      <MatterWorkflowStrip notes={notes} documents={documents} assignments={assignments} showNextAction />
 
       <AttorneyInstructionsPanel
         matterId={matter.matterId}
@@ -317,6 +302,7 @@ export function MatterWorkbench({
             documents={documents}
             highlightId={highlightDocumentId}
             uploadPreviews={uploadPreviews}
+            importedFolder={importedFolderFromSummary(matterHeader.summary)}
           />
           <MatterDocumentUpload matterId={matter.matterId} onUploaded={handleDocumentUploaded} />
           <CaseAssessmentPanel

@@ -39,7 +39,7 @@ export async function AppShell({
               <Link className="block font-semibold tracking-tight text-white" href="/dashboard">
                 Recover My Value
               </Link>
-              <p className="mt-1 text-xs text-slate-400">Overflow counsel · capacity relief</p>
+              <p className="mt-1 text-xs text-slate-400">Kingdom Counsel Firm</p>
               <div className="mt-2">
                 <InboxBadge />
               </div>

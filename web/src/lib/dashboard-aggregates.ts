@@ -139,12 +139,13 @@ export function firmMemoryCompleteness(status: {
  * was "your overflow counsel queue — verified deliverables for partner
  * firms," describing a marketplace rather than her caseload.
  */
-export function overflowWelcomeSubtitle(email?: string | null): string {
-  const domain = email?.split("@")[1]?.toLowerCase() ?? "";
-  if (domain.includes("recovermyvalue") || domain.includes("rmv")) {
-    return "Your caseload at a glance — what needs attention, what's due, what you've billed.";
-  }
-  return "Capacity relief from verified overflow counsel — submit assignments, review deliverables, sign off.";
+/**
+ * The dashboard's one-line purpose. This used to branch on email domain and
+ * showed marketplace copy to anyone not on an RMV domain — which included the
+ * attorney herself, signed in with gmail.com.
+ */
+export function dashboardWelcomeSubtitle(): string {
+  return "Your caseload at a glance — what needs attention, what's due, what you've billed.";
 }
 
 /** Map PM Inbox rows into recent-activity agent entries (BUILD_SPEC §7.1). */

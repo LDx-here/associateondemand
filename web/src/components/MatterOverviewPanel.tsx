@@ -59,7 +59,6 @@ export function MatterOverviewPanel({
             <dd>{documents.length}</dd>
           </div>
         </dl>
-        {matter.summary ? <p className="mt-3 text-sm text-slate-700">{matter.summary}</p> : null}
       </section>
 
       <MatterContactsPanel
