@@ -1,6 +1,20 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-09-13 (CDT) — Pass 62: site cleanup, marketplace out of the daily path
+**Last updated:** 2026-09-13 (CDT) — Pass 63: why every push reported "failed"
+
+**Pass 63 (2026-09-13, why every push reported "failed"):** She kept getting failure notices after pushing. None came from the push or from aod-next, which deploys green. Three standing causes, all predating Passes 59–62 — CI has failed on every commit back to at least 2026-07-23:
+
+1. **CI `api` job and the Mon/Thu scheduled health check** installed `requirements.txt` alone, which has no pytest, so both died on `No module named pytest` before a single test ran. Added `services/api/requirements-dev.txt` (`-r requirements.txt`, `pytest==9.1.0`); both workflows install it. Verified in a clean Python 3.12 venv built the way CI builds it: 136 passed.
+2. **CI `web` job** failed `npm run lint` on 13 errors from eslint-plugin-react-hooks 7's React Compiler rules — `set-state-in-effect` ×12, `refs` ×1 — in older components: AssignmentDetailDrawer, CaseAssessmentSummary, DeliverableTemplateCatalog, FirmKnowledgeMap, FirmLetterheadSettings, KnowledgeMapShell, LegalElementsPanel (×3), MatterTasksPanel, ProceduralTimelinePanel, TemplateApplyPanel, TemplateFieldForm. None are in code from Passes 59–62. Both rules set to warn in `web/eslint.config.mjs` so they still print on every run; lint exits 0 with 34 warnings. **Refactoring those effects is open debt.** `npm run build` — plain Turbopack, as CI runs it — passes locally.
+3. **Vercel project `recovermyvalue-site`** (her marketing site) is Git-connected to this same repo with Root Directory `.`. It built every push to `cursor/phase0-foundation` as a preview and errored in about 3 seconds (`No package.json` at the repo root) — ten failures in a row. Its live production, 126 days old, was deployed from **`main`**, which holds the marketing site (Vite + pnpm), so disconnecting the repo would have cut off that site's deploy path. Instead a root `vercel.json` on this branch sets `git.deploymentEnabled` to false for `cursor/**`. aod-next's Root Directory is `web`, so it never reads that file. She confirmed pushes should go to aod-next only.
+
+**Branch map:** `main` = RMV marketing site → Vercel `recovermyvalue-site`. `cursor/phase0-foundation` = the AOD app → Vercel `aod-next` (Root Directory `web`). They are different apps; never merge one into the other.
+
+Also archived **AOD-1001 "Sample overflow matter"** and **AOD-1002 "nm"** at her direction (status Archived, lifecycle Closed). AOD-1001's only note was a Pass 55 smoke test; AOD-1002's three tasks were auto-generated intake checklist items with no due dates.
+
+**Still unverified:** that the Stripe webhook secret is the right one. The endpoint rejects a forged signature, which proves a secret is configured, not that it matches her endpoint. Sending Stripe's test event requires her Stripe login; the Stripe CLI is not installed or authenticated on this machine.
+
+**Confirm after her next push:** CI `api` and `web` green on GitHub, and no `recovermyvalue-site` status on the commit.
 
 **Pass 62 (2026-09-13, site cleanup — the concerns she raised using it):** Scope was her list plus the five issues surfaced from using the app as her. Deeper UX — journey locking, per-stage depth, a categorized activity feed — is going to a separate planning agent first (see below).
 

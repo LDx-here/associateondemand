@@ -1,0 +1,4 @@
+# Test tooling on top of the runtime dependencies. CI and the scheduled health
+# check install this file; the Fly image installs requirements.txt alone.
+-r requirements.txt
+pytest==9.1.0
