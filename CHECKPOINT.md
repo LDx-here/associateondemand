@@ -1,6 +1,20 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-09-13 (CDT) — Pass 63: why every push reported "failed"
+**Last updated:** 2026-09-14 (CDT) — Pass 64: assignment intake → inbox → catalog re-verify + lint-debt cleanup
+
+**Pass 64 (2026-09-14, autonomous pass — assignment intake → inbox → catalog re-verify):** Ran the autonomous-agent-pass runbook's priority order against current `cursor/phase0-foundation` (`52a944b`). Assignment intake (`/assignments/new`), the PM Inbox review workflow (`/inbox`, `AssignmentBoard`, `AssignmentDetailDrawer`), and the template catalog (`/templates`, `DeliverableTemplateCatalog`) have been live since the 2026-07-02 marketplace build pass — nothing to ship there; the runbook's items 1–3 are done. Per its item 4 ("bug fixes"), closed part of the `react-hooks/set-state-in-effect` debt Pass 63 flagged, scoped to the three named surfaces:
+
+- **`AssignmentDetailDrawer.tsx`** — the mount effect reset `item` to the newly opened assignment via `setItem(initialItem)` inside `useEffect`. Replaced with the React-docs "adjusting state when a prop changes" pattern (compare `itemId` to a tracked `lastLoadedItemId` and reset during render, not in an effect) — same behavior, one fewer render-then-effect round trip.
+- **`TemplateApplyPanel.tsx`** (template catalog smart-fields) — same anti-pattern resetting `values` to `defaultValues` whenever template/profile/matter-hint `sourceKey` changed; fixed the same way.
+- **Dashboard dead code** — `inboxUnread`/`countUnreadInbox` and the unused `Inbox` icon import were leftovers from Pass 62's KPI-row redesign; the count is already surfaced via `InboxBadge` in `AppShell`'s nav, so the dashboard's duplicate fetch did nothing. Removed.
+
+Left two set-state-in-effect instances alone after inspection: `DeliverableTemplateCatalog`'s mount-time `void refresh()` and `AssignmentDetailDrawer`'s `void loadPreview()` are both "fetch on mount/open" effects — the sanctioned use of `useEffect` for syncing with an external system, and this ESLint rule flags them regardless of the async boundary; no safe mechanical fix without a data-fetching library swap. `TemplateFieldForm`'s section-preview effect reads `getFirmLetterhead()` from `localStorage`, which is unavailable during SSR — moving it to render-time would reintroduce the exact hydration mismatch Passes 59/62 fought to kill. Left as-is; still open, still non-blocking (warn, not error).
+
+Lint: 34 → 31 warnings, 0 errors. Verified: 136 pytest, `tsc --noEmit` clean, `next build` (Turbopack, all routes), `npm run lint`, `test:catalog` / `test:assignment-transitions` / `test:pm-inbox-options` / `test:template-field-maps` / `test:matter-stage`, `scripts/smoke-production.sh` (all PASS against live aod-next + Fly API).
+
+**Not deployed — no credentials in this sandbox.** No `flyctl`/`vercel` CLI or tokens are available here, and `aod-next` deploys from local `vercel deploy` source uploads rather than a Git-triggered build (Pass 60), so this push alone will not reach production; needs a session with those tools to run the deploy step.
+
+**Standing issue, not fixed this pass (flagged by Pass 61/62, still true):** this automation delivers exclusively through `open_git_pr` (its only configured output), so it has opened a new draft PR every Mon/Thu run since 2026-07-02 — 14 are open now, all still `DRAFT`, none merged, most stale against the real work that lands via direct pushes to `cursor/phase0-foundation`. This run's PR is cut fresh from `52a944b` (today's tip) so it merges clean, but the backlog itself needs a human decision: either point this automation's output at `phase0-foundation` directly, or start clearing the draft queue.
 
 **Pass 63 (2026-09-13, why every push reported "failed"):** She kept getting failure notices after pushing. None came from the push or from aod-next, which deploys green. Three standing causes, all predating Passes 59–62 — CI has failed on every commit back to at least 2026-07-23:
 
