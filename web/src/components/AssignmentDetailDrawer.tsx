@@ -111,6 +111,14 @@ export function AssignmentDetailDrawer({
 
   const itemId = initialItem.id;
 
+  // Reset local item state during render (not in an effect) when the drawer
+  // is pointed at a different assignment — see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [lastLoadedItemId, setLastLoadedItemId] = useState(itemId);
+  if (itemId !== lastLoadedItemId) {
+    setLastLoadedItemId(itemId);
+    setItem(initialItem);
+  }
+
   const loadPreview = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
@@ -133,10 +141,8 @@ export function AssignmentDetailDrawer({
   }, [itemId, onItemUpdated]);
 
   useEffect(() => {
-    setItem(initialItem);
     void loadPreview();
     // Re-load only when opening a different assignment, not when parent list refreshes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: key off itemId
   }, [itemId, loadPreview]);
 
   useEffect(() => {
