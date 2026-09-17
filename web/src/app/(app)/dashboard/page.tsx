@@ -7,7 +7,6 @@ import {
   CalendarDays,
   CheckSquare,
   Clock3,
-  Inbox,
   Users,
 } from "lucide-react";
 
@@ -29,7 +28,6 @@ import {
 import { notesMissingTime, rollUpWorkSince, toBillableHours } from "@/lib/work-entry";
 import { mattersNeedingAttention, practicePulse } from "@/lib/practice-pulse";
 import {
-  countUnreadInbox,
   listAllNotes,
   listAllTasks,
   listInboxItems,
@@ -74,12 +72,6 @@ export default async function DashboardPage() {
 
   const filingDeadlines14 = filingDeadlinesWithin(tasks, 14, now);
   const filingDeadlinesMissing = filingDeadlinesMissingDate(tasks);
-  let inboxUnread = 0;
-  try {
-    inboxUnread = await countUnreadInbox();
-  } catch {
-    inboxUnread = 0;
-  }
 
   const deadlines30 = upcomingDeadlines(tasks, 30, now);
   const liveNotes = demo ? [] : await listAllNotes();
