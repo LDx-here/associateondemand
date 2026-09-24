@@ -2,7 +2,7 @@
 
 import { ChevronDown, ChevronRight, ExternalLink, FileDown, FileText, Lock, Pencil } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useToast } from "@/components/Toast";
 import { lockKindForSection, SECTION_LOCK_LABELS, specForTemplateFieldMap } from "@/lib/deliverable-template-specs";
@@ -106,15 +106,12 @@ export function TemplateFieldForm({
   const [output, setOutput] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [downloadBusy, setDownloadBusy] = useState(false);
-  const [sectionPreviews, setSectionPreviews] = useState<
-    Record<string, { text: string; lockLabel: string; firmEditable: boolean }>
-  >({});
 
   const editable = editableFieldsForMap(map);
   const spec = specForTemplateFieldMap(map.id);
   const samplePath = sampleAssetPathForMap(map);
 
-  useEffect(() => {
+  const sectionPreviews = useMemo(() => {
     const next: Record<string, { text: string; lockLabel: string; firmEditable: boolean }> = {};
     for (const section of map.boilerplateSections) {
       const resolved = resolveSectionPreview(section, spec, values);
@@ -124,7 +121,7 @@ export function TemplateFieldForm({
         firmEditable: resolved.lockKind === "firm_editable",
       };
     }
-    setSectionPreviews(next);
+    return next;
   }, [map, spec, values]);
 
   function setField(id: string, value: string) {

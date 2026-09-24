@@ -77,7 +77,9 @@ function testAssessmentOcrPayloadRoundTrip() {
   assert.equal(parsed?.title, "assessment.pdf");
   const block = formatAssessmentOcrForAgents(parsed);
   assert.match(block, /Case assessment document/);
-  assert.match(block, /entry_date/);
+  // formatAssessmentOcrForAgents humanizes fact_type via factDisplayLabel
+  // ("entry_date" -> "entry date") so agent prompts read naturally.
+  assert.match(block, /entry date/);
 }
 
 function testFactDisplayValuePrefersEdited() {
