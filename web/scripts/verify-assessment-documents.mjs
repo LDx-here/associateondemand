@@ -77,7 +77,9 @@ function testAssessmentOcrPayloadRoundTrip() {
   assert.equal(parsed?.title, "assessment.pdf");
   const block = formatAssessmentOcrForAgents(parsed);
   assert.match(block, /Case assessment document/);
-  assert.match(block, /entry_date/);
+  // factDisplayLabel humanizes fact_type for attorney-facing output (LLM
+  // enrichment pass, pass "LLM fact enrichment") — "entry_date" -> "entry date".
+  assert.match(block, /entry date/);
 }
 
 function testFactDisplayValuePrefersEdited() {
