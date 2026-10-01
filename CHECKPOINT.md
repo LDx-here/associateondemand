@@ -1,6 +1,22 @@
 # AssociateOnDemand — Agent checkpoint
 
-**Last updated:** 2026-09-13 (CDT) — Pass 63: why every push reported "failed"
+**Last updated:** 2026-10-01 (UTC) — Pass 64: verified assignment intake → inbox → template catalog, fixed a silent regression
+
+**Pass 64 (2026-10-01, scheduled Mon/Thu pass — verify assignment intake → inbox workflow → template catalog):** This pass's brief (per `docs/runbooks/autonomous-agent-pass.md`'s priority order) was to ship assignment intake, the inbox review workflow, and the template catalog. All three are already fully built — intake (`/assignments/new`), the inbox Kanban with Submitted → In progress → Ready for review → Approved (`/inbox`), and the deliverable template catalog (`/templates`, `DeliverableTemplateCatalog.tsx`) — across Passes 1–20. Pass 62 deliberately moved "New assignment" and "Inbox" off the default nav into **More tools** because the product pivoted to a single-firm case OS instead of the overflow-assignment marketplace; nothing was deleted. Rebuilding those flows from scratch would have contradicted that direction, so this pass verified the existing code end to end and fixed what smoke testing actually found broken, per the runbook's "bug fixes" priority.
+
+**Found and fixed:** `test:assessment-docs` (`web/scripts/verify-assessment-documents.mjs`) has asserted on raw `entry_date` formatting since Pass 12, but the LLM fact-enrichment pass (`35c4afa`, human-readable labels for OCR facts) changed `formatAssessmentOcrForAgents` to emit `entry date` for attorney-facing output. The test has silently failed on every run since — it isn't in CI (`ci.yml` only runs pytest + lint + build), only in the manual "Commands to resume" checklist, so nobody saw it break. Updated the assertion to match the intended human-readable output; added a comment pointing at why.
+
+**Verified clean, no other regressions:**
+- `services/api`: fresh `.venv` (Python 3.12, `requirements-dev.txt`) — **136 pytest passed**.
+- `web`: fresh `npm install`, `npx tsc --noEmit` clean, `npm run lint` exits 0 (same 34 pre-existing `set-state-in-effect`/unused-var warnings as Pass 63 — no new ones), `npm run build` green (same 45-route manifest).
+- All 31 `npm run test:*` verify scripts green after the fix above (catalog, assignment-transitions, pm-inbox-options, facts, five-anchors, case-journey, invoice, practice-import, etc.).
+- `bash scripts/smoke-assignment-e2e.sh` **PASS** end to end in demo mode: intake session autosave → `POST /api/assignments` → inbox item created → lifecycle PATCH through In progress / Ready for review / Approved → delivered export → memo export fallback. Manually re-confirmed `/templates`, `/inbox`, `/assignments/new`, `/dashboard`, `/matters` all render 200 with expected content (catalog "Available now"/"Coming soon" labels; inbox status columns).
+
+**Found, not fixed (not this pass's to fix):** `bash scripts/smoke-production.sh` fails on the live Fly API — `/health/deps` reports `postgres: false` (Redis still up; `/health` itself still says `ok`, which is why the GitHub Actions scheduled-health check, which only greps `/health`, stays green). This is a live infra issue on `associateondemand-api`, not caused by this pass — no Fly changes shipped. Needs Fly dashboard/CLI access to diagnose (Postgres plan/volume issue) — flagged below as a blocker.
+
+**Not deployed this pass.** This sandbox has no Fly or Vercel credentials (no `FLY_API_TOKEN`, no `VERCEL_TOKEN`, no `flyctl` binary) and no Airtable/Google Sheets/Anthropic/Stripe keys, so there is no way to `flyctl deploy` or `vercel deploy --prod` from here, and the whole verification above ran in demo mode. The one-line test fix is code-only and safe to deploy with the next pass that has deploy credentials; nothing in this pass touches runtime behavior against live data.
+
+**Previously:** 2026-09-13 (CDT) — Pass 63: why every push reported "failed"
 
 **Pass 63 (2026-09-13, why every push reported "failed"):** She kept getting failure notices after pushing. None came from the push or from aod-next, which deploys green. Three standing causes, all predating Passes 59–62 — CI has failed on every commit back to at least 2026-07-23:
 
@@ -841,6 +857,8 @@ All remaining blockers are **attorney-side** (no code work required):
 | Live Airtable assignment E2E | La'Dajia | Automated demo E2E: `bash scripts/smoke-assignment-e2e.sh`; live pilot still manual with Supabase login |
 | Consultation booking link | La'Dajia | `NEXT_PUBLIC_BOOKING_URL` unset — `/book` shows setup prompt |
 | Off-platform invoicing | La'Dajia | Stripe Payment Links / LawPay manual — see invoicing runbook |
+| **Fly Postgres down on `associateondemand-api`** | La'Dajia | Found Pass 64: `/health/deps` reports `postgres: false` on prod; `/health` still `ok` so scheduled CI stays green. Needs Fly dashboard/CLI access — no deploy credentials in the automation sandbox to investigate further. |
+| **No Fly/Vercel deploy credentials in Cloud Agent sandbox** | La'Dajia | Pass 64 ran fully code-only (no `FLY_API_TOKEN`/`VERCEL_TOKEN`/`flyctl` in this environment) — verified in demo mode, committed, pushed; did not `flyctl deploy` / `vercel deploy --prod`. |
 
 Non-blocking code debt: 3 `react-hooks/set-state-in-effect` lint diagnostics (OnboardingWizard, CommandPanel); template catalog is static config.
 
