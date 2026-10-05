@@ -77,7 +77,10 @@ function testAssessmentOcrPayloadRoundTrip() {
   assert.equal(parsed?.title, "assessment.pdf");
   const block = formatAssessmentOcrForAgents(parsed);
   assert.match(block, /Case assessment document/);
-  assert.match(block, /entry_date/);
+  // formatAssessmentOcrForAgents renders the humanized label (factDisplayLabel
+  // replaces underscores with spaces for attorney readability), not the raw
+  // fact_type key — assert against that intentional rendering, not the input.
+  assert.match(block, /entry date/);
 }
 
 function testFactDisplayValuePrefersEdited() {
