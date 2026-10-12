@@ -102,6 +102,7 @@ export function AssignmentDetailDrawer({
   onItemUpdated,
 }: Props) {
   const [item, setItem] = useState(initialItem);
+  const [openItemId, setOpenItemId] = useState(initialItem.id);
   const [preview, setPreview] = useState<PreviewPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -132,10 +133,14 @@ export function AssignmentDetailDrawer({
     }
   }, [itemId, onItemUpdated]);
 
-  useEffect(() => {
+  if (itemId !== openItemId) {
+    setOpenItemId(itemId);
     setItem(initialItem);
-    void loadPreview();
+  }
+
+  useEffect(() => {
     // Re-load only when opening a different assignment, not when parent list refreshes.
+    void loadPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: key off itemId
   }, [itemId, loadPreview]);
 
