@@ -17,12 +17,38 @@ PORT="${SMOKE_WEB_PORT:-3099}"
 WEB="http://127.0.0.1:${PORT}"
 SERVER_PID=""
 STARTED_SERVER=0
+SERVER_LOG="$(mktemp -t aod-smoke-e2e-server.XXXXXX.log)"
+
+# `npm run start` -> node -> next-server spawns a grandchild that does not die
+# with the subshell PID captured below (it detaches and keeps running). If a
+# caller pipes this script's output (e.g. `bash smoke-assignment-e2e.sh | tail`),
+# that orphaned next-server inherits the pipe's write end and keeps it open
+# forever even after this script exits, so the caller hangs waiting for EOF
+# that never comes. Fix: give the server its own log file (not our stdout) so
+# nothing it spawns can hold our pipe open, and kill by port at cleanup as a
+# second layer since PID-based kill alone leaves the detached grandchild alive.
+kill_port() {
+  local pids
+  pids="$(lsof -ti tcp:"$PORT" 2>/dev/null || true)"
+  if [[ -n "$pids" ]]; then
+    kill -9 $pids 2>/dev/null || true
+  fi
+}
 
 cleanup() {
-  if [[ "$STARTED_SERVER" == "1" && "${SMOKE_KEEP_SERVER:-0}" != "1" && -n "$SERVER_PID" ]]; then
-    kill "$SERVER_PID" 2>/dev/null || true
-    wait "$SERVER_PID" 2>/dev/null || true
+  if [[ "$STARTED_SERVER" == "1" && "${SMOKE_KEEP_SERVER:-0}" != "1" ]]; then
+    # Kill by PID first, then sweep anything still bound to $PORT and any
+    # stray next-server (npm's "next start" -> next-server hop can detach
+    # from $SERVER_PID's direct children, so a plain `kill "$SERVER_PID"`
+    # alone can leave one running).
+    [[ -n "$SERVER_PID" ]] && kill -9 "$SERVER_PID" 2>/dev/null
+    kill_port
+    pkill -9 -f "next-server" 2>/dev/null || true
+    sleep 0.5
+    kill_port
+    [[ -n "$SERVER_PID" ]] && wait "$SERVER_PID" 2>/dev/null
   fi
+  rm -f "$SERVER_LOG" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -36,7 +62,7 @@ if ! curl -sf "$WEB/api/health" >/dev/null 2>&1; then
     export AOD_FORCE_DEMO_MODE=true
     npm run build >/dev/null
     PORT="$PORT" AOD_FORCE_DEMO_MODE=true AOD_AUTH_ENABLED=false npm run start
-  ) &
+  ) > "$SERVER_LOG" 2>&1 &
   SERVER_PID=$!
   STARTED_SERVER=1
   for i in $(seq 1 45); do
