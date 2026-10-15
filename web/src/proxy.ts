@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 import { updateSupabaseSession } from "@/lib/supabase/middleware";
 import { shouldEnforceAuth } from "@/lib/supabase/env";
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   if (!shouldEnforceAuth()) {
     return NextResponse.next();
   }
