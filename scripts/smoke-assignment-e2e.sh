@@ -17,12 +17,46 @@ PORT="${SMOKE_WEB_PORT:-3099}"
 WEB="http://127.0.0.1:${PORT}"
 SERVER_PID=""
 STARTED_SERVER=0
+SERVER_LOG="$(mktemp -t aod-smoke-e2e-server.XXXXXX.log)"
+
+# `npm run start` execs `next start`, which spawns a `next-server` grandchild
+# that does not die with the `( ... ) &` subshell PID captured below — it
+# detaches and keeps running as an orphan. That orphan inherits this script's
+# stdout/stderr, so a caller piping our output (e.g. `bash smoke-...sh | tail`)
+# hangs forever waiting for EOF that never comes, even after this script's own
+# work is done. Fix: give the server its own log file (nothing it spawns can
+# hold our pipe open) and kill whatever ends up bound to $PORT at cleanup,
+# trying whichever lookup tool is available (sandboxes vary).
+pids_on_port() {
+  local port="$1"
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -ti tcp:"$port" 2>/dev/null
+  elif command -v fuser >/dev/null 2>&1; then
+    fuser -n tcp "$port" 2>/dev/null
+  elif command -v ss >/dev/null 2>&1; then
+    ss -ltnp 2>/dev/null | awk -v p=":$port" '$4 ~ p"$" { for (i = 1; i <= NF; i++) if ($i ~ /pid=/) { gsub(/.*pid=/, "", $i); gsub(/,.*/, "", $i); print $i } }'
+  elif command -v netstat >/dev/null 2>&1; then
+    netstat -ltnp 2>/dev/null | awk -v p=":$port" '$4 ~ p"$" { split($7, a, "/"); print a[1] }'
+  fi
+}
 
 cleanup() {
-  if [[ "$STARTED_SERVER" == "1" && "${SMOKE_KEEP_SERVER:-0}" != "1" && -n "$SERVER_PID" ]]; then
-    kill "$SERVER_PID" 2>/dev/null || true
-    wait "$SERVER_PID" 2>/dev/null || true
+  if [[ "$STARTED_SERVER" == "1" && "${SMOKE_KEEP_SERVER:-0}" != "1" ]]; then
+    [[ -n "$SERVER_PID" ]] && kill -9 "$SERVER_PID" 2>/dev/null
+    # next-server's process title carries no port, so match it unconditionally
+    # rather than trying to scope the pattern — this script only ever runs one.
+    pkill -9 -f "next-server" 2>/dev/null || true
+    for _ in 1 2 3; do
+      pids="$(pids_on_port "$PORT")"
+      [[ -z "$pids" ]] && break
+      for pid in $pids; do
+        kill -9 "$pid" 2>/dev/null || true
+      done
+      sleep 0.3
+    done
+    [[ -n "$SERVER_PID" ]] && wait "$SERVER_PID" 2>/dev/null
   fi
+  rm -f "$SERVER_LOG" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -36,7 +70,7 @@ if ! curl -sf "$WEB/api/health" >/dev/null 2>&1; then
     export AOD_FORCE_DEMO_MODE=true
     npm run build >/dev/null
     PORT="$PORT" AOD_FORCE_DEMO_MODE=true AOD_AUTH_ENABLED=false npm run start
-  ) &
+  ) > "$SERVER_LOG" 2>&1 &
   SERVER_PID=$!
   STARTED_SERVER=1
   for i in $(seq 1 45); do
