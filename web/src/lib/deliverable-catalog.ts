@@ -32,11 +32,6 @@ export function billingNoteForPartnerFirm(): string {
   return PARTNER_FIRM_BILLING_NOTE;
 }
 
-/** @deprecated use billingNoteForPartnerFirm() — stripeConfigured ignored (no operator checkout). */
-export function billingNoteForStripe(_stripeConfigured?: boolean): string {
-  return PARTNER_FIRM_BILLING_NOTE;
-}
-
 /** Phase 0 launch SKUs — immigration brief, motion, hearing packet, research upsell, PI demand letter. */
 export const PHASE0_LAUNCH_SKU_IDS = [
   "aos-discretionary-brief",
