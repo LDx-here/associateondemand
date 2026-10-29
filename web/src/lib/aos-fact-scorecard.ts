@@ -50,7 +50,6 @@ export function runAosFactScorecard(payload: DraftingFactsPayload): ScorecardRes
   }
 
   const sectionAFacts = fieldText(payload, "sectionAFacts");
-  const sectionAHeading = fieldText(payload, "sectionAHeading");
   if (sectionAFacts && wordCount(sectionAFacts) < 25) {
     questions.push({
       id: "thin-section-a",
