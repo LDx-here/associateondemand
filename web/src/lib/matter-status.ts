@@ -6,17 +6,6 @@ export const MATTER_STATUS_ACTIVE = "Active";
 
 export const CLOSED_MATTER_STATUSES = [MATTER_STATUS_CLOSED, MATTER_STATUS_ARCHIVED] as const;
 
-const ACTIVE_ALIASES = new Set([
-  MATTER_STATUS_ACTIVE,
-  "Open",
-  "In Progress",
-  "Intake",
-  "Pending Filing",
-  "Active",
-  "Moderate",
-  "Strong",
-]);
-
 /** True when matter should appear in the default (active-only) list. */
 export function isActiveMatterStatus(status: string): boolean {
   const normalized = status.trim();
