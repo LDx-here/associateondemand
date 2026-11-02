@@ -192,9 +192,16 @@ export function MatterTasksPanel({
   const [deliverableId, setDeliverableId] = useState<string | undefined>();
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
+  // Resync local tasks when the parent hands us a new initialTasks array
+  // (refetch after create/update). Adjusted during render — React's
+  // documented pattern for "state derived from a changed prop" — instead of
+  // an effect, so there is no extra render pass (same pattern as
+  // TemplateApplyPanel / AssignmentDetailDrawer).
+  const [appliedInitialTasks, setAppliedInitialTasks] = useState(initialTasks);
+  if (initialTasks !== appliedInitialTasks) {
+    setAppliedInitialTasks(initialTasks);
     setTasks(initialTasks);
-  }, [initialTasks]);
+  }
 
   useEffect(() => {
     void fetch(`/api/matters/${matterId}/drafting-facts`)
@@ -286,7 +293,7 @@ export function MatterTasksPanel({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <AddTaskForm matterId={matterId} onCreated={onUpdated} />
-        <TaskList matterId={matterId} initialTasks={tasks} onUpdated={onUpdated} />
+        <TaskList initialTasks={tasks} onUpdated={onUpdated} />
       </div>
     </div>
   );
