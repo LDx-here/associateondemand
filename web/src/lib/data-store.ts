@@ -120,7 +120,6 @@ import {
   type ProceduralTimelinePayload,
 } from "./procedural-timeline";
 import {
-  emptyDraftingFacts,
   parseDraftingFactsNote,
   serializeDraftingFacts,
   type DraftingFactsPayload,
