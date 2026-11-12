@@ -79,11 +79,9 @@ function TaskEditRow({
 }
 
 export function TaskList({
-  matterId,
   initialTasks,
   onUpdated,
 }: {
-  matterId: string;
   initialTasks: Task[];
   onUpdated?: () => void;
 }) {
